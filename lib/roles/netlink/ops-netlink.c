@@ -56,7 +56,7 @@ aws_lws_netlink_coldplug_done_cb(aws_lws_sorted_usec_list_t *sul)
 }
 
 static int
-rops_handle_POLLIN_netlink(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_netlink(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			   struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_context	*cx = pt->context;
@@ -471,7 +471,7 @@ rops_pt_init_destroy_netlink(struct aws_lws_context *context,
 	struct nl_req_s req;
 	struct msghdr msg;
 	struct iovec iov;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int n, ret = 1;
 
 	if (destroy) {

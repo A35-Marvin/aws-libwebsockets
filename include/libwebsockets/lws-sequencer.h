@@ -160,7 +160,7 @@ aws_lws_seq_queue_event(struct aws_lws_sequencer *seq, aws_lws_seq_events_t e, v
  * close message yet.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_seq_check_wsi(struct aws_lws_sequencer *seq, struct lws *wsi);
+aws_lws_seq_check_wsi(struct aws_lws_sequencer *seq, struct aws_lws *wsi);
 
 #define LWSSEQTO_NONE 0
 

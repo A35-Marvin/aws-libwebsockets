@@ -106,7 +106,7 @@ aws__lws_header_table_reset(struct allocated_headers *ah)
 // doesn't scrub the ah rxbuffer by default, parent must do if needed
 
 void
-aws___lws_header_table_reset(struct lws *wsi, int autoservice)
+aws___lws_header_table_reset(struct aws_lws *wsi, int autoservice)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 	struct aws_lws_context_per_thread *pt;
@@ -146,7 +146,7 @@ aws___lws_header_table_reset(struct lws *wsi, int autoservice)
 }
 
 void
-aws_lws_header_table_reset(struct lws *wsi, int autoservice)
+aws_lws_header_table_reset(struct aws_lws *wsi, int autoservice)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -158,11 +158,11 @@ aws_lws_header_table_reset(struct lws *wsi, int autoservice)
 }
 
 static void
-aws__lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
+aws__lws_header_ensure_we_are_on_waiting_list(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_pollargs pa;
-	struct lws **pwsi = &pt->http.ah_wait_list;
+	struct aws_lws **pwsi = &pt->http.ah_wait_list;
 
 	while (*pwsi) {
 		if (*pwsi == wsi)
@@ -181,10 +181,10 @@ aws__lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
 }
 
 static int
-aws___lws_remove_from_ah_waiting_list(struct lws *wsi)
+aws___lws_remove_from_ah_waiting_list(struct aws_lws *wsi)
 {
         struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws **pwsi =&pt->http.ah_wait_list;
+	struct aws_lws **pwsi =&pt->http.ah_wait_list;
 
 	while (*pwsi) {
 		if (*pwsi == wsi) {
@@ -204,7 +204,7 @@ aws___lws_remove_from_ah_waiting_list(struct lws *wsi)
 }
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_header_table_attach(struct lws *wsi, int autoservice)
+aws_lws_header_table_attach(struct aws_lws *wsi, int autoservice)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -303,13 +303,13 @@ bail:
 	return 1;
 }
 
-int aws___lws_header_table_detach(struct lws *wsi, int autoservice)
+int aws___lws_header_table_detach(struct aws_lws *wsi, int autoservice)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct allocated_headers *ah = wsi->http.ah;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct aws_lws_pollargs pa;
-	struct lws **pwsi, **pwsi_eligible;
+	struct aws_lws **pwsi, **pwsi_eligible;
 	time_t now;
 
 	aws___lws_remove_from_ah_waiting_list(wsi);
@@ -442,7 +442,7 @@ nobody_usable_waiting:
 	goto bail;
 }
 
-int aws_lws_header_table_detach(struct lws *wsi, int autoservice)
+int aws_lws_header_table_detach(struct aws_lws *wsi, int autoservice)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -456,7 +456,7 @@ int aws_lws_header_table_detach(struct lws *wsi, int autoservice)
 }
 
 int
-aws_lws_hdr_fragment_length(struct lws *wsi, enum aws_lws_token_indexes h, int frag_idx)
+aws_lws_hdr_fragment_length(struct aws_lws *wsi, enum aws_lws_token_indexes h, int frag_idx)
 {
 	int n;
 
@@ -475,7 +475,7 @@ aws_lws_hdr_fragment_length(struct lws *wsi, enum aws_lws_token_indexes h, int f
 	return 0;
 }
 
-int aws_lws_hdr_total_length(struct lws *wsi, enum aws_lws_token_indexes h)
+int aws_lws_hdr_total_length(struct aws_lws *wsi, enum aws_lws_token_indexes h)
 {
 	int n;
 	int len = 0;
@@ -498,7 +498,7 @@ int aws_lws_hdr_total_length(struct lws *wsi, enum aws_lws_token_indexes h)
 	return len;
 }
 
-int aws_lws_hdr_copy_fragment(struct lws *wsi, char *dst, int len,
+int aws_lws_hdr_copy_fragment(struct aws_lws *wsi, char *dst, int len,
 				      enum aws_lws_token_indexes h, int frag_idx)
 {
 	int n = 0;
@@ -529,7 +529,7 @@ int aws_lws_hdr_copy_fragment(struct lws *wsi, char *dst, int len,
 	return wsi->http.ah->frags[f].len;
 }
 
-int aws_lws_hdr_copy(struct lws *wsi, char *dst, int len,
+int aws_lws_hdr_copy(struct aws_lws *wsi, char *dst, int len,
 			     enum aws_lws_token_indexes h)
 {
 	int toklen = aws_lws_hdr_total_length(wsi, h), n, comma;
@@ -595,7 +595,7 @@ int aws_lws_hdr_copy(struct lws *wsi, char *dst, int len,
 
 #if defined(LWS_WITH_CUSTOM_HEADERS)
 int
-aws_lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen)
+aws_lws_hdr_custom_length(struct aws_lws *wsi, const char *name, int nlen)
 {
 	ah_data_idx_t ll;
 
@@ -619,7 +619,7 @@ aws_lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen)
 }
 
 int
-aws_lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
+aws_lws_hdr_custom_copy(struct aws_lws *wsi, char *dst, int len, const char *name,
 		    int nlen)
 {
 	ah_data_idx_t ll;
@@ -653,7 +653,7 @@ aws_lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
 }
 
 int
-aws_lws_hdr_custom_name_foreach(struct lws *wsi, aws_lws_hdr_custom_fe_cb_t cb,
+aws_lws_hdr_custom_name_foreach(struct aws_lws *wsi, aws_lws_hdr_custom_fe_cb_t cb,
 			    void *custom)
 {
 	ah_data_idx_t ll;
@@ -678,7 +678,7 @@ aws_lws_hdr_custom_name_foreach(struct lws *wsi, aws_lws_hdr_custom_fe_cb_t cb,
 }
 #endif
 
-char *aws_lws_hdr_simple_ptr(struct lws *wsi, enum aws_lws_token_indexes h)
+char *aws_lws_hdr_simple_ptr(struct aws_lws *wsi, enum aws_lws_token_indexes h)
 {
 	int n;
 
@@ -693,7 +693,7 @@ char *aws_lws_hdr_simple_ptr(struct lws *wsi, enum aws_lws_token_indexes h)
 }
 
 static int LWS_WARN_UNUSED_RESULT
-aws_lws_pos_in_bounds(struct lws *wsi)
+aws_lws_pos_in_bounds(struct aws_lws *wsi)
 {
 	if (!wsi->http.ah)
 		return -1;
@@ -720,7 +720,7 @@ aws_lws_pos_in_bounds(struct lws *wsi)
 }
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_hdr_simple_create(struct lws *wsi, enum aws_lws_token_indexes h, const char *s)
+aws_lws_hdr_simple_create(struct aws_lws *wsi, enum aws_lws_token_indexes h, const char *s)
 {
 	if (!*s) {
 		/*
@@ -757,7 +757,7 @@ aws_lws_hdr_simple_create(struct lws *wsi, enum aws_lws_token_indexes h, const c
 }
 
 static int LWS_WARN_UNUSED_RESULT
-issue_char(struct lws *wsi, unsigned char c)
+issue_char(struct aws_lws *wsi, unsigned char c)
 {
 	unsigned short frag_len;
 
@@ -791,7 +791,7 @@ issue_char(struct lws *wsi, unsigned char c)
 }
 
 int
-aws_lws_parse_urldecode(struct lws *wsi, uint8_t *_c)
+aws_lws_parse_urldecode(struct aws_lws *wsi, uint8_t *_c)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 	unsigned int enc = 0;
@@ -811,7 +811,7 @@ aws_lws_parse_urldecode(struct lws *wsi, uint8_t *_c)
 		}
 		break;
 	case URIES_SEEN_PERCENT:
-		if (char_to_hex((char)c) < 0)
+		if (aws_char_to_hex((char)c) < 0)
 			/* illegal post-% char */
 			goto forbid;
 
@@ -820,12 +820,12 @@ aws_lws_parse_urldecode(struct lws *wsi, uint8_t *_c)
 		goto swallow;
 
 	case URIES_SEEN_PERCENT_H1:
-		if (char_to_hex((char)c) < 0)
+		if (aws_char_to_hex((char)c) < 0)
 			/* illegal post-% char */
 			goto forbid;
 
-		*_c = (uint8_t)(unsigned int)((char_to_hex(ah->esc_stash) << 4) |
-				char_to_hex((char)c));
+		*_c = (uint8_t)(unsigned int)((aws_char_to_hex(ah->esc_stash) << 4) |
+				aws_char_to_hex((char)c));
 		c = *_c;
 		enc = 1;
 		ah->ues = URIES_IDLE;
@@ -1015,7 +1015,7 @@ static const unsigned char methods[] = {
  */
 
 aws_lws_parser_return_t LWS_WARN_UNUSED_RESULT
-aws_lws_parse(struct lws *wsi, unsigned char *buf, int *len)
+aws_lws_parse(struct aws_lws *wsi, unsigned char *buf, int *len)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 	struct aws_lws_context *context = wsi->a.context;
@@ -1533,7 +1533,7 @@ forbid:
 }
 
 int
-aws_lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
+aws_lws_http_cookie_get(struct aws_lws *wsi, const char *name, char *buf,
 		    size_t *max_len)
 {
 	size_t max = *max_len, bl = strlen(name);
@@ -1618,7 +1618,7 @@ aws_lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
 #define MAX_JWT_SIZE 1024
 
 int
-aws_lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
+aws_lws_jwt_get_http_cookie_validate_jwt(struct aws_lws *wsi,
 				     struct aws_lws_jwt_sign_set_cookie *i,
 				     char *out, size_t *out_len)
 {
@@ -1671,7 +1671,7 @@ aws_lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
 }
 
 int
-aws_lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
+aws_lws_jwt_sign_token_set_http_cookie(struct aws_lws *wsi,
 				   const struct aws_lws_jwt_sign_set_cookie *i,
 				   uint8_t **p, uint8_t *end)
 {

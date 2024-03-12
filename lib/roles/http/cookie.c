@@ -278,7 +278,7 @@ aws_lws_cookie_parse_nsc(struct aws_lws_cookie *c, const char *b, size_t l)
 }
 
 static int
-aws_lws_cookie_write_nsc(struct lws *wsi, struct aws_lws_cookie *c)
+aws_lws_cookie_write_nsc(struct aws_lws *wsi, struct aws_lws_cookie *c)
 {
 	char cache_name[LWS_COOKIE_MAX_CACHE_NAME_LEN];
 	struct aws_lws_cache_ttl_lru *l1;
@@ -394,7 +394,7 @@ exit:
 }
 
 static int
-aws_lws_cookie_attach_cookies(struct lws *wsi, char *buf, char *end)
+aws_lws_cookie_attach_cookies(struct aws_lws *wsi, char *buf, char *end)
 {
 	const char *domain, *path, *dl_domain, *dl_path, *po;
 	char cache_name[LWS_COOKIE_MAX_CACHE_NAME_LEN];
@@ -544,7 +544,7 @@ static struct {
 };
 
 int
-aws_lws_parse_set_cookie(struct lws *wsi)
+aws_lws_parse_set_cookie(struct aws_lws *wsi)
 {
 	char *tk_head, *tk_end, *buf_head, *buf_end, *cookiep, *dl;
 	struct aws_lws_cache_ttl_lru *l1;
@@ -676,7 +676,7 @@ parse_av:
 }
 
 int
-aws_lws_cookie_send_cookies(struct lws *wsi, char **pp, char *end)
+aws_lws_cookie_send_cookies(struct aws_lws *wsi, char **pp, char *end)
 {
 	char *p;
 	int size;

@@ -112,7 +112,7 @@ aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int t
 		aws_lws_fakewsi_prep_plwsa_ctx(context);
 
 		pt->service_tid = context->vhost_list->protocols[0].callback(
-					(struct lws *)plwsa,
+					(struct aws_lws *)plwsa,
 					LWS_CALLBACK_GET_THREAD_ID,
 					NULL, NULL, 0);
 		pt->service_tid_detected = 1;
@@ -174,7 +174,7 @@ aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int t
 	ftp = vpt->foreign_pfd_list;
 	//aws_lwsl_notice("cleared list %p\n", ftp);
 	while (ftp) {
-		struct lws *wsi;
+		struct aws_lws *wsi;
 		struct aws_lws_pollfd *pfd;
 
 		next = ftp->next;

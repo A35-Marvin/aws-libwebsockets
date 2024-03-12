@@ -138,7 +138,7 @@ enum aws_lws_h2_states {
 };
 
 void
-aws_lws_h2_state(struct lws *wsi, enum aws_lws_h2_states s);
+aws_lws_h2_state(struct aws_lws *wsi, enum aws_lws_h2_states s);
 
 #define LWS_H2_STREAM_ID_MASTER 0
 #define LWS_H2_SETTINGS_LEN 6
@@ -255,7 +255,7 @@ struct aws_lws_h2_netconn {
 	uint8_t	ping_payload[8];
 	uint8_t one_setting[LWS_H2_SETTINGS_LEN];
 	char goaway_str[32]; /* for rx */
-	struct lws *swsi;
+	struct aws_lws *swsi;
 	struct aws_lws_h2_protocol_send *pps; /* linked list */
 
 	enum http2_hpack_state hpack;
@@ -321,64 +321,64 @@ struct aws__lws_h2_related {
 #define HTTP2_IS_TOPLEVEL_WSI(wsi) (!wsi->mux.parent_wsi)
 
 int
-aws_lws_h2_rst_stream(struct lws *wsi, uint32_t err, const char *reason);
-struct lws * aws_lws_h2_get_nth_child(struct lws *wsi, int n);
-void aws_lws_h2_init(struct lws *wsi);
+aws_lws_h2_rst_stream(struct aws_lws *wsi, uint32_t err, const char *reason);
+struct aws_lws * aws_lws_h2_get_nth_child(struct aws_lws *wsi, int n);
+void aws_lws_h2_init(struct aws_lws *wsi);
 int
-aws_lws_h2_settings(struct lws *nwsi, struct http2_settings *settings,
+aws_lws_h2_settings(struct aws_lws *nwsi, struct http2_settings *settings,
 		unsigned char *buf, int len);
 int
-aws_lws_h2_parser(struct lws *wsi, unsigned char *in, aws_lws_filepos_t inlen,
+aws_lws_h2_parser(struct aws_lws *wsi, unsigned char *in, aws_lws_filepos_t inlen,
 	      aws_lws_filepos_t *inused);
 int
-aws_lws_h2_do_pps_send(struct lws *wsi);
+aws_lws_h2_do_pps_send(struct aws_lws *wsi);
 int
-aws_lws_h2_frame_write(struct lws *wsi, int type, int flags, unsigned int sid,
+aws_lws_h2_frame_write(struct aws_lws *wsi, int type, int flags, unsigned int sid,
 		   unsigned int len, unsigned char *buf);
-struct lws *
-aws_lws_wsi_mux_from_id(struct lws *wsi, unsigned int sid);
+struct aws_lws *
+aws_lws_wsi_mux_from_id(struct aws_lws *wsi, unsigned int sid);
 int
-aws_lws_hpack_interpret(struct lws *wsi, unsigned char c);
+aws_lws_hpack_interpret(struct aws_lws *wsi, unsigned char c);
 int
-aws_lws_add_http2_header_by_name(struct lws *wsi,
+aws_lws_add_http2_header_by_name(struct aws_lws *wsi,
 			     const unsigned char *name,
 			     const unsigned char *value, int length,
 			     unsigned char **p, unsigned char *end);
 int
-aws_lws_add_http2_header_by_token(struct lws *wsi,
+aws_lws_add_http2_header_by_token(struct aws_lws *wsi,
 			      enum aws_lws_token_indexes token,
 			      const unsigned char *value, int length,
 			      unsigned char **p, unsigned char *end);
 int
-aws_lws_add_http2_header_status(struct lws *wsi,
+aws_lws_add_http2_header_status(struct aws_lws *wsi,
 			    unsigned int code, unsigned char **p,
 			    unsigned char *end);
 void
-aws_lws_hpack_destroy_dynamic_header(struct lws *wsi);
+aws_lws_hpack_destroy_dynamic_header(struct aws_lws *wsi);
 int
-aws_lws_hpack_dynamic_size(struct lws *wsi, int size);
+aws_lws_hpack_dynamic_size(struct aws_lws *wsi, int size);
 int
-aws_lws_h2_goaway(struct lws *wsi, uint32_t err, const char *reason);
+aws_lws_h2_goaway(struct aws_lws *wsi, uint32_t err, const char *reason);
 int
-aws_lws_h2_tx_cr_get(struct lws *wsi);
+aws_lws_h2_tx_cr_get(struct aws_lws *wsi);
 void
-aws_lws_h2_tx_cr_consume(struct lws *wsi, int consumed);
+aws_lws_h2_tx_cr_consume(struct aws_lws *wsi, int consumed);
 int
-aws_lws_hdr_extant(struct lws *wsi, enum aws_lws_token_indexes h);
+aws_lws_hdr_extant(struct aws_lws *wsi, enum aws_lws_token_indexes h);
 void
-aws_lws_pps_schedule(struct lws *wsi, struct aws_lws_h2_protocol_send *pss);
+aws_lws_pps_schedule(struct aws_lws *wsi, struct aws_lws_h2_protocol_send *pss);
 
 extern const struct http2_settings aws_lws_h2_defaults;
 int
-aws_lws_h2_ws_handshake(struct lws *wsi);
-int aws_lws_h2_issue_preface(struct lws *wsi);
+aws_lws_h2_ws_handshake(struct aws_lws *wsi);
+int aws_lws_h2_issue_preface(struct aws_lws *wsi);
 int
-aws_lws_h2_client_handshake(struct lws *wsi);
-struct lws *
-aws_lws_wsi_h2_adopt(struct lws *parent_wsi, struct lws *wsi);
+aws_lws_h2_client_handshake(struct aws_lws *wsi);
+struct aws_lws *
+aws_lws_wsi_h2_adopt(struct aws_lws *parent_wsi, struct aws_lws *wsi);
 int
-aws_lws_handle_POLLOUT_event_h2(struct lws *wsi);
+aws_lws_handle_POLLOUT_event_h2(struct aws_lws *wsi);
 int
-aws_lws_read_h2(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
+aws_lws_read_h2(struct aws_lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
 struct aws_lws_h2_protocol_send *
 aws_lws_h2_new_pps(enum aws_lws_h2_protocol_send_type type);

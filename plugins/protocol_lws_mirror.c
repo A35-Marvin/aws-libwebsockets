@@ -47,7 +47,7 @@
 struct mirror_instance;
 
 struct per_session_data__lws_mirror {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	struct mirror_instance *mi;
 	struct per_session_data__lws_mirror *same_mi_pss_list;
 	uint32_t tail;
@@ -191,7 +191,7 @@ __mirror_destroy_message(void *_msg)
 }
 
 static int
-callback_lws_mirror(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_lws_mirror(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		    void *user, void *in, size_t len)
 {
 	struct per_session_data__lws_mirror *pss =

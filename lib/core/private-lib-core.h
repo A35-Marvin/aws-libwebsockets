@@ -306,7 +306,7 @@ struct aws_lws_ring {
 };
 
 struct aws_lws_protocols;
-struct lws;
+struct aws_lws;
 
 #if defined(LWS_WITH_NETWORK) /* network */
 #include "private-lib-event-libs.h"
@@ -454,7 +454,7 @@ struct aws_lws_context {
 	aws_lws_sorted_usec_list_t			sul_nl_coldplug;
 	/* process can only have one netlink socket, have to do it in ctx */
 	aws_lws_dll2_owner_t			routing_table;
-	struct lws				*netlink;
+	struct aws_lws				*netlink;
 #endif
 
 #if defined(LWS_PLAT_FREERTOS)
@@ -593,7 +593,7 @@ struct aws_lws_context {
 /* different implementation between unix and windows */
 	struct aws_lws_fd_hashtable fd_hashtable[FD_HASHTABLE_MODULUS];
 #else
-	struct lws **aws_lws_lookup;
+	struct aws_lws **aws_lws_lookup;
 
 #endif
 
@@ -770,10 +770,10 @@ aws_lws_vhost_destroy1(struct aws_lws_vhost *vh);
 
 #if defined(LWS_WITH_CACHE_NSCOOKIEJAR) && defined(LWS_WITH_CLIENT)
 int
-aws_lws_parse_set_cookie(struct lws *wsi);
+aws_lws_parse_set_cookie(struct aws_lws *wsi);
 
 int
-aws_lws_cookie_send_cookies(struct lws *wsi, char **pp, char *end);
+aws_lws_cookie_send_cookies(struct aws_lws *wsi, char **pp, char *end);
 #endif
 
 #if defined(LWS_PLAT_FREERTOS)
@@ -781,7 +781,7 @@ int
 aws_lws_find_string_in_file(const char *filename, const char *str, int stringlen);
 #endif
 
-signed char char_to_hex(const char c);
+signed char aws_char_to_hex(const char c);
 
 #if defined(LWS_WITH_NETWORK)
 int
@@ -858,13 +858,13 @@ void aws_lwsl_emit_stderr(int level, const char *line);
 #endif
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ssl_capable_read_no_ssl(struct lws *wsi, unsigned char *buf, size_t len);
+aws_lws_ssl_capable_read_no_ssl(struct aws_lws *wsi, unsigned char *buf, size_t len);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ssl_capable_write_no_ssl(struct lws *wsi, unsigned char *buf, size_t len);
+aws_lws_ssl_capable_write_no_ssl(struct aws_lws *wsi, unsigned char *buf, size_t len);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ssl_pending_no_ssl(struct lws *wsi);
+aws_lws_ssl_pending_no_ssl(struct aws_lws *wsi);
 
 int
 aws_lws_tls_check_cert_lifetime(struct aws_lws_vhost *vhost);
@@ -876,17 +876,17 @@ int
 aws_lws_protocol_init(struct aws_lws_context *context);
 
 int
-aws_lws_bind_protocol(struct lws *wsi, const struct aws_lws_protocols *p,
+aws_lws_bind_protocol(struct aws_lws *wsi, const struct aws_lws_protocols *p,
 		  const char *reason);
 
 const struct aws_lws_protocol_vhost_options *
 aws_lws_vhost_protocol_options(struct aws_lws_vhost *vh, const char *name);
 
 const struct aws_lws_http_mount *
-aws_lws_find_mount(struct lws *wsi, const char *uri_ptr, int uri_len);
+aws_lws_find_mount(struct aws_lws *wsi, const char *uri_ptr, int uri_len);
 
 #ifdef LWS_WITH_HTTP2
-int aws_lws_wsi_is_h2(struct lws *wsi);
+int aws_lws_wsi_is_h2(struct aws_lws *wsi);
 #endif
 /*
  * custom allocator
@@ -950,7 +950,7 @@ int
 aws_lws_check_byte_utf8(unsigned char state, unsigned char c);
 int LWS_WARN_UNUSED_RESULT
 aws_lws_check_utf8(unsigned char *state, unsigned char *buf, size_t len);
-int alloc_file(struct aws_lws_context *context, const char *filename,
+int aws_alloc_file(struct aws_lws_context *context, const char *filename,
 			  uint8_t **buf, aws_lws_filepos_t *amount);
 
 int

@@ -46,8 +46,8 @@ typedef struct proxy_msg {
  */
 
 typedef struct proxy_conn {
-	struct lws		*wsi_ws; /* wsi for the inbound ws conn */
-	struct lws		*wsi_raw; /* wsi for the outbound raw conn */
+	struct aws_lws		*wsi_ws; /* wsi for the inbound ws conn */
+	struct aws_lws		*wsi_raw; /* wsi for the outbound raw conn */
 
 	aws_lws_dll2_owner_t	pending_msg_to_ws;
 	aws_lws_dll2_owner_t	pending_msg_to_raw;
@@ -70,7 +70,7 @@ proxy_ws_raw_msg_destroy(struct aws_lws_dll2 *d, void *user)
  */
 
 static int
-callback_proxy_ws_server(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_proxy_ws_server(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			 void *user, void *in, size_t len)
 {
 	proxy_conn_t *pc = (proxy_conn_t *)aws_lws_get_opaque_user_data(wsi);
@@ -231,7 +231,7 @@ callback_proxy_ws_server(struct lws *wsi, enum aws_lws_callback_reasons reason,
  */
 
 static int
-callback_proxy_raw_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_proxy_raw_client(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	proxy_conn_t *pc = (proxy_conn_t *)aws_lws_get_opaque_user_data(wsi);

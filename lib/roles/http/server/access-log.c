@@ -34,18 +34,18 @@
  *
  */
 
-extern const char * const method_names[];
+extern const char * const aws_method_names[];
 
 static const char * const hver[] = {
 	"HTTP/1.0", "HTTP/1.1", "HTTP/2"
 };
 
 void
-aws_lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int meth)
+aws_lws_prepare_access_log_info(struct aws_lws *wsi, char *uri_ptr, int uri_len, int meth)
 {
 	char da[64], uri[256], ta[64];
 	time_t t = time(NULL);
-	struct lws *nwsi;
+	struct aws_lws *nwsi;
 	const char *me;
 	int l = 256, m;
 	struct tm *ptm = NULL;
@@ -82,7 +82,7 @@ aws_lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int
 		me = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COLON_METHOD);
 	else
 #endif
-		me = method_names[meth];
+		me = aws_method_names[meth];
 
 	if (!me)
 		me = "(null)";
@@ -146,7 +146,7 @@ aws_lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int
 
 
 int
-aws_lws_access_log(struct lws *wsi)
+aws_lws_access_log(struct aws_lws *wsi)
 {
 	char *p = wsi->http.access_log.user_agent, ass[512],
 	     *p1 = wsi->http.access_log.referrer;

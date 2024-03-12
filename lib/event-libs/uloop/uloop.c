@@ -135,7 +135,7 @@ aws_lws_uloop_cb(struct uloop_fd *ufd, unsigned int revents)
 static int
 elops_listen_init_uloop(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 	struct aws_lws_wsi_eventlibs_uloop *wu = wsi_to_priv_uloop(wsi);
 
 	wu->wsi = wsi;
@@ -171,7 +171,7 @@ elops_init_pt_uloop(struct aws_lws_context *context, void *v, int tsi)
 }
 
 static int
-elops_accept_uloop(struct lws *wsi)
+elops_accept_uloop(struct aws_lws *wsi)
 {
 	struct aws_lws_wsi_eventlibs_uloop *wu = wsi_to_priv_uloop(wsi);
 
@@ -185,7 +185,7 @@ elops_accept_uloop(struct lws *wsi)
 }
 
 static void
-elops_io_uloop(struct lws *wsi, unsigned int flags)
+elops_io_uloop(struct aws_lws *wsi, unsigned int flags)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_wsi_eventlibs_uloop *wu = wsi_to_priv_uloop(wsi);
@@ -217,7 +217,7 @@ elops_run_pt_uloop(struct aws_lws_context *context, int tsi)
 static int
 elops_listen_destroy_uloop(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 	struct aws_lws_wsi_eventlibs_uloop *wu = wsi_to_priv_uloop(wsi);
 
 	uloop_fd_delete(&wu->fd);
@@ -238,7 +238,7 @@ elops_destroy_pt_uloop(struct aws_lws_context *context, int tsi)
 }
 
 static void
-elops_destroy_wsi_uloop(struct lws *wsi)
+elops_destroy_wsi_uloop(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt;
 
@@ -253,7 +253,7 @@ elops_destroy_wsi_uloop(struct lws *wsi)
 }
 
 static int
-elops_wsi_logical_close_uloop(struct lws *wsi)
+elops_wsi_logical_close_uloop(struct aws_lws *wsi)
 {
 	elops_destroy_wsi_uloop(wsi);
 
@@ -261,7 +261,7 @@ elops_wsi_logical_close_uloop(struct lws *wsi)
 }
 
 static int
-elops_init_vhost_listen_wsi_uloop(struct lws *wsi)
+elops_init_vhost_listen_wsi_uloop(struct aws_lws *wsi)
 {
 	struct aws_lws_wsi_eventlibs_uloop *wu;
 

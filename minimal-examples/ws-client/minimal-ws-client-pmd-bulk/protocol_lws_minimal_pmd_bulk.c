@@ -63,7 +63,7 @@ struct per_session_data__minimal_pmd_bulk {
 struct vhd_minimal_pmd_bulk {
 	struct aws_lws_context *context;
 	struct aws_lws_vhost *vhost;
-	struct lws *client_wsi;
+	struct aws_lws *client_wsi;
 
 	aws_lws_sorted_usec_list_t sul;
 
@@ -106,7 +106,7 @@ sul_connect_attempt(struct aws_lws_sorted_usec_list *sul)
 }
 
 static int
-callback_minimal_pmd_bulk(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_pmd_bulk(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal_pmd_bulk *pss =

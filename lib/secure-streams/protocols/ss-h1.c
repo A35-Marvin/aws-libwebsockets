@@ -211,7 +211,7 @@ aws_lws_ss_http_resp_to_state(aws_lws_ss_handle_t *h, int resp)
  */
 
 static int
-aws_lws_apply_metadata(aws_lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
+aws_lws_apply_metadata(aws_lws_ss_handle_t *h, struct aws_lws *wsi, uint8_t *buf,
 		   uint8_t **pp, uint8_t *end)
 {
 	aws_lws_ss_metadata_t *polmd = h->policy->metadata;
@@ -273,7 +273,7 @@ aws_lws_apply_metadata(aws_lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
 static int
-aws_lws_apply_instant_metadata(aws_lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
+aws_lws_apply_instant_metadata(aws_lws_ss_handle_t *h, struct aws_lws *wsi, uint8_t *buf,
 		   uint8_t **pp, uint8_t *end)
 {
 	aws_lws_ss_metadata_t *imd = h->instant_metadata;
@@ -310,7 +310,7 @@ aws_lws_apply_instant_metadata(aws_lws_ss_handle_t *h, struct lws *wsi, uint8_t 
  */
 
 static int
-aws_lws_extract_metadata(aws_lws_ss_handle_t *h, struct lws *wsi)
+aws_lws_extract_metadata(aws_lws_ss_handle_t *h, struct aws_lws *wsi)
 {
 	aws_lws_ss_metadata_t *polmd = h->policy->metadata, *omd;
 	int n, m = 0;
@@ -425,7 +425,7 @@ static const uint8_t blob_idx[] = {
 };
 
 int
-secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+secstream_h1(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 #if defined(LWS_WITH_SERVER)
@@ -1101,7 +1101,7 @@ malformed:
 			/*
 			 * If any hanging caliper measurement, dump it, and free any tags
 			 */
-			aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+			aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 			wsi->client_suppress_CONNECTION_ERROR = 1;
 			if (h->prev_ss_state != LWSSSCS_CONNECTED) {

@@ -40,7 +40,7 @@ static int connect_client()
 }
 
 static int
-callback(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		void *user, void *in, size_t len)
 {
 	int m= 0, n = 0;

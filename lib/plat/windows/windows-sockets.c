@@ -37,8 +37,8 @@
 #endif
 
 int
-aws_lws_send_pipe_choked(struct lws *wsi)
-{	struct lws *wsi_eff;
+aws_lws_send_pipe_choked(struct aws_lws *wsi)
+{	struct aws_lws *wsi_eff;
 
 #if defined(LWS_WITH_HTTP2)
 	wsi_eff = aws_lws_get_network_wsi(wsi);
@@ -190,7 +190,7 @@ aws_lws_interface_to_sa(int ipv6,
 }
 
 void
-aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws *wsi)
+aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -211,7 +211,7 @@ aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws 
 
 void
 aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
-						struct lws *wsi, int m)
+						struct aws_lws *wsi, int m)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -220,7 +220,7 @@ aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
 
 
 int
-aws_lws_plat_check_connection_error(struct lws *wsi)
+aws_lws_plat_check_connection_error(struct aws_lws *wsi)
 {
 	int optVal;
 	int optLen = sizeof(int);
@@ -237,7 +237,7 @@ aws_lws_plat_check_connection_error(struct lws *wsi)
 }
 
 int
-aws_lws_plat_change_pollfd(struct aws_lws_context *context, struct lws *wsi,
+aws_lws_plat_change_pollfd(struct aws_lws_context *context, struct aws_lws *wsi,
 		       struct aws_lws_pollfd *pfd)
 {
 	//struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];

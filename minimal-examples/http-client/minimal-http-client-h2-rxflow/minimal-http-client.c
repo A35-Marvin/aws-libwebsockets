@@ -17,7 +17,7 @@
 #include <signal.h>
 
 static int interrupted, bad = 1, status, each = 1024;
-static struct lws *client_wsi;
+static struct aws_lws *client_wsi;
 
 static const aws_lws_retry_bo_t retry = {
 	.secs_since_valid_ping = 3,
@@ -26,7 +26,7 @@ static const aws_lws_retry_bo_t retry = {
 
 struct pss {
 	aws_lws_sorted_usec_list_t sul;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 };
 
 /*
@@ -47,7 +47,7 @@ drain_cb(aws_lws_sorted_usec_list_t *sul)
 
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;

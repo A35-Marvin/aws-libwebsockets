@@ -102,7 +102,7 @@ aws_lws_mbedtls_sni_cb(void *arg, mbedtls_ssl_context *mbedtls_ctx,
 }
 
 int
-aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct lws *wsi,
+aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct aws_lws *wsi,
 			  const char *cert, const char *private_key,
 			  const char *mem_cert, size_t mem_cert_len,
 			  const char *mem_privkey, size_t mem_privkey_len)
@@ -183,7 +183,7 @@ aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct lws *wsi,
 
 int
 aws_lws_tls_server_vhost_backend_init(const struct aws_lws_context_creation_info *info,
-				  struct aws_lws_vhost *vhost, struct lws *wsi)
+				  struct aws_lws_vhost *vhost, struct aws_lws *wsi)
 {
 	const SSL_METHOD *method = TLS_server_method();
 	uint8_t *p;
@@ -243,7 +243,7 @@ aws_lws_tls_server_vhost_backend_init(const struct aws_lws_context_creation_info
 }
 
 int
-aws_lws_tls_server_new_nonblocking(struct lws *wsi, aws_lws_sockfd_type accept_fd)
+aws_lws_tls_server_new_nonblocking(struct aws_lws *wsi, aws_lws_sockfd_type accept_fd)
 {
 	errno = 0;
 	wsi->tls.ssl = SSL_new(wsi->a.vhost->tls.ssl_ctx);
@@ -269,7 +269,7 @@ enum aws_lws_ssl_capable_status
 #else
 int
 #endif
-aws_lws_tls_server_abort_connection(struct lws *wsi)
+aws_lws_tls_server_abort_connection(struct aws_lws *wsi)
 {
 	if (wsi->tls.use_ssl)
 		aws___lws_tls_shutdown(wsi);
@@ -280,7 +280,7 @@ aws_lws_tls_server_abort_connection(struct lws *wsi)
 }
 
 enum aws_lws_ssl_capable_status
-aws_lws_tls_server_accept(struct lws *wsi)
+aws_lws_tls_server_accept(struct aws_lws *wsi)
 {
 	union aws_lws_tls_cert_info_results ir;
 	int m, n;

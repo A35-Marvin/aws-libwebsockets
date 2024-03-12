@@ -25,7 +25,7 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_cgi(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_cgi(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 		       struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_cgi_args args;
@@ -71,7 +71,7 @@ rops_handle_POLLIN_cgi(struct aws_lws_context_per_thread *pt, struct lws *wsi,
 	aws_lwsl_wsi_debug(wsi, "CGI LWS_STDOUT %p wsistate 0x%x",
 			    wsi->parent, wsi->wsistate);
 
-	if (user_callback_handle_rxflow(wsi->parent->a.protocol->callback,
+	if (aws_user_callback_handle_rxflow(wsi->parent->a.protocol->callback,
 					wsi->parent, LWS_CALLBACK_CGI,
 					wsi->parent->user_space,
 					(void *)&args, 0))
@@ -81,13 +81,13 @@ rops_handle_POLLIN_cgi(struct aws_lws_context_per_thread *pt, struct lws *wsi,
 }
 
 static int
-rops_handle_POLLOUT_cgi(struct lws *wsi)
+rops_handle_POLLOUT_cgi(struct aws_lws *wsi)
 {
 	return LWS_HP_RET_USER_SERVICE;
 }
 
 static int
-rops_destroy_role_cgi(struct lws *wsi)
+rops_destroy_role_cgi(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_ZLIB)
 	if (!wsi->http.cgi)
@@ -127,7 +127,7 @@ rops_pt_init_destroy_cgi(struct aws_lws_context *context,
 }
 
 static int
-rops_close_role_cgi(struct aws_lws_context_per_thread *pt, struct lws *wsi)
+rops_close_role_cgi(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi)
 {
 	if (wsi->parent && wsi->parent->http.cgi && wsi->parent->http.cgi->lsp)
 		aws_lws_spawn_stdwsi_closed(wsi->parent->http.cgi->lsp, wsi);

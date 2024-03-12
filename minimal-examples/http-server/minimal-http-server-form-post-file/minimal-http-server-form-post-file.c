@@ -98,7 +98,7 @@ file_upload_cb(void *data, const char *name, const char *filename,
 }
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	uint8_t buf[LWS_PRE + LWS_RECOMMENDED_MIN_HEADER_SPACE], *start = &buf[LWS_PRE],

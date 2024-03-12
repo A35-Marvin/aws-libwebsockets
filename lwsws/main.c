@@ -40,9 +40,9 @@
 #include "gettimeofday.h"
 #include <uv.h>
 
-int fork(void)
+int aws_fork(void)
 {
-	fprintf(stderr, "Sorry Windows doesn't support fork().\n");
+	fprintf(stderr, "Sorry Windows doesn't support aws_fork().\n");
 	return 0;
 }
 #endif
@@ -214,7 +214,7 @@ reload_handler(int signum)
 			fprintf(stderr, "passing HUP to child processes\n");
 			for (m = 0; m < (int)LWS_ARRAY_SIZE(pids); m++)
 				if (pids[m])
-					kill(pids[m], SIGHUP);
+					aws_kill(pids[m], SIGHUP);
 			sleep(1);
 		}
 		do_reload = 1;
@@ -227,11 +227,11 @@ reload_handler(int signum)
 		fprintf(stderr, "killing service processes\n");
 		for (m = 0; m < (int)LWS_ARRAY_SIZE(pids); m++)
 			if (pids[m])
-				kill(pids[m], SIGTERM);
+				aws_kill(pids[m], SIGTERM);
 		exit(0);
 	}
 #else
-	// kill() implementation needed for WIN32
+	// aws_kill() implementation needed for WIN32
 #endif
 }
 
@@ -286,7 +286,7 @@ int main(int argc, char **argv)
 	while (1) {
 		if (do_reload) {
 			do_reload = 0;
-			n = fork();
+			n = aws_fork();
 			if (n == 0) /* new */
 				break;
 			/* old */

@@ -91,7 +91,7 @@ aws_lws_plat_init(struct aws_lws_context *context,
 #endif
 
 	/* context has the global fd lookup array */
-	context->aws_lws_lookup = aws_lws_zalloc(sizeof(struct lws *) *
+	context->aws_lws_lookup = aws_lws_zalloc(sizeof(struct aws_lws *) *
 					 context->max_fds, "esp32 aws_lws_lookup");
 	if (context->aws_lws_lookup == NULL) {
 		aws_lwsl_err("OOM on aws_lws_lookup array for %d connections\n",
@@ -100,7 +100,7 @@ aws_lws_plat_init(struct aws_lws_context *context,
 	}
 
 	aws_lwsl_notice(" mem: platform fd map: %5lu bytes\n",
-		    (unsigned long)(sizeof(struct lws *) * context->max_fds));
+		    (unsigned long)(sizeof(struct aws_lws *) * context->max_fds));
 
 #ifdef LWS_WITH_PLUGINS
 	if (info->plugin_dirs)

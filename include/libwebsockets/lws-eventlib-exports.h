@@ -46,25 +46,25 @@ struct aws_lws_event_loop_ops {
 	/* called during aws_lws_destroy_context2 */
 	int (*destroy_context2)(struct aws_lws_context *context);
 	/* init vhost listening wsi */
-	int (*init_vhost_listen_wsi)(struct lws *wsi);
+	int (*init_vhost_listen_wsi)(struct aws_lws *wsi);
 	/* init the event loop for a pt */
 	int (*init_pt)(struct aws_lws_context *context, void *_loop, int tsi);
 	/* called at end of first phase of close_free_wsi()  */
-	int (*wsi_logical_close)(struct lws *wsi);
+	int (*wsi_logical_close)(struct aws_lws *wsi);
 	/* return nonzero if client connect not allowed  */
-	int (*check_client_connect_ok)(struct lws *wsi);
+	int (*check_client_connect_ok)(struct aws_lws *wsi);
 	/* close handle manually  */
-	void (*close_handle_manually)(struct lws *wsi);
+	void (*close_handle_manually)(struct aws_lws *wsi);
 	/* event loop accept processing  */
-	int (*sock_accept)(struct lws *wsi);
+	int (*sock_accept)(struct aws_lws *wsi);
 	/* control wsi active events  */
-	void (*io)(struct lws *wsi, unsigned int flags);
+	void (*io)(struct aws_lws *wsi, unsigned int flags);
 	/* run the event loop for a pt */
 	void (*run_pt)(struct aws_lws_context *context, int tsi);
 	/* called before pt is destroyed */
 	void (*destroy_pt)(struct aws_lws_context *context, int tsi);
 	/* called just before wsi is freed  */
-	void (*destroy_wsi)(struct lws *wsi);
+	void (*destroy_wsi)(struct aws_lws *wsi);
 	/* return nonzero if caller thread is not loop service thread  */
 	int (*foreign_thread)(struct aws_lws_context *context, int tsi);
 
@@ -77,7 +77,7 @@ struct aws_lws_event_loop_ops {
 };
 
 LWS_VISIBLE LWS_EXTERN void *
-aws_lws_evlib_wsi_to_evlib_pt(struct lws *wsi);
+aws_lws_evlib_wsi_to_evlib_pt(struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void *
 aws_lws_evlib_tsi_to_evlib_pt(struct aws_lws_context *ctx, int tsi);
@@ -93,7 +93,7 @@ LWS_VISIBLE LWS_EXTERN void
 aws_lws_vhost_destroy1(struct aws_lws_vhost *vh);
 
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
+aws_lws_close_free_wsi(struct aws_lws *wsi, enum aws_lws_close_status reason,
 		   const char *caller);
 
 LWS_VISIBLE LWS_EXTERN int
@@ -106,7 +106,7 @@ aws_lws_service_do_ripe_rxflow(struct aws_lws_context_per_thread *pt);
 
 #if !defined(wsi_from_fd) && !defined(WIN32) && !defined(_WIN32)
 struct aws_lws_context;
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 wsi_from_fd(const struct aws_lws_context *context, int fd);
 #endif
 
@@ -117,10 +117,10 @@ LWS_VISIBLE LWS_EXTERN void
 aws_lws_context_destroy2(struct aws_lws_context *context);
 
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_destroy_event_pipe(struct lws *wsi);
+aws_lws_destroy_event_pipe(struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void
-aws___lws_close_free_wsi_final(struct lws *wsi);
+aws___lws_close_free_wsi_final(struct aws_lws *wsi);
 
 #if LWS_MAX_SMP > 1
 

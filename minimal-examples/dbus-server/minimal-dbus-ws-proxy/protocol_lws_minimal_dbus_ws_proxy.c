@@ -78,7 +78,7 @@ struct pss_dbus_proxy {
 struct aws_lws_dbus_ctx_wsproxy {
 	struct aws_lws_dbus_ctx ctx;
 
-	struct lws *cwsi;
+	struct aws_lws *cwsi;
 	struct vhd_dbus_proxy *vhd;
 	struct pss_dbus_proxy *pss;
 };
@@ -285,7 +285,7 @@ send_reply:
 }
 
 static int
-issue_dbus_signal(struct lws *wsi, const char *signame, const char *string)
+issue_dbus_signal(struct aws_lws *wsi, const char *signame, const char *string)
 {
 	struct aws_lws_dbus_ctx_wsproxy *wspctx =
 			aws_lws_get_opaque_parent_data(wsi);
@@ -630,7 +630,7 @@ destroy_dbus_server_listener(struct vhd_dbus_proxy *vhd)
  */
 
 static int
-callback_minimal_dbus_wsproxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_dbus_wsproxy(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			      void *user, void *in, size_t len)
 {
 	struct pss_dbus_proxy *pss = (struct pss_dbus_proxy *)user;

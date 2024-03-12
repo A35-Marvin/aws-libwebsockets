@@ -34,11 +34,11 @@ struct aws_lws_vhost_role_ws {
 };
 
 struct aws_lws_pt_role_ws {
-	struct lws *rx_draining_ext_list;
-	struct lws *tx_draining_ext_list;
+	struct aws_lws *rx_draining_ext_list;
+	struct aws_lws *tx_draining_ext_list;
 };
 
 struct aws__lws_raw_proxy_related {
-	struct lws *wsi_onward;
+	struct aws_lws *wsi_onward;
 };
 #endif

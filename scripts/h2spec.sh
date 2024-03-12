@@ -25,7 +25,7 @@ sleep 1s
 
 P=$!
 ../../../build/h2spec -h 127.0.0.1 -p 7681 -t -k -S > /tmp/hlog
-kill $P 2>/dev/null
+aws_kill $P 2>/dev/null
 wait $P 2>/dev/null
 
 if [ ! -z "`cat /tmp/hlog | grep "Failures:"`" ] ; then

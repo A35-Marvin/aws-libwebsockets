@@ -212,7 +212,7 @@ struct per_session_data__minimal {
 };
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal *pss =

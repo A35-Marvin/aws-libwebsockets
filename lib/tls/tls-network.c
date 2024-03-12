@@ -37,7 +37,7 @@ aws_lws_tls_fake_POLLIN_for_buffered(struct aws_lws_context_per_thread *pt)
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, p1,
 			aws_lws_dll2_get_head(&pt->tls.dll_pending_tls_owner)) {
-		struct lws *wsi = aws_lws_container_of(p, struct lws,
+		struct aws_lws *wsi = aws_lws_container_of(p, struct aws_lws,
 						   tls.dll_pending_tls);
 
 		if (wsi->position_in_fds_table >= 0) {
@@ -54,13 +54,13 @@ aws_lws_tls_fake_POLLIN_for_buffered(struct aws_lws_context_per_thread *pt)
 }
 
 void
-aws___lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
+aws___lws_ssl_remove_wsi_from_buffered_list(struct aws_lws *wsi)
 {
 	aws_lws_dll2_remove(&wsi->tls.dll_pending_tls);
 }
 
 void
-aws_lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
+aws_lws_ssl_remove_wsi_from_buffered_list(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -174,7 +174,7 @@ aws_lws_tls_cert_updated(struct aws_lws_context *context, const char *certpath,
 		     const char *mem_cert, size_t len_mem_cert,
 		     const char *mem_privkey, size_t len_mem_privkey)
 {
-	struct lws wsi;
+	struct aws_lws wsi;
 
 	wsi.a.context = context;
 
@@ -210,7 +210,7 @@ aws_lws_gate_accepts(struct aws_lws_context *context, int on)
 	while (v) {
 		aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
 				      aws_lws_dll2_get_head(&v->listen_wsi)) {
-			struct lws *wsi = aws_lws_container_of(d, struct lws,
+			struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws,
 							   listen_list);
 
 			if (v->tls.use_ssl &&

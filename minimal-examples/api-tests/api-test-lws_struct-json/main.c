@@ -52,7 +52,7 @@ typedef struct {
 
 	const char		*name;
 
-	struct lws		*wsi;
+	struct aws_lws		*wsi;
 } sai_jig_target_t;
 
 typedef struct {

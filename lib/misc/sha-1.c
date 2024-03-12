@@ -200,7 +200,7 @@ _sha1_init(struct sha1_ctxt *ctxt)
 }
 
 void
-sha1_pad(struct sha1_ctxt *ctxt)
+aws_sha1_pad(struct sha1_ctxt *ctxt)
 {
 	size_t padlen;		/*pad length in bytes*/
 	size_t padstart;
@@ -234,7 +234,7 @@ sha1_pad(struct sha1_ctxt *ctxt)
 }
 
 void
-sha1_loop(struct sha1_ctxt *ctxt, const unsigned char *input, size_t len)
+aws_sha1_loop(struct sha1_ctxt *ctxt, const unsigned char *input, size_t len)
 {
 	size_t off;
 
@@ -255,12 +255,12 @@ sha1_loop(struct sha1_ctxt *ctxt, const unsigned char *input, size_t len)
 }
 
 void
-sha1_result(struct sha1_ctxt *ctxt, void *digest0)
+aws_sha1_result(struct sha1_ctxt *ctxt, void *digest0)
 {
 	unsigned char *digest;
 
 	digest = (unsigned char *)digest0;
-	sha1_pad(ctxt);
+	aws_sha1_pad(ctxt);
 #if BYTE_ORDER == BIG_ENDIAN
 	memcpy(digest, &ctxt->h.b8[0], 20);
 #else
@@ -287,8 +287,8 @@ aws_lws_SHA1(const unsigned char *d, size_t n, unsigned char *md)
 	struct sha1_ctxt ctx;
 
 	_sha1_init(&ctx);
-	sha1_loop(&ctx, d, n);
-	sha1_result(&ctx, (void *)md);
+	aws_sha1_loop(&ctx, d, n);
+	aws_sha1_result(&ctx, (void *)md);
 
 	return md;
 }

@@ -113,7 +113,7 @@ static uint8_t init[] = {
 };
 
 static int
-aws_lws_callback_raw_telnet(struct lws *wsi, enum aws_lws_callback_reasons reason,
+aws_lws_callback_raw_telnet(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__telnet *pss =

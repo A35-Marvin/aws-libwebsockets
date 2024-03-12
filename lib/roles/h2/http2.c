@@ -131,14 +131,14 @@ aws_lws_h2_new_pps(enum aws_lws_h2_protocol_send_type type)
 	return pps;
 }
 
-void aws_lws_h2_init(struct lws *wsi)
+void aws_lws_h2_init(struct aws_lws *wsi)
 {
 	wsi->h2.h2n->our_set = wsi->a.vhost->h2.set;
 	wsi->h2.h2n->peer_set = aws_lws_h2_defaults;
 }
 
 void
-aws_lws_h2_state(struct lws *wsi, enum aws_lws_h2_states s)
+aws_lws_h2_state(struct aws_lws *wsi, enum aws_lws_h2_states s)
 {
 	if (!wsi)
 		return;
@@ -151,9 +151,9 @@ aws_lws_h2_state(struct lws *wsi, enum aws_lws_h2_states s)
 }
 
 int
-aws_lws_h2_update_peer_txcredit(struct lws *wsi, unsigned int sid, int bump)
+aws_lws_h2_update_peer_txcredit(struct aws_lws *wsi, unsigned int sid, int bump)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	struct aws_lws_h2_protocol_send *pps;
 
 	assert(wsi);
@@ -195,14 +195,14 @@ aws_lws_h2_update_peer_txcredit(struct lws *wsi, unsigned int sid, int bump)
 }
 
 int
-aws_lws_h2_get_peer_txcredit_estimate(struct lws *wsi)
+aws_lws_h2_get_peer_txcredit_estimate(struct aws_lws *wsi)
 {
 	aws_lws_wsi_txc_describe(&wsi->txc, __func__, wsi->mux.my_sid);
 	return (int)wsi->txc.peer_tx_cr_est;
 }
 
 static int
-aws_lws_h2_update_peer_txcredit_thresh(struct lws *wsi, unsigned int sid, int threshold, int bump)
+aws_lws_h2_update_peer_txcredit_thresh(struct aws_lws *wsi, unsigned int sid, int threshold, int bump)
 {
 	if (wsi->txc.peer_tx_cr_est > threshold)
 		return 0;
@@ -212,15 +212,15 @@ aws_lws_h2_update_peer_txcredit_thresh(struct lws *wsi, unsigned int sid, int th
 
 /* cx + vh lock */
 
-static struct lws *
-aws___lws_wsi_server_new(struct aws_lws_vhost *vh, struct lws *parent_wsi,
+static struct aws_lws *
+aws___lws_wsi_server_new(struct aws_lws_vhost *vh, struct aws_lws *parent_wsi,
 		     unsigned int sid)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(parent_wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(parent_wsi);
 	struct aws_lws_h2_netconn *h2n = nwsi->h2.h2n;
 	char tmp[50], tmp1[50];
 	unsigned int n, b = 0;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	const char *p;
 
 	aws_lws_context_assert_lock_held(vh->context);
@@ -322,10 +322,10 @@ bail1:
 	return NULL;
 }
 
-struct lws *
-aws_lws_wsi_h2_adopt(struct lws *parent_wsi, struct lws *wsi)
+struct aws_lws *
+aws_lws_wsi_h2_adopt(struct aws_lws *parent_wsi, struct aws_lws *wsi)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(parent_wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(parent_wsi);
 
 	/* no more children allowed by parent */
 	if (parent_wsi->mux.child_count + 1 >
@@ -386,7 +386,7 @@ bail1:
 
 
 int
-aws_lws_h2_issue_preface(struct lws *wsi)
+aws_lws_h2_issue_preface(struct aws_lws *wsi)
 {
 	struct aws_lws_h2_netconn *h2n = wsi->h2.h2n;
 	struct aws_lws_h2_protocol_send *pps;
@@ -426,9 +426,9 @@ aws_lws_h2_issue_preface(struct lws *wsi)
 }
 
 void
-aws_lws_pps_schedule(struct lws *wsi, struct aws_lws_h2_protocol_send *pps)
+aws_lws_pps_schedule(struct aws_lws *wsi, struct aws_lws_h2_protocol_send *pps)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	struct aws_lws_h2_netconn *h2n = nwsi->h2.h2n;
 
 	pps->next = h2n->pps;
@@ -439,7 +439,7 @@ aws_lws_pps_schedule(struct lws *wsi, struct aws_lws_h2_protocol_send *pps)
 }
 
 int
-aws_lws_h2_goaway(struct lws *wsi, uint32_t err, const char *reason)
+aws_lws_h2_goaway(struct aws_lws *wsi, uint32_t err, const char *reason)
 {
 	struct aws_lws_h2_netconn *h2n = wsi->h2.h2n;
 	struct aws_lws_h2_protocol_send *pps;
@@ -464,9 +464,9 @@ aws_lws_h2_goaway(struct lws *wsi, uint32_t err, const char *reason)
 }
 
 int
-aws_lws_h2_rst_stream(struct lws *wsi, uint32_t err, const char *reason)
+aws_lws_h2_rst_stream(struct aws_lws *wsi, uint32_t err, const char *reason)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	struct aws_lws_h2_netconn *h2n = nwsi->h2.h2n;
 	struct aws_lws_h2_protocol_send *pps;
 
@@ -495,10 +495,10 @@ aws_lws_h2_rst_stream(struct lws *wsi, uint32_t err, const char *reason)
 }
 
 int
-aws_lws_h2_settings(struct lws *wsi, struct http2_settings *settings,
+aws_lws_h2_settings(struct aws_lws *wsi, struct http2_settings *settings,
 		unsigned char *buf, int len)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	unsigned int a, b;
 
 	if (!len)
@@ -558,7 +558,7 @@ aws_lws_h2_settings(struct lws *wsi, struct http2_settings *settings,
 			 * the new value and the old value.
 			 */
 
-			aws_lws_start_foreach_ll(struct lws *, w,
+			aws_lws_start_foreach_ll(struct aws_lws *, w,
 					     nwsi->mux.child_list) {
 				aws_lwsl_info("%s: adi child tc cr %d +%d -> %d",
 					  __func__, (int)w->txc.tx_cr,
@@ -623,10 +623,10 @@ skip:
  */
 
 int
-aws_lws_h2_tx_cr_get(struct lws *wsi)
+aws_lws_h2_tx_cr_get(struct aws_lws *wsi)
 {
 	int c = wsi->txc.tx_cr;
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (!wsi->mux_substream && !nwsi->upgraded_to_http2)
 		return ~0x80000000;
@@ -644,9 +644,9 @@ aws_lws_h2_tx_cr_get(struct lws *wsi)
 }
 
 void
-aws_lws_h2_tx_cr_consume(struct lws *wsi, int consumed)
+aws_lws_h2_tx_cr_consume(struct aws_lws *wsi, int consumed)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	wsi->txc.tx_cr -= consumed;
 
@@ -654,10 +654,10 @@ aws_lws_h2_tx_cr_consume(struct lws *wsi, int consumed)
 		nwsi->txc.tx_cr -= consumed;
 }
 
-int aws_lws_h2_frame_write(struct lws *wsi, int type, int flags,
+int aws_lws_h2_frame_write(struct aws_lws *wsi, int type, int flags,
 		       unsigned int sid, unsigned int len, unsigned char *buf)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	unsigned char *p = &buf[-LWS_H2_FRAME_HEADER_LENGTH];
 	int n;
 
@@ -699,7 +699,7 @@ int aws_lws_h2_frame_write(struct lws *wsi, int type, int flags,
 	return n;
 }
 
-static void aws_lws_h2_set_bin(struct lws *wsi, int n, unsigned char *buf)
+static void aws_lws_h2_set_bin(struct aws_lws *wsi, int n, unsigned char *buf)
 {
 	*buf++ = (uint8_t)(n >> 8);
 	*buf++ = (uint8_t)n;
@@ -711,11 +711,11 @@ static void aws_lws_h2_set_bin(struct lws *wsi, int n, unsigned char *buf)
 
 /* we get called on the network connection */
 
-int aws_lws_h2_do_pps_send(struct lws *wsi)
+int aws_lws_h2_do_pps_send(struct aws_lws *wsi)
 {
 	struct aws_lws_h2_netconn *h2n = wsi->h2.h2n;
 	struct aws_lws_h2_protocol_send *pps = NULL;
-	struct lws *cwsi;
+	struct aws_lws *cwsi;
 	uint8_t set[LWS_PRE + 64], *p = &set[LWS_PRE], *q;
 	int n, m = 0, flags = 0;
 
@@ -948,14 +948,14 @@ bail:
 }
 
 static int
-aws_lws_h2_parse_end_of_frame(struct lws *wsi);
+aws_lws_h2_parse_end_of_frame(struct aws_lws *wsi);
 
 /*
  * The frame header part has just completely arrived.
  * Perform actions for header completion.
  */
 static int
-aws_lws_h2_parse_frame_header(struct lws *wsi)
+aws_lws_h2_parse_frame_header(struct aws_lws *wsi)
 {
 	struct aws_lws_h2_netconn *h2n = wsi->h2.h2n;
 	struct aws_lws_h2_protocol_send *pps;
@@ -1330,7 +1330,7 @@ aws_lws_h2_parse_frame_header(struct lws *wsi)
 		 * transitions to the "closed" state when the first frame for
 		 * stream 7 is sent or received.
 		 */
-		aws_lws_start_foreach_ll(struct lws *, w, wsi->mux.child_list) {
+		aws_lws_start_foreach_ll(struct aws_lws *, w, wsi->mux.child_list) {
 			if (w->mux.my_sid < h2n->sid &&
 			    w->h2.h2_state == LWS_H2_STATE_IDLE)
 				aws_lws_close_free_wsi(w, 0, "h2 sid close");
@@ -1401,7 +1401,7 @@ cleanup_wsi:
 	return 0;
 }
 
-static const char * const method_names[] = {
+static const char * const aws_method_names[] = {
 	"GET", "POST",
 #if defined(LWS_WITH_HTTP_UNCOMMON_HEADERS)
 	"OPTIONS", "PUT", "PATCH", "DELETE",
@@ -1433,10 +1433,10 @@ static unsigned char method_index[] = {
  * WRITABLE handler as a priority.
  */
 static int
-aws_lws_h2_parse_end_of_frame(struct lws *wsi)
+aws_lws_h2_parse_end_of_frame(struct aws_lws *wsi)
 {
 	struct aws_lws_h2_netconn *h2n = wsi->h2.h2n;
-	struct lws *eff_wsi = wsi;
+	struct aws_lws *eff_wsi = wsi;
 	const char *p;
 	int n;
 
@@ -1789,8 +1789,8 @@ aws_lws_h2_parse_end_of_frame(struct lws *wsi)
 		 * duplicate :path into the individual method uri header
 		 * index, so that it looks the same as h1 in the ah
 		 */
-		for (n = 0; n < (int)LWS_ARRAY_SIZE(method_names); n++)
-			if (p && !strcasecmp(p, method_names[n])) {
+		for (n = 0; n < (int)LWS_ARRAY_SIZE(aws_method_names); n++)
+			if (p && !strcasecmp(p, aws_method_names[n])) {
 				h2n->swsi->http.ah->frag_index[method_index[n]] =
 						h2n->swsi->http.ah->frag_index[
 				                     WSI_TOKEN_HTTP_COLON_PATH];
@@ -1947,7 +1947,7 @@ aws_lws_h2_parse_end_of_frame(struct lws *wsi)
 		 * too)... for us and any children waiting on us... reassess
 		 * blockage for all children first
 		 */
-		aws_lws_start_foreach_ll(struct lws *, w, wsi->mux.child_list) {
+		aws_lws_start_foreach_ll(struct aws_lws *, w, wsi->mux.child_list) {
 			aws_lws_callback_on_writable(w);
 		} aws_lws_end_foreach_ll(w, mux.sibling_list);
 
@@ -1999,7 +1999,7 @@ aws_lws_h2_parse_end_of_frame(struct lws *wsi)
  * close it all.  If it needs to close an swsi, it can do it here.
  */
 int
-aws_lws_h2_parser(struct lws *wsi, unsigned char *in, aws_lws_filepos_t _inlen,
+aws_lws_h2_parser(struct aws_lws *wsi, unsigned char *in, aws_lws_filepos_t _inlen,
 	      aws_lws_filepos_t *inused)
 {
 	struct aws_lws_h2_netconn *h2n = wsi->h2.h2n;
@@ -2237,7 +2237,7 @@ aws_lws_h2_parser(struct lws *wsi, unsigned char *in, aws_lws_filepos_t _inlen,
 						aws_lws_wsi_txc_describe(&h2n->swsi->txc,
 							__func__,
 							h2n->swsi->mux.my_sid);
-					m = user_callback_handle_rxflow(
+					m = aws_user_callback_handle_rxflow(
 						h2n->swsi->a.protocol->callback,
 						h2n->swsi,
 					  LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ,
@@ -2504,13 +2504,13 @@ fail:
 
 #if defined(LWS_WITH_CLIENT)
 int
-aws_lws_h2_client_handshake(struct lws *wsi)
+aws_lws_h2_client_handshake(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	uint8_t *buf, *start, *p, *p1, *end;
 	char *meth = aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_METHOD),
 	     *uri = aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_URI), *simp;
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	const char *path = "/";
 	int n, m;
 	/*
@@ -2688,7 +2688,7 @@ fail_length:
 
 #if defined(LWS_ROLE_WS) && defined(LWS_WITH_SERVER)
 int
-aws_lws_h2_ws_handshake(struct lws *wsi)
+aws_lws_h2_ws_handshake(struct aws_lws *wsi)
 {
 	uint8_t buf[LWS_PRE + 2048], *p = buf + LWS_PRE, *start = p,
 		*end = &buf[sizeof(buf) - 1];
@@ -2802,7 +2802,7 @@ aws_lws_h2_ws_handshake(struct lws *wsi)
 #endif
 
 int
-aws_lws_read_h2(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
+aws_lws_read_h2(struct aws_lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
 {
 	unsigned char *oldbuf = buf;
 	aws_lws_filepos_t body_chunk_len;
@@ -2876,7 +2876,7 @@ aws_lws_read_h2(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
 }
 
 int
-aws_lws_h2_client_stream_long_poll_rxonly(struct lws *wsi)
+aws_lws_h2_client_stream_long_poll_rxonly(struct aws_lws *wsi)
 {
 
 	if (!wsi->mux_substream)

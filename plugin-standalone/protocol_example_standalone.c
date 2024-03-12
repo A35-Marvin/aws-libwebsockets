@@ -58,7 +58,7 @@ uv_timeout_cb_dumb_increment(uv_timer_t *w
 }
 
 static int
-callback_dumb_increment(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_dumb_increment(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__dumb_increment *pss =

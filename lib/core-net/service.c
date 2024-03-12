@@ -46,12 +46,12 @@ aws_lws_service_assert_loop_thread(struct aws_lws_context *cx, int tsi)
 #endif
 
 int
-aws_lws_callback_as_writeable(struct lws *wsi)
+aws_lws_callback_as_writeable(struct aws_lws *wsi)
 {
 	int n, m;
 
 	n = wsi->role_ops->writeable_cb[aws_lwsi_role_server(wsi)];
-	m = user_callback_handle_rxflow(wsi->a.protocol->callback,
+	m = aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 					wsi, (enum aws_lws_callback_reasons) n,
 					wsi->user_space, NULL, 0);
 
@@ -59,9 +59,9 @@ aws_lws_callback_as_writeable(struct lws *wsi)
 }
 
 int
-aws_lws_handle_POLLOUT_event(struct lws *wsi, struct aws_lws_pollfd *pollfd)
+aws_lws_handle_POLLOUT_event(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd)
 {
-	volatile struct lws *vwsi = (volatile struct lws *)wsi;
+	volatile struct aws_lws *vwsi = (volatile struct aws_lws *)wsi;
 	int n;
 
 	if (wsi->socket_is_permanently_unusable)
@@ -214,7 +214,7 @@ user_service_go_again:
 	aws_lwsl_wsi_debug(wsi, "non mux: wsistate 0x%lx, ops %s",
 			    (unsigned long)wsi->wsistate, wsi->role_ops->name);
 
-	vwsi = (volatile struct lws *)wsi;
+	vwsi = (volatile struct aws_lws *)wsi;
 	vwsi->leave_pollout_active = 0;
 
 	n = aws_lws_callback_as_writeable(wsi);
@@ -245,7 +245,7 @@ bail_die:
 }
 
 int
-aws_lws_rxflow_cache(struct lws *wsi, unsigned char *buf, size_t n, size_t len)
+aws_lws_rxflow_cache(struct aws_lws *wsi, unsigned char *buf, size_t n, size_t len)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	uint8_t *buffered;
@@ -359,7 +359,7 @@ aws_lws_service_adjust_timeout(struct aws_lws_context *context, int timeout_ms, 
 	 */
 
 	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d, pt->dll_buflist_owner.head) {
-		struct lws *wsi = aws_lws_container_of(d, struct lws, dll_buflist);
+		struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, dll_buflist);
 
 		if (!aws_lws_is_flowcontrolled(wsi) &&
 		     aws_lwsi_state(wsi) != LRS_DEFERRING_ACTION)
@@ -381,7 +381,7 @@ aws_lws_service_adjust_timeout(struct aws_lws_context *context, int timeout_ms, 
  * head material.
  */
 int
-aws_lws_buflist_aware_read(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+aws_lws_buflist_aware_read(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 		       struct aws_lws_tokens *ebuf, char fr, const char *hint)
 {
 	int n, e, bns;
@@ -469,7 +469,7 @@ buflist_material:
 }
 
 int
-aws_lws_buflist_aware_finished_consuming(struct lws *wsi, struct aws_lws_tokens *ebuf,
+aws_lws_buflist_aware_finished_consuming(struct aws_lws *wsi, struct aws_lws_tokens *ebuf,
 				     int used, int buffered, const char *hint)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
@@ -530,7 +530,7 @@ aws_lws_service_do_ripe_rxflow(struct aws_lws_context_per_thread *pt)
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 				   pt->dll_buflist_owner.head) {
-		struct lws *wsi = aws_lws_container_of(d, struct lws, dll_buflist);
+		struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, dll_buflist);
 
 		pfd.events = LWS_POLLIN;
 		pfd.revents = LWS_POLLIN;
@@ -583,7 +583,7 @@ aws_lws_service_flag_pending(struct aws_lws_context *context, int tsi)
 	 */
 
 	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d, pt->dll_buflist_owner.head) {
-		struct lws *wsi = aws_lws_container_of(d, struct lws, dll_buflist);
+		struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, dll_buflist);
 
 		if (!aws_lws_is_flowcontrolled(wsi) &&
 		     aws_lwsi_state(wsi) != LRS_DEFERRING_ACTION) {
@@ -593,7 +593,7 @@ aws_lws_service_flag_pending(struct aws_lws_context *context, int tsi)
 	} aws_lws_end_foreach_dll(d);
 
 #if defined(LWS_ROLE_WS)
-	forced |= aws_lws_rops_func_fidx(&role_ops_ws,
+	forced |= aws_lws_rops_func_fidx(&aws_role_ops_ws,
 				     LWS_ROPS_service_flag_pending).
 					service_flag_pending(context, tsi);
 #endif
@@ -607,7 +607,7 @@ aws_lws_service_flag_pending(struct aws_lws_context *context, int tsi)
 	 */
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, p1,
 			aws_lws_dll2_get_head(&pt->tls.dll_pending_tls_owner)) {
-		struct lws *wsi = aws_lws_container_of(p, struct lws,
+		struct aws_lws *wsi = aws_lws_container_of(p, struct aws_lws,
 						   tls.dll_pending_tls);
 
 		if (wsi->position_in_fds_table >= 0) {
@@ -639,7 +639,7 @@ aws_lws_service_fd_tsi(struct aws_lws_context *context, struct aws_lws_pollfd *p
 		   int tsi)
 {
 	struct aws_lws_context_per_thread *pt;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	char cow = 0;
 
 	if (!context || context->service_no_longer_possible)

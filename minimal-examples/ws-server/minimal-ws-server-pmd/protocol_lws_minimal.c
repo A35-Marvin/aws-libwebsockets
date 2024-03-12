@@ -30,7 +30,7 @@ struct msg {
 
 struct per_session_data__minimal {
 	struct per_session_data__minimal *pss_list;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int last; /* the last message number we sent */
 };
 
@@ -60,7 +60,7 @@ __minimal_destroy_message(void *_msg)
 }
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal *pss =

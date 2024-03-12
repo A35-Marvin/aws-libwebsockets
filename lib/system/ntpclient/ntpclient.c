@@ -35,7 +35,7 @@ struct vhd_ntpc {
 	aws_lws_sorted_usec_list_t		sul_conn;
 	aws_lws_sorted_usec_list_t		sul_write; /* track write retries */
 	const char			*ntp_server_ads;
-	struct lws			*wsi_udp;
+	struct aws_lws			*wsi_udp;
 	uint16_t			retry_count_conn;
 	uint16_t			retry_count_write;
 
@@ -105,7 +105,7 @@ aws_lws_ntpc_retry_write(struct aws_lws_sorted_usec_list *sul)
 }
 
 static int
-callback_ntpc(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_ntpc(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	struct vhd_ntpc *v = (struct vhd_ntpc *)

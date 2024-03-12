@@ -28,7 +28,7 @@
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 static int
-aws_lws_extension_server_handshake(struct lws *wsi, char **p, int budget)
+aws_lws_extension_server_handshake(struct aws_lws *wsi, char **p, int budget)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -252,7 +252,7 @@ aws_lws_extension_server_handshake(struct lws *wsi, char **p, int budget)
 #endif
 
 int
-aws_lws_process_ws_upgrade2(struct lws *wsi)
+aws_lws_process_ws_upgrade2(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 #if defined(LWS_WITH_HTTP_BASIC_AUTH)
@@ -303,7 +303,7 @@ aws_lws_process_ws_upgrade2(struct lws *wsi)
 
 	if (!wsi->h2_stream_carries_ws) {
 		aws_lws_role_transition(wsi, LWSIFR_SERVER, LRS_ESTABLISHED,
-				    &role_ops_ws);
+				    &aws_role_ops_ws);
 
 #if defined(LWS_WITH_SECURE_STREAMS) && defined(LWS_WITH_SERVER)
 
@@ -381,7 +381,7 @@ aws_lws_process_ws_upgrade2(struct lws *wsi)
 			}
 			aws_lws_role_transition(wsi,
 					    LWSIFR_SERVER | LWSIFR_P_ENCAP_H2,
-					    LRS_ESTABLISHED, &role_ops_ws);
+					    LRS_ESTABLISHED, &aws_role_ops_ws);
 
 			/*
 			 * There should be no validity checking since we
@@ -394,7 +394,7 @@ aws_lws_process_ws_upgrade2(struct lws *wsi)
 #endif
 		{
 			aws_lwsl_parser("aws_lws_parse calling handshake_04\n");
-			if (handshake_0405(wsi->a.context, wsi)) {
+			if (aws_handshake_0405(wsi->a.context, wsi)) {
 				aws_lwsl_notice("hs0405 has failed the connection\n");
 				return 1;
 			}
@@ -436,7 +436,7 @@ aws_lws_process_ws_upgrade2(struct lws *wsi)
 }
 
 int
-aws_lws_process_ws_upgrade(struct lws *wsi)
+aws_lws_process_ws_upgrade(struct aws_lws *wsi)
 {
 	const struct aws_lws_protocols *pcol = NULL;
 	char buf[128], name[64];
@@ -635,7 +635,7 @@ alloc_ws:
 }
 
 int
-handshake_0405(struct aws_lws_context *context, struct lws *wsi)
+aws_handshake_0405(struct aws_lws_context *context, struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct aws_lws_process_html_args args;
@@ -745,7 +745,7 @@ handshake_0405(struct aws_lws_context *context, struct lws *wsi)
 	args.p = p;
 	args.max_len = aws_lws_ptr_diff((char *)pt->serv_buf +
 				    context->pt_serv_buf_size, p);
-	if (user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+	if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 					LWS_CALLBACK_ADD_HEADERS,
 					wsi->user_space, &args, 0))
 		goto bail;
@@ -802,7 +802,7 @@ bail:
  */
 
 static int
-aws_lws_ws_frame_rest_is_payload(struct lws *wsi, uint8_t **buf, size_t len)
+aws_lws_ws_frame_rest_is_payload(struct aws_lws *wsi, uint8_t **buf, size_t len)
 {
 	struct aws_lws_ext_pm_deflate_rx_ebufs pmdrx;
 	unsigned int avail = (unsigned int)len;
@@ -919,7 +919,7 @@ aws_lws_ws_frame_rest_is_payload(struct lws *wsi, uint8_t **buf, size_t len)
 
 		aws_lwsl_ext("%s: issuing zero length FIN pkt\n", __func__);
 
-		if (user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+		if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 						LWS_CALLBACK_RECEIVE,
 						wsi->user_space, NULL, 0))
 			return -1;
@@ -967,7 +967,7 @@ utf8_fail:
 	}
 
 	if (wsi->a.protocol->callback && !wsi->wsistate_pre_close)
-		if (user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+		if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 						LWS_CALLBACK_RECEIVE,
 						wsi->user_space,
 						pmdrx.eb_out.token,
@@ -987,7 +987,7 @@ utf8_fail:
 
 
 int
-aws_lws_parse_ws(struct lws *wsi, unsigned char **buf, size_t len)
+aws_lws_parse_ws(struct aws_lws *wsi, unsigned char **buf, size_t len)
 {
 	unsigned char *bufin = *buf;
 	int m, bulk = 0;

@@ -41,7 +41,7 @@ struct aws_lws_pt_eventlibs_glib {
 
 struct aws_lws_io_watcher_glib_subclass {
 	GSource		base;
-	struct lws	*wsi;
+	struct aws_lws	*wsi;
 	gpointer	tag;
 };
 

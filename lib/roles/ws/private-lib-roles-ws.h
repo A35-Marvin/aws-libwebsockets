@@ -24,9 +24,9 @@
  *  This is included from private-lib-core.h if LWS_ROLE_WS
  */
 
-extern const struct aws_lws_role_ops role_ops_ws;
+extern const struct aws_lws_role_ops aws_role_ops_ws;
 
-#define aws_lwsi_role_ws(wsi) (wsi->role_ops == &role_ops_ws)
+#define aws_lwsi_role_ws(wsi) (wsi->role_ops == &aws_role_ops_ws)
 
 enum aws_lws_rx_parse_state {
 	LWS_RXPS_NEW,
@@ -82,8 +82,8 @@ struct aws_lws_vhost_role_ws {
 };
 
 struct aws_lws_pt_role_ws {
-	struct lws *rx_draining_ext_list;
-	struct lws *tx_draining_ext_list;
+	struct aws_lws *rx_draining_ext_list;
+	struct aws_lws *tx_draining_ext_list;
 };
 #endif
 
@@ -94,8 +94,8 @@ struct aws__lws_websocket_related {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 	const struct aws_lws_extension *active_extensions[LWS_MAX_EXTENSIONS_ACTIVE];
 	void *act_ext_user[LWS_MAX_EXTENSIONS_ACTIVE];
-	struct lws *rx_draining_ext_list;
-	struct lws *tx_draining_ext_list;
+	struct aws_lws *rx_draining_ext_list;
+	struct aws_lws *tx_draining_ext_list;
 #endif
 
 #if defined(LWS_WITH_HTTP_PROXY)
@@ -164,35 +164,35 @@ struct aws_lws_ext_pm_deflate_rx_ebufs {
 };
 
 int
-aws_lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len);
+aws_lws_ws_handshake_client(struct aws_lws *wsi, unsigned char **buf, size_t len);
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 LWS_VISIBLE void
 aws_lws_context_init_extensions(const struct aws_lws_context_creation_info *info,
 			    struct aws_lws_context *context);
 LWS_EXTERN int
-aws_lws_any_extension_handled(struct lws *wsi, enum aws_lws_extension_callback_reasons r,
+aws_lws_any_extension_handled(struct aws_lws *wsi, enum aws_lws_extension_callback_reasons r,
 			  void *v, size_t len);
 
 LWS_EXTERN int
-aws_lws_ext_cb_active(struct lws *wsi, int reason, void *buf, int len);
+aws_lws_ext_cb_active(struct aws_lws *wsi, int reason, void *buf, int len);
 LWS_EXTERN int
-aws_lws_ext_cb_all_exts(struct aws_lws_context *context, struct lws *wsi, int reason,
+aws_lws_ext_cb_all_exts(struct aws_lws_context *context, struct aws_lws *wsi, int reason,
 		    void *arg, int len);
 #endif
 
 int
-handshake_0405(struct aws_lws_context *context, struct lws *wsi);
+aws_handshake_0405(struct aws_lws_context *context, struct aws_lws *wsi);
 int
-aws_lws_process_ws_upgrade(struct lws *wsi);
+aws_lws_process_ws_upgrade(struct aws_lws *wsi);
 
 int
-aws_lws_process_ws_upgrade2(struct lws *wsi);
+aws_lws_process_ws_upgrade2(struct aws_lws *wsi);
 
 extern const struct aws_lws_protocols aws_lws_ws_proxy;
 
 int
-aws_lws_server_init_wsi_for_ws(struct lws *wsi);
+aws_lws_server_init_wsi_for_ws(struct aws_lws *wsi);
 
 void
 aws_lws_sul_wsping_cb(aws_lws_sorted_usec_list_t *sul);

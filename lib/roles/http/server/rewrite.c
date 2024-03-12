@@ -3,7 +3,7 @@
 #if defined(LWS_WITH_HUBBUB)
 
 struct aws_lws_rewrite *
-aws_lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from,
+aws_lws_rewrite_create(struct aws_lws *wsi, hubbub_callback_t cb, const char *from,
 		   const char *to)
 {
 	struct aws_lws_rewrite *r = aws_lws_malloc(sizeof(*r), "rewrite");

@@ -81,7 +81,7 @@ ext_find_fd(aws_lws_sockfd_type fd)
 #endif
 
 static int
-aws_lws_callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+aws_lws_callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		  void *in, size_t len)
 {
 	const unsigned char *c;

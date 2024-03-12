@@ -18,14 +18,14 @@
 #include <signal.h>
 
 static int interrupted, bad = 0, status, count_clients = 1, completed;
-static struct lws *client_wsi[4];
+static struct aws_lws *client_wsi[4];
 
 struct pss {
 	char body_part;
 };
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;

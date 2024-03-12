@@ -47,8 +47,8 @@ aws_lws_sul_plat_unix(aws_lws_sorted_usec_list_t *sul)
 #if !defined(LWS_NO_DAEMONIZE)
 	/* if our parent went down, don't linger around */
 	if (pt->context->started_with_parent &&
-	    kill(pt->context->started_with_parent, 0) < 0)
-		kill(getpid(), SIGTERM);
+	    aws_kill(pt->context->started_with_parent, 0) < 0)
+		aws_kill(getpid(), SIGTERM);
 #endif
 
 	for (n = 0; n < context->count_threads; n++)
@@ -56,7 +56,7 @@ aws_lws_sul_plat_unix(aws_lws_sorted_usec_list_t *sul)
 
 	if (context->deprecated && !m) {
 		aws_lwsl_notice("%s: ending deprecated context\n", __func__);
-		kill(getpid(), SIGINT);
+		aws_kill(getpid(), SIGINT);
 		return;
 	}
 
@@ -121,13 +121,13 @@ aws_lws_plat_init(struct aws_lws_context *context,
 	 * the default way is optimized for server, if you only use one or two
 	 * client wsi the slow way may save a lot of memory.
 	 *
-	 * Both ways allocate an array of struct lws *... one allocates it for
+	 * Both ways allocate an array of struct aws_lws *... one allocates it for
 	 * all possible fd indexes the process could produce and uses it as a
 	 * map, the other allocates for an amount of wsi the lws context is
 	 * expected to use and searches through it to manipulate it.
 	 */
 
-	context->aws_lws_lookup = aws_lws_zalloc(sizeof(struct lws *) *
+	context->aws_lws_lookup = aws_lws_zalloc(sizeof(struct aws_lws *) *
 					 context->max_fds, "aws_lws_lookup");
 
 	if (!context->aws_lws_lookup) {
@@ -164,7 +164,7 @@ aws_lws_plat_init(struct aws_lws_context *context,
 #endif
 
 	aws_lwsl_cx_info(context, " mem: platform fd map: %5lu B",
-		    (unsigned long)(sizeof(struct lws *) * context->max_fds));
+		    (unsigned long)(sizeof(struct aws_lws *) * context->max_fds));
 #endif
 #if defined(LWS_WITH_FILE_OPS)
 	fd = aws_lws_open(SYSTEM_RANDOM_FILEPATH, O_RDONLY);

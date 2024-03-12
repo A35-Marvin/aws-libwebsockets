@@ -40,7 +40,7 @@
 #include <private-lib-core.h>
 
 int
-aws_lws_conmon_append_copy_new_dns_results(struct lws *wsi,
+aws_lws_conmon_append_copy_new_dns_results(struct aws_lws *wsi,
 				       const struct addrinfo *cai)
 {
 	if (!(wsi->flags & LCCSCF_CONMON))
@@ -133,7 +133,7 @@ aws_lws_conmon_addrinfo_destroy(struct addrinfo *ai)
 }
 
 void
-aws_lws_conmon_wsi_take(struct lws *wsi, struct aws_lws_conmon *dest)
+aws_lws_conmon_wsi_take(struct aws_lws *wsi, struct aws_lws_conmon *dest)
 {
 	memcpy(dest, &wsi->conmon, sizeof(*dest));
 	dest->peer46 = wsi->sa46_peer;

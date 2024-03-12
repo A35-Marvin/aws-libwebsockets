@@ -104,7 +104,7 @@ static const int MSG_LWS_CALLBACK_CLIENT_ESTABLISHED = 3;
 
 static struct aws_lws_context *context = NULL;
 static struct aws_lws_context_creation_info info;
-static struct lws *wsi = NULL;
+static struct aws_lws *wsi = NULL;
 
 // prevents sending messages after jni_exitLws had been called
 static int isExit = 0;
@@ -118,7 +118,7 @@ struct per_session_data {
   ;// no data
 };
 
-static int callback( struct lws *wsi, enum aws_lws_callback_reasons reason, void *user, void *in, size_t len );
+static int callback( struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user, void *in, size_t len );
 
 static struct aws_lws_protocols protocols[] = {
   {
@@ -214,7 +214,7 @@ JNIEXPORT void JNICALL jni_exitLws(JNIEnv *env, jobject obj)
 }
 
 static int callback(
-  struct lws *wsi,
+  struct aws_lws *wsi,
   enum aws_lws_callback_reasons reason,
   void *user,
   void *in,

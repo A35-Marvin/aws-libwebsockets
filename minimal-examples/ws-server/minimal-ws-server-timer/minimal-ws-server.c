@@ -19,7 +19,7 @@
 #include <signal.h>
 
 static int
-callback_protocol(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_protocol(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	switch (reason) {

@@ -44,7 +44,7 @@ strtolower(char *s)
 
 int
 aws_lws_create_client_ws_object(const struct aws_lws_client_connect_info *i,
-			    struct lws *wsi)
+			    struct aws_lws *wsi)
 {
 	int v = SPEC_LATEST_SUPPORTED;
 
@@ -67,7 +67,7 @@ aws_lws_create_client_ws_object(const struct aws_lws_client_connect_info *i,
 
 #if defined(LWS_WITH_CLIENT)
 int
-aws_lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
+aws_lws_ws_handshake_client(struct aws_lws *wsi, unsigned char **buf, size_t len)
 {
 	unsigned char *bufin = *buf;
 
@@ -143,7 +143,7 @@ aws_lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
 #endif
 
 char *
-aws_lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1)
+aws_lws_generate_client_ws_handshake(struct aws_lws *wsi, char *p, const char *conn1)
 {
 	char buf[128], hash[20], key_b64[40];
 	int n;
@@ -231,7 +231,7 @@ aws_lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1
 }
 
 int
-aws_lws_client_ws_upgrade(struct lws *wsi, const char **cce)
+aws_lws_client_ws_upgrade(struct aws_lws *wsi, const char **cce)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_tokenize ts;
@@ -529,7 +529,7 @@ check_extensions:
 			 * wants to
 			 */
 			ext_name[0] = '\0';
-			if (user_callback_handle_rxflow(wsi->a.protocol->callback,
+			if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 					wsi, LWS_CALLBACK_WS_EXT_DEFAULTS,
 					(char *)ext->name, ext_name,
 					sizeof(ext_name))) {
@@ -625,7 +625,7 @@ check_accept:
 	/* free up his parsing allocations */
 	aws_lws_header_table_detach(wsi, 0);
 
-	aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_ESTABLISHED, &role_ops_ws);
+	aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_ESTABLISHED, &aws_role_ops_ws);
 	aws_lws_validity_confirmed(wsi);
 
 	wsi->rxflow_change_to = LWS_RXFLOW_ALLOW;

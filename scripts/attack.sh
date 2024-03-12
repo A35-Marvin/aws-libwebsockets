@@ -29,7 +29,7 @@ CPID=
 LEN=0
 
 function check {
-	kill -0 $CPID
+	aws_kill -0 $CPID
 	if [ $? -ne 0 ] ; then
 		echo "(killed it) *******"
 		exit 1
@@ -793,7 +793,7 @@ fi
 
 echo
 echo "--- survived OK ---"
-kill -2 $CPID
+aws_kill -2 $CPID
 
 exit 0
 
@@ -808,7 +808,7 @@ libwebsockets-test-client 127.0.0.1 -s -O
 # https://github.com/curl/curl/issues/1587
 curl -v -F text=hello -F send=SEND -F upload=@../README.md https://127.0.0.1:7681/formtest -k
 
-kill -2 $CPID
+aws_kill -2 $CPID
 
 exit 0
 

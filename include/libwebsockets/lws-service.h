@@ -73,7 +73,7 @@ aws_lws_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi);
  * the wsi belongs to.  You probably want to use aws_lws_cancel_service() instead.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_cancel_service_pt(struct lws *wsi);
+aws_lws_cancel_service_pt(struct aws_lws *wsi);
 
 /**
  * aws_lws_cancel_service() - Cancel wait for new pending socket activity
@@ -98,7 +98,7 @@ aws_lws_cancel_service(struct aws_lws_context *context);
  *
  * This function takes a pollfd that has POLLIN or POLLOUT activity and
  * services it according to the state of the associated
- * struct lws.
+ * struct aws_lws.
  *
  * The one call deals with all "service" that might happen on a socket
  * including listen accepts, http files as well as websocket protocol.
@@ -156,7 +156,7 @@ aws_lws_service_adjust_timeout(struct aws_lws_context *context, int timeout_ms, 
 #define aws_lws_plat_service_tsi aws_lws_service_tsi
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_handle_POLLOUT_event(struct lws *wsi, struct aws_lws_pollfd *pollfd);
+aws_lws_handle_POLLOUT_event(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd);
 
 ///@}
 

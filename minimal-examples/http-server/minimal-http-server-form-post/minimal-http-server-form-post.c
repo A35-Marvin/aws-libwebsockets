@@ -37,7 +37,7 @@ enum enum_param_names {
 };
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;

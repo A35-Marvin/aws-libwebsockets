@@ -98,8 +98,8 @@
  #endif
 
 /* we don't have an implementation for this on windows... */
-int kill(int pid, int sig);
-int fork(void);
+int aws_kill(int pid, int sig);
+int aws_fork(void);
 #ifndef SIGINT
 #define SIGINT 2
 #endif
@@ -133,12 +133,12 @@ int fork(void);
 
 #define aws_lws_plat_socket_offset() (0)
 
-struct lws;
+struct aws_lws;
 struct aws_lws_context;
 
 #define LWS_FD_HASH(fd) ((fd ^ (fd >> 8) ^ (fd >> 16)) % FD_HASHTABLE_MODULUS)
 struct aws_lws_fd_hashtable {
-	struct lws **wsi;
+	struct aws_lws **wsi;
 	int length;
 };
 
@@ -162,11 +162,11 @@ typedef HANDLE aws_lws_filefd_type;
 #endif
 #define LWS_WIN32_HANDLE_TYPES
 
-LWS_EXTERN struct lws *
+LWS_EXTERN struct aws_lws *
 wsi_from_fd(const struct aws_lws_context *context, aws_lws_sockfd_type fd);
 
 LWS_EXTERN int
-insert_wsi(struct aws_lws_context *context, struct lws *wsi);
+insert_wsi(struct aws_lws_context *context, struct aws_lws *wsi);
 
 LWS_EXTERN int
 delete_from_fd(struct aws_lws_context *context, aws_lws_sockfd_type fd);

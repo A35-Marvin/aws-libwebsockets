@@ -24,8 +24,8 @@
 
 #include "private-lib-core.h"
 
-struct lws *
-aws_lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
+struct aws_lws *
+aws_lws_client_connect_4_established(struct aws_lws *wsi, struct aws_lws *wsi_piggyback,
 				 ssize_t plen)
 {
 #if defined(LWS_CLIENT_HTTP_PROXYING)
@@ -241,7 +241,7 @@ send_hs:
 
 			m = wsi->role_ops->adoption_cb[0];
 			if (m) {
-				n = user_callback_handle_rxflow(
+				n = aws_user_callback_handle_rxflow(
 						wsi->a.protocol->callback, wsi,
 						(enum aws_lws_callback_reasons)m,
 						wsi->user_space, NULL, 0);

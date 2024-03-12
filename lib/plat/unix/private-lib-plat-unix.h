@@ -155,11 +155,11 @@ typedef pthread_mutex_t aws_lws_mutex_t;
 
 struct aws_lws_context;
 
-struct lws *
+struct aws_lws *
 wsi_from_fd(const struct aws_lws_context *context, int fd);
 
 int
-insert_wsi(const struct aws_lws_context *context, struct lws *wsi);
+insert_wsi(const struct aws_lws_context *context, struct aws_lws *wsi);
 
 struct aws_lws_dhcpc_ifstate;
 int

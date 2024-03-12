@@ -23,7 +23,7 @@
 #include <pthread.h>
 
 static struct aws_lws_context *context;
-static struct lws *client_wsi;
+static struct aws_lws *client_wsi;
 static int interrupted, port = 443, ssl_connection = LCCSCF_USE_SSL;
 static const char *server_address = "libwebsockets.org", *pro = "lws-mirror-protocol";
 static aws_lws_sorted_usec_list_t sul;
@@ -60,7 +60,7 @@ connect_cb(aws_lws_sorted_usec_list_t *_sul)
 }
 
 static int
-callback_minimal_pingtest(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_pingtest(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			 void *user, void *in, size_t len)
 {
 

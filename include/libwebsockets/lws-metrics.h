@@ -84,7 +84,7 @@ aws_lws_metrics_tag_add(aws_lws_dll2_owner_t *owner, const char *name, const cha
  * used for logging the wsi identity
  */
 LWS_EXTERN LWS_VISIBLE int
-aws_lws_metrics_tag_wsi_add(struct lws *wsi, const char *name, const char *val);
+aws_lws_metrics_tag_wsi_add(struct aws_lws *wsi, const char *name, const char *val);
 #else
 #define aws_lws_metrics_tag_wsi_add(_a, _b, _c)
 #endif
@@ -306,7 +306,7 @@ aws_lws_metrics_foreach(struct aws_lws_context *ctx, void *user,
 		    int (*cb)(aws_lws_metric_pub_t *pub, void *user));
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_metrics_hist_bump_describe_wsi(struct lws *wsi, aws_lws_metric_pub_t *pub,
+aws_lws_metrics_hist_bump_describe_wsi(struct aws_lws *wsi, aws_lws_metric_pub_t *pub,
 				   const char *name);
 
 enum {

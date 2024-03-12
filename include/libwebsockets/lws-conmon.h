@@ -138,7 +138,7 @@ struct aws_lws_conmon {
  * everything else in there remains in scope while the object itself does.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_conmon_wsi_take(struct lws *wsi, struct aws_lws_conmon *dest);
+aws_lws_conmon_wsi_take(struct aws_lws *wsi, struct aws_lws_conmon *dest);
 
 /**
  * aws_lws_conmon_release() - free any allocations in the conmon struct

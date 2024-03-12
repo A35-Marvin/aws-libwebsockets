@@ -4,7 +4,7 @@ After=syslog.target
 
 [Service]
 ExecStart=/usr/local/bin/aws_lwsws
-ExecReload=/usr/bin/kill -HUP $MAINPID
+ExecReload=/usr/bin/aws_kill -HUP $MAINPID
 ExecStop=/usr/bin/killall aws_lwsws
 
 [Install]

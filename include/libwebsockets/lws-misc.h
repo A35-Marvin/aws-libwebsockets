@@ -391,7 +391,7 @@ aws_lws_get_library_version(void);
  * Not normally needed since it's passed into the callback
  */
 LWS_VISIBLE LWS_EXTERN void *
-aws_lws_wsi_user(struct lws *wsi);
+aws_lws_wsi_user(struct aws_lws *wsi);
 
 /**
  * aws_lws_wsi_tsi() - get the service thread index the wsi is bound to
@@ -400,7 +400,7 @@ aws_lws_wsi_user(struct lws *wsi);
  * Only useful is LWS_MAX_SMP > 1
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_wsi_tsi(struct lws *wsi);
+aws_lws_wsi_tsi(struct aws_lws *wsi);
 
 /**
  * aws_lws_set_wsi_user() - set the user data associated with the client connection
@@ -413,7 +413,7 @@ aws_lws_wsi_tsi(struct lws *wsi);
  * runtime additionally.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_set_wsi_user(struct lws *wsi, void *user);
+aws_lws_set_wsi_user(struct aws_lws *wsi, void *user);
 
 /**
  * aws_lws_parse_uri:	cut up prot:/ads:port/path into pieces
@@ -498,7 +498,7 @@ aws_lws_now_usecs(void);
  * \param wsi:	Websocket connection instance
  */
 LWS_VISIBLE LWS_EXTERN struct aws_lws_context * LWS_WARN_UNUSED_RESULT
-aws_lws_get_context(const struct lws *wsi);
+aws_lws_get_context(const struct aws_lws *wsi);
 
 /**
  * aws_lws_get_vhost_listen_port - Find out the port number a vhost is listening on
@@ -531,8 +531,8 @@ aws_lws_get_count_threads(struct aws_lws_context *context);
  * Specialized wsi like cgi stdin/out/err are associated to a parent wsi,
  * this allows you to get their parent.
  */
-LWS_VISIBLE LWS_EXTERN struct lws * LWS_WARN_UNUSED_RESULT
-aws_lws_get_parent(const struct lws *wsi);
+LWS_VISIBLE LWS_EXTERN struct aws_lws * LWS_WARN_UNUSED_RESULT
+aws_lws_get_parent(const struct aws_lws *wsi);
 
 /**
  * aws_lws_get_child() - get child wsi or NULL
@@ -540,8 +540,8 @@ aws_lws_get_parent(const struct lws *wsi);
  *
  * Allows you to find a related wsi from the parent wsi.
  */
-LWS_VISIBLE LWS_EXTERN struct lws * LWS_WARN_UNUSED_RESULT
-aws_lws_get_child(const struct lws *wsi);
+LWS_VISIBLE LWS_EXTERN struct aws_lws * LWS_WARN_UNUSED_RESULT
+aws_lws_get_child(const struct aws_lws *wsi);
 
 /**
  * aws_lws_get_effective_uid_gid() - find out eventual uid and gid while still root
@@ -566,31 +566,31 @@ aws_lws_get_effective_uid_gid(struct aws_lws_context *context, uid_t *uid, gid_t
  * Returns NULL or pointer to the wsi's UDP-specific information
  */
 LWS_VISIBLE LWS_EXTERN const struct aws_lws_udp * LWS_WARN_UNUSED_RESULT
-aws_lws_get_udp(const struct lws *wsi);
+aws_lws_get_udp(const struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void *
-aws_lws_get_opaque_parent_data(const struct lws *wsi);
+aws_lws_get_opaque_parent_data(const struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_set_opaque_parent_data(struct lws *wsi, void *data);
+aws_lws_set_opaque_parent_data(struct aws_lws *wsi, void *data);
 
 LWS_VISIBLE LWS_EXTERN void *
-aws_lws_get_opaque_user_data(const struct lws *wsi);
+aws_lws_get_opaque_user_data(const struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_set_opaque_user_data(struct lws *wsi, void *data);
+aws_lws_set_opaque_user_data(struct aws_lws *wsi, void *data);
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_get_child_pending_on_writable(const struct lws *wsi);
+aws_lws_get_child_pending_on_writable(const struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_clear_child_pending_on_writable(struct lws *wsi);
+aws_lws_clear_child_pending_on_writable(struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_get_close_length(struct lws *wsi);
+aws_lws_get_close_length(struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN unsigned char *
-aws_lws_get_close_payload(struct lws *wsi);
+aws_lws_get_close_payload(struct aws_lws *wsi);
 
 /**
  * aws_lws_get_network_wsi() - Returns wsi that has the tcp connection for this wsi
@@ -603,7 +603,7 @@ aws_lws_get_close_payload(struct lws *wsi);
  * HTTP/2 connections may return a different wsi that has the tcp connection
  */
 LWS_VISIBLE LWS_EXTERN
-struct lws *aws_lws_get_network_wsi(struct lws *wsi);
+struct aws_lws *aws_lws_get_network_wsi(struct aws_lws *wsi);
 
 /**
  * aws_lws_set_allocator() - custom allocator support
@@ -653,7 +653,7 @@ enum {
  * changing a wsi flow control state from outside a callback on that wsi.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_rx_flow_control(struct lws *wsi, int enable);
+aws_lws_rx_flow_control(struct aws_lws *wsi, int enable);
 
 /**
  * aws_lws_rx_flow_allow_all_protocol() - Allow all connections with this protocol to receive
@@ -688,7 +688,7 @@ aws_lws_rx_flow_allow_all_protocol(const struct aws_lws_context *context,
  * be read, since that is the only information available at the ws layer.
  */
 LWS_VISIBLE LWS_EXTERN size_t
-aws_lws_remaining_packet_payload(struct lws *wsi);
+aws_lws_remaining_packet_payload(struct aws_lws *wsi);
 
 #if defined(LWS_WITH_DIR)
 
@@ -799,7 +799,7 @@ size_t aws_lws_get_allocated_heap(void);
  * Returns more than zero (or zero if only one service thread as is the default).
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_get_tsi(struct lws *wsi);
+aws_lws_get_tsi(struct aws_lws *wsi);
 
 /**
  * aws_lws_is_ssl() - Find out if connection is using SSL
@@ -808,14 +808,14 @@ aws_lws_get_tsi(struct lws *wsi);
  * Returns nonzero if the wsi is inside a tls tunnel, else zero.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_is_ssl(struct lws *wsi);
+aws_lws_is_ssl(struct aws_lws *wsi);
 /**
  * aws_lws_is_cgi() - find out if this wsi is running a cgi process
  *
  * \param wsi: lws connection
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_is_cgi(struct lws *wsi);
+aws_lws_is_cgi(struct aws_lws *wsi);
 
 /**
  * aws_lws_tls_jit_trust_blob_queury_skid() - walk jit trust blob for skid
@@ -867,7 +867,7 @@ struct aws_lws_wifi_scan { /* generic wlan scan item */
  * Returns pointer to the SSL library's context structure
  */
 LWS_VISIBLE LWS_EXTERN SSL*
-aws_lws_get_ssl(struct lws *wsi);
+aws_lws_get_ssl(struct aws_lws *wsi);
 #endif
 
 LWS_VISIBLE LWS_EXTERN void
@@ -959,7 +959,7 @@ typedef void (*lsp_cb_t)(void *opaque, aws_lws_usec_t *accounting, siginfo_t *si
  * \p env_array: environment for spawned process, NULL ends env list
  * \p protocol_name: NULL, or vhost protocol name to bind stdwsi to
  * \p chroot_path: NULL, or chroot patch for child process
- * \p wd: working directory to cd to after fork, NULL defaults to /tmp
+ * \p wd: working directory to cd to after aws_fork, NULL defaults to /tmp
  * \p plsp: NULL, or pointer to the outer lsp pointer so it can be set NULL when destroyed
  * \p opaque: pointer passed to the reap callback, if any
  * \p timeout: optional us-resolution timeout, or zero
@@ -969,7 +969,7 @@ typedef void (*lsp_cb_t)(void *opaque, aws_lws_usec_t *accounting, siginfo_t *si
 struct aws_lws_spawn_piped_info {
 	struct aws_lws_dll2_owner		*owner;
 	struct aws_lws_vhost		*vh;
-	struct lws			*opt_parent;
+	struct aws_lws			*opt_parent;
 
 	const char * const		*exec_array;
 	const char			**env_array;
@@ -1017,9 +1017,9 @@ LWS_VISIBLE LWS_EXTERN struct aws_lws_spawn_piped *
 aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *lspi);
 
 /*
- * aws_lws_spawn_piped_kill_child_process() - attempt to kill child process
+ * aws_lws_spawn_piped_kill_child_process() - attempt to aws_kill child process
  *
- * \p lsp: child object to kill
+ * \p lsp: child object to aws_kill
  *
  * Attempts to signal the child process in \p lsp to terminate.
  */
@@ -1040,7 +1040,7 @@ aws_lws_spawn_piped_kill_child_process(struct aws_lws_spawn_piped *lsp);
  * has closed.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct lws *wsi);
+aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct aws_lws *wsi);
 
 /**
  * aws_lws_spawn_get_stdfd() - return std channel index for stdwsi
@@ -1053,7 +1053,7 @@ aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct lws *wsi);
  * same protocol handler and then disambiguate them using this api.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_spawn_get_stdfd(struct lws *wsi);
+aws_lws_spawn_get_stdfd(struct aws_lws *wsi);
 
 #endif
 

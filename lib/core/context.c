@@ -456,7 +456,7 @@ aws_lws_create_context(const struct aws_lws_context_creation_info *info)
 	/* pt fakewsi and the pt serv buf allocations ride after the context */
 	size += count_threads * s1;
 #if !defined(LWS_PLAT_FREERTOS)
-	size += (count_threads * sizeof(struct lws));
+	size += (count_threads * sizeof(struct aws_lws));
 #endif
 
 	if (info->event_lib_custom) {
@@ -852,7 +852,7 @@ aws_lws_create_context(const struct aws_lws_context_creation_info *info)
 
 	mbedtls_client_preload_filepath = info->mbedtls_client_preload_filepath;
 #else
-	context->tls_ops = &tls_ops_openssl;
+	context->tls_ops = &aws_tls_ops_openssl;
 #endif
 #endif
 
@@ -1111,10 +1111,10 @@ aws_lws_create_context(const struct aws_lws_context_creation_info *info)
 		 * when the source of the callback is not actually from a wsi
 		 * context.
 		 */
-		context->pt[n].fake_wsi = (struct lws *)u;
-		u += sizeof(struct lws);
+		context->pt[n].fake_wsi = (struct aws_lws *)u;
+		u += sizeof(struct aws_lws);
 
-		memset(context->pt[n].fake_wsi, 0, sizeof(struct lws));
+		memset(context->pt[n].fake_wsi, 0, sizeof(struct aws_lws));
 #endif
 
 		context->pt[n].evlib_pt = u;
@@ -1458,7 +1458,7 @@ aws_lws_create_context(const struct aws_lws_context_creation_info *info)
 	aws_lws_context_init_extensions(info, context);
 
 	aws_lwsl_cx_info(context, " mem: per-conn:        %5lu bytes + protocol rx buf",
-		    (unsigned long)sizeof(struct lws));
+		    (unsigned long)sizeof(struct aws_lws));
 
 	/*
 	 * drop any root privs for this process
@@ -1681,7 +1681,7 @@ aws_lws_pt_destroy(struct aws_lws_context_per_thread *pt)
 	    && (int)pt->dummy_pipe_fds[0] != -1
 #endif
 	) {
-		struct lws wsi;
+		struct aws_lws wsi;
 
 		memset(&wsi, 0, sizeof(wsi));
 		wsi.a.context = pt->context;
@@ -1844,7 +1844,7 @@ aws_lws_context_destroy(struct aws_lws_context *context)
 			 */
 
 			while (pt->fds_count) {
-				struct lws *wsi = wsi_from_fd(context,
+				struct aws_lws *wsi = wsi_from_fd(context,
 							      pt->fds[0].fd);
 
 				if (wsi) {

@@ -42,7 +42,7 @@ static const uint8_t *code = (const uint8_t *)
 	"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 static int
-aws_lws_mqtt_generate_id(struct lws* wsi, aws_lws_mqtt_str_t **ms, const char *client_id)
+aws_lws_mqtt_generate_id(struct aws_lws* wsi, aws_lws_mqtt_str_t **ms, const char *client_id)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	uint16_t ran[24]; /* 16-bit so wrap bias from %62 diluted by ~1000 */
@@ -88,7 +88,7 @@ aws_lws_mqtt_generate_id(struct lws* wsi, aws_lws_mqtt_str_t **ms, const char *c
 }
 
 int
-aws_lws_read_mqtt(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
+aws_lws_read_mqtt(struct aws_lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
 {
 	aws_lws_mqttc_t *c = &wsi->mqtt->client;
 
@@ -97,7 +97,7 @@ aws_lws_read_mqtt(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
 
 int
 aws_lws_create_client_mqtt_object(const struct aws_lws_client_connect_info *i,
-			      struct lws *wsi)
+			      struct aws_lws *wsi)
 {
 	aws_lws_mqttc_t *c;
 	const aws_lws_mqtt_client_connect_param_t *cp = i->mqtt_cp;
@@ -184,8 +184,8 @@ oom:
 }
 
 int
-aws_lws_mqtt_client_socket_service(struct lws *wsi, struct aws_lws_pollfd *pollfd,
-			  struct lws *wsi_conn)
+aws_lws_mqtt_client_socket_service(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd,
+			  struct aws_lws *wsi_conn)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];

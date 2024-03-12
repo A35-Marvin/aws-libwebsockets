@@ -212,7 +212,7 @@ LWS_VISIBLE LWS_EXTERN void
 aws_lws_fi_deserialize(aws_lws_fi_ctx_t *fic, const char *sers);
 
 LWS_VISIBLE LWS_EXTERN int
-aws__lws_fi_user_wsi_fi(struct lws *wsi, const char *name);
+aws__lws_fi_user_wsi_fi(struct aws_lws *wsi, const char *name);
 LWS_VISIBLE LWS_EXTERN int
 aws__lws_fi_user_context_fi(struct aws_lws_context *ctx, const char *name);
 

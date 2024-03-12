@@ -99,7 +99,7 @@ bail:
 }
 
 int
-aws_lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type,
+aws_lws_socks5c_generate_msg(struct aws_lws *wsi, enum socks_msg_type type,
 			 ssize_t *msg_len)
 {
 	struct aws_lws_context *context = wsi->a.context;
@@ -220,7 +220,7 @@ aws_lws_socks5c_ads_server(struct aws_lws_vhost *vh,
  */
 
 int
-aws_lws_socks5c_greet(struct lws *wsi, const char **pcce)
+aws_lws_socks5c_greet(struct aws_lws *wsi, const char **pcce)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	ssize_t plen;
@@ -252,7 +252,7 @@ aws_lws_socks5c_greet(struct lws *wsi, const char **pcce)
 }
 
 int
-aws_lws_socks5c_handle_state(struct lws *wsi, struct aws_lws_pollfd *pollfd,
+aws_lws_socks5c_handle_state(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd,
 			 const char **pcce)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];

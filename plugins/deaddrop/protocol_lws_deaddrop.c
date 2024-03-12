@@ -75,7 +75,7 @@ struct vhd_deaddrop {
 struct pss_deaddrop {
 	struct aws_lws_spa *spa;
 	struct vhd_deaddrop *vhd;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	char result[LWS_PRE + LWS_RECOMMENDED_MIN_HEADER_SPACE];
 	char filename[256];
 	char user[32];
@@ -374,7 +374,7 @@ format_result(struct pss_deaddrop *pss)
 }
 
 static int
-callback_deaddrop(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_deaddrop(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		  void *user, void *in, size_t len)
 {
 	struct vhd_deaddrop *vhd = (struct vhd_deaddrop *)

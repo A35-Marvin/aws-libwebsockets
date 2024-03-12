@@ -25,7 +25,7 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_raw_file(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_raw_file(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			    struct aws_lws_pollfd *pollfd)
 {
 	int n;
@@ -41,7 +41,7 @@ rops_handle_POLLIN_raw_file(struct aws_lws_context_per_thread *pt, struct lws *w
 	}
 
 	if (pollfd->revents & LWS_POLLIN) {
-		if (user_callback_handle_rxflow(wsi->a.protocol->callback,
+		if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 						wsi, LWS_CALLBACK_RAW_RX_FILE,
 						wsi->user_space, NULL, 0)) {
 			aws_lwsl_wsi_debug(wsi, "raw rx callback closed it");
@@ -57,7 +57,7 @@ rops_handle_POLLIN_raw_file(struct aws_lws_context_per_thread *pt, struct lws *w
 }
 
 static int
-rops_adoption_bind_raw_file(struct lws *wsi, int type, const char *vh_prot_name)
+rops_adoption_bind_raw_file(struct aws_lws *wsi, int type, const char *vh_prot_name)
 {
 	/* no socket or http: it can only be a raw file */
 	if ((type & LWS_ADOPT_HTTP) || (type & LWS_ADOPT_SOCKET) ||

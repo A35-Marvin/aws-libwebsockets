@@ -253,12 +253,12 @@ aws_lws_mqtt_pconsume(aws_lws_mqtt_parser_t *par, int consumed)
 }
 
 static int
-aws_lws_mqtt_set_client_established(struct lws *wsi)
+aws_lws_mqtt_set_client_established(struct aws_lws *wsi)
 {
 	aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_ESTABLISHED,
 			    &role_ops_mqtt);
 
-	if (user_callback_handle_rxflow(wsi->a.protocol->callback,
+	if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 					wsi, LWS_CALLBACK_MQTT_CLIENT_ESTABLISHED,
 					wsi->user_space, NULL, 0) < 0) {
 		aws_lwsl_err("%s: MQTT_ESTABLISHED failed\n", __func__);
@@ -478,10 +478,10 @@ aws_lws_mqtt_client_remove_subs(struct aws__lws_mqtt_related *mqtt)
 }
 
 int
-aws__lws_mqtt_rx_parser(struct lws *wsi, aws_lws_mqtt_parser_t *par,
+aws__lws_mqtt_rx_parser(struct aws_lws *wsi, aws_lws_mqtt_parser_t *par,
 		    const uint8_t *buf, size_t len)
 {
-	struct lws *w;
+	struct aws_lws *w;
 	int n;
 
 	if (par->flag_pending_send_reason_close)
@@ -1327,7 +1327,7 @@ bail1:
 				 * Figure out which child asked for this
 				 */
 				n = 0;
-				aws_lws_start_foreach_ll(struct lws *, w,
+				aws_lws_start_foreach_ll(struct aws_lws *, w,
 						     wsi->mux.child_list) {
 					if (w->mqtt->unacked_publish &&
 					    w->mqtt->ack_pkt_id == par->cpkt_id) {
@@ -1336,7 +1336,7 @@ bail1:
 						w->mqtt->unacked_publish = 0;
 						w->mqtt->unacked_pubrel = 1;
 
-						if (user_callback_handle_rxflow(
+						if (aws_user_callback_handle_rxflow(
 							    w->a.protocol->callback,
 							    w, LWS_CALLBACK_MQTT_ACK,
 							    w->user_space, NULL, 0) < 0) {
@@ -1377,7 +1377,7 @@ bail1:
 				aws_lwsl_err("%s: cmd_completion: PUBCOMP\n",
 						__func__);
 				n = 0;
-				aws_lws_start_foreach_ll(struct lws *, w,
+				aws_lws_start_foreach_ll(struct aws_lws *, w,
 						     wsi->mux.child_list) {
 					if (w->mqtt->unacked_pubrel > 0 &&
 					    w->mqtt->ack_pkt_id == par->cpkt_id) {
@@ -1416,14 +1416,14 @@ bail1:
 				 */
 
 				n = 0;
-				aws_lws_start_foreach_ll(struct lws *, w,
+				aws_lws_start_foreach_ll(struct aws_lws *, w,
 						      wsi->mux.child_list) {
 					if (w->mqtt->unacked_publish &&
 					    w->mqtt->ack_pkt_id == par->cpkt_id) {
 						char requested_close = 0;
 
 						w->mqtt->unacked_publish = 0;
-						if (user_callback_handle_rxflow(
+						if (aws_user_callback_handle_rxflow(
 							    w->a.protocol->callback,
 							    w, LWS_CALLBACK_MQTT_ACK,
 							    w->user_space, NULL, 0) < 0) {
@@ -1484,12 +1484,12 @@ bail1:
 				 */
 
 				n = 0;
-				aws_lws_start_foreach_ll(struct lws *, w,
+				aws_lws_start_foreach_ll(struct aws_lws *, w,
 						      wsi->mux.child_list) {
 					if (w->mqtt->inside_subscribe &&
 					    w->mqtt->ack_pkt_id == par->cpkt_id) {
 						w->mqtt->inside_subscribe = 0;
-						if (user_callback_handle_rxflow(
+						if (aws_user_callback_handle_rxflow(
 							    w->a.protocol->callback,
 							    w, LWS_CALLBACK_MQTT_SUBSCRIBED,
 							    w->user_space, NULL, 0) < 0) {
@@ -1526,11 +1526,11 @@ bail1:
 				 * Figure out which child asked for this
 				 */
 				n = 0;
-				aws_lws_start_foreach_ll(struct lws *, w,
+				aws_lws_start_foreach_ll(struct aws_lws *, w,
 						      wsi->mux.child_list) {
 					if (w->mqtt->inside_unsubscribe &&
 					    w->mqtt->ack_pkt_id == par->cpkt_id) {
-						struct lws *nwsi = aws_lws_get_network_wsi(w);
+						struct aws_lws *nwsi = aws_lws_get_network_wsi(w);
 
 						/*
 						 * No more subscribers left,
@@ -1539,7 +1539,7 @@ bail1:
 						aws_lws_mqtt_client_remove_subs(nwsi->mqtt);
 
 						w->mqtt->inside_unsubscribe = 0;
-						if (user_callback_handle_rxflow(
+						if (aws_user_callback_handle_rxflow(
 							    w->a.protocol->callback,
 							    w, LWS_CALLBACK_MQTT_UNSUBSCRIBED,
 							    w->user_space, NULL, 0) < 0) {
@@ -1599,7 +1599,7 @@ bail1:
 				if (chunk > len)
 					chunk = len;
 
-				aws_lws_start_foreach_ll(struct lws *, w,
+				aws_lws_start_foreach_ll(struct aws_lws *, w,
 						      wsi->mux.child_list) {
 					if (aws_lws_mqtt_find_sub(w->mqtt,
 							      pub->topic))
@@ -1941,12 +1941,12 @@ aws_lws_mqtt_unsuback_timeout(struct aws_lws_sorted_usec_list *sul)
 }
 
 int
-aws_lws_mqtt_client_send_publish(struct lws *wsi, aws_lws_mqtt_publish_param_t *pub,
+aws_lws_mqtt_client_send_publish(struct aws_lws *wsi, aws_lws_mqtt_publish_param_t *pub,
 			     const void *buf, uint32_t len, int is_complete)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	uint8_t *b = (uint8_t *)pt->serv_buf, *start, *p;
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	aws_lws_mqtt_str_t mqtt_vh_payload;
 	uint32_t vh_len, rem_len;
 
@@ -2095,11 +2095,11 @@ do_write:
 }
 
 int
-aws_lws_mqtt_client_send_subcribe(struct lws *wsi, aws_lws_mqtt_subscribe_param_t *sub)
+aws_lws_mqtt_client_send_subcribe(struct aws_lws *wsi, aws_lws_mqtt_subscribe_param_t *sub)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	uint8_t *b = (uint8_t *)pt->serv_buf + LWS_PRE, *start = b, *p = start;
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	aws_lws_mqtt_str_t mqtt_vh_payload;
 	uint8_t exists[8], extant;
 	aws_lws_mqtt_subs_t *mysub;
@@ -2160,7 +2160,7 @@ aws_lws_mqtt_client_send_subcribe(struct lws *wsi, aws_lws_mqtt_subscribe_param_
 			 * wanted.  Just tell it it can have them.
 			 */
 			aws_lwsl_notice("%s: all topics already subscribed\n", __func__);
-			if (user_callback_handle_rxflow(
+			if (aws_user_callback_handle_rxflow(
 				    wsi->a.protocol->callback,
 				    wsi, LWS_CALLBACK_MQTT_SUBSCRIBED,
 				    wsi->user_space, NULL, 0) < 0) {
@@ -2278,12 +2278,12 @@ aws_lws_mqtt_client_send_subcribe(struct lws *wsi, aws_lws_mqtt_subscribe_param_
 }
 
 int
-aws_lws_mqtt_client_send_unsubcribe(struct lws *wsi,
+aws_lws_mqtt_client_send_unsubcribe(struct aws_lws *wsi,
 				const aws_lws_mqtt_subscribe_param_t *unsub)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	uint8_t *b = (uint8_t *)pt->serv_buf + LWS_PRE, *start = b, *p = start;
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	aws_lws_mqtt_str_t mqtt_vh_payload;
 	uint8_t send_unsub[8], orphaned;
 	uint32_t rem_len, n;
@@ -2319,7 +2319,7 @@ aws_lws_mqtt_client_send_unsubcribe(struct lws *wsi,
 			 * UNSUB ACK event for the guy going away.
 			 */
 			aws_lwsl_notice("%s: unsubscribed!\n", __func__);
-			if (user_callback_handle_rxflow(
+			if (aws_user_callback_handle_rxflow(
 				    wsi->a.protocol->callback,
 				    wsi, LWS_CALLBACK_MQTT_UNSUBSCRIBED,
 				    wsi->user_space, NULL, 0) < 0) {
@@ -2438,8 +2438,8 @@ aws_lws_mqtt_client_send_unsubcribe(struct lws *wsi,
  * MQTT stream
  */
 
-struct lws *
-aws_lws_wsi_mqtt_adopt(struct lws *parent_wsi, struct lws *wsi)
+struct aws_lws *
+aws_lws_wsi_mqtt_adopt(struct aws_lws *parent_wsi, struct aws_lws *wsi)
 {
 	/* no more children allowed by parent? */
 

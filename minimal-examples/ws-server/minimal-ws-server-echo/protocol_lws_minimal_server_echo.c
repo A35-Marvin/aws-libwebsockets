@@ -58,7 +58,7 @@ __minimal_destroy_message(void *_msg)
 }
 #include <assert.h>
 static int
-callback_minimal_server_echo(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_server_echo(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal_server_echo *pss =

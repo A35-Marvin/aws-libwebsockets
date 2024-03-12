@@ -17,10 +17,10 @@
 #include <signal.h>
 
 static int interrupted, bad = 1, status;
-static struct lws *client_wsi;
+static struct aws_lws *client_wsi;
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	char val[32];

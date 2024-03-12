@@ -131,7 +131,7 @@ struct aws_lws_ext_option_arg {
  */
 typedef int
 aws_lws_extension_callback_function(struct aws_lws_context *context,
-			      const struct aws_lws_extension *ext, struct lws *wsi,
+			      const struct aws_lws_extension *ext, struct aws_lws *wsi,
 			      enum aws_lws_extension_callback_reasons reason,
 			      void *user, void *in, size_t len);
 
@@ -154,7 +154,7 @@ struct aws_lws_extension {
  * \param opt_val:	value to set option to
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_set_extension_option(struct lws *wsi, const char *ext_name,
+aws_lws_set_extension_option(struct aws_lws *wsi, const char *ext_name,
 			 const char *opt_name, const char *opt_val);
 
 /**
@@ -168,7 +168,7 @@ aws_lws_set_extension_option(struct lws *wsi, const char *ext_name,
  * \param len: length
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_ext_parse_options(const struct aws_lws_extension *ext, struct lws *wsi,
+aws_lws_ext_parse_options(const struct aws_lws_extension *ext, struct aws_lws *wsi,
 		      void *ext_user, const struct aws_lws_ext_options *opts,
 		      const char *o, int len);
 
@@ -187,7 +187,7 @@ aws_lws_ext_parse_options(const struct aws_lws_extension *ext, struct lws *wsi,
 LWS_EXTERN int
 aws_lws_extension_callback_pm_deflate(struct aws_lws_context *context,
 				  const struct aws_lws_extension *ext,
-				  struct lws *wsi,
+				  struct aws_lws *wsi,
 				  enum aws_lws_extension_callback_reasons reason,
 				  void *user, void *in, size_t len);
 

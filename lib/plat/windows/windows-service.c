@@ -62,7 +62,7 @@ aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int t
 	struct aws_lws_context_per_thread *pt;
 	struct aws_lws_pollfd *pfd;
 	aws_lws_usec_t timeout_us;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	unsigned int i;
 	int n;
 
@@ -78,7 +78,7 @@ aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int t
 		aws_lws_fakewsi_prep_plwsa_ctx(context);
 
 		pt->service_tid = context->vhost_list->
-			protocols[0].callback((struct lws *)plwsa,
+			protocols[0].callback((struct aws_lws *)plwsa,
 					LWS_CALLBACK_GET_THREAD_ID,
 						  NULL, NULL, 0);
 		pt->service_tid_detected = 1;

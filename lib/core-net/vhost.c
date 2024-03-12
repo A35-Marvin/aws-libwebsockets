@@ -27,15 +27,15 @@
 void
 aws_lws_tls_session_vh_destroy(struct aws_lws_vhost *vh);
 
-const struct aws_lws_role_ops *available_roles[] = {
+const struct aws_lws_role_ops *aws_available_roles[] = {
 #if defined(LWS_ROLE_H2)
 	&role_ops_h2,
 #endif
 #if defined(LWS_ROLE_H1)
-	&role_ops_h1,
+	&aws_role_ops_h1,
 #endif
 #if defined(LWS_ROLE_WS)
-	&role_ops_ws,
+	&aws_role_ops_ws,
 #endif
 #if defined(LWS_ROLE_DBUS)
 	&role_ops_dbus,
@@ -110,7 +110,7 @@ aws_lws_role_by_name(const char *name)
 }
 
 int
-aws_lws_role_call_alpn_negotiated(struct lws *wsi, const char *alpn)
+aws_lws_role_call_alpn_negotiated(struct aws_lws *wsi, const char *alpn)
 {
 #if defined(LWS_WITH_TLS)
 	if (!alpn)
@@ -135,7 +135,7 @@ aws_lws_role_call_alpn_negotiated(struct lws *wsi, const char *alpn)
 }
 
 int
-aws_lws_role_call_adoption_bind(struct lws *wsi, int type, const char *prot)
+aws_lws_role_call_adoption_bind(struct aws_lws *wsi, int type, const char *prot)
 {
 	int n;
 
@@ -215,7 +215,7 @@ aws_lws_role_call_adoption_bind(struct lws *wsi, int type, const char *prot)
 
 #if defined(LWS_WITH_CLIENT)
 int
-aws_lws_role_call_client_bind(struct lws *wsi,
+aws_lws_role_call_client_bind(struct aws_lws *wsi,
 			  const struct aws_lws_client_connect_info *i)
 {
 	LWS_FOR_EVERY_AVAILABLE_ROLE_START(ar)
@@ -387,7 +387,7 @@ aws_lws_protocol_init_vhost(struct aws_lws_vhost *vh, int *any)
 
 	memset(&aws__lwsa, 0, sizeof(aws__lwsa));
 #else
-	struct lws _lws;
+	struct aws_lws _lws;
 	struct aws_lws_a *aws_lwsa = &_lws.a;
 
 	memset(&_lws, 0, sizeof(_lws));
@@ -465,7 +465,7 @@ aws_lws_protocol_init_vhost(struct aws_lws_vhost *vh, int *any)
 		) {
 			aws_lwsl_vhost_info(vh, "init %s.%s", vh->name,
 					vh->protocols[n].name);
-			if (vh->protocols[n].callback((struct lws *)aws_lwsa,
+			if (vh->protocols[n].callback((struct aws_lws *)aws_lwsa,
 				LWS_CALLBACK_PROTOCOL_INIT, NULL,
 #if !defined(LWS_WITH_PLUGINS)
 				(void *)(pvo ? pvo->options : NULL),
@@ -1072,7 +1072,7 @@ aws_lws_init_vhost_client_ssl(const struct aws_lws_context_creation_info *info,
 }
 
 void
-aws_lws_cancel_service_pt(struct lws *wsi)
+aws_lws_cancel_service_pt(struct aws_lws *wsi)
 {
 	aws_lws_plat_pipe_signal(wsi->a.context, wsi->tsi);
 }
@@ -1099,7 +1099,7 @@ int
 aws___lws_create_event_pipes(struct aws_lws_context *context)
 {
 	struct aws_lws_context_per_thread *pt;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int n;
 
 	/*
@@ -1155,7 +1155,7 @@ bail:
 }
 
 void
-aws_lws_destroy_event_pipe(struct lws *wsi)
+aws_lws_destroy_event_pipe(struct aws_lws *wsi)
 {
 	int n;
 
@@ -1203,8 +1203,8 @@ aws___lws_vhost_destroy_pt_wsi_dieback_start(struct aws_lws_vhost *vh)
 	 */
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 			      vh->vh_awaiting_socket_owner.head) {
-		struct lws *w =
-			aws_lws_container_of(d, struct lws, vh_awaiting_socket);
+		struct aws_lws *w =
+			aws_lws_container_of(d, struct aws_lws, vh_awaiting_socket);
 
 		if (w->tsi == tsi) {
 
@@ -1222,7 +1222,7 @@ aws___lws_vhost_destroy_pt_wsi_dieback_start(struct aws_lws_vhost *vh)
 
 	n = 0;
 	while (n < pt->fds_count) {
-		struct lws *wsi = wsi_from_fd(ctx, pt->fds[n].fd);
+		struct aws_lws *wsi = wsi_from_fd(ctx, pt->fds[n].fd);
 
 		if (wsi && wsi->tsi == tsi && wsi->a.vhost == vh) {
 
@@ -1329,7 +1329,7 @@ aws_lws_vhost_destroy1(struct aws_lws_vhost *vh)
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 			      aws_lws_dll2_get_head(&vh->listen_wsi)) {
-		struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+		struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 
 		/*
 		 * For each of our listen sockets, check every other vhost to
@@ -1385,7 +1385,7 @@ aws_lws_vhost_destroy1(struct aws_lws_vhost *vh)
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 			           aws_lws_dll2_get_head(&vh->listen_wsi)) {
-		struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+		struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 
 		aws_lws_dll2_remove(&wsi->listen_list);
 		aws_lws_wsi_close(wsi, LWS_TO_KILL_ASYNC);
@@ -1430,7 +1430,7 @@ aws___lws_vhost_destroy2(struct aws_lws_vhost *vh)
 {
 	const struct aws_lws_protocols *protocol = NULL;
 	struct aws_lws_context *context = vh->context;
-	struct lws wsi;
+	struct aws_lws wsi;
 	int n;
 
 	vh->being_destroyed = 0;
@@ -1684,7 +1684,7 @@ aws_lws_context_deprecate(struct aws_lws_context *cx, aws_lws_reload_func cb)
 
 		aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 					   aws_lws_dll2_get_head(&vh->listen_wsi)) {
-			struct lws *wsi = aws_lws_container_of(d, struct lws,
+			struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws,
 							   listen_list);
 
 			wsi->socket_is_permanently_unusable = 1;
@@ -1733,7 +1733,7 @@ aws_lws_get_vhost_by_name(struct aws_lws_context *context, const char *name)
  */
 
 int
-aws_lws_vhost_active_conns(struct lws *wsi, struct lws **nwsi, const char *adsin)
+aws_lws_vhost_active_conns(struct aws_lws *wsi, struct aws_lws **nwsi, const char *adsin)
 {
 #if defined(LWS_WITH_TLS)
 	const char *my_alpn = aws_lws_wsi_client_stash_item(wsi, CIS_ALPN,
@@ -1752,8 +1752,8 @@ aws_lws_vhost_active_conns(struct lws *wsi, struct lws **nwsi, const char *adsin
 #endif
 
 	if (!aws_lws_dll2_is_detached(&wsi->dll2_cli_txn_queue)) {
-		struct lws *w = aws_lws_container_of(
-				wsi->dll2_cli_txn_queue.owner, struct lws,
+		struct aws_lws *w = aws_lws_container_of(
+				wsi->dll2_cli_txn_queue.owner, struct aws_lws,
 				dll2_cli_txn_queue_owner);
 		*nwsi = w;
 
@@ -1777,7 +1777,7 @@ aws_lws_vhost_active_conns(struct lws *wsi, struct lws **nwsi, const char *adsin
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 				   wsi->a.vhost->dll_cli_active_conns_owner.head) {
-		struct lws *w = aws_lws_container_of(d, struct lws,
+		struct aws_lws *w = aws_lws_container_of(d, struct aws_lws,
 						 dll_cli_active_conns);
 
 		aws_lwsl_wsi_debug(wsi, "check %s %s %s %d %d",
@@ -1800,7 +1800,7 @@ aws_lws_vhost_active_conns(struct lws *wsi, struct lws **nwsi, const char *adsin
 		    w->cli_hostname_copy && !strcmp(adsin, w->cli_hostname_copy) &&
 		    /* same endpoint hostname */
 #if defined(LWS_WITH_TLS)
-		   !(newconn_cannot_use_h1 && w->role_ops == &role_ops_h1) &&
+		   !(newconn_cannot_use_h1 && w->role_ops == &aws_role_ops_h1) &&
 		   /* if we can't use h1, old guy must not be h1 */
 		    (wsi->tls.use_ssl & LCCSCF_USE_SSL) ==
 		     (w->tls.use_ssl & LCCSCF_USE_SSL) &&

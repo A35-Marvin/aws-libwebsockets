@@ -577,7 +577,7 @@ int main(int argc, const char **argv)
 	aws_lws_strncpy(cxname, "ctx0", sizeof(cxname));
 
 	for (n = 0; n < concurrent - 1; n++) {
-		if (fork()) {
+		if (aws_fork()) {
 #if defined(WIN32)
 			Sleep(1);
 #else

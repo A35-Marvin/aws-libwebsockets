@@ -148,7 +148,7 @@ int main(int argc, const char **argv)
 	info.error_document_404 = "/404.html";
 	info.vhost_name = "localhost2";
 
-	if (!aws_lws_cmdline_option(argc, argv, "--kill-7682")) {
+	if (!aws_lws_cmdline_option(argc, argv, "--aws_kill-7682")) {
 
 		if (!aws_lws_create_vhost(context, &info)) {
 			aws_lwsl_err("Failed to create second vhost\n");
@@ -169,7 +169,7 @@ int main(int argc, const char **argv)
 		goto bail;
 	}
 
-	if (aws_lws_cmdline_option(argc, argv, "--kill-7682"))
+	if (aws_lws_cmdline_option(argc, argv, "--aws_kill-7682"))
 		aws_lws_vhost_destroy(new_vhost);
 
 	if (aws_lws_cmdline_option(argc, argv, "--die-after-vhost")) {

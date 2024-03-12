@@ -47,7 +47,7 @@ secstream_mqtt_cleanup(aws_lws_ss_handle_t *h)
 }
 
 static int
-secstream_mqtt_subscribe(struct lws *wsi)
+secstream_mqtt_subscribe(struct aws_lws *wsi)
 {
 	size_t used_in, used_out, topic_limit;
 	aws_lws_strexp_t exp;
@@ -141,7 +141,7 @@ secstream_mqtt_subscribe(struct lws *wsi)
 }
 
 static int
-secstream_mqtt_publish(struct lws *wsi, uint8_t *buf, size_t buflen,
+secstream_mqtt_publish(struct aws_lws *wsi, uint8_t *buf, size_t buflen,
 			const char* topic,
 			aws_lws_mqtt_qos_levels_t qos,  int f)
 {
@@ -211,7 +211,7 @@ secstream_mqtt_publish(struct lws *wsi, uint8_t *buf, size_t buflen,
 }
 
 static int
-secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+secstream_mqtt(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
@@ -318,7 +318,7 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 		/*
 		 * If any hanging caliper measurement, dump it, and free any tags
 		 */
-		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 		r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 		if (r != LWSSSSRET_OK)
@@ -441,7 +441,7 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 
 	case LWS_CALLBACK_MQTT_UNSUBSCRIBED:
 	{
-		struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+		struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 		if (nwsi && (nwsi->mux.child_count == 1))
 			aws_lws_mqtt_client_send_disconnect(nwsi);
 		return -1;

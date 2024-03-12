@@ -156,7 +156,7 @@ aws_lws_http_date_parse_unix(const char *b, size_t len, time_t *t)
 #if defined(LWS_WITH_CLIENT)
 
 int
-aws_lws_http_check_retry_after(struct lws *wsi, aws_lws_usec_t *us_interval_in_out)
+aws_lws_http_check_retry_after(struct aws_lws *wsi, aws_lws_usec_t *us_interval_in_out)
 {
 	size_t len = (unsigned int)aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_RETRY_AFTER);
 	char *p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_RETRY_AFTER);

@@ -589,11 +589,11 @@ struct aws_lws_jwt_sign_set_cookie {
  * if both LWS_WITH_JOSE and one of the http-related roles enabled.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
+aws_lws_jwt_sign_token_set_http_cookie(struct aws_lws *wsi,
 				   const struct aws_lws_jwt_sign_set_cookie *i,
 				   uint8_t **p, uint8_t *end);
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
+aws_lws_jwt_get_http_cookie_validate_jwt(struct aws_lws *wsi,
 				     struct aws_lws_jwt_sign_set_cookie *i,
 				     char *out, size_t *out_len);
 #endif

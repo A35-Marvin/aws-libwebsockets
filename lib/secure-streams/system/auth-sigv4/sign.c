@@ -86,7 +86,7 @@ cmp_header(const void * a, const void * b)
 }
 
 static int
-init_sigv4(struct lws *wsi, struct aws_lws_ss_handle *h, struct sigv4 *s)
+init_sigv4(struct aws_lws *wsi, struct aws_lws_ss_handle *h, struct sigv4 *s)
 {
 	aws_lws_ss_metadata_t *polmd = h->policy->metadata;
 	int m = 0;
@@ -193,7 +193,7 @@ static inline int hash_update_str(struct aws_lws_genhash_ctx *ctx, const char * 
 }
 
 static int
-build_sign_string(struct lws *wsi, char *buf, size_t bufsz,
+build_sign_string(struct aws_lws *wsi, char *buf, size_t bufsz,
 		struct aws_lws_ss_handle *h, struct sigv4 *s)
 {
 	char hash[65], *end = &buf[bufsz - 1], *start;
@@ -282,7 +282,7 @@ build_sign_string(struct lws *wsi, char *buf, size_t bufsz,
  * SigningKey           = HMAC-SHA256(<DateRegionServiceKey>, "aws4_request")
  */
 static int
-calc_signing_key(struct lws *wsi, struct aws_lws_ss_handle *h,
+calc_signing_key(struct aws_lws *wsi, struct aws_lws_ss_handle *h,
 		struct sigv4 *s, uint8_t *sign_key)
 {
 	uint8_t key[128], date_key[32], and_region_key[32],
@@ -338,7 +338,7 @@ calc_signing_key(struct lws *wsi, struct aws_lws_ss_handle *h,
 * Signature=ad9fb75ff3b46c7990e3e8f090abfdd6c01fd67761a517111694377e20698377'
 */
 static int
-build_auth_string(struct lws *wsi, char * buf, size_t bufsz,
+build_auth_string(struct aws_lws *wsi, char * buf, size_t bufsz,
 		struct aws_lws_ss_handle *h, struct sigv4 *s,
 		uint8_t *signature_bin)
 {
@@ -390,7 +390,7 @@ build_auth_string(struct lws *wsi, char * buf, size_t bufsz,
 }
 
 int
-aws_lws_ss_apply_sigv4(struct lws *wsi, struct aws_lws_ss_handle *h,
+aws_lws_ss_apply_sigv4(struct aws_lws *wsi, struct aws_lws_ss_handle *h,
 		     unsigned char **p, unsigned char *end)
 {
 	uint8_t buf[512], sign_key[32], signature_bin[32], *bp;

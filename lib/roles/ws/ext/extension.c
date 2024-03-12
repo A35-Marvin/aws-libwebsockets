@@ -42,7 +42,7 @@ enum aws_lws_ext_option_parser_states {
 };
 
 int
-aws_lws_ext_parse_options(const struct aws_lws_extension *ext, struct lws *wsi,
+aws_lws_ext_parse_options(const struct aws_lws_extension *ext, struct aws_lws *wsi,
 		      void *ext_user, const struct aws_lws_ext_options *opts,
 		      const char *in, int len)
 {
@@ -188,7 +188,7 @@ set_arg:
 
 /* 0 = nobody had nonzero return, 1 = somebody had positive return, -1 = fail */
 
-int aws_lws_ext_cb_active(struct lws *wsi, int reason, void *arg, int len)
+int aws_lws_ext_cb_active(struct aws_lws *wsi, int reason, void *arg, int len)
 {
 	int n, m, handled = 0;
 
@@ -214,7 +214,7 @@ int aws_lws_ext_cb_active(struct lws *wsi, int reason, void *arg, int len)
 	return handled;
 }
 
-int aws_lws_ext_cb_all_exts(struct aws_lws_context *context, struct lws *wsi,
+int aws_lws_ext_cb_all_exts(struct aws_lws_context *context, struct aws_lws *wsi,
 			int reason, void *arg, int len)
 {
 	int n = 0, m, handled = 0;
@@ -244,7 +244,7 @@ int aws_lws_ext_cb_all_exts(struct aws_lws_context *context, struct lws *wsi,
 }
 
 int
-aws_lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_issue_raw_ext_access(struct aws_lws *wsi, unsigned char *buf, size_t len)
 {
 	struct aws_lws_tokens ebuf;
 	int ret, m, n = 0;
@@ -329,7 +329,7 @@ aws_lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
 }
 
 int
-aws_lws_any_extension_handled(struct lws *wsi, enum aws_lws_extension_callback_reasons r,
+aws_lws_any_extension_handled(struct aws_lws *wsi, enum aws_lws_extension_callback_reasons r,
 			  void *v, size_t len)
 {
 	struct aws_lws_context *context = wsi->a.context;
@@ -353,7 +353,7 @@ aws_lws_any_extension_handled(struct lws *wsi, enum aws_lws_extension_callback_r
 }
 
 int
-aws_lws_set_extension_option(struct lws *wsi, const char *ext_name,
+aws_lws_set_extension_option(struct aws_lws *wsi, const char *ext_name,
 			 const char *opt_name, const char *opt_val)
 {
 	struct aws_lws_ext_option_arg oa;

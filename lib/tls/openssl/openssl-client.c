@@ -39,7 +39,7 @@
  * lws convention of 0 for success.
  */
 
-int aws_lws_openssl_describe_cipher(struct lws *wsi);
+int aws_lws_openssl_describe_cipher(struct aws_lws *wsi);
 
 extern int openssl_websocket_private_data_index,
     openssl_SSL_CTX_private_data_index;
@@ -59,7 +59,7 @@ aws_lws_tls_jit_trust_got_cert_cb(void *got_opaque, const uint8_t *der,
 {
 	X509 *x = d2i_X509(NULL, &der, (long)der_len);
 	/** !!! this is not safe for async atm */
-	struct lws *wsi = (struct lws *)got_opaque;
+	struct aws_lws *wsi = (struct aws_lws *)got_opaque;
 	X509_STORE *xs;
 	int ret = 0;
 
@@ -91,7 +91,7 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 {
 	SSL *ssl;
 	int n, err = 0;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	/* keep old behaviour accepting self-signed server certs */
 	if (!preverify_ok) {
@@ -231,7 +231,7 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 #endif
 
 int
-aws_lws_ssl_client_bio_create(struct lws *wsi)
+aws_lws_ssl_client_bio_create(struct aws_lws *wsi)
 {
 	char hostname[128], *p;
 #if defined(LWS_HAVE_SSL_set_alpn_protos) && \
@@ -506,7 +506,7 @@ no_client_cert:
 }
 
 enum aws_lws_ssl_capable_status
-aws_lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
+aws_lws_tls_client_connect(struct aws_lws *wsi, char *errbuf, size_t elen)
 {
 #if defined(LWS_HAVE_SSL_set_alpn_protos) && \
     defined(LWS_HAVE_SSL_get0_alpn_selected)
@@ -597,7 +597,7 @@ aws_lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
 }
 
 int
-aws_lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len)
+aws_lws_tls_client_confirm_peer_cert(struct aws_lws *wsi, char *ebuf, size_t ebuf_len)
 {
 #if !defined(USE_WOLFSSL)
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];

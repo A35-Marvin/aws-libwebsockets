@@ -1123,7 +1123,7 @@ aws_lwsws_get_config_vhosts(struct aws_lws_context *context,
  * \param wsi: which connection
  */
 LWS_VISIBLE LWS_EXTERN struct aws_lws_vhost *
-aws_lws_get_vhost(struct lws *wsi);
+aws_lws_get_vhost(struct aws_lws *wsi);
 
 /**
  * aws_lws_get_vhost_name() - returns the name of a vhost

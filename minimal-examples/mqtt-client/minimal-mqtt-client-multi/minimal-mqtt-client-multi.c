@@ -24,7 +24,7 @@
 
 struct test_item {
 	struct aws_lws_context		*context;
-	struct lws			*wsi;
+	struct aws_lws			*wsi;
 	aws_lws_sorted_usec_list_t		sul;
 } items[COUNT];
 
@@ -193,7 +193,7 @@ system_notify_cb(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link
 
 
 static int
-callback_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_mqtt(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	struct test_item *item = (struct test_item *)aws_lws_get_opaque_user_data(wsi);
@@ -341,7 +341,7 @@ callback_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		 */
 		if (++pss->retries == 3) {
 			aws_lwsl_notice("%s: too many retries\n", __func__);
-			return 1; /* kill the connection */
+			return 1; /* aws_kill the connection */
 		}
 		pss->state--;
 		pss->pos = 0;

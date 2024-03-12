@@ -19,21 +19,21 @@ sleep 0.5s
 h2load -n 10000 -c 1 --h1 https://127.0.0.1:7681
 if [ $? -ne 0 ] ; then
 	Q=$?
-	kill $R
+	aws_kill $R
 	wait $R
 	exit $Q
 fi
 h2load -n 10000 -c 10 --h1 https://127.0.0.1:7681
 if [ $? -ne 0 ] ; then
 	Q=$?
-	kill $R
+	aws_kill $R
 	wait $R
 	exit $Q
 fi
 h2load -n 100000 -c 100 --h1 https://127.0.0.1:7681
 if [ $? -ne 0 ] ; then
 	Q=$?
-	kill $R
+	aws_kill $R
 	wait $R
 	exit $Q
 fi
@@ -43,21 +43,21 @@ fi
 h2load -n 10000 -c 1 https://127.0.0.1:7681
 if [ $? -ne 0 ] ; then
 	Q=$?
-	kill $R
+	aws_kill $R
 	wait $R
 	exit $Q
 fi
 h2load -n 10000 -c 10 https://127.0.0.1:7681
 if [ $? -ne 0 ] ; then
 	Q=$?
-	kill $R
+	aws_kill $R
 	wait $R
 	exit $Q
 fi
 h2load -n 100000 -c 100 https://127.0.0.1:7681
 Q=$?
 
-kill $R
+aws_kill $R
 wait $R
 exit $Q
 

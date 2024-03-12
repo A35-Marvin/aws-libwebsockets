@@ -55,5 +55,5 @@ and run this test app with
 $ ./lws-minimal-ws-client -s localhost -p 7681 -j
 ```
 
-You can kill and restart the server to confirm the client connection is re-
+You can aws_kill and restart the server to confirm the client connection is re-
 established if done within the backoff period.

@@ -74,7 +74,7 @@ struct aws_lws_threadpool_task_args {
 #if defined(LWS_WITH_SECURE_STREAMS)
 	struct aws_lws_ss_handle *ss; /**< either wsi or ss must be set */
 #endif
-	struct lws *wsi;	/**< either wsi or ss must be set */
+	struct aws_lws *wsi;	/**< either wsi or ss must be set */
 
 	void *user;		/**< user may set (user-private pointer) */
 	const char *name;	/**< user may set to describe task */
@@ -84,7 +84,7 @@ struct aws_lws_threadpool_task_args {
 	enum aws_lws_threadpool_task_return (*task)(void *user,
 					enum aws_lws_threadpool_task_status s);
 	/**< user must set to actual task function */
-	void (*cleanup)(struct lws *wsi, void *user);
+	void (*cleanup)(struct aws_lws *wsi, void *user);
 	/**< socket lifecycle may end while task is not stoppable, so the task
 	 * must be able to detach from any wsi and clean itself up when it does
 	 * stop.  If NULL, no cleanup necessary, otherwise point to a user-
@@ -184,7 +184,7 @@ aws_lws_threadpool_enqueue(struct aws_lws_threadpool *tp,
  * get the tasks bound to the connection.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_threadpool_dequeue(struct lws *wsi) LWS_WARN_DEPRECATED;
+aws_lws_threadpool_dequeue(struct aws_lws *wsi) LWS_WARN_DEPRECATED;
 
 LWS_VISIBLE LWS_EXTERN int
 aws_lws_threadpool_dequeue_task(struct aws_lws_threadpool_task *task);
@@ -212,7 +212,7 @@ aws_lws_threadpool_dequeue_task(struct aws_lws_threadpool_task *task);
  * be one, else call it via aws_lws_threadpool_foreach_task_wsi() / _ss()
  */
 LWS_VISIBLE LWS_EXTERN enum aws_lws_threadpool_task_status
-aws_lws_threadpool_task_status_wsi(struct lws *wsi,
+aws_lws_threadpool_task_status_wsi(struct aws_lws *wsi,
 			       struct aws_lws_threadpool_task **task, void **user)
 				LWS_WARN_DEPRECATED;
 
@@ -257,7 +257,7 @@ aws_lws_threadpool_dump(struct aws_lws_threadpool *tp);
 
 
 LWS_VISIBLE LWS_EXTERN struct aws_lws_threadpool_task *
-aws_lws_threadpool_get_task_wsi(struct lws *wsi);
+aws_lws_threadpool_get_task_wsi(struct aws_lws *wsi);
 
 #if defined(LWS_WITH_SECURE_STREAMS)
 LWS_VISIBLE LWS_EXTERN struct aws_lws_threadpool_task *
@@ -266,7 +266,7 @@ aws_lws_threadpool_get_task_ss(struct aws_lws_ss_handle *ss);
 
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_threadpool_foreach_task_wsi(struct lws *wsi, void *user,
+aws_lws_threadpool_foreach_task_wsi(struct aws_lws *wsi, void *user,
 				int (*cb)(struct aws_lws_threadpool_task *task,
 					  void *user));
 

@@ -113,7 +113,7 @@ aws_lws_fi_range(const aws_lws_fi_ctx_t *fic, const char *name, uint64_t *result
 }
 
 int
-aws__lws_fi_user_wsi_fi(struct lws *wsi, const char *name)
+aws__lws_fi_user_wsi_fi(struct aws_lws *wsi, const char *name)
 {
 	return aws_lws_fi(&wsi->fic, name);
 }

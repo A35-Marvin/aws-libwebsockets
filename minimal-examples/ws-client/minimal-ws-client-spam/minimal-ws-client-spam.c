@@ -28,7 +28,7 @@ enum {
 };
 
 struct client {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int index;
 	int state;
 };
@@ -82,7 +82,7 @@ connect_client(int idx)
 }
 
 static int
-callback_minimal_spam(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_spam(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;

@@ -25,7 +25,7 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_listen(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_listen(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			  struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_context *context = wsi->a.context;
@@ -46,7 +46,7 @@ rops_handle_POLLIN_listen(struct aws_lws_context_per_thread *pt, struct lws *wsi
 	 */
 
 	do {
-		struct lws *cwsi;
+		struct aws_lws *cwsi;
 		int opts = LWS_ADOPT_SOCKET | LWS_ADOPT_ALLOW_SSL;
 
 		if (!(pollfd->revents & (LWS_POLLIN | LWS_POLLOUT)) ||
@@ -172,7 +172,7 @@ rops_handle_POLLIN_listen(struct aws_lws_context_per_thread *pt, struct lws *wsi
 	return LWS_HPI_RET_HANDLED;
 }
 
-int rops_handle_POLLOUT_listen(struct lws *wsi)
+int rops_handle_POLLOUT_listen(struct aws_lws *wsi)
 {
 	return LWS_HP_RET_USER_SERVICE;
 }

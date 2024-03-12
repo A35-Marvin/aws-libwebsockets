@@ -119,7 +119,7 @@ enum aws_lws_close_status {
  * \param len:	Length of data in \p buf to send
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_close_reason(struct lws *wsi, enum aws_lws_close_status status,
+aws_lws_close_reason(struct aws_lws *wsi, enum aws_lws_close_status status,
 		 unsigned char *buf, size_t len);
 
 ///@}

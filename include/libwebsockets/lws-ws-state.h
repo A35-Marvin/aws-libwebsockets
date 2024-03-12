@@ -35,7 +35,7 @@
  * Allows you to check if you can write more on the socket
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_send_pipe_choked(struct lws *wsi);
+aws_lws_send_pipe_choked(struct aws_lws *wsi);
 
 /**
  * aws_lws_is_final_fragment() - tests if last part of ws message
@@ -43,7 +43,7 @@ aws_lws_send_pipe_choked(struct lws *wsi);
  * \param wsi: lws connection
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_is_final_fragment(struct lws *wsi);
+aws_lws_is_final_fragment(struct aws_lws *wsi);
 
 /**
  * aws_lws_is_first_fragment() - tests if first part of ws message
@@ -51,14 +51,14 @@ aws_lws_is_final_fragment(struct lws *wsi);
  * \param wsi: lws connection
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_is_first_fragment(struct lws *wsi);
+aws_lws_is_first_fragment(struct aws_lws *wsi);
 
 /**
  * aws_lws_get_reserved_bits() - access reserved bits of ws frame
  * \param wsi: lws connection
  */
 LWS_VISIBLE LWS_EXTERN unsigned char
-aws_lws_get_reserved_bits(struct lws *wsi);
+aws_lws_get_reserved_bits(struct aws_lws *wsi);
 
 /**
  * aws_lws_partial_buffered() - find out if lws buffered the last write
@@ -77,7 +77,7 @@ aws_lws_get_reserved_bits(struct lws *wsi);
  * may set it.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_partial_buffered(struct lws *wsi);
+aws_lws_partial_buffered(struct aws_lws *wsi);
 
 /**
  * aws_lws_frame_is_binary(): true if the current frame was sent in binary mode
@@ -89,5 +89,5 @@ aws_lws_partial_buffered(struct lws *wsi);
  * mode.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_frame_is_binary(struct lws *wsi);
+aws_lws_frame_is_binary(struct aws_lws *wsi);
 ///@}

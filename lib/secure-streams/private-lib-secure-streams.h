@@ -69,7 +69,7 @@ typedef struct aws_lws_ss_handle {
 	const aws_lws_ss_policy_t	*policy;  /**< system policy for stream */
 
 	struct aws_lws_sequencer	*seq;	  /**< owning sequencer if any */
-	struct lws		*wsi;	  /**< the stream wsi if any */
+	struct aws_lws		*wsi;	  /**< the stream wsi if any */
 
 	struct conn		*conn_if_sspc_onw;
 
@@ -318,7 +318,7 @@ typedef struct aws_lws_sspc_handle {
 	aws_lws_metrics_caliper_compose(cal_txn)
 #endif
 
-	struct lws		*cwsi;
+	struct aws_lws		*cwsi;
 
 	struct aws_lws_dsh		*dsh;
 	struct aws_lws_context	*context;
@@ -427,11 +427,11 @@ int
 aws_lws_ss_serialize_rx_payload(struct aws_lws_dsh *dsh, const uint8_t *buf,
 			    size_t len, int flags, const char *rsp);
 int
-aws_lws_ss_deserialize_tx_payload(struct aws_lws_dsh *dsh, struct lws *wsi,
+aws_lws_ss_deserialize_tx_payload(struct aws_lws_dsh *dsh, struct aws_lws *wsi,
 			      aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 			      size_t *len, int *flags);
 int
-aws_lws_ss_serialize_state(struct lws *wsi, struct aws_lws_dsh *dsh, aws_lws_ss_constate_t state,
+aws_lws_ss_serialize_state(struct aws_lws *wsi, struct aws_lws_dsh *dsh, aws_lws_ss_constate_t state,
 		       aws_lws_ss_tx_ordinal_t ack);
 
 const aws_lws_ss_policy_t *
@@ -463,7 +463,7 @@ aws_lws_ss_state_return_t
 aws_lws_ss_backoff(aws_lws_ss_handle_t *h);
 
 int
-aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct lws *wsi,
+aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct aws_lws *wsi,
 			 aws_lws_ss_handle_t **ph);
 
 int
@@ -533,7 +533,7 @@ aws_lws_ss_check_next_state_sspc(aws_lws_sspc_handle_t *ss, uint8_t *prevstate,
 			     aws_lws_ss_constate_t cs);
 
 void
-aws_lws_proxy_clean_conn_ss(struct lws *wsi);
+aws_lws_proxy_clean_conn_ss(struct aws_lws *wsi);
 
 int
 aws_lws_ss_cancel_notify_dll(struct aws_lws_dll2 *d, void *user);
@@ -551,7 +551,7 @@ int
 aws_lws_ss_sys_cpd(struct aws_lws_context *cx);
 
 #if defined(LWS_WITH_SECURE_STREAMS_AUTH_SIGV4)
-int aws_lws_ss_apply_sigv4(struct lws *wsi, struct aws_lws_ss_handle *h,
+int aws_lws_ss_apply_sigv4(struct aws_lws *wsi, struct aws_lws_ss_handle *h,
 		       unsigned char **p, unsigned char *end);
 #endif
 
@@ -599,7 +599,7 @@ struct conn {
 	struct aws_lws_ss_serialization_parser parser;
 
 	aws_lws_dsh_t		*dsh;	/* unified buffer for both sides */
-	struct lws		*wsi;	/* the proxy's client side */
+	struct aws_lws		*wsi;	/* the proxy's client side */
 	aws_lws_ss_handle_t		*ss;	/* the onward, ss side */
 
 	aws_lws_ss_conn_states_t	state;

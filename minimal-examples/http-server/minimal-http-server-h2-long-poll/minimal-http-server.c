@@ -28,7 +28,7 @@
 static int interrupted;
 
 struct pss {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	aws_lws_sorted_usec_list_t sul;
 	char pending;
 };
@@ -51,7 +51,7 @@ sul_cb(aws_lws_sorted_usec_list_t *sul)
 }
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	struct pss * pss = (struct pss *)user;

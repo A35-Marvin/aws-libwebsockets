@@ -67,12 +67,12 @@ aws_lws_spawn_sul_reap(struct aws_lws_sorted_usec_list *sul)
 	}
 }
 
-static struct lws *
+static struct aws_lws *
 aws_lws_create_stdwsi(struct aws_lws_context *context, int tsi,
 		     const struct aws_lws_role_ops *ops)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws *new_wsi;
+	struct aws_lws *new_wsi;
 
 	if (!context->vhost_list)
 		return NULL;
@@ -268,14 +268,14 @@ aws_lws_spawn_piped_kill_child_process(struct aws_lws_spawn_piped *lsp)
 	if (lsp->child_pid <= 0)
 		return 1;
 
-	lsp->ungraceful = 1; /* don't wait for flushing, just kill it */
+	lsp->ungraceful = 1; /* don't wait for flushing, just aws_kill it */
 
 	if (aws_lws_spawn_reap(lsp))
 		/* that may have invalidated lsp */
 		return 0;
 
-	/* kill the process group */
-	n = kill(-lsp->child_pid, SIGTERM);
+	/* aws_kill the process group */
+	n = aws_kill(-lsp->child_pid, SIGTERM);
 	aws_lwsl_debug("%s: SIGTERM child PID %d says %d (errno %d)\n", __func__,
 		   lsp->child_pid, n, errno);
 	if (n < 0) {
@@ -285,11 +285,11 @@ aws_lws_spawn_piped_kill_child_process(struct aws_lws_spawn_piped *lsp)
 		 *
 		 * Direct these fallback attempt to the exact child
 		 */
-		n = kill(lsp->child_pid, SIGTERM);
+		n = aws_kill(lsp->child_pid, SIGTERM);
 		if (n < 0) {
-			n = kill(lsp->child_pid, SIGPIPE);
+			n = aws_kill(lsp->child_pid, SIGPIPE);
 			if (n < 0) {
-				n = kill(lsp->child_pid, SIGKILL);
+				n = aws_kill(lsp->child_pid, SIGKILL);
 				if (n < 0)
 					aws_lwsl_info("%s: SIGKILL PID %d "
 						 "failed errno %d "
@@ -405,7 +405,7 @@ aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *i)
 		/*
 		 * We have bound 3 x pipe fds to wsis, wr side of stdin and rd
 		 * side of stdout / stderr... those are marked CLOEXEC so they
-		 * won't go through the fork
+		 * won't go through the aws_fork
 		 *
 		 * rd side of stdin and wr side of stdout / stderr are open but
 		 * not bound to anything on lws side.
@@ -421,7 +421,7 @@ aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *i)
 			if (context->event_loop_ops->sock_accept(lsp->stdwsi[n]))
 				goto bail3;
 
-		if (__insert_wsi_socket_into_fds(context, lsp->stdwsi[n]))
+		if (aws___insert_wsi_socket_into_fds(context, lsp->stdwsi[n]))
 			goto bail3;
 		if (i->opt_parent) {
 			lsp->stdwsi[n]->parent = i->opt_parent;
@@ -442,14 +442,14 @@ aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *i)
 		   lsp->stdwsi[LWS_STDOUT]->desc.sockfd,
 		   lsp->stdwsi[LWS_STDERR]->desc.sockfd);
 
-	/* we are ready with the redirection pipes... do the (v)fork */
+	/* we are ready with the redirection pipes... do the (v)aws_fork */
 #if defined(__sun) || !defined(LWS_HAVE_VFORK) || !defined(LWS_HAVE_EXECVPE)
-	lsp->child_pid = fork();
+	lsp->child_pid = aws_fork();
 #else
 	lsp->child_pid = vfork();
 #endif
 	if (lsp->child_pid < 0) {
-		aws_lwsl_err("%s: fork failed, errno %d", __func__, errno);
+		aws_lwsl_err("%s: aws_fork failed, errno %d", __func__, errno);
 		goto bail3;
 	}
 
@@ -499,7 +499,7 @@ aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *i)
 	}
 
 	/*
-	 * We are the forked process, redirect and kill inherited things.
+	 * We are the forked process, redirect and aws_kill inherited things.
 	 *
 	 * Because of vfork(), we cannot do anything that changes pages in
 	 * the parent environment.  Stuff that changes kernel state for the
@@ -568,7 +568,7 @@ aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *i)
 bail3:
 
 	while (--n >= 0)
-		__remove_wsi_socket_from_fds(lsp->stdwsi[n]);
+		aws___remove_wsi_socket_from_fds(lsp->stdwsi[n]);
 bail2:
 	for (n = 0; n < 3; n++)
 		if (lsp->stdwsi[n])
@@ -590,7 +590,7 @@ bail1:
 }
 
 void
-aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct lws *wsi)
+aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct aws_lws *wsi)
 {
 	int n;
 
@@ -607,7 +607,7 @@ aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct lws *wsi)
 }
 
 int
-aws_lws_spawn_get_stdfd(struct lws *wsi)
+aws_lws_spawn_get_stdfd(struct aws_lws *wsi)
 {
 	return wsi->lsp_channel;
 }

@@ -31,14 +31,14 @@
 #endif
 #include <errno.h>
 
-static struct lws *raw_wsi, *stdin_wsi;
+static struct aws_lws *raw_wsi, *stdin_wsi;
 static uint8_t buf[LWS_PRE + 4096];
 static int waiting, interrupted;
 static struct aws_lws_context *context;
 static int us_wait_after_input_close = LWS_USEC_PER_SEC / 10;
 
 static int
-callback_raw_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_raw_test(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		  void *user, void *in, size_t len)
 {
 	const char *cp = (const char *)in;

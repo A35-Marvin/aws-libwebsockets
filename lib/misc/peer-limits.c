@@ -216,7 +216,7 @@ aws_lws_peer_cull_peer_wait_list(struct aws_lws_context *context)
 
 void
 aws_lws_peer_add_wsi(struct aws_lws_context *context, struct aws_lws_peer *peer,
-		 struct lws *wsi)
+		 struct aws_lws *wsi)
 {
 	if (!peer)
 		return;
@@ -231,7 +231,7 @@ aws_lws_peer_add_wsi(struct aws_lws_context *context, struct aws_lws_peer *peer,
 }
 
 void
-aws_lws_peer_dump_from_wsi(struct lws *wsi)
+aws_lws_peer_dump_from_wsi(struct aws_lws *wsi)
 {
 	struct aws_lws_peer *peer;
 

@@ -41,7 +41,7 @@ static int interrupted;
 #define SECS_REPORT 3
 
 static int
-callback_sse(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_sse(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;

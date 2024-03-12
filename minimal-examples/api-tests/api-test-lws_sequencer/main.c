@@ -36,7 +36,7 @@ enum {
 
 struct myseq {
 	struct aws_lws_vhost	*vhost;
-	struct lws		*cwsi;	/* client wsi for current step if any */
+	struct aws_lws		*cwsi;	/* client wsi for current step if any */
 
 	int			state;	/* which test we're on */
 	int			http_resp;
@@ -73,7 +73,7 @@ sigint_handler(int sig)
  */
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	struct myseq *s = (struct myseq *)user;

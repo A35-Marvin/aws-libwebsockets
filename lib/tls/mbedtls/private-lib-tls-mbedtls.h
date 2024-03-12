@@ -48,7 +48,7 @@ int
 aws_lws_gencrypto_mbedtls_rngf(void *context, unsigned char *buf, size_t len);
 
 int
-aws_lws_tls_session_new_mbedtls(struct lws *wsi);
+aws_lws_tls_session_new_mbedtls(struct aws_lws *wsi);
 
 int
 aws_lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum aws_lws_tls_cert_info type,

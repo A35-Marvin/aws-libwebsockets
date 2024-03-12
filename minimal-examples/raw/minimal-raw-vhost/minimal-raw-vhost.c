@@ -31,7 +31,7 @@
 
 struct raw_pss {
 	struct raw_pss *pss_list;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 };
 
 /* one of these is created for each vhost our protocol is used with */
@@ -44,7 +44,7 @@ struct raw_vhd {
 };
 
 static int
-callback_raw_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_raw_test(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct raw_pss *pss = (struct raw_pss *)user;

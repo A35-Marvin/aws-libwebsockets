@@ -41,7 +41,7 @@ struct vhd__dumb_increment {
 };
 
 static int
-callback_dumb_increment(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_dumb_increment(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct pss__dumb_increment *pss = (struct pss__dumb_increment *)user;

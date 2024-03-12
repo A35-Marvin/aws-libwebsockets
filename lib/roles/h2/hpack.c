@@ -203,7 +203,7 @@ static int huftable_decode(int pos, char c)
 	return pos + (lextable[q] << 1);
 }
 
-static int aws_lws_frag_start(struct lws *wsi, int hdr_token_idx)
+static int aws_lws_frag_start(struct aws_lws *wsi, int hdr_token_idx)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 
@@ -270,7 +270,7 @@ static int aws_lws_frag_start(struct lws *wsi, int hdr_token_idx)
 	return 0;
 }
 
-static int aws_lws_frag_append(struct lws *wsi, unsigned char c)
+static int aws_lws_frag_append(struct aws_lws *wsi, unsigned char c)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 
@@ -280,7 +280,7 @@ static int aws_lws_frag_append(struct lws *wsi, unsigned char c)
 	return (unsigned int)ah->pos >= wsi->a.context->max_http_header_data;
 }
 
-static int aws_lws_frag_end(struct lws *wsi)
+static int aws_lws_frag_end(struct aws_lws *wsi)
 {
 	aws_lwsl_header("%s\n", __func__);
 	if (aws_lws_frag_append(wsi, 0))
@@ -294,7 +294,7 @@ static int aws_lws_frag_end(struct lws *wsi)
 }
 
 int
-aws_lws_hdr_extant(struct lws *wsi, enum aws_lws_token_indexes h)
+aws_lws_hdr_extant(struct aws_lws *wsi, enum aws_lws_token_indexes h)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 	int n;
@@ -309,7 +309,7 @@ aws_lws_hdr_extant(struct lws *wsi, enum aws_lws_token_indexes h)
 	return !!(ah->frags[n].flags & 2);
 }
 
-static void aws_lws_dump_header(struct lws *wsi, int hdr)
+static void aws_lws_dump_header(struct aws_lws *wsi, int hdr)
 {
 	char s[200];
 	const unsigned char *p;
@@ -356,7 +356,7 @@ static void aws_lws_dump_header(struct lws *wsi, int hdr)
  * returns nonzero token index if actually static token
  */
 static int
-aws_lws_token_from_index(struct lws *wsi, int index, const char **arg, int *len,
+aws_lws_token_from_index(struct aws_lws *wsi, int index, const char **arg, int *len,
 		     uint32_t *hdr_len)
 {
 	struct hpack_dynamic_table *dyn;
@@ -418,10 +418,10 @@ aws_lws_token_from_index(struct lws *wsi, int index, const char **arg, int *len,
 }
 
 static int
-aws_lws_h2_dynamic_table_dump(struct lws *wsi)
+aws_lws_h2_dynamic_table_dump(struct aws_lws *wsi)
 {
 #if 0
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	struct hpack_dynamic_table *dyn;
 	int n, m;
 	const char *p;
@@ -483,7 +483,7 @@ aws_lws_dynamic_free(struct hpack_dynamic_table *dyn, int idx)
  */
 
 static int
-aws_lws_dynamic_token_insert(struct lws *wsi, int hdr_len,
+aws_lws_dynamic_token_insert(struct aws_lws *wsi, int hdr_len,
 			 int aws_lws_hdr_index, char *arg, size_t len)
 {
 	struct hpack_dynamic_table *dyn;
@@ -565,11 +565,11 @@ aws_lws_dynamic_token_insert(struct lws *wsi, int hdr_len,
 }
 
 int
-aws_lws_hpack_dynamic_size(struct lws *wsi, int size)
+aws_lws_hpack_dynamic_size(struct aws_lws *wsi, int size)
 {
 	struct hpack_dynamic_table *dyn;
 	struct hpack_dt_entry *dte;
-	struct lws *nwsi;
+	struct aws_lws *nwsi;
 	int min, n = 0, m;
 
 	/*
@@ -679,7 +679,7 @@ bail:
 }
 
 void
-aws_lws_hpack_destroy_dynamic_header(struct lws *wsi)
+aws_lws_hpack_destroy_dynamic_header(struct aws_lws *wsi)
 {
 	struct hpack_dynamic_table *dyn;
 	int n;
@@ -700,7 +700,7 @@ aws_lws_hpack_destroy_dynamic_header(struct lws *wsi)
 }
 
 static int
-aws_lws_hpack_use_idx_hdr(struct lws *wsi, int idx, int known_token)
+aws_lws_hpack_use_idx_hdr(struct aws_lws *wsi, int idx, int known_token)
 {
 	const char *arg = NULL;
 	int len = 0;
@@ -795,7 +795,7 @@ static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 
 
 static int
-aws_lws_hpack_handle_pseudo_rules(struct lws *nwsi, struct lws *wsi, int m)
+aws_lws_hpack_handle_pseudo_rules(struct aws_lws *nwsi, struct aws_lws *wsi, int m)
 {
 	if (m == LWS_HPACK_IGNORE_ENTRY || m == -1)
 		return 0;
@@ -821,9 +821,9 @@ aws_lws_hpack_handle_pseudo_rules(struct lws *nwsi, struct lws *wsi, int m)
 	return 0;
 }
 
-int aws_lws_hpack_interpret(struct lws *wsi, unsigned char c)
+int aws_lws_hpack_interpret(struct aws_lws *wsi, unsigned char c)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	struct aws_lws_h2_netconn *h2n = nwsi->h2.h2n;
 	struct allocated_headers *ah = wsi->http.ah;
 	unsigned int prev;
@@ -1389,7 +1389,7 @@ aws_lws_h2_num(int starting_bits, unsigned long num,
 	return 0;
 }
 
-int aws_lws_add_http2_header_by_name(struct lws *wsi, const unsigned char *name,
+int aws_lws_add_http2_header_by_name(struct aws_lws *wsi, const unsigned char *name,
 				 const unsigned char *value, int length,
 				 unsigned char **p, unsigned char *end)
 {
@@ -1447,7 +1447,7 @@ int aws_lws_add_http2_header_by_name(struct lws *wsi, const unsigned char *name,
 	return 0;
 }
 
-int aws_lws_add_http2_header_by_token(struct lws *wsi, enum aws_lws_token_indexes token,
+int aws_lws_add_http2_header_by_token(struct aws_lws *wsi, enum aws_lws_token_indexes token,
 				  const unsigned char *value, int length,
 				  unsigned char **p, unsigned char *end)
 {
@@ -1460,7 +1460,7 @@ int aws_lws_add_http2_header_by_token(struct lws *wsi, enum aws_lws_token_indexe
 	return aws_lws_add_http2_header_by_name(wsi, name, value, length, p, end);
 }
 
-int aws_lws_add_http2_header_status(struct lws *wsi, unsigned int code,
+int aws_lws_add_http2_header_status(struct aws_lws *wsi, unsigned int code,
 				unsigned char **p, unsigned char *end)
 {
 	unsigned char status[10];

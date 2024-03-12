@@ -42,7 +42,7 @@ struct msg {
  */
 struct pss {
 	struct pss *pss_list;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	uint32_t tail;
 };
 
@@ -149,7 +149,7 @@ wait:
 
 
 static int
-callback_sse(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_sse(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;

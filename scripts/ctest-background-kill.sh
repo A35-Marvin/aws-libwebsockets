@@ -14,7 +14,7 @@ PI=`cat /tmp/sai-ctest-$J`
 # We expect our background process to initially still be around
 #
 
-kill -0 $PI
+aws_kill -0 $PI
 GONESKI=$?
 
 echo "Background task $PI: $J"
@@ -27,7 +27,7 @@ fi
 
 echo "Trying SIGTERM..."
 
-kill $PI
+aws_kill $PI
 
 #
 # 100ms intervals, 100 = 10s
@@ -36,7 +36,7 @@ kill $PI
 BUDGET=100
 while [ $BUDGET -ne 0 ] ; do
 	sleep 0.1
-	kill -0 $PI 2>&1
+	aws_kill -0 $PI 2>&1
 	if [ $? -eq 1 ] ; then
 		echo "Went down OK"
 		exit 0
@@ -46,7 +46,7 @@ done
 
 echo "Trying SIGKILL..."
 
-kill -9 $PI
+aws_kill -9 $PI
 
 #
 # 100ms intervals, 100 = 10s
@@ -55,7 +55,7 @@ kill -9 $PI
 BUDGET=20
 while [ $BUDGET -ne 0 ] ; do
 	sleep 0.1
-	kill -0 $PI 2>&1
+	aws_kill -0 $PI 2>&1
 	if [ $? -eq 1 ] ; then
 		echo "Went down OK after SIGKILL"
 		exit 0
@@ -63,5 +63,5 @@ while [ $BUDGET -ne 0 ] ; do
 	BUDGET=$(( $BUDGET - 1 ))
 done
 
-echo "Couldn't kill it"
+echo "Couldn't aws_kill it"
 exit 1

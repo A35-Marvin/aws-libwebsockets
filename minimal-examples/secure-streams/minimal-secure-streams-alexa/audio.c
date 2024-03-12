@@ -129,7 +129,7 @@ set_hw_params(struct aws_lws_vhost *vh, snd_pcm_t **pcm, int type)
 	snd_pcm_hw_params_t *params;
 	aws_lws_sock_file_fd_type u;
 	struct pollfd pfd;
-	struct lws *wsi1;
+	struct aws_lws *wsi1;
 	int n;
 
 	n = snd_pcm_open(pcm, "default", type, SND_PCM_NONBLOCK);
@@ -201,7 +201,7 @@ bail:
  */
 
 static int
-callback_audio(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_audio(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	       void *in, size_t len)
 {
 	struct raw_vhd *vhd = (struct raw_vhd *)aws_lws_protocol_vh_priv_get(

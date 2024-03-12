@@ -101,7 +101,7 @@ struct vhd {
 
 	struct vhd		*bind_partner_vhd;
 
-	struct lws		*wsi;	     /* related wsi if any */
+	struct aws_lws		*wsi;	     /* related wsi if any */
 	uint16_t		retry_count; /* count of consequetive retries */
 };
 
@@ -111,7 +111,7 @@ struct pss {
 	struct aws_lwsac		*ac;	/* the translated metrics, one ac per line */
 	struct aws_lwsac		*walk;	/* iterator for ac when writing */
 	size_t			tot;	/* content-length computation */
-	struct lws		*wsi;
+	struct aws_lws		*wsi;
 
 	uint8_t			greet:1; /* set if client needs to send proxy path */
 	uint8_t			trigger:1; /* we want to ask the client to dump */
@@ -465,7 +465,7 @@ ome_prepare(struct aws_lws_context *ctx, struct pss *pss)
 /* 1) direct http export for scraper */
 
 static int
-callback_lws_openmetrics_export(struct lws *wsi,
+callback_lws_openmetrics_export(struct aws_lws *wsi,
 				enum aws_lws_callback_reasons reason,
 				void *user, void *in, size_t len)
 {
@@ -567,7 +567,7 @@ omc_lws_om_get_other_side_pss_client(struct vhd *vhd, struct pss *pss)
 /* 2) "lws-openmetrics-prox-agg": http server export via proxy to connected clients */
 
 static int
-callback_lws_openmetrics_prox_agg(struct lws *wsi,
+callback_lws_openmetrics_prox_agg(struct aws_lws *wsi,
 				  enum aws_lws_callback_reasons reason,
 				  void *user, void *in, size_t len)
 {
@@ -742,7 +742,7 @@ callback_lws_openmetrics_prox_agg(struct lws *wsi,
  *    ws clients to connect to */
 
 static int
-callback_lws_openmetrics_prox_server(struct lws *wsi,
+callback_lws_openmetrics_prox_server(struct aws_lws *wsi,
 				     enum aws_lws_callback_reasons reason,
 				     void *user, void *in, size_t len)
 {
@@ -833,7 +833,7 @@ callback_lws_openmetrics_prox_server(struct lws *wsi,
 				(unsigned int)vhd->clients.count);
 		aws_lwsac_free(&pss->ac);
 
-		/* let's kill the scraper connection accordingly, if still up */
+		/* let's aws_kill the scraper connection accordingly, if still up */
 		partner_pss = omc_lws_om_get_other_side_pss_client(vhd, pss);
 		if (partner_pss)
 			aws_lws_wsi_close(partner_pss->wsi, LWS_TO_KILL_ASYNC);
@@ -936,7 +936,7 @@ callback_lws_openmetrics_prox_server(struct lws *wsi,
 /* 4) ws client that keeps wss connection up to metrics proxy ws server */
 
 static int
-callback_lws_openmetrics_prox_client(struct lws *wsi,
+callback_lws_openmetrics_prox_client(struct aws_lws *wsi,
 				     enum aws_lws_callback_reasons reason,
 				     void *user, void *in, size_t len)
 {

@@ -130,7 +130,7 @@ int
 aws_lws_tls_kid_cmp(const aws_lws_tls_kid_t *a, const aws_lws_tls_kid_t *b);
 
 int
-aws_lws_tls_jit_trust_sort_kids(struct lws *wsi, aws_lws_tls_kid_chain_t *ch);
+aws_lws_tls_jit_trust_sort_kids(struct aws_lws *wsi, aws_lws_tls_kid_chain_t *ch);
 
 void
 aws_lws_tls_jit_trust_inflight_destroy(aws_lws_tls_jit_inflight_t *inf);

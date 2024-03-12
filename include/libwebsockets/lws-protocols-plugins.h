@@ -109,11 +109,11 @@ aws_lws_vhost_name_to_protocol(struct aws_lws_vhost *vh, const char *name);
  *	this is how you can get a pointer to the active protocol if needed.
  */
 LWS_VISIBLE LWS_EXTERN const struct aws_lws_protocols *
-aws_lws_get_protocol(struct lws *wsi);
+aws_lws_get_protocol(struct aws_lws *wsi);
 
 /** aws_lws_protocol_get() -  deprecated: use aws_lws_get_protocol */
 LWS_VISIBLE LWS_EXTERN const struct aws_lws_protocols *
-aws_lws_protocol_get(struct lws *wsi) LWS_WARN_DEPRECATED;
+aws_lws_protocol_get(struct aws_lws *wsi) LWS_WARN_DEPRECATED;
 
 /**
  * aws_lws_protocol_vh_priv_zalloc() - Allocate and zero down a protocol's per-vhost
@@ -192,7 +192,7 @@ aws_lws_vhd_find_by_pvo(struct aws_lws_context *cx, const char *protname,
  * its per session data size at runtime.
  */
 LWS_VISIBLE LWS_EXTERN void *
-aws_lws_adjust_protocol_psds(struct lws *wsi, size_t new_size);
+aws_lws_adjust_protocol_psds(struct aws_lws *wsi, size_t new_size);
 
 /**
  * aws_lws_finalize_startup() - drop initial process privileges

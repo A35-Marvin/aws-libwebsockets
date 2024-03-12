@@ -19,10 +19,10 @@
 #include <signal.h>
 
 static int interrupted, rx_seen, test;
-static struct lws *client_wsi;
+static struct aws_lws *client_wsi;
 
 static int
-callback_dumb_increment(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_dumb_increment(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {

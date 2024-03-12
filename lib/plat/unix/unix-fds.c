@@ -27,10 +27,10 @@
 #endif
 #include "private-lib-core.h"
 
-struct lws *
+struct aws_lws *
 wsi_from_fd(const struct aws_lws_context *context, int fd)
 {
-	struct lws **p, **done;
+	struct aws_lws **p, **done;
 
 	if (!context->max_fds_unrelated_to_ulimit)
 		return context->aws_lws_lookup[fd - aws_lws_plat_socket_offset()];
@@ -51,9 +51,9 @@ wsi_from_fd(const struct aws_lws_context *context, int fd)
 
 #if defined(_DEBUG)
 int
-sanity_assert_no_wsi_traces(const struct aws_lws_context *context, struct lws *wsi)
+sanity_assert_no_wsi_traces(const struct aws_lws_context *context, struct aws_lws *wsi)
 {
-	struct lws **p, **done;
+	struct aws_lws **p, **done;
 
 	if (!context->max_fds_unrelated_to_ulimit)
 		/* can't tell */
@@ -88,7 +88,7 @@ sanity_assert_no_sockfd_traces(const struct aws_lws_context *context,
 	 */
 	return 0;
 #else
-	struct lws **p, **done;
+	struct aws_lws **p, **done;
 
 	if (sfd == LWS_SOCK_INVALID || !context->aws_lws_lookup)
 		return 0;
@@ -121,9 +121,9 @@ sanity_assert_no_sockfd_traces(const struct aws_lws_context *context,
 
 
 int
-insert_wsi(const struct aws_lws_context *context, struct lws *wsi)
+insert_wsi(const struct aws_lws_context *context, struct aws_lws *wsi)
 {
-	struct lws **p, **done;
+	struct aws_lws **p, **done;
 
 	if (sanity_assert_no_wsi_traces(context, wsi))
 		return 0;
@@ -171,7 +171,7 @@ void
 delete_from_fd(const struct aws_lws_context *context, int fd)
 {
 
-	struct lws **p, **done;
+	struct aws_lws **p, **done;
 
 	if (!context->max_fds_unrelated_to_ulimit) {
 		if (context->aws_lws_lookup)
@@ -209,10 +209,10 @@ delete_from_fd(const struct aws_lws_context *context, int fd)
 }
 
 void
-delete_from_fdwsi(const struct aws_lws_context *context, struct lws *wsi)
+delete_from_fdwsi(const struct aws_lws_context *context, struct aws_lws *wsi)
 {
 
-	struct lws **p, **done;
+	struct aws_lws **p, **done;
 
 	if (!context->max_fds_unrelated_to_ulimit)
 		return;
@@ -233,7 +233,7 @@ delete_from_fdwsi(const struct aws_lws_context *context, struct lws *wsi)
 }
 
 void
-aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws *wsi)
+aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -245,7 +245,7 @@ aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws 
 
 void
 aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
-						struct lws *wsi, int m)
+						struct aws_lws *wsi, int m)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -258,7 +258,7 @@ aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
 
 int
 aws_lws_plat_change_pollfd(struct aws_lws_context *context,
-		      struct lws *wsi, struct aws_lws_pollfd *pfd)
+		      struct aws_lws *wsi, struct aws_lws_pollfd *pfd)
 {
 	return 0;
 }

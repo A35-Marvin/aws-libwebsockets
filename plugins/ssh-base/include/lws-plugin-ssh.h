@@ -93,7 +93,7 @@ struct aws_lws_ssh_pty {
 #define SSHMO_TOSTOP	58 /* Stop background jobs from output. */
 #define SSHMO_IEXTEN	59 /* Enable extensions. */
 #define SSHMO_ECHOCTL	60 /* Echo control characters as ^(Char). */
-#define SSHMO_ECHOKE	61 /* Visual erase for line kill. */
+#define SSHMO_ECHOKE	61 /* Visual erase for line aws_kill. */
 #define SSHMO_PENDIN	62 /* Retype pending input. */
 #define SSHMO_OPOST	70 /* Enable output processing. */
 #define SSHMO_OLCUC	71 /* Convert lowercase to uppercase. */
@@ -148,7 +148,7 @@ struct aws_lws_ssh_ops {
 	 * instance to call .tx_waiting() next time you can write something
 	 * to the client.
 	 */
-	int (*channel_create)(struct lws *wsi, void **priv);
+	int (*channel_create)(struct aws_lws *wsi, void **priv);
 
 	/**
 	 * channel_destroy() - Channel is being destroyed
@@ -164,13 +164,13 @@ struct aws_lws_ssh_ops {
 	 * rx() - receive payload from peer
 	 *
 	 * \param priv:	void * you set when this channel was created
-	 * \param wsi:  struct lws * for the ssh connection
+	 * \param wsi:  struct aws_lws * for the ssh connection
 	 * \param buf:	pointer to start of received data
 	 * \param len:	bytes of received data available at buf
 	 *
 	 * len bytes of payload from the peer arrived and is available at buf
 	 */
-	int (*rx)(void *priv, struct lws *wsi, const uint8_t *buf, uint32_t len);
+	int (*rx)(void *priv, struct aws_lws *wsi, const uint8_t *buf, uint32_t len);
 
 	/**
 	 * tx_waiting() - report if data waiting to transmit on the channel
@@ -217,7 +217,7 @@ struct aws_lws_ssh_ops {
 	 * the error isn't fatal... the plugin will generate a random key and
 	 * store it using *get_server_key() for subsequent times.
 	 */
-	size_t (*get_server_key)(struct lws *wsi, uint8_t *buf, size_t len);
+	size_t (*get_server_key)(struct aws_lws *wsi, uint8_t *buf, size_t len);
 
 	/**
 	 * set_server_key() - store the secret keypair of this server
@@ -229,7 +229,7 @@ struct aws_lws_ssh_ops {
 	 * store the server key in buf, length len, to nonvolatile stg.
 	 * Return length stored, 0 for fail.
 	 */
-	size_t (*set_server_key)(struct lws *wsi, uint8_t *buf, size_t len);
+	size_t (*set_server_key)(struct aws_lws *wsi, uint8_t *buf, size_t len);
 
 	/**
 	 * set_env() - Set environment variable
@@ -246,27 +246,27 @@ struct aws_lws_ssh_ops {
 	 * exec() - spawn command and wire up stdin/out/err to ssh channel
 	 *
 	 * \param priv:	void * you set when this channel was created
-	 * \param wsi: the struct lws the connection belongs to
+	 * \param wsi: the struct aws_lws the connection belongs to
 	 * \param command:	string containing path to app and arguments
 	 * \param finish: function to call to indicate the exec finished
 	 * \param finish_handle: opaque handle identifying this exec for use with \p finish
 	 *
 	 * Client requested to exec something.  Return nonzero to fail.
 	 */
-	int (*exec)(void *priv, struct lws *wsi, const char *command, aws_lws_ssh_finish_exec finish, void *finish_handle);
+	int (*exec)(void *priv, struct aws_lws *wsi, const char *command, aws_lws_ssh_finish_exec finish, void *finish_handle);
 
 	/**
 	 * shell() - Spawn shell that is appropriate for user
 	 *
 	 * \param priv:	void * you set when this channel was created
-	 * \param wsi: the struct lws the connection belongs to
+	 * \param wsi: the struct aws_lws the connection belongs to
 	 * \param finish: function to call to indicate the exec finished
 	 * \param finish_handle: opaque handle identifying this exec for use with \p finish
 	 *
 	 * Spawn the appropriate shell for this user.  Return 0 for OK
 	 * or nonzero to fail.
 	 */
-	int (*shell)(void *priv, struct lws *wsi, aws_lws_ssh_finish_exec finish, void *finish_handle);
+	int (*shell)(void *priv, struct aws_lws *wsi, aws_lws_ssh_finish_exec finish, void *finish_handle);
 
 	/**
 	 * pty_req() - Create a Pseudo-TTY as described in pty
@@ -282,23 +282,23 @@ struct aws_lws_ssh_ops {
 	 * child_process_io() - Child process has IO
 	 *
 	 * \param priv:	void * you set when this channel was created
-	 * \param wsi: the struct lws the connection belongs to
+	 * \param wsi: the struct aws_lws the connection belongs to
 	 * \param args: information related to the cgi IO events
 	 *
 	 * Child process has IO
 	 */
-	int (*child_process_io)(void *priv, struct lws *wsi,
+	int (*child_process_io)(void *priv, struct aws_lws *wsi,
 				struct aws_lws_cgi_args *args);
 
 	/**
 	 * child_process_io() - Child process has terminated
 	 *
 	 * \param priv:	void * you set when this channel was created
-	 * \param wsi: the struct lws the connection belongs to
+	 * \param wsi: the struct aws_lws the connection belongs to
 	 *
 	 * Child process has terminated
 	 */
-	int (*child_process_terminated)(void *priv, struct lws *wsi);
+	int (*child_process_terminated)(void *priv, struct aws_lws *wsi);
 
 	/**
 	 * disconnect_reason() - Optional notification why connection is lost

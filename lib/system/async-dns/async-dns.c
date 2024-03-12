@@ -88,7 +88,7 @@ aws_lws_async_dns_complete(aws_lws_adns_q_t *q, aws_lws_adns_cache_t *c)
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 				   aws_lws_dll2_get_head(&q->wsi_adns)) {
-		struct lws *w = aws_lws_container_of(d, struct lws, adns);
+		struct aws_lws *w = aws_lws_container_of(d, struct aws_lws, adns);
 
 		aws_lws_dll2_remove(d);
 		if (c && c->results) {
@@ -140,7 +140,7 @@ aws_lws_async_dns_sul_cb_retry(struct aws_lws_sorted_usec_list *sul)
 }
 
 static void
-aws_lws_async_dns_writeable(struct lws *wsi, aws_lws_adns_q_t *q)
+aws_lws_async_dns_writeable(struct aws_lws *wsi, aws_lws_adns_q_t *q)
 {
 	uint8_t pkt[LWS_PRE + DNS_PACKET_LEN], *e = &pkt[sizeof(pkt)], *p, *pl;
 	int m, n, which;
@@ -283,7 +283,7 @@ qfail:
 }
 
 static int
-callback_async_dns(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_async_dns(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		   void *user, void *in, size_t len)
 {
 	struct aws_lws_async_dns *dns = &(aws_lws_get_context(wsi)->async_dns);
@@ -571,7 +571,7 @@ cancel(struct aws_lws_dll2 *d, void *user)
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d3, d4,
 				   aws_lws_dll2_get_head(&q->wsi_adns)) {
-		struct lws *w = aws_lws_container_of(d3, struct lws, adns);
+		struct aws_lws *w = aws_lws_container_of(d3, struct aws_lws, adns);
 
 		if (user == w) {
 			aws_lws_dll2_remove(d3);
@@ -585,7 +585,7 @@ cancel(struct aws_lws_dll2 *d, void *user)
 }
 
 void
-aws_lws_async_dns_cancel(struct lws *wsi)
+aws_lws_async_dns_cancel(struct aws_lws *wsi)
 {
 	aws_lws_async_dns_t *dns = &wsi->a.context->async_dns;
 
@@ -647,7 +647,7 @@ struct temp_q {
 aws_lws_async_dns_retcode_t
 aws_lws_async_dns_query(struct aws_lws_context *context, int tsi, const char *name,
 		    adns_query_type_t qtype, aws_lws_async_dns_cb_t cb,
-		    struct lws *wsi, void *opaque)
+		    struct aws_lws *wsi, void *opaque)
 {
 	aws_lws_async_dns_t *dns = &context->async_dns;
 	size_t nlen = strlen(name);

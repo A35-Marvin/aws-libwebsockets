@@ -45,10 +45,10 @@
  * Requires context + vhost lock
  */
 
-static struct lws *
+static struct aws_lws *
 aws___lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int create_ok)
 {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	if (fd < 0 || fd >= (int)ctx->vh->context->fd_limit_per_thread) {
 		aws_lwsl_err("%s: fd %d vs fds_count %d\n", __func__, fd,
@@ -92,7 +92,7 @@ aws___lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int cre
 		     &wsi->lc, "dbus|%s", ctx->vh->name);
 
 	aws_lws_vhost_bind_wsi(ctx->vh, wsi);
-	if (__insert_wsi_socket_into_fds(ctx->vh->context, wsi)) {
+	if (aws___insert_wsi_socket_into_fds(ctx->vh->context, wsi)) {
 		aws_lwsl_err("inserting wsi socket into fds failed\n");
 		aws___lws_vhost_unbind_wsi(wsi); /* cx + vh lock */
 		aws_lws_free(wsi);
@@ -107,14 +107,14 @@ aws___lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int cre
  */
 
 static int
-aws___lws_shadow_wsi_destroy(struct aws_lws_dbus_ctx *ctx, struct lws *wsi)
+aws___lws_shadow_wsi_destroy(struct aws_lws_dbus_ctx *ctx, struct aws_lws *wsi)
 {
 	aws_lwsl_info("%s: destroying shadow wsi\n", __func__);
 
 	aws_lws_context_assert_lock_held(wsi->a.context);
 	aws_lws_vhost_assert_lock_held(wsi->a.vhost);
 
-	if (__remove_wsi_socket_from_fds(wsi)) {
+	if (aws___remove_wsi_socket_from_fds(wsi)) {
 		aws_lwsl_err("%s: unable to remove %d from fds\n", __func__,
 				wsi->desc.sockfd);
 
@@ -151,7 +151,7 @@ aws_lws_dbus_add_watch(DBusWatch *w, void *data)
 	struct aws_lws_dbus_ctx *ctx = (struct aws_lws_dbus_ctx *)data;
 	struct aws_lws_context_per_thread *pt = &ctx->vh->context->pt[ctx->tsi];
 	unsigned int flags = 0, aws_lws_flags = 0;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int n;
 
 	aws_lws_context_lock(pt->context, __func__);
@@ -201,7 +201,7 @@ aws_lws_dbus_add_watch(DBusWatch *w, void *data)
 
 /* cx + vh lock */
 static int
-__check_destroy_shadow_wsi(struct aws_lws_dbus_ctx *ctx, struct lws *wsi)
+__check_destroy_shadow_wsi(struct aws_lws_dbus_ctx *ctx, struct aws_lws *wsi)
 {
 	int n;
 
@@ -233,7 +233,7 @@ aws_lws_dbus_remove_watch(DBusWatch *w, void *data)
 	struct aws_lws_dbus_ctx *ctx = (struct aws_lws_dbus_ctx *)data;
 	struct aws_lws_context_per_thread *pt = &ctx->vh->context->pt[ctx->tsi];
 	unsigned int flags = 0, aws_lws_flags = 0;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int n;
 
 	aws_lws_context_lock(pt->context, __func__);
@@ -474,7 +474,7 @@ bail:
  */
 
 static int
-rops_handle_POLLIN_dbus(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_dbus(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_dbus_ctx *ctx =

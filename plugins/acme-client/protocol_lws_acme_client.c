@@ -87,7 +87,7 @@ struct acme_connection {
 	struct aws_lws_context_creation_info ci;
 	struct aws_lws_vhost *vhost;
 
-	struct lws *cwsi;
+	struct aws_lws *cwsi;
 
 	const char *real_vh_name;
 	const char *real_vh_iface;
@@ -137,7 +137,7 @@ struct per_vhost_data__lws_acme_client {
 };
 
 static int
-callback_chall_http01(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_chall_http01(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
         void *user, void *in, size_t len)
 {
 	struct aws_lws_vhost *vhost = aws_lws_get_vhost(wsi);
@@ -319,7 +319,7 @@ bail:
 }
 
 static int
-callback_acme_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_acme_client(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		void *user, void *in, size_t len);
 
 #define LWS_PLUGIN_PROTOCOL_LWS_ACME_CLIENT \
@@ -585,14 +585,14 @@ aws_lws_acme_report_status(struct aws_lws_vhost *v, int state, const char *json)
 /*
  * Notice: trashes i and url
  */
-static struct lws *
+static struct aws_lws *
 aws_lws_acme_client_connect(struct aws_lws_context *context, struct aws_lws_vhost *vh,
-		struct lws **pwsi, struct aws_lws_client_connect_info *i,
+		struct aws_lws **pwsi, struct aws_lws_client_connect_info *i,
 		char *url, const char *method)
 {
 	const char *prot, *p;
 	char path[200], _url[256];
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	memset(i, 0, sizeof(*i));
 	i->port = 443;
@@ -770,7 +770,7 @@ bail:
 }
 
 static int
-callback_acme_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_acme_client(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		void *user, void *in, size_t len)
 {
 	struct per_vhost_data__lws_acme_client *vhd =
@@ -785,7 +785,7 @@ callback_acme_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	unsigned char **pp, *pend;
 	const char *content_type;
 	struct aws_lws_jwe jwe;
-	struct lws *cwsi;
+	struct aws_lws *cwsi;
 	int n, m;
 
 	if (vhd)

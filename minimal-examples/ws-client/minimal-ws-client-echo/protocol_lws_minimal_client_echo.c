@@ -41,7 +41,7 @@ struct per_session_data__minimal_client_echo {
 struct vhd_minimal_client_echo {
 	struct aws_lws_context *context;
 	struct aws_lws_vhost *vhost;
-	struct lws *client_wsi;
+	struct aws_lws *client_wsi;
 
 	aws_lws_sorted_usec_list_t sul;
 
@@ -97,7 +97,7 @@ __minimal_destroy_message(void *_msg)
 }
 
 static int
-callback_minimal_client_echo(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_client_echo(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal_client_echo *pss =

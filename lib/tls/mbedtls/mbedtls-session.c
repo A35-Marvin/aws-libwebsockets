@@ -71,7 +71,7 @@ aws___lws_tls_session_lookup_by_name(struct aws_lws_vhost *vh, const char *name)
  */
 
 void
-aws_lws_tls_reuse_session(struct lws *wsi)
+aws_lws_tls_reuse_session(struct aws_lws *wsi)
 {
 	char buf[LWS_SESSION_TAG_LEN];
 	mbedtls_ssl_context *msc;
@@ -111,10 +111,10 @@ bail:
 }
 
 int
-aws_lws_tls_session_is_reused(struct lws *wsi)
+aws_lws_tls_session_is_reused(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_CLIENT)
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (!nwsi)
 		return 0;
@@ -161,7 +161,7 @@ aws_lws_tls_session_expiry_cb(aws_lws_sorted_usec_list_t *sul)
  */
 
 int
-aws_lws_tls_session_new_mbedtls(struct lws *wsi)
+aws_lws_tls_session_new_mbedtls(struct aws_lws *wsi)
 {
 	char buf[LWS_SESSION_TAG_LEN];
 	mbedtls_ssl_context *msc;
@@ -286,7 +286,7 @@ aws_lws_sess_cache_synth_cb(aws_lws_sorted_usec_list_t *sul)
 {
 	struct aws_lws_lws_tls *tls = aws_lws_container_of(sul, struct aws_lws_lws_tls,
 						   sul_cb_synth);
-	struct lws *wsi = aws_lws_container_of(tls, struct lws, tls);
+	struct aws_lws *wsi = aws_lws_container_of(tls, struct aws_lws, tls);
 
 	aws_lws_tls_session_new_mbedtls(wsi);
 }

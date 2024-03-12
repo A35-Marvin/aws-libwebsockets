@@ -90,7 +90,7 @@ typedef struct aws_lws_dhcpc_req {
 	void			*opaque;    /* ignored by lws, give to cb */
 
 	/* these are separated so we can close the bcast one asynchronously */
-	struct lws		*wsi_raw;   /* for broadcast */
+	struct aws_lws		*wsi_raw;   /* for broadcast */
 	aws_lws_dhcpc_state_t	state;
 
 	aws_lws_dhcpc_ifstate_t	is;

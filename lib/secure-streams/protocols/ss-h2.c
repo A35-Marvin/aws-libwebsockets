@@ -25,11 +25,11 @@
 #include <private-lib-core.h>
 
 extern int
-secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+secstream_h1(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len);
 
 static int
-secstream_h2(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+secstream_h2(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);

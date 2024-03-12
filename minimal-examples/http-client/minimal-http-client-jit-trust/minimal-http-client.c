@@ -20,7 +20,7 @@ static int interrupted, bad = 1, status, conmon;
 #if defined(LWS_WITH_HTTP2)
 static int long_poll;
 #endif
-static struct lws *client_wsi;
+static struct aws_lws *client_wsi;
 static const char *ba_user, *ba_password;
 static int budget = 6;
 
@@ -41,7 +41,7 @@ static const aws_lws_retry_bo_t retry = {
 
 #if defined(LWS_WITH_CONMON)
 void
-dump_conmon_data(struct lws *wsi)
+dump_conmon_data(struct aws_lws *wsi)
 {
 	const struct addrinfo *ai;
 	struct aws_lws_conmon cm;
@@ -198,7 +198,7 @@ static const char *ua = "Mozilla/5.0 (X11; Linux x86_64) "
 		  *acc = "*/*";
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {

@@ -2004,7 +2004,7 @@ pad_and_encrypt(uint8_t *dest, void *ps, uint8_t *pp,
 }
 
 static int
-aws_lws_callback_raw_sshd(struct lws *wsi, enum aws_lws_callback_reasons reason,
+aws_lws_callback_raw_sshd(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		      void *user, void *in, size_t len)
 {
 	struct per_session_data__sshd *pss =

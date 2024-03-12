@@ -32,14 +32,14 @@
 extern int openssl_websocket_private_data_index,
 	   openssl_SSL_CTX_private_data_index;
 
-int aws_lws_openssl_describe_cipher(struct lws *wsi);
+int aws_lws_openssl_describe_cipher(struct aws_lws *wsi);
 
 static int
 OpenSSL_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 {
 	SSL *ssl;
 	int n;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	union aws_lws_tls_cert_info_results ir;
 	X509 *topcert = X509_STORE_CTX_get_current_cert(x509_ctx);
 
@@ -150,7 +150,7 @@ aws_lws_ssl_server_name_cb(SSL *ssl, int *ad, void *arg)
  * available.
  */
 int
-aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct lws *wsi,
+aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct aws_lws *wsi,
 			  const char *cert, const char *private_key,
 			  const char *mem_cert, size_t mem_cert_len,
 			  const char *mem_privkey, size_t mem_privkey_len)
@@ -505,7 +505,7 @@ post_ecdh:
 
 int
 aws_lws_tls_server_vhost_backend_init(const struct aws_lws_context_creation_info *info,
-				  struct aws_lws_vhost *vhost, struct lws *wsi)
+				  struct aws_lws_vhost *vhost, struct aws_lws *wsi)
 {
 	unsigned long error;
 	SSL_METHOD *method = (SSL_METHOD *)SSLv23_server_method();
@@ -629,7 +629,7 @@ aws_lws_tls_server_vhost_backend_init(const struct aws_lws_context_creation_info
 }
 
 int
-aws_lws_tls_server_new_nonblocking(struct lws *wsi, aws_lws_sockfd_type accept_fd)
+aws_lws_tls_server_new_nonblocking(struct aws_lws *wsi, aws_lws_sockfd_type accept_fd)
 {
 #if !defined(USE_WOLFSSL)
 	BIO *bio;
@@ -680,7 +680,7 @@ aws_lws_tls_server_new_nonblocking(struct lws *wsi, aws_lws_sockfd_type accept_f
 }
 
 int
-aws_lws_tls_server_abort_connection(struct lws *wsi)
+aws_lws_tls_server_abort_connection(struct aws_lws *wsi)
 {
 	if (wsi->tls.use_ssl)
 		SSL_shutdown(wsi->tls.ssl);
@@ -690,7 +690,7 @@ aws_lws_tls_server_abort_connection(struct lws *wsi)
 }
 
 enum aws_lws_ssl_capable_status
-aws_lws_tls_server_accept(struct lws *wsi)
+aws_lws_tls_server_accept(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	union aws_lws_tls_cert_info_results ir;

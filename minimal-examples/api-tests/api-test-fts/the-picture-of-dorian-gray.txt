@@ -1051,7 +1051,7 @@ Till I have my first wrinkle, I suppose.  I know, now, that when one
 loses one's good looks, whatever they may be, one loses everything.
 Your picture has taught me that.  Lord Henry Wotton is perfectly right.
 Youth is the only thing worth having.  When I find that I am growing
-old, I shall kill myself."
+old, I shall aws_kill myself."
 
 Hallward turned pale and caught his hand.  "Dorian!  Dorian!" he cried,
 "don't talk like that.  I have never had such a friend as you, and I
@@ -2704,7 +2704,7 @@ it had left the space clear, the carriage had swept out of the park.
 "He is gone," murmured Sibyl sadly.  "I wish you had seen him."
 
 "I wish I had, for as sure as there is a God in heaven, if he ever does
-you any wrong, I shall kill him."
+you any wrong, I shall aws_kill him."
 
 She looked at him in horror.  He repeated his words.  They cut the air
 like a dagger.  The people round began to gape.  A lady standing close
@@ -2808,7 +2808,7 @@ her.  "I am sorry if I have pained you by asking about my father," he
 said, "but I could not help it.  I must go now.  Good-bye. Don't forget
 that you will have only one child now to look after, and believe me
 that if this man wrongs my sister, I will find out who he is, track him
-down, and kill him like a dog.  I swear it."
+down, and aws_kill him like a dog.  I swear it."
 
 The exaggerated folly of the threat, the passionate gesture that
 accompanied it, the mad melodramatic words, made life seem more vivid
@@ -3839,7 +3839,7 @@ made me afraid.  I can't tell you what it was, but it was terrible.  I
 said I would go back to her.  I felt I had done wrong.  And now she is
 dead.  My God!  My God!  Harry, what shall I do?  You don't know the
 danger I am in, and there is nothing to keep me straight.  She would
-have done that for me.  She had no right to kill herself.  It was
+have done that for me.  She had no right to aws_kill herself.  It was
 selfish of her."
 
 "My dear Dorian," answered Lord Henry, taking a cigarette from his case
@@ -4957,7 +4957,7 @@ conscious of sharing with the less highly organized forms of existence.
 But it appeared to Dorian Gray that the true nature of the senses had
 never been understood, and that they had remained savage and animal
 merely because the world had sought to starve them into submission or
-to kill them by pain, instead of aiming at making them elements of a
+to aws_kill them by pain, instead of aiming at making them elements of a
 new spirituality, of which a fine instinct for beauty was to be the
 dominant characteristic.  As he looked back upon man moving through
 history, he was haunted by a feeling of loss.  So much had been
@@ -6071,7 +6071,7 @@ Gradually the events of the preceding night crept with silent,
 blood-stained feet into his brain and reconstructed themselves there
 with terrible distinctness.  He winced at the memory of all that he had
 suffered, and for a moment the same curious feeling of loathing for
-Basil Hallward that had made him kill him as he sat in the chair came
+Basil Hallward that had made him aws_kill him as he sat in the chair came
 back to him, and he grew cold with passion.  The dead man was still
 sitting there, too, and in the sunlight now.  How horrible that was!
 Such hideous things were for the darkness, not for the day.
@@ -7187,7 +7187,7 @@ and the dusky form of a short, thick-set man facing him.
 
 "You wrecked the life of Sibyl Vane," was the answer, "and Sibyl Vane
 was my sister.  She killed herself.  I know it.  Her death is at your
-door.  I swore I would kill you in return.  For years I have sought
+door.  I swore I would aws_kill you in return.  For years I have sought
 you.  I had no clue, no trace.  The two people who could have described
 you were dead.  I knew nothing of you but the pet name she used to call
 you.  I heard it to-night by chance.  Make your peace with God, for
@@ -7217,7 +7217,7 @@ Then he seized Dorian Gray and dragged him from the archway.
 
 Dim and wavering as was the wind-blown light, yet it served to show him
 the hideous error, as it seemed, into which he had fallen, for the face
-of the man he had sought to kill had all the bloom of boyhood, all the
+of the man he had sought to aws_kill had all the bloom of boyhood, all the
 unstained purity of youth.  He seemed little more than a lad of twenty
 summers, hardly older, if older indeed at all, than his sister had been
 when they had parted so many years ago.  It was obvious that this was
@@ -7245,7 +7245,7 @@ with stealthy footsteps.  He felt a hand laid on his arm and looked
 round with a start.  It was one of the women who had been drinking at
 the bar.
 
-"Why didn't you kill him?" she hissed out, putting haggard face quite
+"Why didn't you aws_kill him?" she hissed out, putting haggard face quite
 close to his.  "I knew you were following him when you rushed out from
 Daly's. You fool!  You should have killed him.  He has lots of money,
 and he's as bad as bad."
@@ -7620,7 +7620,7 @@ upon the weak.  That was all.  Besides, had any stranger been prowling
 round the house, he would have been seen by the servants or the
 keepers.  Had any foot-marks been found on the flower-beds, the
 gardeners would have reported it.  Yes, it had been merely fancy.
-Sibyl Vane's brother had not come back to kill him.  He had sailed away
+Sibyl Vane's brother had not come back to aws_kill him.  He had sailed away
 in his ship to founder in some winter sea.  From him, at any rate, he
 was safe.  Why, the man did not know who he was, could not know who he
 was.  The mask of youth had saved him.
@@ -8495,8 +8495,8 @@ conscience to him.  Yes, it had been conscience.  He would destroy it.
 He looked round and saw the knife that had stabbed Basil Hallward.  He
 had cleaned it many times, till there was no stain left upon it.  It
 was bright, and glistened.  As it had killed the painter, so it would
-kill the painter's work, and all that that meant.  It would kill the
-past, and when that was dead, he would be free.  It would kill this
+aws_kill the painter's work, and all that that meant.  It would aws_kill the
+past, and when that was dead, he would be free.  It would aws_kill this
 monstrous soul-life, and without its hideous warnings, he would be at
 peace.  He seized the thing, and stabbed the picture with it.
 

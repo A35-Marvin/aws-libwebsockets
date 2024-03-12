@@ -33,7 +33,7 @@
 #include <fcntl.h>
 
 int
-aws_lws_plat_pipe_create(struct lws *wsi)
+aws_lws_plat_pipe_create(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct sockaddr_in *si = &pt->frt_pipe_si;
@@ -114,7 +114,7 @@ aws_lws_plat_pipe_signal(struct aws_lws_context *ctx, int tsi)
 }
 
 void
-aws_lws_plat_pipe_close(struct lws *wsi)
+aws_lws_plat_pipe_close(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 

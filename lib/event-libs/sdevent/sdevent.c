@@ -91,7 +91,7 @@ idle_handler(sd_event_source *s, uint64_t usec, void *userdata)
 static int
 sock_accept_handler(sd_event_source *s, int fd, uint32_t revents, void *userdata)
 {
-	struct lws *wsi = (struct lws *)userdata;
+	struct aws_lws *wsi = (struct aws_lws *)userdata;
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct sd_event_source *idletimer, *watcher;
@@ -154,7 +154,7 @@ bail:
 }
 
 static void
-io_sd(struct lws *wsi, unsigned int flags)
+io_sd(struct aws_lws *wsi, unsigned int flags)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -210,7 +210,7 @@ io_sd(struct lws *wsi, unsigned int flags)
 }
 
 static int
-init_vhost_listen_wsi_sd(struct lws *wsi)
+init_vhost_listen_wsi_sd(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt;
 
@@ -234,7 +234,7 @@ init_vhost_listen_wsi_sd(struct lws *wsi)
 static int
 elops_listen_init_sdevent(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 
 	if (init_vhost_listen_wsi_sd(wsi) == -1)
 		return -1;
@@ -309,7 +309,7 @@ init_pt_sd(struct aws_lws_context *context, void *_loop, int tsi)
 }
 
 static void
-wsi_destroy_sd(struct lws *wsi)
+wsi_destroy_sd(struct aws_lws *wsi)
 {
 	if (!wsi)
 		return;
@@ -325,7 +325,7 @@ wsi_destroy_sd(struct lws *wsi)
 }
 
 static int
-wsi_logical_close_sd(struct lws *wsi)
+wsi_logical_close_sd(struct aws_lws *wsi)
 {
 	wsi_destroy_sd(wsi);
 
@@ -333,7 +333,7 @@ wsi_logical_close_sd(struct lws *wsi)
 }
 
 static int
-sock_accept_sd(struct lws *wsi)
+sock_accept_sd(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -368,7 +368,7 @@ run_pt_sd(struct aws_lws_context *context, int tsi)
 static int
 elops_listen_destroy_sdevent(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 
 	wsi_logical_close_sd(wsi);
 

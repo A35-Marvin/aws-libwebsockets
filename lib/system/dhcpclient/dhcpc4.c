@@ -138,7 +138,7 @@ aws_lws_dhcpc4_prep(uint8_t *start, unsigned int bufsiz, aws_lws_dhcpc_req_t *r,
 }
 
 static int
-callback_dhcpc4(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_dhcpc4(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	       void *in, size_t len)
 {
 	aws_lws_dhcpc_req_t *r = (aws_lws_dhcpc_req_t *)user;

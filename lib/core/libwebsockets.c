@@ -115,7 +115,7 @@ aws_lws_vbi_decode(const void *buf, uint64_t *value, size_t len)
 	return 0;
 }
 
-signed char char_to_hex(const char c)
+signed char aws_char_to_hex(const char c)
 {
 	if (c >= '0' && c <= '9')
 		return (signed char)(c - '0');
@@ -135,12 +135,12 @@ aws_lws_hex_to_byte_array(const char *h, uint8_t *dest, int max)
 	uint8_t *odest = dest;
 
 	while (max-- && *h) {
-		int t = char_to_hex(*h++), t1;
+		int t = aws_char_to_hex(*h++), t1;
 
 		if (!*h || t < 0)
 			return -1;
 
-		t1 = char_to_hex(*h++);
+		t1 = aws_char_to_hex(*h++);
 		if (t1 < 0)
 			return -1;
 
@@ -705,7 +705,7 @@ aws_lws_urldecode(char *string, const char *escaped, int len)
 			len--;
 			break;
 		case 1:
-			n = char_to_hex(*escaped);
+			n = aws_char_to_hex(*escaped);
 			if (n < 0)
 				return -1;
 			escaped++;
@@ -714,7 +714,7 @@ aws_lws_urldecode(char *string, const char *escaped, int len)
 			break;
 
 		case 2:
-			n = char_to_hex(*escaped);
+			n = aws_char_to_hex(*escaped);
 			if (n < 0)
 				return -1;
 			escaped++;

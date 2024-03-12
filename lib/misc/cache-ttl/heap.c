@@ -107,7 +107,7 @@ aws_lws_cache_heap_item_destroy(aws_lws_cache_ttl_lru_t_heap_t *cache,
 
 			/*
 			 * If the item about to be destroyed makes an
-			 * appearance on the meta results list, we must kill
+			 * appearance on the meta results list, we must aws_kill
 			 * the meta result item to force recalc next time
 			 */
 

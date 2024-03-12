@@ -98,7 +98,7 @@ enum pending_timeout {
  *		wsi is not the one currently being serviced.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs);
+aws_lws_set_timeout(struct aws_lws *wsi, enum pending_timeout reason, int secs);
 
 /**
  * aws_lws_set_timeout_us() - marks the wsi as subject to a timeout some us hence
@@ -111,7 +111,7 @@ aws_lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs);
  * on platform and load, usually ms.
  */
 void
-aws_lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, aws_lws_usec_t us);
+aws_lws_set_timeout_us(struct aws_lws *wsi, enum pending_timeout reason, aws_lws_usec_t us);
 
 /* helper for clearer LWS_TO_KILL_ASYNC / LWS_TO_KILL_SYNC usage */
 #define aws_lws_wsi_close(w, to_kill) aws_lws_set_timeout(w, 1, to_kill)
@@ -148,7 +148,7 @@ aws_lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, aws_lws_use
  * period.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t usecs);
+aws_lws_set_timer_usecs(struct aws_lws *wsi, aws_lws_usec_t usecs);
 
 struct aws_lws_sorted_usec_list;
 
@@ -288,7 +288,7 @@ aws_lws_sul_debug_zombies(struct aws_lws_context *ctx, void *po, size_t len,
  * the connection validity timer is reset and the scheme repeats.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_validity_confirmed(struct lws *wsi);
+aws_lws_validity_confirmed(struct aws_lws *wsi);
 
 /*
  * These are not normally needed, they're exported for the case there's code

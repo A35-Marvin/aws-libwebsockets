@@ -123,14 +123,14 @@ aws__lws_logv(int filter, const char *format, va_list vl);
 #endif
 
 struct aws_lws_vhost;
-struct lws;
+struct aws_lws;
 
 LWS_VISIBLE LWS_EXTERN struct aws_lws_log_cx *
 aws_lwsl_context_get_cx(struct aws_lws_context *cx);
 LWS_VISIBLE LWS_EXTERN struct aws_lws_log_cx *
 aws_lwsl_vhost_get_cx(struct aws_lws_vhost *vh);
 LWS_VISIBLE LWS_EXTERN struct aws_lws_log_cx *
-aws_lwsl_wsi_get_cx(struct lws *wsi);
+aws_lwsl_wsi_get_cx(struct aws_lws *wsi);
 #if defined(LWS_WITH_SECURE_STREAMS)
 struct aws_lws_ss_handle;
 struct aws_lws_sspc_handle;
@@ -775,10 +775,10 @@ aws_lwsl_emit_stderr_notimestamp(int level, const char *line);
 LWS_VISIBLE LWS_EXTERN int
 aws_lwsl_visible(int level);
 
-struct lws;
+struct aws_lws;
 
 LWS_VISIBLE LWS_EXTERN const char *
-aws_lws_wsi_tag(struct lws *wsi);
+aws_lws_wsi_tag(struct aws_lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void
 aws_lwsl_refcount_cx(aws_lws_log_cx_t *cx, int _new);

@@ -69,7 +69,7 @@ aws___lws_tls_session_lookup_by_name(struct aws_lws_vhost *vh, const char *name)
  */
 
 void
-aws_lws_tls_reuse_session(struct lws *wsi)
+aws_lws_tls_reuse_session(struct aws_lws *wsi)
 {
 	char tag[LWS_SESSION_TAG_LEN];
 	aws_lws_tls_sco_t *ts;
@@ -119,10 +119,10 @@ bail:
 }
 
 int
-aws_lws_tls_session_is_reused(struct lws *wsi)
+aws_lws_tls_session_is_reused(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_CLIENT)
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (!nwsi || !nwsi->tls.ssl)
 		return 0;
@@ -205,7 +205,7 @@ aws_lws_tls_session_add_entry(struct aws_lws_vhost *vh, const char *tag)
 static int
 aws_lws_tls_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 {
-	struct lws *wsi = (struct lws *)SSL_get_ex_data(ssl,
+	struct aws_lws *wsi = (struct aws_lws *)SSL_get_ex_data(ssl,
 					openssl_websocket_private_data_index);
 	char tag[LWS_SESSION_TAG_LEN];
 	struct aws_lws_vhost *vh;
@@ -311,7 +311,7 @@ aws_lws_sess_cache_synth_cb(aws_lws_sorted_usec_list_t *sul)
 {
 	struct aws_lws_lws_tls *tls = aws_lws_container_of(sul, struct aws_lws_lws_tls,
 						   sul_cb_synth);
-	struct lws *wsi = aws_lws_container_of(tls, struct lws, tls);
+	struct aws_lws *wsi = aws_lws_container_of(tls, struct aws_lws, tls);
 	SSL_SESSION *sess;
 
 	if (aws_lws_tls_session_is_reused(wsi))

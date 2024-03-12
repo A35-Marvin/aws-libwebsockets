@@ -261,7 +261,7 @@ typedef enum {
 } aws_lws_mqtt_property;
 
 int
-aws_lws_read_mqtt(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
+aws_lws_read_mqtt(struct aws_lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
 
 /* returns 0 if bd1 and bd2 are "the same", that includes empty, else nonzero */
 LWS_VISIBLE LWS_EXTERN int
@@ -317,7 +317,7 @@ aws_lws_mqtt_str_free(aws_lws_mqtt_str_t **s);
  * Final should be set when you're calling with the last part of the payload.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_mqtt_client_send_publish(struct lws *wsi, aws_lws_mqtt_publish_param_t *pub,
+aws_lws_mqtt_client_send_publish(struct aws_lws *wsi, aws_lws_mqtt_publish_param_t *pub,
 			     const void *buf, uint32_t len, int final);
 
 /**
@@ -334,7 +334,7 @@ aws_lws_mqtt_client_send_publish(struct lws *wsi, aws_lws_mqtt_publish_param_t *
  * \p sub doesn't need to exist after the return from this function.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_mqtt_client_send_subcribe(struct lws *wsi, aws_lws_mqtt_subscribe_param_t *sub);
+aws_lws_mqtt_client_send_subcribe(struct aws_lws *wsi, aws_lws_mqtt_subscribe_param_t *sub);
 
 /**
  * aws_lws_mqtt_client_send_unsubcribe() - aws_lws_write a unsubscribe packet
@@ -351,7 +351,7 @@ aws_lws_mqtt_client_send_subcribe(struct lws *wsi, aws_lws_mqtt_subscribe_param_
  * \p unsub doesn't need to exist after the return from this function.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_mqtt_client_send_unsubcribe(struct lws *wsi,
+aws_lws_mqtt_client_send_unsubcribe(struct aws_lws *wsi,
 				const aws_lws_mqtt_subscribe_param_t *unsub);
 
 #endif /* _LWS_MQTT_H */

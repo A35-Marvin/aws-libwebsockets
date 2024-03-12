@@ -443,7 +443,7 @@ aws_lws_ss_event_helper(aws_lws_ss_handle_t *h, aws_lws_ss_constate_t cs)
 }
 
 int
-aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct lws *wsi,
+aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct aws_lws *wsi,
 			 aws_lws_ss_handle_t **ph)
 {
 	if (r == LWSSSSRET_DESTROY_ME) {
@@ -672,7 +672,7 @@ aws__lws_ss_client_connect(aws_lws_ss_handle_t *h, int is_retry, void *conn_if_s
 	int port, _port, tls;
 	char *path, ep[96];
 	aws_lws_strexp_t exp;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	aws_lws_service_assert_loop_thread(h->context, h->tsi);
 
@@ -1520,7 +1520,7 @@ aws_lws_ss_destroy(aws_lws_ss_handle_t **ppss)
 	/*
 	 * If any hanging caliper measurement, dump it, and free any tags
 	 */
-	aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+	aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 
 	aws_lws_sul_cancel(&h->sul_timeout);

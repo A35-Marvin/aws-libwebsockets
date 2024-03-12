@@ -97,8 +97,8 @@ static const struct async_dns_tests {
 
 static aws_lws_sorted_usec_list_t sul;
 
-struct lws *
-cb1(struct lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
+struct aws_lws *
+cb1(struct aws_lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
     void *opaque);
 
 static void
@@ -118,8 +118,8 @@ next_test_cb(aws_lws_sorted_usec_list_t *sul)
 	}
 }
 
-struct lws *
-cb1(struct lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
+struct aws_lws *
+cb1(struct aws_lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
     void *opaque)
 {
 	const struct addrinfo *ac = a;
@@ -200,8 +200,8 @@ next:
 
 static aws_lws_sorted_usec_list_t sul_l;
 
-struct lws *
-cb_loop(struct lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
+struct aws_lws *
+cb_loop(struct aws_lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
 		void *opaque)
 {
 	if (!a) {

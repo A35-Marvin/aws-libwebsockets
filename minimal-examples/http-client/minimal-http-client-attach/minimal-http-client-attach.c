@@ -29,7 +29,7 @@ static pthread_mutex_t lock;
 static int interrupted, bad = 1, status;
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {

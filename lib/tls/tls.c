@@ -46,7 +46,7 @@ alpn_cb(SSL *s, const unsigned char **out, unsigned char *outlen,
 #endif
 
 int
-aws_lws_tls_restrict_borrow(struct lws *wsi)
+aws_lws_tls_restrict_borrow(struct aws_lws *wsi)
 {
 	struct aws_lws_context *cx = wsi->a.context;
 
@@ -93,7 +93,7 @@ aws_lws_tls_restrict_borrow(struct lws *wsi)
 }
 
 static void
-aws__lws_tls_restrict_return(struct lws *wsi)
+aws__lws_tls_restrict_return(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_SERVER)
 	struct aws_lws_context *cx = wsi->a.context;
@@ -110,7 +110,7 @@ aws__lws_tls_restrict_return(struct lws *wsi)
 }
 
 void
-aws_lws_tls_restrict_return_handshake(struct lws *wsi)
+aws_lws_tls_restrict_return_handshake(struct aws_lws *wsi)
 {
 	struct aws_lws_context *cx = wsi->a.context;
 
@@ -130,7 +130,7 @@ aws_lws_tls_restrict_return_handshake(struct lws *wsi)
 }
 
 void
-aws_lws_tls_restrict_return(struct lws *wsi)
+aws_lws_tls_restrict_return(struct aws_lws *wsi)
 {
 	struct aws_lws_context *cx = wsi->a.context;
 
@@ -179,7 +179,7 @@ aws_lws_context_init_alpn(struct aws_lws_vhost *vhost)
 }
 
 int
-aws_lws_tls_server_conn_alpn(struct lws *wsi)
+aws_lws_tls_server_conn_alpn(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_MBEDTLS) || (defined(OPENSSL_VERSION_NUMBER) && \
 				  OPENSSL_VERSION_NUMBER >= 0x10002000L)
@@ -220,7 +220,7 @@ aws_lws_tls_server_conn_alpn(struct lws *wsi)
 
 #if !defined(LWS_PLAT_OPTEE) && !defined(OPTEE_DEV_KIT)
 #if defined(LWS_PLAT_FREERTOS) && !defined(LWS_AMAZON_RTOS)
-int alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **buf,
+int aws_alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **buf,
 	       aws_lws_filepos_t *amount)
 {
 	nvs_handle nvh;
@@ -232,7 +232,7 @@ int alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **
 		n = 1;
 		goto bail;
 	}
-	*buf = aws_lws_malloc(s + 1, "alloc_file");
+	*buf = aws_lws_malloc(s + 1, "aws_alloc_file");
 	if (!*buf) {
 		n = 2;
 		goto bail;
@@ -254,7 +254,7 @@ bail:
 	return n;
 }
 #else
-int alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **buf,
+int aws_alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **buf,
 		aws_lws_filepos_t *amount)
 {
 	FILE *f;
@@ -285,7 +285,7 @@ int alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **
 		goto bail;
 	}
 
-	*buf = aws_lws_malloc(s + 1, "alloc_file");
+	*buf = aws_lws_malloc(s + 1, "aws_alloc_file");
 	if (!*buf) {
 		n = 2;
 		goto bail;
@@ -330,7 +330,7 @@ aws_lws_tls_alloc_pem_to_der_file(struct aws_lws_context *context, const char *f
 	int n;
 
 	if (filename) {
-		n = alloc_file(context, filename, (uint8_t **)&pem, &len);
+		n = aws_alloc_file(context, filename, (uint8_t **)&pem, &len);
 		if (n)
 			return n;
 	} else {

@@ -265,7 +265,7 @@ aws_lws_seq_queue_event(aws_lws_seq_t *seq, aws_lws_seq_events_t e, void *data, 
  */
 
 int
-aws_lws_seq_check_wsi(aws_lws_seq_t *seq, struct lws *wsi)
+aws_lws_seq_check_wsi(aws_lws_seq_t *seq, struct aws_lws *wsi)
 {
 	aws_lws_seq_event_t *seqe;
 	struct aws_lws_dll2 *dh;

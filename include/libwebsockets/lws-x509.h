@@ -199,7 +199,7 @@ aws_lws_x509_info(struct aws_lws_x509_cert *x509, enum aws_lws_tls_cert_info typ
  * mbedTLS.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_tls_peer_cert_info(struct lws *wsi, enum aws_lws_tls_cert_info type,
+aws_lws_tls_peer_cert_info(struct aws_lws *wsi, enum aws_lws_tls_cert_info type,
 		       union aws_lws_tls_cert_info_results *buf, size_t len);
 
 /**

@@ -45,7 +45,7 @@ typedef enum {
 
 struct per_session_data__lws_status {
 	struct per_session_data__lws_status *next;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	time_t time_est;
 	char user_agent[256];
 
@@ -83,7 +83,7 @@ trigger_resend(struct per_vhost_data__lws_status *vhd)
 /* lws-status protocol */
 
 int
-callback_lws_status(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_lws_status(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		    void *user, void *in, size_t len)
 {
 	struct per_session_data__lws_status *pss =

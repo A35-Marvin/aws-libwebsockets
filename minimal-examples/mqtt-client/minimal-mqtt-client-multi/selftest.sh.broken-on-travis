@@ -26,7 +26,7 @@ Q=`which mosquitto`
 spawn "" /tmp $Q -v
 dotest $1 $2 -p-i100000 -p -i 100000
 
-kill $SPID 2>/dev/null
+aws_kill $SPID 2>/dev/null
 wait $SPID 2>/dev/null
 exit $FAILS
 

@@ -9,7 +9,7 @@
  * This version uses an aws_lws_ring ringbuffer to cache up to 8 messages at a time,
  * so it's not so easy to lose messages.
  *
- * This also demonstrates how to "cull", ie, kill, connections that can't
+ * This also demonstrates how to "cull", ie, aws_kill, connections that can't
  * keep up for some reason.
  */
 
@@ -32,7 +32,7 @@ struct msg {
 
 struct per_session_data__minimal {
 	struct per_session_data__minimal *pss_list;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	uint32_t tail;
 
 	unsigned int culled:1;
@@ -74,7 +74,7 @@ cull_lagging_clients(struct per_vhost_data__minimal *vhd)
 
 			aws_lws_set_timeout((*ppss)->wsi, PENDING_TIMEOUT_LAGGING,
 					/*
-					 * we may kill the wsi we came in on,
+					 * we may aws_kill the wsi we came in on,
 					 * so the actual close is deferred
 					 */
 					LWS_TO_KILL_ASYNC);
@@ -89,7 +89,7 @@ cull_lagging_clients(struct per_vhost_data__minimal *vhd)
 			(*ppss)->culled = 1;
 
 			/*
-			 * Because we can't kill it synchronously, but we
+			 * Because we can't aws_kill it synchronously, but we
 			 * know it's closing momentarily and don't want its
 			 * participation any more, remove its pss from the
 			 * vhd pss list early.  (This is safe to repeat
@@ -148,7 +148,7 @@ __minimal_destroy_message(void *_msg)
 }
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal *pss =

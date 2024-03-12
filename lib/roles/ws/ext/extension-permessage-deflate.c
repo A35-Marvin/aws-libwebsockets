@@ -45,7 +45,7 @@ const struct aws_lws_ext_options aws_lws_ext_pm_deflate_options[] = {
 };
 
 static void
-aws_lws_extension_pmdeflate_restrict_args(struct lws *wsi,
+aws_lws_extension_pmdeflate_restrict_args(struct aws_lws *wsi,
 				      struct aws_lws_ext_pm_deflate_priv *priv)
 {
 	int n, extra;
@@ -71,7 +71,7 @@ static unsigned char trail[] = { 0, 0, 0xff, 0xff };
 LWS_VISIBLE int
 aws_lws_extension_callback_pm_deflate(struct aws_lws_context *context,
 				  const struct aws_lws_extension *ext,
-				  struct lws *wsi,
+				  struct aws_lws *wsi,
 				  enum aws_lws_extension_callback_reasons reason,
 				  void *user, void *in, size_t len)
 {

@@ -90,7 +90,7 @@ aws_lws_canonical_hostname(struct aws_lws_context *context);
 
 /**
  * aws_lws_get_peer_addresses() - Get client address information
- * \param wsi:	Local struct lws associated with
+ * \param wsi:	Local struct aws_lws associated with
  * \param fd:		Connection socket descriptor
  * \param name:	Buffer to take client address name
  * \param name_len:	Length of client address name buffer
@@ -103,13 +103,13 @@ aws_lws_canonical_hostname(struct aws_lws_context *context);
  *	determined, they will be returned as valid zero-length strings.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_get_peer_addresses(struct lws *wsi, aws_lws_sockfd_type fd, char *name,
+aws_lws_get_peer_addresses(struct aws_lws *wsi, aws_lws_sockfd_type fd, char *name,
 		       int name_len, char *rip, int rip_len);
 
 /**
  * aws_lws_get_peer_simple() - Get client address information without RDNS
  *
- * \param wsi:	Local struct lws associated with
+ * \param wsi:	Local struct aws_lws associated with
  * \param name:	Buffer to take client address name
  * \param namelen:	Length of client address name buffer
  *
@@ -117,7 +117,7 @@ aws_lws_get_peer_addresses(struct lws *wsi, aws_lws_sockfd_type fd, char *name,
  * peer that has connected to wsi
  */
 LWS_VISIBLE LWS_EXTERN const char *
-aws_lws_get_peer_simple(struct lws *wsi, char *name, size_t namelen);
+aws_lws_get_peer_simple(struct aws_lws *wsi, char *name, size_t namelen);
 
 LWS_VISIBLE LWS_EXTERN const char *
 aws_lws_get_peer_simple_fd(aws_lws_sockfd_type fd, char *name, size_t namelen);

@@ -79,7 +79,7 @@ static uint64_t rng(uint64_t *r)
 }
 
 static int
-callback_minimal_pmd_bulk(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_pmd_bulk(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal_pmd_bulk *pss =

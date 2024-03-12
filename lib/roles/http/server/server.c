@@ -28,7 +28,7 @@
 #define SOL_TCP IPPROTO_TCP
 #endif
 
-const char * const method_names[] = {
+const char * const aws_method_names[] = {
 	"GET", "POST",
 #if defined(LWS_WITH_HTTP_UNCOMMON_HEADERS)
 	"OPTIONS", "PUT", "PATCH", "DELETE",
@@ -63,7 +63,7 @@ struct vh_sock_args {
 static int
 check_extant(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 	struct vh_sock_args *a = (struct vh_sock_args *)user;
 
 	if (!aws_lws_vhost_compare_listen(wsi->a.vhost, a->vhost))
@@ -88,13 +88,13 @@ aws__lws_vhost_init_server_af(struct vh_sock_args *a)
 	struct aws_lws_context_per_thread *pt;
 	int n, opt = 1, limit = 1;
 	aws_lws_sockfd_type sockfd;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int m = 0, is;
 #if defined(LWS_WITH_IPV6)
 	int value = 1;
 #endif
 
-	(void)method_names;
+	(void)aws_method_names;
 	(void)opt;
 
 	aws_lwsl_info("%s: af %d\n", __func__, (int)a->af);
@@ -330,7 +330,7 @@ done_list:
 		pt = &cx->pt[m];
 		aws_lws_pt_lock(pt, __func__);
 
-		if (__insert_wsi_socket_into_fds(cx, wsi)) {
+		if (aws___insert_wsi_socket_into_fds(cx, wsi)) {
 			aws_lwsl_notice("inserting wsi socket into fds failed\n");
 			aws_lws_pt_unlock(pt);
 			goto bail;
@@ -366,7 +366,7 @@ done_list:
 		if (n < 0) {
 			aws_lwsl_err("listen failed with error %d\n", LWS_ERRNO);
 			aws_lws_dll2_remove(&wsi->listen_list);
-			__remove_wsi_socket_from_fds(wsi);
+			aws___remove_wsi_socket_from_fds(wsi);
 			goto bail;
 		}
 
@@ -633,7 +633,7 @@ aws_lws_get_mimetype(const char *file, const struct aws_lws_http_mount *m)
 
 #if defined(LWS_WITH_FILE_OPS)
 static aws_lws_fop_flags_t
-aws_lws_vfs_prepare_flags(struct lws *wsi)
+aws_lws_vfs_prepare_flags(struct aws_lws *wsi)
 {
 	aws_lws_fop_flags_t f = 0;
 
@@ -650,7 +650,7 @@ aws_lws_vfs_prepare_flags(struct lws *wsi)
 }
 
 static int
-aws_lws_http_serve(struct lws *wsi, char *uri, const char *origin,
+aws_lws_http_serve(struct aws_lws *wsi, char *uri, const char *origin,
 	       const struct aws_lws_http_mount *m)
 {
 	const struct aws_lws_protocol_vhost_options *pvo = m->interpret;
@@ -936,7 +936,7 @@ notfound:
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 const struct aws_lws_http_mount *
-aws_lws_find_mount(struct lws *wsi, const char *uri_ptr, int uri_len)
+aws_lws_find_mount(struct aws_lws *wsi, const char *uri_ptr, int uri_len)
 {
 	const struct aws_lws_http_mount *hm, *hit = NULL;
 	int best = 0;
@@ -1030,7 +1030,7 @@ aws_lws_find_string_in_file(const char *filename, const char *string, int string
 #if defined(LWS_WITH_HTTP_BASIC_AUTH)
 
 int
-aws_lws_unauthorised_basic_auth(struct lws *wsi)
+aws_lws_unauthorised_basic_auth(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	unsigned char *start = pt->serv_buf + LWS_PRE,
@@ -1111,7 +1111,7 @@ static const unsigned char methods[] = {
 };
 
 int
-aws_lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len)
+aws_lws_http_get_uri_and_method(struct aws_lws *wsi, char **puri_ptr, int *puri_len)
 {
 	int n, count = 0;
 
@@ -1147,7 +1147,7 @@ aws_lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len)
 #if defined(LWS_WITH_HTTP_BASIC_AUTH)
 
 enum aws_lws_check_basic_auth_results
-aws_lws_check_basic_auth(struct lws *wsi, const char *basic_auth_login_file,
+aws_lws_check_basic_auth(struct aws_lws *wsi, const char *basic_auth_login_file,
 		     unsigned int auth_mode)
 {
 #if defined(LWS_WITH_FILE_OPS)
@@ -1245,12 +1245,12 @@ aws_lws_check_basic_auth(struct lws *wsi, const char *basic_auth_login_file,
  * originally an incoming h1 upgrade, or an h2 ws "upgrade".
  */
 int
-aws_lws_http_proxy_start(struct lws *wsi, const struct aws_lws_http_mount *hit,
+aws_lws_http_proxy_start(struct aws_lws *wsi, const struct aws_lws_http_mount *hit,
 		     char *uri_ptr, char ws)
 {
 	char ads[96], host[96], *pcolon, *pslash, unix_skt = 0;
 	struct aws_lws_client_connect_info i;
-	struct lws *cwsi;
+	struct aws_lws *cwsi;
 	int n, na;
 	unsigned int max_http_header_data = wsi->a.context->max_http_header_data > 256 ? wsi->a.context->max_http_header_data : 256;
 	char rpath[max_http_header_data];
@@ -1495,7 +1495,7 @@ static const char * const oprot[] = {
 
 
 static int
-aws_lws_http_redirect_hit(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+aws_lws_http_redirect_hit(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 		      const struct aws_lws_http_mount *hit, char *uri_ptr,
 		      int uri_len, int *h)
 {
@@ -1583,7 +1583,7 @@ bail_nuke_ah:
 }
 
 int
-aws_lws_http_action(struct lws *wsi)
+aws_lws_http_action(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	int uri_len = 0, meth, m, http_version_len, ha;
@@ -1601,11 +1601,11 @@ aws_lws_http_action(struct lws *wsi)
 	unsigned int n;
 
 	meth = aws_lws_http_get_uri_and_method(wsi, &uri_ptr, &uri_len);
-	if (meth < 0 || meth >= (int)LWS_ARRAY_SIZE(method_names))
+	if (meth < 0 || meth >= (int)LWS_ARRAY_SIZE(aws_method_names))
 		goto bail_nuke_ah;
 
 	aws_lws_metrics_tag_wsi_add(wsi, "vh", wsi->a.vhost->name);
-	aws_lws_metrics_tag_wsi_add(wsi, "meth", method_names[meth]);
+	aws_lws_metrics_tag_wsi_add(wsi, "meth", aws_method_names[meth]);
 
 	/* we insist on absolute paths */
 
@@ -1615,7 +1615,7 @@ aws_lws_http_action(struct lws *wsi)
 		goto bail_nuke_ah;
 	}
 
-	aws_lwsl_info("Method: '%s' (%d), request for '%s'\n", method_names[meth],
+	aws_lwsl_info("Method: '%s' (%d), request for '%s'\n", aws_method_names[meth],
 		  meth, uri_ptr);
 
 	if (wsi->role_ops &&
@@ -2056,7 +2056,7 @@ bail_nuke_ah:
 }
 
 int
-aws_lws_confirm_host_header(struct lws *wsi)
+aws_lws_confirm_host_header(struct aws_lws *wsi)
 {
 	struct aws_lws_tokenize ts;
 	aws_lws_tokenize_elem e;
@@ -2127,7 +2127,7 @@ bad_format:
 
 #if defined(LWS_WITH_SERVER)
 int
-aws_lws_http_to_fallback(struct lws *wsi, unsigned char *obuf, size_t olen)
+aws_lws_http_to_fallback(struct aws_lws *wsi, unsigned char *obuf, size_t olen)
 {
 	const struct aws_lws_role_ops *role = &role_ops_raw_skt;
 	const struct aws_lws_protocols *p1, *protocol =
@@ -2180,7 +2180,7 @@ aws_lws_http_to_fallback(struct lws *wsi, unsigned char *obuf, size_t olen)
 }
 
 int
-aws_lws_handshake_server(struct lws *wsi, unsigned char **buf, size_t len)
+aws_lws_handshake_server(struct aws_lws *wsi, unsigned char **buf, size_t len)
 {
 	struct aws_lws_context *context = aws_lws_get_context(wsi);
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -2366,7 +2366,7 @@ raw_transition:
 					goto bail_nuke_ah;
 			}
 
-			n = user_callback_handle_rxflow(wsi->a.protocol->callback,
+			n = aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 					wsi, LWS_CALLBACK_HTTP_CONFIRM_UPGRADE,
 					wsi->user_space, (char *)up, 0);
 
@@ -2505,7 +2505,7 @@ bail_nuke_ah:
 #endif
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_http_transaction_completed(struct lws *wsi)
+aws_lws_http_transaction_completed(struct aws_lws *wsi)
 {
 	int n;
 
@@ -2536,8 +2536,8 @@ aws_lws_http_transaction_completed(struct lws *wsi)
 	/*
 	 * Are we finishing the transaction before we have consumed any body?
 	 *
-	 * For h1 this would kill keepalive pipelining, and for h2, considering
-	 * it can extend over multiple DATA frames, it would kill the network
+	 * For h1 this would aws_kill keepalive pipelining, and for h2, considering
+	 * it can extend over multiple DATA frames, it would aws_kill the network
 	 * connection.
 	 */
 	if (wsi->http.rx_content_length && wsi->http.rx_content_remain) {
@@ -2711,7 +2711,7 @@ aws_lws_http_transaction_completed(struct lws *wsi)
 
 #if defined(LWS_WITH_FILE_OPS)
 int
-aws_lws_serve_http_file(struct lws *wsi, const char *file, const char *content_type,
+aws_lws_serve_http_file(struct aws_lws *wsi, const char *file, const char *content_type,
 		    const char *other_headers, int other_headers_len)
 {
 	struct aws_lws_context *context = aws_lws_get_context(wsi);
@@ -3014,7 +3014,7 @@ bail:
 
 #if defined(LWS_WITH_FILE_OPS)
 
-int aws_lws_serve_http_file_fragment(struct lws *wsi)
+int aws_lws_serve_http_file_fragment(struct aws_lws *wsi)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -3025,7 +3025,7 @@ int aws_lws_serve_http_file_fragment(struct lws *wsi)
 	unsigned char finished = 0;
 #endif
 #if defined(LWS_ROLE_H2)
-	struct lws *nwsi;
+	struct aws_lws *nwsi;
 #endif
 	int n, m;
 
@@ -3195,7 +3195,7 @@ int aws_lws_serve_http_file_fragment(struct lws *wsi)
 				args.final = wsi->http.filepos + (unsigned int)n ==
 							wsi->http.filelen;
 				args.chunked = wsi->sending_chunked;
-				if (user_callback_handle_rxflow(
+				if (aws_user_callback_handle_rxflow(
 				     wsi->a.vhost->protocols[
 				     (int)wsi->protocol_interpret_idx].callback,
 				     wsi, LWS_CALLBACK_PROCESS_HTML,
@@ -3269,7 +3269,7 @@ all_sent:
 			aws_lwsl_debug("file completed\n");
 
 			if (wsi->a.protocol->callback &&
-			    user_callback_handle_rxflow(wsi->a.protocol->callback,
+			    aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 					wsi, LWS_CALLBACK_HTTP_FILE_COMPLETION,
 					wsi->user_space, NULL, 0) < 0) {
 					/*

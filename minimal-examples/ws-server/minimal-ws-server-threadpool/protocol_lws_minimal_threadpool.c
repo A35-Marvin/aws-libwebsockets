@@ -79,7 +79,7 @@ create_task_private_data(void)
  * for a long time without checking in.
  */
 static void
-cleanup_task_private_data(struct lws *wsi, void *user)
+cleanup_task_private_data(struct aws_lws *wsi, void *user)
 {
 	struct task_data *priv = (struct task_data *)user;
 
@@ -152,7 +152,7 @@ sul_tp_dump(struct aws_lws_sorted_usec_list *sul)
 
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_vhost_data__minimal *vhd =

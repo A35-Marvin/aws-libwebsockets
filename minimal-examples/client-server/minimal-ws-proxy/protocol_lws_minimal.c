@@ -30,7 +30,7 @@ struct msg {
 
 struct per_session_data__minimal {
 	struct per_session_data__minimal *pss_list;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	uint32_t tail;
 };
 
@@ -47,7 +47,7 @@ struct per_vhost_data__minimal {
 
 	struct aws_lws_ring *ring; /* ringbuffer holding unsent messages */
 	struct aws_lws_client_connect_info i;
-	struct lws *client_wsi;
+	struct aws_lws *client_wsi;
 };
 
 /* destroys the message when everyone has had a copy of it */
@@ -86,7 +86,7 @@ sul_connect_attempt(struct aws_lws_sorted_usec_list *sul)
 }
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal *pss =

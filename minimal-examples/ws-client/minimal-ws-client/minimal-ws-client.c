@@ -21,7 +21,7 @@
 
 static struct my_conn {
 	aws_lws_sorted_usec_list_t	sul;	     /* schedule connection retry */
-	struct lws		*wsi;	     /* related wsi if any */
+	struct aws_lws		*wsi;	     /* related wsi if any */
 	uint16_t		retry_count; /* count of consequetive retries */
 } mco;
 
@@ -86,7 +86,7 @@ connect_client(aws_lws_sorted_usec_list_t *sul)
 }
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		 void *user, void *in, size_t len)
 {
 	struct my_conn *mco = (struct my_conn *)user;

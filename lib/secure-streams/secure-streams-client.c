@@ -140,7 +140,7 @@ aws_lws_sspc_sul_retry_cb(aws_lws_sorted_usec_list_t *sul)
 		/*
 		 * If any hanging caliper measurement, dump it, and free any tags
 		 */
-		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 
 		aws_lws_sul_schedule(h->context, 0, &h->sul_retry,
@@ -196,7 +196,7 @@ aws_lws_sspc_serialize_metadata(aws_lws_sspc_handle_t *h, aws_lws_sspc_metadata_
 }
 
 static int
-callback_sspc_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_sspc_client(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		     void *user, void *in, size_t len)
 {
 	aws_lws_sspc_handle_t *h = (aws_lws_sspc_handle_t *)aws_lws_get_opaque_user_data(wsi);
@@ -227,7 +227,7 @@ callback_sspc_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		/*
 		 * If any hanging caliper measurement, dump it, and free any tags
 		 */
-		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 		aws_lws_set_opaque_user_data(wsi, NULL);
 		h->cwsi = NULL;
@@ -748,7 +748,7 @@ aws_lws_sspc_destroy(aws_lws_sspc_handle_t **ph)
 	/*
 	 * If any hanging caliper measurement, dump it, and free any tags
 	 */
-	aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+	aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 	if (h->ss_dangling_connected && h->ssi.state) {
 		aws_lws_sspc_event_helper(h, LWSSSCS_DISCONNECTED, 0);

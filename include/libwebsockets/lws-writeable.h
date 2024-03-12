@@ -54,7 +54,7 @@
  * - What: LWS_CALLBACK_*_WRITEABLE
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_callback_on_writable(struct lws *wsi);
+aws_lws_callback_on_writable(struct aws_lws *wsi);
 
 /**
  * aws_lws_callback_on_writable_all_protocol() - Request a callback for all
@@ -166,7 +166,7 @@ aws_lws_callback_all_protocol_vhost_args(struct aws_lws_vhost *vh,
  * wsi.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_callback_vhost_protocols(struct lws *wsi, int reason, void *in, size_t len)
+aws_lws_callback_vhost_protocols(struct aws_lws *wsi, int reason, void *in, size_t len)
 LWS_WARN_DEPRECATED;
 
 /**
@@ -187,7 +187,7 @@ aws_lws_callback_vhost_protocols_vhost(struct aws_lws_vhost *vh, int reason, voi
 				   size_t len);
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_callback_http_dummy(struct lws *wsi, enum aws_lws_callback_reasons reason,
+aws_lws_callback_http_dummy(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len);
 
 /**
@@ -198,7 +198,7 @@ aws_lws_callback_http_dummy(struct lws *wsi, enum aws_lws_callback_reasons reaso
  * \param wsi:	Websocket connection instance
  */
 LWS_VISIBLE LWS_EXTERN aws_lws_sockfd_type
-aws_lws_get_socket_fd(struct lws *wsi);
+aws_lws_get_socket_fd(struct aws_lws *wsi);
 
 /**
  * aws_lws_get_peer_write_allowance() - get the amount of data writeable to peer
@@ -222,7 +222,7 @@ aws_lws_get_socket_fd(struct lws *wsi);
  * intermediary dynamically.
  */
 LWS_VISIBLE LWS_EXTERN aws_lws_fileofs_t
-aws_lws_get_peer_write_allowance(struct lws *wsi);
+aws_lws_get_peer_write_allowance(struct aws_lws *wsi);
 
 /**
  * aws_lws_wsi_tx_credit() - get / set generic tx credit if role supports it
@@ -241,6 +241,6 @@ aws_lws_get_peer_write_allowance(struct lws *wsi);
 #define LWSTXCR_PEER_TO_US 1
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_wsi_tx_credit(struct lws *wsi, char peer_to_us, int add);
+aws_lws_wsi_tx_credit(struct aws_lws *wsi, char peer_to_us, int add);
 
 ///@}

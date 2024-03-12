@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 static int
-rops_handle_POLLIN_mqtt(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_mqtt(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			   struct aws_lws_pollfd *pollfd)
 {
 	unsigned int pending = 0;
@@ -203,7 +203,7 @@ fail:
 #if 0 /* defined(LWS_WITH_SERVER) */
 
 static int
-rops_adoption_bind_mqtt(struct lws *wsi, int type, const char *vh_prot_name)
+rops_adoption_bind_mqtt(struct aws_lws *wsi, int type, const char *vh_prot_name)
 {
 	/* no http but socket... must be mqtt */
 	if ((type & LWS_ADOPT_HTTP) || !(type & LWS_ADOPT_SOCKET) ||
@@ -226,7 +226,7 @@ rops_adoption_bind_mqtt(struct lws *wsi, int type, const char *vh_prot_name)
 #endif
 
 static int
-rops_client_bind_mqtt(struct lws *wsi, const struct aws_lws_client_connect_info *i)
+rops_client_bind_mqtt(struct aws_lws *wsi, const struct aws_lws_client_connect_info *i)
 {
 	aws_lwsl_debug("%s: i = %p\n", __func__, i);
 	if (!i) {
@@ -273,9 +273,9 @@ rops_client_bind_mqtt(struct lws *wsi, const struct aws_lws_client_connect_info 
 }
 
 static int
-rops_handle_POLLOUT_mqtt(struct lws *wsi)
+rops_handle_POLLOUT_mqtt(struct aws_lws *wsi)
 {
-	struct lws **wsi2;
+	struct aws_lws **wsi2;
 
 	aws_lwsl_debug("%s\n", __func__);
 
@@ -353,7 +353,7 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 	aws_lws_wsi_mux_dump_waiting_children(wsi);
 
 	do {
-		struct lws *w, **wa;
+		struct aws_lws *w, **wa;
 
 		wa = &(*wsi2)->mux.sibling_list;
 		if (!(*wsi2)->mux.requested_POLLOUT)
@@ -429,9 +429,9 @@ next_child:
 
 #if defined(LWS_WITH_CLIENT)
 static int
-rops_issue_keepalive_mqtt(struct lws *wsi, int isvalid)
+rops_issue_keepalive_mqtt(struct aws_lws *wsi, int isvalid)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (isvalid) {
 		aws__lws_validity_confirmed_role(nwsi);
@@ -447,9 +447,9 @@ rops_issue_keepalive_mqtt(struct lws *wsi, int isvalid)
 #endif
 
 static int
-rops_close_role_mqtt(struct aws_lws_context_per_thread *pt, struct lws *wsi)
+rops_close_role_mqtt(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	aws_lws_mqtt_subs_t	*s, *s1, *mysub;
 	aws_lws_mqttc_t *c;
 
@@ -500,10 +500,10 @@ rops_close_role_mqtt(struct aws_lws_context_per_thread *pt, struct lws *wsi)
 }
 
 static int
-rops_callback_on_writable_mqtt(struct lws *wsi)
+rops_callback_on_writable_mqtt(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_CLIENT)
-	struct lws *network_wsi;
+	struct aws_lws *network_wsi;
 #endif
 	int already;
 
@@ -556,7 +556,7 @@ rops_callback_on_writable_mqtt(struct lws *wsi)
 }
 
 static int
-rops_close_kill_connection_mqtt(struct lws *wsi, enum aws_lws_close_status reason)
+rops_close_kill_connection_mqtt(struct aws_lws *wsi, enum aws_lws_close_status reason)
 {
 	aws_lwsl_info(" %s, his parent %s: child list %p, siblings:\n",
 			aws_lws_wsi_tag(wsi),

@@ -133,7 +133,7 @@ struct aws_lws_client_connect_info {
 	 * use "GET" to be a simple http client connection.  "RAW" gets
 	 * you a connected socket that lws itself will leave alone once
 	 * connected. */
-	struct lws *parent_wsi;
+	struct aws_lws *parent_wsi;
 	/**< if another wsi is responsible for this connection, give it here.
 	 * this is used to make sure if the parent closes so do any
 	 * child connections first. */
@@ -144,7 +144,7 @@ struct aws_lws_client_connect_info {
 	/**< see uri_replace_from */
 	struct aws_lws_vhost *vhost;
 	/**< vhost to bind to (used to determine related SSL_CTX) */
-	struct lws **pwsi;
+	struct aws_lws **pwsi;
 	/**< if not NULL, store the new wsi here early in the connection
 	 * process.  Although we return the new wsi, the call to create the
 	 * client connection does progress the connection somewhat and may
@@ -253,7 +253,7 @@ struct aws_lws_client_connect_info {
  *	This function creates a connection to a remote server using the
  *	information provided in ccinfo.
  */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_client_connect_via_info(const struct aws_lws_client_connect_info *ccinfo);
 
 /**
@@ -305,7 +305,7 @@ aws_lws_init_vhost_client_ssl(const struct aws_lws_context_creation_info *info,
  * as there are chunks or partial chunks in the buffer.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_http_client_read(struct lws *wsi, char **buf, int *len);
+aws_lws_http_client_read(struct aws_lws *wsi, char **buf, int *len);
 
 /**
  * aws_lws_http_client_http_response() - get last HTTP response code
@@ -320,7 +320,7 @@ aws_lws_http_client_read(struct lws *wsi, char **buf, int *len);
  * headers is freed and this value is lost.
  */
 LWS_VISIBLE LWS_EXTERN unsigned int
-aws_lws_http_client_http_response(struct lws *wsi);
+aws_lws_http_client_http_response(struct aws_lws *wsi);
 
 /**
  * aws_lws_tls_client_vhost_extra_cert_mem() - add more certs to vh client tls ctx
@@ -357,7 +357,7 @@ aws_lws_tls_client_vhost_extra_cert_mem(struct aws_lws_vhost *vh,
  * let lws know the last part is sent and the connection can move on.
  */
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_client_http_body_pending(struct lws *wsi, int something_left_to_send);
+aws_lws_client_http_body_pending(struct aws_lws *wsi, int something_left_to_send);
 
 /**
  * aws_lws_client_http_multipart() - issue appropriate multipart header or trailer
@@ -374,7 +374,7 @@ aws_lws_client_http_body_pending(struct lws *wsi, int something_left_to_send);
  * Returns 0 if OK or nonzero if couldn't fit in buffer
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_client_http_multipart(struct lws *wsi, const char *name,
+aws_lws_client_http_multipart(struct aws_lws *wsi, const char *name,
 			  const char *filename, const char *content_type,
 			  char **p, char *end);
 
@@ -408,6 +408,6 @@ aws_lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t 
  * it'a mainly useful for stats and testing.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_tls_session_is_reused(struct lws *wsi);
+aws_lws_tls_session_is_reused(struct aws_lws *wsi);
 
 ///@}

@@ -30,7 +30,7 @@
 
 #if !defined(LWS_WITH_SYS_ASYNC_DNS)
 static int
-aws_lws_getaddrinfo46(struct lws *wsi, const char *ads, struct addrinfo **result)
+aws_lws_getaddrinfo46(struct aws_lws *wsi, const char *ads, struct addrinfo **result)
 {
 	aws_lws_metrics_caliper_declare(cal, wsi->a.context->mt_conn_dns);
 	struct addrinfo hints;
@@ -133,8 +133,8 @@ aws_lws_getaddrinfo46(struct lws *wsi, const char *ads, struct addrinfo **result
 static const char * const dns_nxdomain = "DNS NXDOMAIN";
 #endif
 
-struct lws *
-aws_lws_client_connect_2_dnsreq(struct lws *wsi)
+struct aws_lws *
+aws_lws_client_connect_2_dnsreq(struct aws_lws *wsi)
 {
 	struct addrinfo *result = NULL;
 	const char *meth = NULL;
@@ -144,7 +144,7 @@ aws_lws_client_connect_2_dnsreq(struct lws *wsi)
 #endif
 	const char *adsin;
 	int n, port = 0;
-	struct lws *w;
+	struct aws_lws *w;
 
 	if (aws_lwsi_state(wsi) == LRS_WAITING_DNS ||
 	    aws_lwsi_state(wsi) == LRS_WAITING_CONNECT) {

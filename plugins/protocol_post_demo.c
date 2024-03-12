@@ -173,7 +173,7 @@ bail:
 }
 
 static int
-callback_post_demo(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_post_demo(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		   void *user, void *in, size_t len)
 {
 	struct per_session_data__post_demo *pss =

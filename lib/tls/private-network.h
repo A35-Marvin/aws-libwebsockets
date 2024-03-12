@@ -94,33 +94,33 @@ struct aws_lws_lws_tls {
 void
 aws_lws_context_init_alpn(struct aws_lws_vhost *vhost);
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, size_t len);
+aws_lws_ssl_capable_read(struct aws_lws *wsi, unsigned char *buf, size_t len);
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len);
+aws_lws_ssl_capable_write(struct aws_lws *wsi, unsigned char *buf, size_t len);
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ssl_pending(struct lws *wsi);
+aws_lws_ssl_pending(struct aws_lws *wsi);
 int LWS_WARN_UNUSED_RESULT
-aws_lws_server_socket_service_ssl(struct lws *new_wsi, aws_lws_sockfd_type accept_fd,
+aws_lws_server_socket_service_ssl(struct aws_lws *new_wsi, aws_lws_sockfd_type accept_fd,
 				char is_pollin);
 
 void
 aws_lws_sess_cache_synth_cb(aws_lws_sorted_usec_list_t *sul);
 
 int
-aws_lws_ssl_close(struct lws *wsi);
+aws_lws_ssl_close(struct aws_lws *wsi);
 void
 aws_lws_ssl_SSL_CTX_destroy(struct aws_lws_vhost *vhost);
 void
 aws_lws_ssl_context_destroy(struct aws_lws_context *context);
 void
-aws___lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi);
+aws___lws_ssl_remove_wsi_from_buffered_list(struct aws_lws *wsi);
 LWS_VISIBLE void
-aws_lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi);
+aws_lws_ssl_remove_wsi_from_buffered_list(struct aws_lws *wsi);
 int
-aws_lws_ssl_client_bio_create(struct lws *wsi);
+aws_lws_ssl_client_bio_create(struct aws_lws *wsi);
 
 int
-aws_lws_ssl_client_connect2(struct lws *wsi, char *errbuf, size_t len);
+aws_lws_ssl_client_connect2(struct aws_lws *wsi, char *errbuf, size_t len);
 int
 aws_lws_tls_fake_POLLIN_for_buffered(struct aws_lws_context_per_thread *pt);
 int
@@ -131,7 +131,7 @@ aws_lws_ssl_bind_passphrase(aws_lws_tls_ctx *ssl_ctx, int is_client,
 void
 aws_lws_ssl_info_callback(const aws_lws_tls_conn *ssl, int where, int ret);
 int
-aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct lws *wsi,
+aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct aws_lws *wsi,
 			  const char *cert, const char *private_key,
 			  const char *mem_cert, size_t len_mem_cert,
 			  const char *mem_privkey, size_t mem_privkey_len);
@@ -160,23 +160,23 @@ int
 aws_lws_tls_server_client_cert_verify_config(struct aws_lws_vhost *vh);
 int
 aws_lws_tls_server_vhost_backend_init(const struct aws_lws_context_creation_info *info,
-			  struct aws_lws_vhost *vhost, struct lws *wsi);
+			  struct aws_lws_vhost *vhost, struct aws_lws *wsi);
 int
-aws_lws_tls_server_new_nonblocking(struct lws *wsi, aws_lws_sockfd_type accept_fd);
+aws_lws_tls_server_new_nonblocking(struct aws_lws *wsi, aws_lws_sockfd_type accept_fd);
 
 enum aws_lws_ssl_capable_status
-aws_lws_tls_server_accept(struct lws *wsi);
+aws_lws_tls_server_accept(struct aws_lws *wsi);
 
 enum aws_lws_ssl_capable_status
-aws_lws_tls_server_abort_connection(struct lws *wsi);
+aws_lws_tls_server_abort_connection(struct aws_lws *wsi);
 
 enum aws_lws_ssl_capable_status
-aws___lws_tls_shutdown(struct lws *wsi);
+aws___lws_tls_shutdown(struct aws_lws *wsi);
 
 enum aws_lws_ssl_capable_status
-aws_lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t len);
+aws_lws_tls_client_connect(struct aws_lws *wsi, char *errbuf, size_t len);
 int
-aws_lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len);
+aws_lws_tls_client_confirm_peer_cert(struct aws_lws *wsi, char *ebuf, size_t ebuf_len);
 int
 aws_lws_tls_client_create_vhost_context(struct aws_lws_vhost *vh,
 			    const struct aws_lws_context_creation_info *info,
@@ -193,9 +193,9 @@ aws_lws_tls_client_create_vhost_context(struct aws_lws_vhost *vh,
 
 
 aws_lws_tls_ctx *
-aws_lws_tls_ctx_from_wsi(struct lws *wsi);
+aws_lws_tls_ctx_from_wsi(struct aws_lws *wsi);
 int
-aws_lws_ssl_get_error(struct lws *wsi, int n);
+aws_lws_ssl_get_error(struct aws_lws *wsi, int n);
 
 int
 aws_lws_context_init_client_ssl(const struct aws_lws_context_creation_info *info,

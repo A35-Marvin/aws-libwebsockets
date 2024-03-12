@@ -198,7 +198,7 @@ aws_lws_ss_serialize_rx_payload(struct aws_lws_dsh *dsh, const uint8_t *buf,
  */
 
 int
-aws_lws_ss_deserialize_tx_payload(struct aws_lws_dsh *dsh, struct lws *wsi,
+aws_lws_ss_deserialize_tx_payload(struct aws_lws_dsh *dsh, struct aws_lws *wsi,
 			      aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 			      size_t *len, int *flags)
 {
@@ -257,7 +257,7 @@ aws_lws_ss_deserialize_tx_payload(struct aws_lws_dsh *dsh, struct lws *wsi,
  */
 
 int
-aws_lws_ss_serialize_state(struct lws *wsi, struct aws_lws_dsh *dsh, aws_lws_ss_constate_t state,
+aws_lws_ss_serialize_state(struct aws_lws *wsi, struct aws_lws_dsh *dsh, aws_lws_ss_constate_t state,
 		       aws_lws_ss_tx_ordinal_t ack)
 {
 	uint8_t pre[12];
@@ -1339,7 +1339,7 @@ payload_ff:
 			/*
 			 * If any hanging caliper measurement, dump it, and free any tags
 			 */
-			aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+			aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 
 			if (!h->creating_cb_done) {

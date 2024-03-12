@@ -25,7 +25,7 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_raw_skt(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_raw_skt(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			   struct aws_lws_pollfd *pollfd)
 {
 #if defined(LWS_WITH_SOCKS5)
@@ -146,7 +146,7 @@ rops_handle_POLLIN_raw_skt(struct aws_lws_context_per_thread *pt, struct lws *ws
 			}
 #endif
 
-			n = user_callback_handle_rxflow(wsi->a.protocol->callback,
+			n = aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 							wsi, LWS_CALLBACK_RAW_RX,
 							wsi->user_space, ebuf.token,
 							(unsigned int)ebuf.len);
@@ -191,7 +191,7 @@ try_pollout:
 	/* clear back-to-back write detection */
 	wsi->could_have_pending = 0;
 
-	n = user_callback_handle_rxflow(wsi->a.protocol->callback,
+	n = aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 			wsi, LWS_CALLBACK_RAW_WRITEABLE,
 			wsi->user_space, NULL, 0);
 	if (n < 0) {
@@ -209,7 +209,7 @@ fail:
 
 #if defined(LWS_WITH_SERVER)
 static int
-rops_adoption_bind_raw_skt(struct lws *wsi, int type, const char *vh_prot_name)
+rops_adoption_bind_raw_skt(struct aws_lws *wsi, int type, const char *vh_prot_name)
 {
 
 	// aws_lwsl_notice("%s: bind type %d\n", __func__, type);
@@ -248,7 +248,7 @@ rops_adoption_bind_raw_skt(struct lws *wsi, int type, const char *vh_prot_name)
 
 #if defined(LWS_WITH_CLIENT)
 static int
-rops_client_bind_raw_skt(struct lws *wsi,
+rops_client_bind_raw_skt(struct aws_lws *wsi,
 			 const struct aws_lws_client_connect_info *i)
 {
 	if (!i) {

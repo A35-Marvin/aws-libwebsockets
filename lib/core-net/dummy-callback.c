@@ -29,7 +29,7 @@
 
 #if defined(LWS_WITH_HTTP_PROXY)
 static int
-proxy_header(struct lws *wsi, struct lws *par, unsigned char *temp,
+proxy_header(struct aws_lws *wsi, struct aws_lws *par, unsigned char *temp,
 	     int temp_len, int index, unsigned char **p, unsigned char *end)
 {
 	int n = aws_lws_hdr_total_length(par, (enum aws_lws_token_indexes)index);
@@ -58,7 +58,7 @@ proxy_header(struct lws *wsi, struct lws *par, unsigned char *temp,
 }
 
 static int
-stream_close(struct lws *wsi)
+stream_close(struct aws_lws *wsi)
 {
 	char buf[LWS_PRE + 6], *out = buf + LWS_PRE;
 
@@ -107,7 +107,7 @@ struct aws_lws_proxy_pkt {
 
 #if defined(LWS_WITH_HTTP_PROXY) && defined(LWS_ROLE_WS)
 int
-aws_lws_callback_ws_proxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
+aws_lws_callback_ws_proxy(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct aws_lws_proxy_pkt *pkt;
@@ -263,7 +263,7 @@ const struct aws_lws_protocols aws_lws_ws_proxy = {
 
 
 int
-aws_lws_callback_http_dummy(struct lws *wsi, enum aws_lws_callback_reasons reason,
+aws_lws_callback_http_dummy(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct aws_lws_ssl_info *si;
@@ -276,7 +276,7 @@ aws_lws_callback_http_dummy(struct lws *wsi, enum aws_lws_callback_reasons reaso
 #endif
 #if defined(LWS_WITH_HTTP_PROXY)
 	unsigned char **p, *end;
-	struct lws *parent;
+	struct aws_lws *parent;
 #endif
 
 	switch (reason) {
@@ -810,7 +810,7 @@ aws_lws_callback_http_dummy(struct lws *wsi, enum aws_lws_callback_reasons reaso
 			wsi->http.cgi->post_in_expected -= (unsigned int)n;
 
 			if (!wsi->http.cgi->post_in_expected) {
-				struct lws *siwsi = args->stdwsi[LWS_STDIN];
+				struct aws_lws *siwsi = args->stdwsi[LWS_STDIN];
 
 				/*
 				 * The situation here is that we finished

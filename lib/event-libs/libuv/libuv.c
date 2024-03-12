@@ -92,7 +92,7 @@ aws_lws_uv_idle(uv_idle_t *handle
 static void
 aws_lws_io_cb(uv_poll_t *watcher, int status, int revents)
 {
-	struct lws *wsi = (struct lws *)((uv_handle_t *)watcher)->data;
+	struct aws_lws *wsi = (struct aws_lws *)((uv_handle_t *)watcher)->data;
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct aws_lws_pt_eventlibs_libuv *ptpriv = pt_to_priv_uv(pt);
@@ -342,7 +342,7 @@ aws_lws_uv_getloop(struct aws_lws_context *context, int tsi)
 }
 
 int
-aws_lws_libuv_check_watcher_active(struct lws *wsi)
+aws_lws_libuv_check_watcher_active(struct aws_lws *wsi)
 {
 	uv_handle_t *h = (uv_handle_t *)wsi_to_priv_uv(wsi)->w_read.pwatcher;
 
@@ -421,7 +421,7 @@ elops_destroy_context2_uv(struct aws_lws_context *context)
 }
 
 static int
-elops_wsi_logical_close_uv(struct lws *wsi)
+elops_wsi_logical_close_uv(struct aws_lws *wsi)
 {
 	if (!aws_lws_socket_is_valid(wsi->desc.sockfd) &&
 	    wsi->role_ops && strcmp(wsi->role_ops->name, "raw-file") &&
@@ -445,7 +445,7 @@ elops_wsi_logical_close_uv(struct lws *wsi)
 }
 
 static int
-elops_check_client_connect_ok_uv(struct lws *wsi)
+elops_check_client_connect_ok_uv(struct aws_lws *wsi)
 {
 	if (aws_lws_libuv_check_watcher_active(wsi)) {
 		aws_lwsl_wsi_warn(wsi, "Waiting for libuv watcher to close");
@@ -466,7 +466,7 @@ aws_lws_libuv_closewsi_m(uv_handle_t* handle)
 }
 
 static void
-elops_close_handle_manually_uv(struct lws *wsi)
+elops_close_handle_manually_uv(struct aws_lws *wsi)
 {
 	uv_handle_t *h = (uv_handle_t *)wsi_to_priv_uv(wsi)->w_read.pwatcher;
 
@@ -491,7 +491,7 @@ elops_close_handle_manually_uv(struct lws *wsi)
 }
 
 static int
-elops_accept_uv(struct lws *wsi)
+elops_accept_uv(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_pt_eventlibs_libuv *ptpriv = pt_to_priv_uv(pt);
@@ -538,7 +538,7 @@ elops_accept_uv(struct lws *wsi)
 }
 
 static void
-elops_io_uv(struct lws *wsi, unsigned int flags)
+elops_io_uv(struct aws_lws *wsi, unsigned int flags)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_io_watcher_libuv *w = &(wsi_to_priv_uv(wsi)->w_read);
@@ -590,7 +590,7 @@ elops_io_uv(struct lws *wsi, unsigned int flags)
 }
 
 static int
-elops_init_vhost_listen_wsi_uv(struct lws *wsi)
+elops_init_vhost_listen_wsi_uv(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt;
 	struct aws_lws_pt_eventlibs_libuv *ptpriv;
@@ -697,7 +697,7 @@ elops_destroy_pt_uv(struct aws_lws_context *context, int tsi)
 static int
 elops_listen_init_uv(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 
 	if (elops_init_vhost_listen_wsi_uv(wsi) == -1)
 		return -1;
@@ -786,7 +786,7 @@ elops_init_pt_uv(struct aws_lws_context *context, void *_loop, int tsi)
 static void
 aws_lws_libuv_closewsi(uv_handle_t* handle)
 {
-	struct lws *wsi = (struct lws *)handle->data;
+	struct aws_lws *wsi = (struct aws_lws *)handle->data;
 	struct aws_lws_context *context = aws_lws_get_context(wsi);
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct aws_lws_pt_eventlibs_libuv *ptpriv = pt_to_priv_uv(pt);
@@ -857,7 +857,7 @@ aws_lws_libuv_closewsi(uv_handle_t* handle)
 }
 
 void
-aws_lws_libuv_closehandle(struct lws *wsi)
+aws_lws_libuv_closehandle(struct aws_lws *wsi)
 {
 	uv_handle_t* handle;
 	struct aws_lws_io_watcher_libuv *w_read = &wsi_to_priv_uv(wsi)->w_read;

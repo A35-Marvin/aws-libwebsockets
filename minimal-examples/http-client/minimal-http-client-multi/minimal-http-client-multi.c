@@ -58,7 +58,7 @@ static int completed, failed, numbered, stagger_idx, posting, count = COUNT,
 	   staggered;
 static aws_lws_sorted_usec_list_t sul_stagger;
 static struct aws_lws_client_connect_info i;
-static struct lws *client_wsi[COUNT];
+static struct aws_lws *client_wsi[COUNT];
 static char urlpath[64], intr;
 static struct aws_lws_context *context;
 
@@ -130,7 +130,7 @@ bail:
 
 #if defined(LWS_WITH_CONMON)
 void
-dump_conmon_data(struct lws *wsi)
+dump_conmon_data(struct aws_lws *wsi)
 {
 	const struct addrinfo *ai;
 	struct aws_lws_conmon cm;
@@ -163,7 +163,7 @@ dump_conmon_data(struct lws *wsi)
 #endif
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	char buf[LWS_PRE + 1024], *start = &buf[LWS_PRE], *p = start,

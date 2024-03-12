@@ -27,7 +27,7 @@
 #endif
 #include "private-lib-core.h"
 
-struct lws *
+struct aws_lws *
 wsi_from_fd(const struct aws_lws_context *context, aws_lws_sockfd_type fd)
 {
 	int h = LWS_FD_HASH(fd);
@@ -41,7 +41,7 @@ wsi_from_fd(const struct aws_lws_context *context, aws_lws_sockfd_type fd)
 }
 
 int
-insert_wsi(struct aws_lws_context *context, struct lws *wsi)
+insert_wsi(struct aws_lws_context *context, struct aws_lws *wsi)
 {
 	int h = LWS_FD_HASH(wsi->desc.sockfd);
 

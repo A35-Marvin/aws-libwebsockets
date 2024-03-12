@@ -143,7 +143,7 @@ aws_lws_get_peer_simple_fd(aws_lws_sockfd_type fd, char *name, size_t namelen)
 }
 
 const char *
-aws_lws_get_peer_simple(struct lws *wsi, char *name, size_t namelen)
+aws_lws_get_peer_simple(struct aws_lws *wsi, char *name, size_t namelen)
 {
 	wsi = aws_lws_get_network_wsi(wsi);
 	return aws_lws_get_peer_simple_fd(wsi->desc.sockfd, name, namelen);
@@ -151,7 +151,7 @@ aws_lws_get_peer_simple(struct lws *wsi, char *name, size_t namelen)
 #endif
 
 void
-aws_lws_get_peer_addresses(struct lws *wsi, aws_lws_sockfd_type fd, char *name,
+aws_lws_get_peer_addresses(struct aws_lws *wsi, aws_lws_sockfd_type fd, char *name,
 		       int name_len, char *rip, int rip_len)
 {
 #ifndef LWS_PLAT_OPTEE
@@ -204,7 +204,7 @@ bail:
  */
 
 int
-aws_lws_socket_bind(struct aws_lws_vhost *vhost, struct lws *wsi,
+aws_lws_socket_bind(struct aws_lws_vhost *vhost, struct aws_lws *wsi,
 		aws_lws_sockfd_type sockfd, int port, const char *iface,
 		int af)
 {
@@ -463,7 +463,7 @@ aws_lws_retry_sul_schedule(struct aws_lws_context *context, int tid,
 }
 
 int
-aws_lws_retry_sul_schedule_retry_wsi(struct lws *wsi, aws_lws_sorted_usec_list_t *sul,
+aws_lws_retry_sul_schedule_retry_wsi(struct aws_lws *wsi, aws_lws_sorted_usec_list_t *sul,
 				 sul_cb_t cb, uint16_t *ctry)
 {
 	char conceal;
@@ -478,7 +478,7 @@ aws_lws_retry_sul_schedule_retry_wsi(struct lws *wsi, aws_lws_sorted_usec_list_t
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 	if (
 #if defined(LWS_ROLE_H1)
-		wsi->role_ops == &role_ops_h1
+		wsi->role_ops == &aws_role_ops_h1
 #endif
 #if defined(LWS_ROLE_H1) && defined(LWS_ROLE_H2)
 		||
@@ -502,7 +502,7 @@ aws_lws_retry_sul_schedule_retry_wsi(struct lws *wsi, aws_lws_sorted_usec_list_t
 
 #if defined(LWS_WITH_IPV6)
 unsigned long
-aws_lws_get_addr_scope(struct lws *wsi, const char *ifname_or_ipaddr)
+aws_lws_get_addr_scope(struct aws_lws *wsi, const char *ifname_or_ipaddr)
 {
 	unsigned long scope;
 	char ip[NI_MAXHOST];

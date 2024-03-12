@@ -63,7 +63,7 @@ callbacks to perform its job.  By convention that lives in
 
 Truly private declarations for the role can go in the role directory as you like.
 However when the declarations must be accessible to other things in lws build, eg,
-the role adds members to `struct lws` when enabled, they should be in the role
+the role adds members to `struct aws_lws` when enabled, they should be in the role
 directory in a file `private-lib-roles-myrole.h`.
 
 Search for "bring in role private declarations" in `./lib/roles/private-lib-roles.h
@@ -113,11 +113,11 @@ struct aws_lws_vhost_role_ws {
 
 ### Adding to lws available roles list
 
-Edit the NULL-terminated array `available_roles` at the top of `./lib/core/context.c` to include
+Edit the NULL-terminated array `aws_available_roles` at the top of `./lib/core/context.c` to include
 a pointer to your new role's ops struct, following the style already there.
 
 ```
-const struct aws_lws_role_ops * available_roles[] = {
+const struct aws_lws_role_ops * aws_available_roles[] = {
 #if defined(LWS_ROLE_H2)
 	&role_ops_h2,
 #endif

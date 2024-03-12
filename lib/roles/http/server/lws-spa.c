@@ -59,7 +59,7 @@ typedef int (*aws_lws_urldecode_stateful_cb)(struct aws_lws_spa *spa,
 struct aws_lws_urldecode_stateful {
 	char *out;
 	struct aws_lws_spa *data;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	char name[LWS_MAX_ELEM_NAME];
 	char temp[LWS_MAX_ELEM_NAME];
 	char content_type[32];
@@ -95,7 +95,7 @@ struct aws_lws_spa {
 };
 
 static struct aws_lws_urldecode_stateful *
-aws_lws_urldecode_s_create(struct aws_lws_spa *spa, struct lws *wsi, char *out,
+aws_lws_urldecode_s_create(struct aws_lws_spa *spa, struct aws_lws *wsi, char *out,
 		       int out_len, aws_lws_urldecode_stateful_cb output)
 {
 	struct aws_lws_urldecode_stateful *s;
@@ -223,7 +223,7 @@ aws_lws_urldecode_s_process(struct aws_lws_urldecode_stateful *s, const char *in
 			s->out[s->pos++] = *in++;
 			break;
 		case US_PC1:
-			n = char_to_hex(*in);
+			n = aws_char_to_hex(*in);
 			if (n < 0)
 				return -1;
 
@@ -233,7 +233,7 @@ aws_lws_urldecode_s_process(struct aws_lws_urldecode_stateful *s, const char *in
 			break;
 
 		case US_PC2:
-			n = char_to_hex(*in);
+			n = aws_char_to_hex(*in);
 			if (n < 0)
 				return -1;
 
@@ -545,7 +545,7 @@ aws_lws_urldecode_spa_cb(struct aws_lws_spa *spa, const char *name, char **buf, 
 }
 
 struct aws_lws_spa *
-aws_lws_spa_create_via_info(struct lws *wsi, const aws_lws_spa_create_info_t *i)
+aws_lws_spa_create_via_info(struct aws_lws *wsi, const aws_lws_spa_create_info_t *i)
 {
 	struct aws_lws_spa *spa;
 
@@ -622,7 +622,7 @@ bail2:
 }
 
 struct aws_lws_spa *
-aws_lws_spa_create(struct lws *wsi, const char * const *param_names,
+aws_lws_spa_create(struct aws_lws *wsi, const char * const *param_names,
 	       int count_params, int max_storage,
 	       aws_lws_spa_fileupload_cb opt_cb, void *opt_data)
 {

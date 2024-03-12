@@ -65,7 +65,7 @@ typedef struct ss_proxy_onward {
 } ss_proxy_t;
 
 void
-aws_lws_proxy_clean_conn_ss(struct lws *wsi)
+aws_lws_proxy_clean_conn_ss(struct aws_lws *wsi)
 {
 #if 0
 	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)wsi->a.opaque_user_data;
@@ -323,7 +323,7 @@ ss_proxy_onward_txcr(void *userobj, int bump)
  */
 
 static int
-callback_ss_proxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_ss_proxy(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		  void *user, void *in, size_t len)
 {
 	struct raw_pss *pss = (struct raw_pss *)user;
@@ -412,7 +412,7 @@ callback_ss_proxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		 */
 
 		if (conn->ss) {
-			struct lws *cw = conn->ss->wsi;
+			struct aws_lws *cw = conn->ss->wsi;
 			/*
 			 * conn->ss is the onward connection SS
 			 */

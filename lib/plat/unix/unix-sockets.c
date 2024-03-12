@@ -49,10 +49,10 @@
 #include <netinet/ip.h>
 
 int
-aws_lws_send_pipe_choked(struct lws *wsi)
+aws_lws_send_pipe_choked(struct aws_lws *wsi)
 {
 	struct aws_lws_pollfd fds;
-	struct lws *wsi_eff;
+	struct aws_lws *wsi_eff;
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 	if (wsi->ws && wsi->ws->tx_draining_ext)

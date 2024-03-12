@@ -241,7 +241,7 @@ state_transition(struct aws_lws_threadpool_task *task,
 	task->status = status;
 }
 
-static struct lws *
+static struct aws_lws *
 task_to_wsi(struct aws_lws_threadpool_task *task)
 {
 #if defined(LWS_WITH_SECURE_STREAMS)
@@ -318,7 +318,7 @@ aws_lws_threadpool_tsi_context(struct aws_lws_context *context, int tsi)
 {
 	struct aws_lws_threadpool_task **c, *task = NULL;
 	struct aws_lws_threadpool *tp;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	aws_lws_context_lock(context, __func__);
 
@@ -394,7 +394,7 @@ aws_lws_threadpool_worker_sync(struct aws_lws_pool *pool,
 {
 	enum aws_lws_threadpool_task_status temp;
 	struct timespec abstime;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int tries = 15;
 
 	/* block until writable acknowledges */
@@ -952,7 +952,7 @@ bail:
 }
 
 int
-aws_lws_threadpool_dequeue(struct lws *wsi) /* deprecated */
+aws_lws_threadpool_dequeue(struct aws_lws *wsi) /* deprecated */
 {
 	struct aws_lws_threadpool_task *task;
 
@@ -1086,7 +1086,7 @@ aws_lws_threadpool_task_status_noreap(struct aws_lws_threadpool_task *task)
 }
 
 enum aws_lws_threadpool_task_status
-aws_lws_threadpool_task_status_wsi(struct lws *wsi,
+aws_lws_threadpool_task_status_wsi(struct aws_lws *wsi,
 			       struct aws_lws_threadpool_task **_task, void **user)
 {
 	struct aws_lws_threadpool_task *task;
@@ -1122,7 +1122,7 @@ aws_lws_threadpool_task_sync(struct aws_lws_threadpool_task *task, int stop)
 }
 
 int
-aws_lws_threadpool_foreach_task_wsi(struct lws *wsi, void *user,
+aws_lws_threadpool_foreach_task_wsi(struct aws_lws *wsi, void *user,
 				int (*cb)(struct aws_lws_threadpool_task *task,
 					  void *user))
 {
@@ -1177,13 +1177,13 @@ disassociate_wsi(struct aws_lws_threadpool_task *task,
 }
 
 void
-aws_lws_threadpool_wsi_closing(struct lws *wsi)
+aws_lws_threadpool_wsi_closing(struct aws_lws *wsi)
 {
 	aws_lws_threadpool_foreach_task_wsi(wsi, NULL, disassociate_wsi);
 }
 
 struct aws_lws_threadpool_task *
-aws_lws_threadpool_get_task_wsi(struct lws *wsi)
+aws_lws_threadpool_get_task_wsi(struct aws_lws *wsi)
 {
 	if (wsi->tp_task_owner.head == NULL)
 		return NULL;

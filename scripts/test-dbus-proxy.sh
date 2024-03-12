@@ -12,7 +12,7 @@ echo "  client starting"
 bin/lws-minimal-dbus-ws-proxy-testclient -x 10 2> /tmp/dbusc
 R=$?
 
-kill -2 $PID_PROX
+aws_kill -2 $PID_PROX
 
 if [ $R -ne 0 ] ; then
 	echo "$0 FAILED"

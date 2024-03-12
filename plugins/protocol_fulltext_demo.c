@@ -57,7 +57,7 @@ struct pss_fts_demo {
 };
 
 static int
-callback_fts(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_fts(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	struct vhd_fts_demo *vhd = (struct vhd_fts_demo *)

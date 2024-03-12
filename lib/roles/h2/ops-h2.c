@@ -95,13 +95,13 @@ const struct http2_settings aws_lws_h2_stock_settings = { {
  */
 
 static int
-rops_handle_POLLIN_h2(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_h2(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 		       struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_tokens ebuf;
 	unsigned int pending = 0;
 	char buffered = 0;
-	struct lws *wsi1;
+	struct aws_lws *wsi1;
 	int n, m;
 
 #ifdef LWS_WITH_CGI
@@ -275,7 +275,7 @@ drain:
 		/* let user code know, he'll usually ask for writeable
 		 * callback and drain / re-enable it there
 		 */
-		if (user_callback_handle_rxflow(
+		if (aws_user_callback_handle_rxflow(
 				wsi->a.protocol->callback,
 				wsi, LWS_CALLBACK_RECEIVE_CLIENT_HTTP,
 				wsi->user_space, NULL, 0)) {
@@ -360,7 +360,7 @@ drain:
 	return LWS_HPI_RET_HANDLED;
 }
 
-int rops_handle_POLLOUT_h2(struct lws *wsi)
+int rops_handle_POLLOUT_h2(struct aws_lws *wsi)
 {
 	// aws_lwsl_notice("%s\n", __func__);
 
@@ -404,7 +404,7 @@ int rops_handle_POLLOUT_h2(struct lws *wsi)
 }
 
 static int
-rops_write_role_protocol_h2(struct lws *wsi, unsigned char *buf, size_t len,
+rops_write_role_protocol_h2(struct aws_lws *wsi, unsigned char *buf, size_t len,
 			    enum aws_lws_write_protocol *wp)
 {
 	unsigned char flags = 0, base = (*wp) & 0x1f;
@@ -520,7 +520,7 @@ rops_write_role_protocol_h2(struct lws *wsi, unsigned char *buf, size_t len,
 
 #if defined(LWS_WITH_SERVER)
 static int
-rops_check_upgrades_h2(struct lws *wsi)
+rops_check_upgrades_h2(struct aws_lws *wsi)
 {
 #if defined(LWS_ROLE_WS)
 	char *p;
@@ -602,9 +602,9 @@ rops_pt_init_destroy_h2(struct aws_lws_context *context,
 
 
 static int
-rops_tx_credit_h2(struct lws *wsi, char peer_to_us, int add)
+rops_tx_credit_h2(struct aws_lws *wsi, char peer_to_us, int add)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	int n;
 
 	if (add) {
@@ -638,7 +638,7 @@ rops_tx_credit_h2(struct lws *wsi, char peer_to_us, int add)
 }
 
 static int
-rops_destroy_role_h2(struct lws *wsi)
+rops_destroy_role_h2(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct allocated_headers *ah;
@@ -675,7 +675,7 @@ rops_destroy_role_h2(struct lws *wsi)
 }
 
 static int
-rops_close_kill_connection_h2(struct lws *wsi, enum aws_lws_close_status reason)
+rops_close_kill_connection_h2(struct aws_lws *wsi, enum aws_lws_close_status reason)
 {
 
 #if defined(LWS_WITH_HTTP_PROXY)
@@ -683,7 +683,7 @@ rops_close_kill_connection_h2(struct lws *wsi, enum aws_lws_close_status reason)
 
 		wsi->http.proxy_clientside = 0;
 
-		if (user_callback_handle_rxflow(wsi->a.protocol->callback,
+		if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 						wsi,
 					    LWS_CALLBACK_COMPLETED_CLIENT_HTTP,
 						wsi->user_space, NULL, 0))
@@ -743,10 +743,10 @@ rops_close_kill_connection_h2(struct lws *wsi, enum aws_lws_close_status reason)
 }
 
 static int
-rops_callback_on_writable_h2(struct lws *wsi)
+rops_callback_on_writable_h2(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_CLIENT)
-	struct lws *network_wsi;
+	struct aws_lws *network_wsi;
 #endif
 	int already;
 
@@ -794,7 +794,7 @@ rops_callback_on_writable_h2(struct lws *wsi)
 
 #if defined(LWS_WITH_SERVER)
 static int
-aws_lws_h2_bind_for_post_before_action(struct lws *wsi)
+aws_lws_h2_bind_for_post_before_action(struct aws_lws *wsi)
 {
 	const struct aws_lws_http_mount *hit;
 	char *uri_ptr = NULL;
@@ -920,9 +920,9 @@ aws_lws_h2_bind_for_post_before_action(struct lws *wsi)
  */
 
 static int
-rops_perform_user_POLLOUT_h2(struct lws *wsi)
+rops_perform_user_POLLOUT_h2(struct aws_lws *wsi)
 {
-	struct lws **wsi2;
+	struct aws_lws **wsi2;
 #if defined(LWS_ROLE_WS)
 	int write_type = LWS_WRITE_PONG;
 #endif
@@ -943,7 +943,7 @@ rops_perform_user_POLLOUT_h2(struct lws *wsi)
 		return 0;
 
 	do {
-		struct lws *w, **wa;
+		struct aws_lws *w, **wa;
 
 		wa = &(*wsi2)->mux.sibling_list;
 		if (!(*wsi2)->mux.requested_POLLOUT)
@@ -1119,7 +1119,7 @@ rops_perform_user_POLLOUT_h2(struct lws *wsi)
 				goto next_child;
 			}
 
-			((volatile struct lws *)w)->leave_pollout_active = 0;
+			((volatile struct aws_lws *)w)->leave_pollout_active = 0;
 
 			/* >0 == completion, <0 == error
 			 *
@@ -1259,8 +1259,8 @@ next_child:
 	return 0;
 }
 
-static struct lws *
-rops_encapsulation_parent_h2(struct lws *wsi)
+static struct aws_lws *
+rops_encapsulation_parent_h2(struct aws_lws *wsi)
 {
 	if (wsi->mux.parent_wsi)
 		return wsi->mux.parent_wsi;
@@ -1269,7 +1269,7 @@ rops_encapsulation_parent_h2(struct lws *wsi)
 }
 
 static int
-rops_alpn_negotiated_h2(struct lws *wsi, const char *alpn)
+rops_alpn_negotiated_h2(struct aws_lws *wsi, const char *alpn)
 {
 	struct allocated_headers *ah;
 
@@ -1313,9 +1313,9 @@ rops_alpn_negotiated_h2(struct lws *wsi, const char *alpn)
 }
 
 static int
-rops_issue_keepalive_h2(struct lws *wsi, int isvalid)
+rops_issue_keepalive_h2(struct aws_lws *wsi, int isvalid)
 {
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	struct aws_lws_h2_protocol_send *pps;
 	uint64_t us = (uint64_t)aws_lws_now_usecs();
 

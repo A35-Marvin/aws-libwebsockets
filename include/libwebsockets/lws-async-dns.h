@@ -42,7 +42,7 @@ typedef enum {
 
 struct addrinfo;
 
-typedef struct lws * (*aws_lws_async_dns_cb_t)(struct lws *wsi, const char *ads,
+typedef struct aws_lws * (*aws_lws_async_dns_cb_t)(struct aws_lws *wsi, const char *ads,
 		const struct addrinfo *result, int n, void *opaque);
 
 /**
@@ -68,7 +68,7 @@ typedef struct lws * (*aws_lws_async_dns_cb_t)(struct lws *wsi, const char *ads,
 LWS_VISIBLE LWS_EXTERN aws_lws_async_dns_retcode_t
 aws_lws_async_dns_query(struct aws_lws_context *context, int tsi, const char *name,
 		    adns_query_type_t qtype, aws_lws_async_dns_cb_t cb,
-		    struct lws *wsi, void *opaque);
+		    struct aws_lws *wsi, void *opaque);
 
 /**
  * aws_lws_async_dns_freeaddrinfo() - decrement refcount on cached addrinfo results

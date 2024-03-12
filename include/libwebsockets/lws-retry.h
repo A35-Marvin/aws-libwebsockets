@@ -91,5 +91,5 @@ aws_lws_retry_sul_schedule(struct aws_lws_context *context, int tid,
  * be filled in from the wsi conveniently.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_retry_sul_schedule_retry_wsi(struct lws *wsi, aws_lws_sorted_usec_list_t *sul,
+aws_lws_retry_sul_schedule_retry_wsi(struct aws_lws *wsi, aws_lws_sorted_usec_list_t *sul,
 				 sul_cb_t cb, uint16_t *ctry);

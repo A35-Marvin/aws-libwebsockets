@@ -27,8 +27,8 @@
 
 #define MQTT_CONNECT_MSG_BASE_LEN (12)
 
-struct lws *
-aws_lws_mqtt_client_send_connect(struct lws *wsi)
+struct aws_lws *
+aws_lws_mqtt_client_send_connect(struct aws_lws *wsi)
 {
 	/* static int */
 	/* 	aws_lws_mqttc_abs_writeable(aws_lws_abs_protocol_inst_t *api, size_t budget) */
@@ -177,8 +177,8 @@ aws_lws_mqtt_client_send_connect(struct lws *wsi)
 	return wsi;
 }
 
-struct lws *
-aws_lws_mqtt_client_send_disconnect(struct lws *wsi)
+struct aws_lws *
+aws_lws_mqtt_client_send_disconnect(struct aws_lws *wsi)
 {
 	uint8_t b[256 + LWS_PRE], *start = b + LWS_PRE, *p = start;
 

@@ -93,7 +93,7 @@ aws_lws_accept_cb(struct ev_loop *loop, struct ev_io *watcher, int revents)
 	struct aws_lws_pt_eventlibs_libev *ptpr;
 	struct aws_lws_context_per_thread *pt;
 	struct aws_lws_pollfd eventfd;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	if (revents & EV_ERROR)
 		return;
@@ -136,7 +136,7 @@ aws_lws_ev_sigint_cb(struct ev_loop *loop, struct ev_signal *watcher, int revent
 static int
 elops_listen_init_ev(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 	struct aws_lws_context *context = (struct aws_lws_context *)user;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct aws_lws_pt_eventlibs_libev *ptpr = pt_to_priv_ev(pt);
@@ -240,7 +240,7 @@ elops_init_pt_ev(struct aws_lws_context *context, void *_loop, int tsi)
 static int
 elops_listen_destroy_ev(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 	struct aws_lws_context *context = (struct aws_lws_context *)user;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct aws_lws_pt_eventlibs_libev *ptpr = pt_to_priv_ev(pt);
@@ -283,7 +283,7 @@ elops_init_context_ev(struct aws_lws_context *context,
 }
 
 static int
-elops_accept_ev(struct lws *wsi)
+elops_accept_ev(struct aws_lws *wsi)
 {
 	struct aws_lws_wsi_eventlibs_libev *w = wsi_to_priv_ev(wsi);
 	int fd;
@@ -303,7 +303,7 @@ elops_accept_ev(struct lws *wsi)
 }
 
 static void
-elops_io_ev(struct lws *wsi, unsigned int flags)
+elops_io_ev(struct aws_lws *wsi, unsigned int flags)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_pt_eventlibs_libev *ptpr = pt_to_priv_ev(pt);
@@ -375,7 +375,7 @@ elops_destroy_context2_ev(struct aws_lws_context *context)
 }
 
 static int
-elops_init_vhost_listen_wsi_ev(struct lws *wsi)
+elops_init_vhost_listen_wsi_ev(struct aws_lws *wsi)
 {
 	struct aws_lws_wsi_eventlibs_libev *w;
 	int fd;
@@ -403,7 +403,7 @@ elops_init_vhost_listen_wsi_ev(struct lws *wsi)
 }
 
 static void
-elops_destroy_wsi_ev(struct lws *wsi)
+elops_destroy_wsi_ev(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_pt_eventlibs_libev *ptpr = pt_to_priv_ev(pt);

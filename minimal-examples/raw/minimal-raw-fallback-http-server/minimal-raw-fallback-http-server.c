@@ -48,7 +48,7 @@ static const struct aws_lws_http_mount mount = {
 };
 
 static int
-callback_raw_echo(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+callback_raw_echo(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		  void *in, size_t len)
 {
 	struct pss__raw_echo *pss = (struct pss__raw_echo *)user;

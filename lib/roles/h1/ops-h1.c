@@ -39,7 +39,7 @@
  */
 
 int
-aws_lws_read_h1(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
+aws_lws_read_h1(struct aws_lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
 {
 	unsigned char *last_char, *oldbuf = buf;
 	aws_lws_filepos_t body_chunk_len;
@@ -153,7 +153,7 @@ http_postbody:
 				args.len = (int)(unsigned int)body_chunk_len;
 
 				/* returns how much used */
-				n = (unsigned int)user_callback_handle_rxflow(
+				n = (unsigned int)aws_user_callback_handle_rxflow(
 					wsi->a.protocol->callback,
 					wsi, LWS_CALLBACK_CGI_STDIN_DATA,
 					wsi->user_space,
@@ -179,7 +179,7 @@ http_postbody:
 
 #if defined(LWS_ROLE_H2)
 			if (aws_lwsi_role_h2(wsi) && !wsi->http.content_length_given) {
-				struct lws *w = aws_lws_get_network_wsi(wsi);
+				struct aws_lws *w = aws_lws_get_network_wsi(wsi);
 
 				if (w)
 					aws_lwsl_info("%s: h2: nwsi h2 flags %d\n", __func__,
@@ -326,7 +326,7 @@ bail:
 }
 #if defined(LWS_WITH_SERVER)
 static int
-aws_lws_h1_server_socket_service(struct lws *wsi, struct aws_lws_pollfd *pollfd)
+aws_lws_h1_server_socket_service(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_tokens ebuf;
@@ -522,7 +522,7 @@ try_pollout:
 			return LWS_HPI_RET_HANDLED;
 		}
 
-		n = user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+		n = aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 						LWS_CALLBACK_HTTP_WRITEABLE,
 						wsi->user_space, NULL, 0);
 		if (n < 0) {
@@ -558,7 +558,7 @@ fail:
 #endif
 
 static int
-rops_handle_POLLIN_h1(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_h1(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 		       struct aws_lws_pollfd *pollfd)
 {
 	if (aws_lwsi_state(wsi) == LRS_IDLING) {
@@ -675,7 +675,7 @@ rops_handle_POLLIN_h1(struct aws_lws_context_per_thread *pt, struct lws *wsi,
 		/* let user code know, he'll usually ask for writeable
 		 * callback and drain / re-enable it there
 		 */
-		if (user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+		if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 					       LWS_CALLBACK_RECEIVE_CLIENT_HTTP,
 						wsi->user_space, NULL, 0)) {
 			aws_lwsl_info("RECEIVE_CLIENT_HTTP closed it\n");
@@ -708,7 +708,7 @@ rops_handle_POLLIN_h1(struct aws_lws_context_per_thread *pt, struct lws *wsi,
 }
 
 static int
-rops_handle_POLLOUT_h1(struct lws *wsi)
+rops_handle_POLLOUT_h1(struct aws_lws *wsi)
 {
 
 
@@ -777,7 +777,7 @@ rops_handle_POLLOUT_h1(struct lws *wsi)
 }
 
 static int
-rops_write_role_protocol_h1(struct lws *wsi, unsigned char *buf, size_t len,
+rops_write_role_protocol_h1(struct aws_lws *wsi, unsigned char *buf, size_t len,
 			    enum aws_lws_write_protocol *wp)
 {
 	size_t olen = len;
@@ -846,7 +846,7 @@ rops_write_role_protocol_h1(struct lws *wsi, unsigned char *buf, size_t len,
 }
 
 static int
-rops_alpn_negotiated_h1(struct lws *wsi, const char *alpn)
+rops_alpn_negotiated_h1(struct aws_lws *wsi, const char *alpn)
 {
 	aws_lwsl_debug("%s: client %d\n", __func__, aws_lwsi_role_client(wsi));
 #if defined(LWS_WITH_CLIENT)
@@ -866,7 +866,7 @@ rops_alpn_negotiated_h1(struct lws *wsi, const char *alpn)
 }
 
 static int
-rops_destroy_role_h1(struct lws *wsi)
+rops_destroy_role_h1(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct allocated_headers *ah;
@@ -902,7 +902,7 @@ rops_destroy_role_h1(struct lws *wsi)
 #if defined(LWS_WITH_SERVER)
 
 static int
-rops_adoption_bind_h1(struct lws *wsi, int type, const char *vh_prot_name)
+rops_adoption_bind_h1(struct aws_lws *wsi, int type, const char *vh_prot_name)
 {
 	if (!(type & LWS_ADOPT_HTTP))
 		return 0; /* no match */
@@ -939,7 +939,7 @@ rops_adoption_bind_h1(struct lws *wsi, int type, const char *vh_prot_name)
 	else
 #endif
 		aws_lws_role_transition(wsi, LWSIFR_SERVER, (type & LWS_ADOPT_ALLOW_SSL) ?
-				LRS_SSL_INIT : LRS_HEADERS, &role_ops_h1);
+				LRS_SSL_INIT : LRS_HEADERS, &aws_role_ops_h1);
 
 	/*
 	 * Otherwise, we have to bind to h1 as a default even when we're actually going to
@@ -970,7 +970,7 @@ static const char * const http_methods[] = {
 };
 
 static int
-rops_client_bind_h1(struct lws *wsi, const struct aws_lws_client_connect_info *i)
+rops_client_bind_h1(struct aws_lws *wsi, const struct aws_lws_client_connect_info *i)
 {
 	int n;
 
@@ -1055,7 +1055,7 @@ rops_client_bind_h1(struct lws *wsi, const struct aws_lws_client_connect_info *i
 
 bind_h1:
 	/* assert the mode and union status (hdr) clearly */
-	aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED, &role_ops_h1);
+	aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED, &aws_role_ops_h1);
 
 	return 1; /* matched */
 
@@ -1065,7 +1065,7 @@ fail_wsi:
 #endif
 
 static int
-rops_close_kill_connection_h1(struct lws *wsi, enum aws_lws_close_status reason)
+rops_close_kill_connection_h1(struct aws_lws *wsi, enum aws_lws_close_status reason)
 {
 #if defined(LWS_WITH_HTTP_PROXY)
 	if (!wsi->http.proxy_clientside)
@@ -1073,7 +1073,7 @@ rops_close_kill_connection_h1(struct lws *wsi, enum aws_lws_close_status reason)
 
 	wsi->http.proxy_clientside = 0;
 
-	if (user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+	if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 					LWS_CALLBACK_COMPLETED_CLIENT_HTTP,
 					wsi->user_space, NULL, 0))
 		return 0;
@@ -1121,7 +1121,7 @@ static const aws_lws_rops_t rops_table_h1[] = {
 #endif
 };
 
-const struct aws_lws_role_ops role_ops_h1 = {
+const struct aws_lws_role_ops aws_role_ops_h1 = {
 	/* role name */			"h1",
 	/* alpn id */			"http/1.1",
 	/* rops_table */		rops_table_h1,

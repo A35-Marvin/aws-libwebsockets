@@ -365,7 +365,7 @@ aws_lws_pthread_mutex_unlock(pthread_mutex_t *lock)
 #endif
 #define LWS_ALIGN_TO(x, bou) x += ((bou) - ((x) % (bou))) % (bou)
 
-struct lws;
+struct aws_lws;
 
 /* api change list for user code to test against */
 
@@ -576,7 +576,7 @@ struct aws_lws_protocols;
 struct aws_lws_context;
 struct aws_lws_tokens;
 struct aws_lws_vhost;
-struct lws;
+struct aws_lws;
 
 #include <libwebsockets/lws-dll2.h>
 #include <libwebsockets/lws-map.h>

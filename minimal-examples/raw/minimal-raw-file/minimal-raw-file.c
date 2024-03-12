@@ -25,7 +25,7 @@ struct raw_vhd {
 static char filepath[256];
 
 static int
-callback_raw_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_raw_test(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct raw_vhd *vhd = (struct raw_vhd *)aws_lws_protocol_vh_priv_get(

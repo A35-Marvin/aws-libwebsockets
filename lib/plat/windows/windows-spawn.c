@@ -61,12 +61,12 @@ aws_lws_spawn_sul_reap(struct aws_lws_sorted_usec_list *sul)
 	}
 }
 
-static struct lws *
+static struct aws_lws *
 aws_lws_create_basic_wsi(struct aws_lws_context *context, int tsi,
 		     const struct aws_lws_role_ops *ops)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws *new_wsi;
+	struct aws_lws *new_wsi;
 
 	if (!context->vhost_list)
 		return NULL;
@@ -111,7 +111,7 @@ void
 aws_lws_spawn_piped_destroy(struct aws_lws_spawn_piped **_lsp)
 {
 	struct aws_lws_spawn_piped *lsp = *_lsp;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int n;
 
 	if (!lsp)
@@ -231,7 +231,7 @@ aws_lws_spawn_piped_kill_child_process(struct aws_lws_spawn_piped *lsp)
 	if (!lsp->child_pid)
 		return 1;
 
-	lsp->ungraceful = 1; /* don't wait for flushing, just kill it */
+	lsp->ungraceful = 1; /* don't wait for flushing, just aws_kill it */
 
 	if (aws_lws_spawn_reap(lsp))
 		/* that may have invalidated lsp */
@@ -251,7 +251,7 @@ windows_pipe_poll_hack(aws_lws_sorted_usec_list_t *sul)
 {
 	struct aws_lws_spawn_piped *lsp = aws_lws_container_of(sul,
 					struct aws_lws_spawn_piped, sul_poll);
-	struct lws *wsi, *wsi1;
+	struct aws_lws *wsi, *wsi1;
 	DWORD br;
 	char c;
 
@@ -530,7 +530,7 @@ bail3:
 	aws_lws_sul_cancel(&lsp->sul_poll);
 
 	while (--n >= 0)
-		__remove_wsi_socket_from_fds(lsp->stdwsi[n]);
+		aws___remove_wsi_socket_from_fds(lsp->stdwsi[n]);
 bail2:
 	for (n = 0; n < 3; n++)
 		if (lsp->stdwsi[n])
@@ -552,7 +552,7 @@ bail1:
 }
 
 void
-aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct lws *wsi)
+aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct aws_lws *wsi)
 {
 	int n;
 
@@ -569,7 +569,7 @@ aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct lws *wsi)
 }
 
 int
-aws_lws_spawn_get_stdfd(struct lws *wsi)
+aws_lws_spawn_get_stdfd(struct aws_lws *wsi)
 {
 	return wsi->lsp_channel;
 }

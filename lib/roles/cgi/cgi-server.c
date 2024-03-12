@@ -89,7 +89,7 @@ static void
 aws_lws_cgi_reap_cb(void *opaque, aws_lws_usec_t *accounting, siginfo_t *si,
 		 int we_killed_him)
 {
-	struct lws *wsi = (struct lws *)opaque;
+	struct aws_lws *wsi = (struct aws_lws *)opaque;
 
 	/*
 	 * The cgi has come to an end, by itself or with a signal...
@@ -107,7 +107,7 @@ aws_lws_cgi_reap_cb(void *opaque, aws_lws_usec_t *accounting, siginfo_t *si,
 }
 
 int
-aws_lws_cgi(struct lws *wsi, const char * const *exec_array,
+aws_lws_cgi(struct aws_lws *wsi, const char * const *exec_array,
 	int script_uri_path_len, int timeout_secs,
 	const struct aws_lws_protocol_vhost_options *mp_cgienv)
 {
@@ -423,7 +423,7 @@ aws_lws_cgi(struct lws *wsi, const char * const *exec_array,
 	wsi->a.context->count_cgi_spawned++;
 
 	/* inform cgi owner of the child PID */
-	n = user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+	n = aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 				    LWS_CALLBACK_CGI_PROCESS_ATTACH,
 				    wsi->user_space, NULL, (unsigned int)cgi->lsp->child_pid);
 	(void)n;
@@ -457,7 +457,7 @@ enum header_recode {
 };
 
 int
-aws_lws_cgi_write_split_stdout_headers(struct lws *wsi)
+aws_lws_cgi_write_split_stdout_headers(struct aws_lws *wsi)
 {
 	int n, m, cmd;
 	unsigned char buf[LWS_PRE + 4096], *start = &buf[LWS_PRE], *p = start,
@@ -848,7 +848,7 @@ agin:
 
 #if defined(LWS_WITH_HTTP2)
 		if (wsi->mux_substream) {
-			struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+			struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 			aws___lws_set_timeout(wsi,
 				PENDING_TIMEOUT_HTTP_KEEPALIVE_IDLE, 31);
@@ -903,7 +903,7 @@ agin:
 }
 
 int
-aws_lws_cgi_kill(struct lws *wsi)
+aws_lws_cgi_kill(struct aws_lws *wsi)
 {
 	struct aws_lws_cgi_args args;
 	pid_t pid;
@@ -920,7 +920,7 @@ aws_lws_cgi_kill(struct lws *wsi)
 
 	if (pid != -1) {
 		m = wsi->http.cgi->being_closed;
-		n = user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+		n = aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 						LWS_CALLBACK_CGI_TERMINATED,
 						wsi->user_space, (void *)&args,
 						(unsigned int)pid);
@@ -972,7 +972,7 @@ aws_lws_cgi_kill_terminated(struct aws_lws_context_per_thread *pt)
 			/* reap it */
 			waitpid(n, &status, WNOHANG);
 			/*
-			 * he's already terminated so no need for kill()
+			 * he's already terminated so no need for aws_kill()
 			 * but we should do the terminated cgi callback
 			 * and close him if he's not already closing
 			 */
@@ -988,7 +988,7 @@ aws_lws_cgi_kill_terminated(struct aws_lws_context_per_thread *pt)
 					continue;
 				}
 
-				/* defeat kill() */
+				/* defeat aws_kill() */
 				cgi->lsp->child_pid = 0;
 				aws_lws_cgi_kill(cgi->wsi);
 
@@ -1049,7 +1049,7 @@ finish_him:
 			aws_lwsl_cx_debug(pt->context, "found PID %d on cgi list",
 						   cgi->lsp->child_pid);
 
-			/* defeat kill() */
+			/* defeat aws_kill() */
 			cgi->lsp->child_pid = 0;
 			aws_lws_cgi_kill(cgi->wsi);
 
@@ -1060,8 +1060,8 @@ finish_him:
 	return 0;
 }
 
-struct lws *
-aws_lws_cgi_get_stdwsi(struct lws *wsi, enum aws_lws_enum_stdinouterr ch)
+struct aws_lws *
+aws_lws_cgi_get_stdwsi(struct aws_lws *wsi, enum aws_lws_enum_stdinouterr ch)
 {
 	if (!wsi->http.cgi)
 		return NULL;
@@ -1070,7 +1070,7 @@ aws_lws_cgi_get_stdwsi(struct lws *wsi, enum aws_lws_enum_stdinouterr ch)
 }
 
 void
-aws_lws_cgi_remove_and_kill(struct lws *wsi)
+aws_lws_cgi_remove_and_kill(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_cgi **pcgi = &pt->http.cgi_list;
@@ -1088,7 +1088,7 @@ aws_lws_cgi_remove_and_kill(struct lws *wsi)
 	if (wsi->http.cgi->headers_buf)
 		aws_lws_free_set_NULL(wsi->http.cgi->headers_buf);
 
-	/* we have a cgi going, we must kill it */
+	/* we have a cgi going, we must aws_kill it */
 	wsi->http.cgi->being_closed = 1;
 	aws_lws_cgi_kill(wsi);
 

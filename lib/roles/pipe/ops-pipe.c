@@ -25,7 +25,7 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_pipe(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_pipe(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			struct aws_lws_pollfd *pollfd)
 {
 #if defined(LWS_HAVE_EVENTFD)

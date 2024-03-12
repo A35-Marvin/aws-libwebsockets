@@ -265,7 +265,7 @@ enum aws_lws_callback_reasons {
 	 * headers using the header enums aws_lws_token_indexes from
 	 * libwebsockets.h to check for and read the supported header
 	 * presence and content before deciding to allow the http
-	 * connection to proceed or to kill the connection. */
+	 * connection to proceed or to aws_kill the connection. */
 
 	LWS_CALLBACK_ADD_HEADERS				= 53,
 	/**< This gives your user code a chance to add headers to a server
@@ -454,7 +454,7 @@ enum aws_lws_callback_reasons {
 	 * headers using the header enums aws_lws_token_indexes from
 	 * libwebsockets.h to check for and read the supported header
 	 * presence and content before deciding to allow the handshake
-	 * to proceed or to kill the connection. */
+	 * to proceed or to aws_kill the connection. */
 
 	LWS_CALLBACK_CONFIRM_EXTENSION_OKAY			= 25,
 	/**< When the server handshake code
@@ -912,7 +912,7 @@ enum aws_lws_callback_reasons {
  *	the library is initialized with aws_lws_create_server.
  */
 typedef int
-aws_lws_callback_function(struct lws *wsi, enum aws_lws_callback_reasons reason,
+aws_lws_callback_function(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		    void *user, void *in, size_t len);
 
 #define LWS_CB_REASON_AUX_BF__CGI		1

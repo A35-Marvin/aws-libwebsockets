@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 int
-aws__lws_change_pollfd(struct lws *wsi, int _and, int _or, struct aws_lws_pollargs *pa)
+aws__lws_change_pollfd(struct aws_lws *wsi, int _and, int _or, struct aws_lws_pollargs *pa)
 {
 #if !defined(LWS_WITH_EVENT_LIBS)
 	volatile struct aws_lws_context_per_thread *vpt;
@@ -45,7 +45,7 @@ aws__lws_change_pollfd(struct lws *wsi, int _and, int _or, struct aws_lws_pollar
 	if (wsi->position_in_fds_table == LWS_NO_FDS_POS)
 		return 0;
 
-	if (((volatile struct lws *)wsi)->handling_pollout &&
+	if (((volatile struct aws_lws *)wsi)->handling_pollout &&
 	    !_and && _or == LWS_POLLOUT) {
 		/*
 		 * Happening alongside service thread handling POLLOUT.
@@ -55,7 +55,7 @@ aws__lws_change_pollfd(struct lws *wsi, int _and, int _or, struct aws_lws_pollar
 		 * Instead of changing the fds, inform the service thread
 		 * what happened, and ask it to leave POLLOUT active on exit
 		 */
-		((volatile struct lws *)wsi)->leave_pollout_active = 1;
+		((volatile struct aws_lws *)wsi)->leave_pollout_active = 1;
 		/*
 		 * by definition service thread is not in poll wait, so no need
 		 * to cancel service
@@ -232,7 +232,7 @@ aws_lws_accept_modulation(struct aws_lws_context *context,
 	while (vh) {
 		aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
 				      aws_lws_dll2_get_head(&vh->listen_wsi)) {
-			struct lws *wsi = aws_lws_container_of(d, struct lws,
+			struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws,
 							   listen_list);
 
 			aws__lws_change_pollfd(wsi, allow ? 0 : LWS_POLLIN,
@@ -253,7 +253,7 @@ __dump_fds(struct aws_lws_context_per_thread *pt, const char *s)
 	aws_lwsl_cx_warn(pt->context, "fds_count %u, %s", pt->fds_count, s);
 
 	for (n = 0; n < pt->fds_count; n++) {
-		struct lws *wsi = wsi_from_fd(pt->context, pt->fds[n].fd);
+		struct aws_lws *wsi = wsi_from_fd(pt->context, pt->fds[n].fd);
 
 		aws_lwsl_cx_warn(pt->context, "  %d: fd %d, wsi %s, pos_in_fds: %d",
 			n + 1, pt->fds[n].fd, aws_lws_wsi_tag(wsi),
@@ -265,7 +265,7 @@ __dump_fds(struct aws_lws_context_per_thread *pt, const char *s)
 #endif
 
 int
-__insert_wsi_socket_into_fds(struct aws_lws_context *context, struct lws *wsi)
+aws___insert_wsi_socket_into_fds(struct aws_lws_context *context, struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_EXTERNAL_POLL)
 	struct aws_lws_pollargs pa = { wsi->desc.sockfd, LWS_POLLIN, 0 };
@@ -355,14 +355,14 @@ __insert_wsi_socket_into_fds(struct aws_lws_context *context, struct lws *wsi)
 /* requires pt lock */
 
 int
-__remove_wsi_socket_from_fds(struct lws *wsi)
+aws___remove_wsi_socket_from_fds(struct aws_lws *wsi)
 {
 	struct aws_lws_context *context = wsi->a.context;
 #if defined(LWS_WITH_EXTERNAL_POLL)
 	struct aws_lws_pollargs pa = { wsi->desc.sockfd, 0, 0 };
 #endif
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
-	struct lws *end_wsi;
+	struct aws_lws *end_wsi;
 	int v, m, ret = 0;
 
 	aws_lws_pt_assert_lock_held(pt);
@@ -470,7 +470,7 @@ __remove_wsi_socket_from_fds(struct lws *wsi)
 }
 
 int
-aws___lws_change_pollfd(struct lws *wsi, int _and, int _or)
+aws___lws_change_pollfd(struct aws_lws *wsi, int _and, int _or)
 {
 	struct aws_lws_context *context;
 	struct aws_lws_pollargs pa;
@@ -504,7 +504,7 @@ aws___lws_change_pollfd(struct lws *wsi, int _and, int _or)
 }
 
 int
-aws_lws_change_pollfd(struct lws *wsi, int _and, int _or)
+aws_lws_change_pollfd(struct aws_lws *wsi, int _and, int _or)
 {
 	struct aws_lws_context_per_thread *pt;
 	int ret = 0;
@@ -519,9 +519,9 @@ aws_lws_change_pollfd(struct lws *wsi, int _and, int _or)
 }
 
 int
-aws_lws_callback_on_writable(struct lws *wsi)
+aws_lws_callback_on_writable(struct aws_lws *wsi)
 {
-	struct lws *w = wsi;
+	struct aws_lws *w = wsi;
 
 	if (aws_lwsi_state(wsi) == LRS_SHUTDOWN)
 		return 0;
@@ -560,7 +560,7 @@ aws_lws_callback_on_writable(struct lws *wsi)
  * Illegal to attach more than once without detach inbetween
  */
 void
-aws_lws_same_vh_protocol_insert(struct lws *wsi, int n)
+aws_lws_same_vh_protocol_insert(struct aws_lws *wsi, int n)
 {
 	aws_lws_context_lock(wsi->a.context, __func__);
 	aws_lws_vhost_lock(wsi->a.vhost);
@@ -576,14 +576,14 @@ aws_lws_same_vh_protocol_insert(struct lws *wsi, int n)
 }
 
 void
-aws___lws_same_vh_protocol_remove(struct lws *wsi)
+aws___lws_same_vh_protocol_remove(struct aws_lws *wsi)
 {
 	if (wsi->a.vhost && wsi->a.vhost->same_vh_protocol_owner)
 		aws_lws_dll2_remove(&wsi->same_vh_protocol);
 }
 
 void
-aws_lws_same_vh_protocol_remove(struct lws *wsi)
+aws_lws_same_vh_protocol_remove(struct aws_lws *wsi)
 {
 	if (!wsi->a.vhost)
 		return;
@@ -602,7 +602,7 @@ int
 aws_lws_callback_on_writable_all_protocol_vhost(const struct aws_lws_vhost *vhost,
 				           const struct aws_lws_protocols *protocol)
 {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int n;
 
 	if (protocol < vhost->protocols ||
@@ -619,7 +619,7 @@ aws_lws_callback_on_writable_all_protocol_vhost(const struct aws_lws_vhost *vhos
 
 	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 			aws_lws_dll2_get_head(&vhost->same_vh_protocol_owner[n])) {
-		wsi = aws_lws_container_of(d, struct lws, same_vh_protocol);
+		wsi = aws_lws_container_of(d, struct aws_lws, same_vh_protocol);
 
 		assert(wsi->a.protocol == protocol);
 		aws_lws_callback_on_writable(wsi);

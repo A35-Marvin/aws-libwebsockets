@@ -25,7 +25,7 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_raw_proxy(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+rops_handle_POLLIN_raw_proxy(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 			     struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_tokens ebuf;
@@ -83,7 +83,7 @@ rops_handle_POLLIN_raw_proxy(struct aws_lws_context_per_thread *pt, struct lws *
 		case LWS_SSL_CAPABLE_MORE_SERVICE:
 			goto try_pollout;
 		}
-		n = user_callback_handle_rxflow(wsi->a.protocol->callback,
+		n = aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 						wsi, aws_lwsi_role_client(wsi) ?
 						 LWS_CALLBACK_RAW_PROXY_CLI_RX :
 						 LWS_CALLBACK_RAW_PROXY_SRV_RX,
@@ -127,7 +127,7 @@ fail:
 }
 
 static int
-rops_adoption_bind_raw_proxy(struct lws *wsi, int type,
+rops_adoption_bind_raw_proxy(struct aws_lws *wsi, int type,
 			     const char *vh_prot_name)
 {
 	/* no http but socket... must be raw skt */
@@ -159,7 +159,7 @@ rops_adoption_bind_raw_proxy(struct lws *wsi, int type,
 }
 
 static int
-rops_client_bind_raw_proxy(struct lws *wsi,
+rops_client_bind_raw_proxy(struct aws_lws *wsi,
 			   const struct aws_lws_client_connect_info *i)
 {
 	if (!i) {
@@ -183,7 +183,7 @@ rops_client_bind_raw_proxy(struct lws *wsi,
 }
 
 static int
-rops_handle_POLLOUT_raw_proxy(struct lws *wsi)
+rops_handle_POLLOUT_raw_proxy(struct aws_lws *wsi)
 {
 	if (aws_lwsi_state(wsi) == LRS_ESTABLISHED)
 		return LWS_HP_RET_USER_SERVICE;

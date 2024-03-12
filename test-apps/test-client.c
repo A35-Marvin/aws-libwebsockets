@@ -46,8 +46,8 @@ struct aws_lws_poly_gen {
 #define block_size (3 * 4096)
 
 static int deny_deflate, longlived, mirror_lifetime, test_post, once;
-static struct lws *wsi_dumb, *wsi_mirror;
-static struct lws *wsi_multi[3];
+static struct aws_lws *wsi_dumb, *wsi_mirror;
+static struct aws_lws *wsi_multi[3];
 static volatile int force_exit;
 static unsigned int opts, rl_multi[3];
 static int flag_no_mirror_traffic, justmirror, flag_echo;
@@ -115,7 +115,7 @@ static void show_http_content(const char *p, size_t l)
  */
 
 static int
-callback_dumb_increment(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_dumb_increment(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 #if defined(LWS_WITH_TLS)
@@ -337,7 +337,7 @@ callback_dumb_increment(struct lws *wsi, enum aws_lws_callback_reasons reason,
 
 
 static int
-callback_lws_mirror(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_lws_mirror(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		    void *user, void *in, size_t len)
 {
 	unsigned char buf[LWS_PRE + block_size], *p;
@@ -481,7 +481,7 @@ callback_lws_mirror(struct lws *wsi, enum aws_lws_callback_reasons reason,
 }
 
 static int
-callback_test_raw_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_test_raw_client(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			 void *user, void *in, size_t len)
 {
 	switch (reason) {

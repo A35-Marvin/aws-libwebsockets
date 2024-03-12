@@ -44,10 +44,10 @@ aws_lws_get_idlest_tsi(struct aws_lws_context *context)
 	return hit;
 }
 
-struct lws *
+struct aws_lws *
 aws_lws_create_new_server_wsi(struct aws_lws_vhost *vhost, int fixed_tsi, const char *desc)
 {
-	struct lws *new_wsi;
+	struct aws_lws *new_wsi;
 	int n = fixed_tsi;
 
 	if (n < 0)
@@ -117,14 +117,14 @@ aws_lws_create_new_server_wsi(struct aws_lws_vhost *vhost, int fixed_tsi, const 
  * req cx lock, acq pt lock, acq vh lock
  */
 
-static struct lws *
+static struct aws_lws *
 aws___lws_adopt_descriptor_vhost1(struct aws_lws_vhost *vh, aws_lws_adoption_type type,
-			    const char *vh_prot_name, struct lws *parent,
+			    const char *vh_prot_name, struct aws_lws *parent,
 			    void *opaque, const char *fi_wsi_name)
 {
 	struct aws_lws_context *context;
 	struct aws_lws_context_per_thread *pt;
-	struct lws *new_wsi;
+	struct aws_lws *new_wsi;
 	int n;
 
 	/*
@@ -246,7 +246,7 @@ bail:
  */
 
 int
-aws_lws_adopt_ss_server_accept(struct lws *new_wsi)
+aws_lws_adopt_ss_server_accept(struct aws_lws *new_wsi)
 {
 	struct aws_lws_context_per_thread *pt =
 			&new_wsi->a.context->pt[(int)new_wsi->tsi];
@@ -349,8 +349,8 @@ fail1:
 #endif
 
 
-static struct lws *
-aws_lws_adopt_descriptor_vhost2(struct lws *new_wsi, aws_lws_adoption_type type,
+static struct aws_lws *
+aws_lws_adopt_descriptor_vhost2(struct aws_lws *new_wsi, aws_lws_adoption_type type,
 			    aws_lws_sock_file_fd_type fd)
 {
 	struct aws_lws_context_per_thread *pt =
@@ -406,7 +406,7 @@ aws_lws_adopt_descriptor_vhost2(struct lws *new_wsi, aws_lws_adoption_type type,
 
 	if (!(type & LWS_ADOPT_ALLOW_SSL)) {
 		aws_lws_pt_lock(pt, __func__);
-		if (__insert_wsi_socket_into_fds(new_wsi->a.context, new_wsi)) {
+		if (aws___insert_wsi_socket_into_fds(new_wsi->a.context, new_wsi)) {
 			aws_lws_pt_unlock(pt);
 			aws_lwsl_wsi_err(new_wsi, "fail inserting socket");
 			goto fail;
@@ -476,10 +476,10 @@ fail:
 
 /* if not a socket, it's a raw, non-ssl file descriptor */
 
-struct lws *
+struct aws_lws *
 aws_lws_adopt_descriptor_vhost(struct aws_lws_vhost *vh, aws_lws_adoption_type type,
 			   aws_lws_sock_file_fd_type fd, const char *vh_prot_name,
-			   struct lws *parent)
+			   struct aws_lws *parent)
 {
 	aws_lws_adopt_desc_t info;
 
@@ -494,11 +494,11 @@ aws_lws_adopt_descriptor_vhost(struct aws_lws_vhost *vh, aws_lws_adoption_type t
 	return aws_lws_adopt_descriptor_vhost_via_info(&info);
 }
 
-struct lws *
+struct aws_lws *
 aws_lws_adopt_descriptor_vhost_via_info(const aws_lws_adopt_desc_t *info)
 {
 	socklen_t slen = sizeof(aws_lws_sockaddr46);
-	struct lws *new_wsi;
+	struct aws_lws *new_wsi;
 
 #if defined(LWS_WITH_PEER_LIMITS)
 	struct aws_lws_peer *peer = NULL;
@@ -550,7 +550,7 @@ bail:
 	return new_wsi;
 }
 
-struct lws *
+struct aws_lws *
 aws_lws_adopt_socket_vhost(struct aws_lws_vhost *vh, aws_lws_sockfd_type accept_fd)
 {
 	aws_lws_sock_file_fd_type fd;
@@ -560,15 +560,15 @@ aws_lws_adopt_socket_vhost(struct aws_lws_vhost *vh, aws_lws_sockfd_type accept_
 			LWS_ADOPT_HTTP | LWS_ADOPT_ALLOW_SSL, fd, NULL, NULL);
 }
 
-struct lws *
+struct aws_lws *
 aws_lws_adopt_socket(struct aws_lws_context *context, aws_lws_sockfd_type accept_fd)
 {
 	return aws_lws_adopt_socket_vhost(context->vhost_list, accept_fd);
 }
 
 /* Common read-buffer adoption for aws_lws_adopt_*_readbuf */
-static struct lws*
-adopt_socket_readbuf(struct lws *wsi, const char *readbuf, size_t len)
+static struct aws_lws*
+adopt_socket_readbuf(struct aws_lws *wsi, const char *readbuf, size_t len)
 {
 	struct aws_lws_context_per_thread *pt;
 	struct aws_lws_pollfd *pfd;
@@ -640,8 +640,8 @@ bail:
  * connect3()
  */
 
-static struct lws *
-aws_lws_create_adopt_udp2(struct lws *wsi, const char *ads,
+static struct aws_lws *
+aws_lws_create_adopt_udp2(struct aws_lws *wsi, const char *ads,
 		      const struct addrinfo *r, int n, void *opaque)
 {
 	aws_lws_sock_file_fd_type sock;
@@ -789,14 +789,14 @@ bail:
 	return NULL;
 }
 
-struct lws *
+struct aws_lws *
 aws_lws_create_adopt_udp(struct aws_lws_vhost *vhost, const char *ads, int port,
 		     int flags, const char *protocol_name, const char *ifname,
-		     struct lws *parent_wsi, void *opaque,
+		     struct aws_lws *parent_wsi, void *opaque,
 		     const aws_lws_retry_bo_t *retry_policy, const char *fi_wsi_name)
 {
 #if !defined(LWS_PLAT_OPTEE)
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	int n;
 
 	aws_lwsl_info("%s: %s:%u\n", __func__, ads ? ads : "null", port);
@@ -919,7 +919,7 @@ bail:
 #endif
 #endif
 
-struct lws *
+struct aws_lws *
 aws_lws_adopt_socket_readbuf(struct aws_lws_context *context, aws_lws_sockfd_type accept_fd,
 			 const char *readbuf, size_t len)
 {
@@ -927,7 +927,7 @@ aws_lws_adopt_socket_readbuf(struct aws_lws_context *context, aws_lws_sockfd_typ
 				    readbuf, len);
 }
 
-struct lws *
+struct aws_lws *
 aws_lws_adopt_socket_vhost_readbuf(struct aws_lws_vhost *vhost,
 			       aws_lws_sockfd_type accept_fd,
 			       const char *readbuf, size_t len)

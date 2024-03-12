@@ -206,7 +206,7 @@ init_pt_custom(struct aws_lws_context *cx, void *_loop, int tsi)
 }
 
 static int
-sock_accept_custom(struct lws *wsi)
+sock_accept_custom(struct aws_lws *wsi)
 {
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
 						aws_lws_evlib_wsi_to_evlib_pt(wsi);
@@ -215,7 +215,7 @@ sock_accept_custom(struct lws *wsi)
 }
 
 static void
-io_custom(struct lws *wsi, unsigned int flags)
+io_custom(struct aws_lws *wsi, unsigned int flags)
 {
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
 						aws_lws_evlib_wsi_to_evlib_pt(wsi);
@@ -240,7 +240,7 @@ io_custom(struct lws *wsi, unsigned int flags)
 }
 
 static int
-wsi_logical_close_custom(struct lws *wsi)
+wsi_logical_close_custom(struct aws_lws *wsi)
 {
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
 						aws_lws_evlib_wsi_to_evlib_pt(wsi);
@@ -301,7 +301,7 @@ static const struct aws_lws_http_mount mount = {
  */
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {

@@ -25,13 +25,13 @@
 #include "private-lib-core.h"
 
 void
-aws_lws_client_http_body_pending(struct lws *wsi, int something_left_to_send)
+aws_lws_client_http_body_pending(struct aws_lws *wsi, int something_left_to_send)
 {
 	wsi->client_http_body_pending = !!something_left_to_send;
 }
 
 int
-aws_lws_http_client_socket_service(struct lws *wsi, struct aws_lws_pollfd *pollfd)
+aws_lws_http_client_socket_service(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -498,7 +498,7 @@ bail3:
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_http_transaction_completed_client(struct lws *wsi)
+aws_lws_http_transaction_completed_client(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	int n;
@@ -510,7 +510,7 @@ aws_lws_http_transaction_completed_client(struct lws *wsi)
 	/* we're only judging if any (200, or 500 etc) http txn completed */
 	aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_GO);
 
-	if (user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+	if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 					LWS_CALLBACK_COMPLETED_CLIENT_HTTP,
 					wsi->user_space, NULL, 0)) {
 		aws_lwsl_debug("%s: Completed call returned nonzero (role 0x%lx)\n",
@@ -570,7 +570,7 @@ aws_lws_http_transaction_completed_client(struct lws *wsi)
 }
 
 unsigned int
-aws_lws_http_client_http_response(struct lws *wsi)
+aws_lws_http_client_http_response(struct aws_lws *wsi)
 {
 	if (wsi->http.ah && wsi->http.ah->http_response)
 		return wsi->http.ah->http_response;
@@ -582,19 +582,19 @@ aws_lws_http_client_http_response(struct lws *wsi)
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 
 int
-aws_lws_http_is_redirected_to_get(struct lws *wsi)
+aws_lws_http_is_redirected_to_get(struct aws_lws *wsi)
 {
 	return wsi->redirected_to_get;
 }
 
 int
-aws_lws_client_interpret_server_handshake(struct lws *wsi)
+aws_lws_client_interpret_server_handshake(struct aws_lws *wsi)
 {
 	int n, port = 0, ssl = 0;
 	int close_reason = LWS_CLOSE_STATUS_PROTOCOL_ERR;
 	const char *prot, *ads = NULL, *path, *cce = NULL;
 	struct allocated_headers *ah, *ah1;
-	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	struct aws_lws *nwsi = aws_lws_get_network_wsi(wsi);
 	char *p = NULL, *q, *simp;
 	char new_path[300];
 	void *opaque;
@@ -624,7 +624,7 @@ aws_lws_client_interpret_server_handshake(struct lws *wsi)
 			aws_lwsl_debug("%s: %s: transitioning to h1 client\n",
 				   __func__, aws_lws_wsi_tag(wsi));
 			aws_lws_role_transition(wsi, LWSIFR_CLIENT,
-					    LRS_ESTABLISHED, &role_ops_h1);
+					    LRS_ESTABLISHED, &aws_role_ops_h1);
 			}
 #else
 			return -1;
@@ -866,8 +866,8 @@ aws_lws_client_interpret_server_handshake(struct lws *wsi)
 			aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *,
 						   d, d1,
 			  wsi->dll2_cli_txn_queue_owner.head) {
-				struct lws *ww = aws_lws_container_of(d,
-					struct lws,
+				struct aws_lws *ww = aws_lws_container_of(d,
+					struct aws_lws,
 					dll2_cli_txn_queue);
 
 				/* remove him from our queue */
@@ -879,7 +879,7 @@ aws_lws_client_interpret_server_handshake(struct lws *wsi)
 				aws_lws_role_transition(ww, LWSIFR_CLIENT,
 						    LRS_UNCONNECTED,
 #if defined(LWS_ROLE_H1)
-						    &role_ops_h1);
+						    &aws_role_ops_h1);
 #else
 #if defined (LWS_ROLE_H2)
 						    &role_ops_h2);
@@ -1060,7 +1060,7 @@ bail2:
  */
 
 uint8_t *
-aws_lws_http_multipart_headers(struct lws *wsi, uint8_t *p)
+aws_lws_http_multipart_headers(struct aws_lws *wsi, uint8_t *p)
 {
 	char buf[10], arg[48];
 	int n;
@@ -1087,7 +1087,7 @@ aws_lws_http_multipart_headers(struct lws *wsi, uint8_t *p)
 }
 
 int
-aws_lws_client_http_multipart(struct lws *wsi, const char *name,
+aws_lws_client_http_multipart(struct aws_lws *wsi, const char *name,
 			  const char *filename, const char *content_type,
 			  char **p, char *end)
 {
@@ -1127,7 +1127,7 @@ aws_lws_client_http_multipart(struct lws *wsi, const char *name,
 }
 
 char *
-aws_lws_generate_client_handshake(struct lws *wsi, char *pkt)
+aws_lws_generate_client_handshake(struct aws_lws *wsi, char *pkt)
 {
 	const char *meth, *pp = aws_lws_hdr_simple_ptr(wsi,
 				_WSI_TOKEN_CLIENT_SENT_PROTOCOLS), *path;
@@ -1323,7 +1323,7 @@ aws_lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t 
 #endif
 
 int
-aws_lws_http_client_read(struct lws *wsi, char **buf, int *len)
+aws_lws_http_client_read(struct aws_lws *wsi, char **buf, int *len)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_tokens eb;
@@ -1398,7 +1398,7 @@ spin_chunks:
 				wsi->chunk_parser = ELCP_CR;
 				break;
 			}
-			n = char_to_hex((*buf)[0]);
+			n = aws_char_to_hex((*buf)[0]);
 			if (n < 0) {
 				aws_lwsl_err("%s: chunking failure A\n", __func__);
 				return -1;
@@ -1507,7 +1507,7 @@ spin_chunks:
 		  ) {
 			int q;
 
-			q = user_callback_handle_rxflow(wsi->a.protocol->callback,
+			q = aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 				wsi, LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ,
 				wsi->user_space, *buf, (unsigned int)n);
 			if (q) {
@@ -1587,8 +1587,8 @@ static uint8_t hnames2[] = {
  * path:	uri path to connect to on the new server
  * host:	host header to send to the new server
  */
-struct lws *
-aws_lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
+struct aws_lws *
+aws_lws_client_reset(struct aws_lws **pwsi, int ssl, const char *address, int port,
 		 const char *path, const char *host, char weak)
 {
 	struct aws_lws_context_per_thread *pt;
@@ -1596,7 +1596,7 @@ aws_lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 	struct aws__lws_websocket_related *ws;
 #endif
 	const char *cisin[CIS_COUNT];
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	size_t o;
 	int n;
 
@@ -1661,7 +1661,7 @@ aws_lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 		    __func__, address, port, path, ssl, cisin[CIS_ALPN]);
 
 	aws_lws_pt_lock(pt, __func__);
-	__remove_wsi_socket_from_fds(wsi);
+	aws___remove_wsi_socket_from_fds(wsi);
 	aws_lws_pt_unlock(pt);
 
 #if defined(LWS_ROLE_WS)

@@ -97,7 +97,7 @@ struct aws_lws_spa;
  * in case of fatal error, and 0 if OK.
  */
 LWS_VISIBLE LWS_EXTERN struct aws_lws_spa *
-aws_lws_spa_create(struct lws *wsi, const char * const *param_names,
+aws_lws_spa_create(struct aws_lws *wsi, const char * const *param_names,
 	       int count_params, int max_storage, aws_lws_spa_fileupload_cb opt_cb,
 	       void *opt_data);
 
@@ -129,7 +129,7 @@ typedef struct aws_lws_spa_create_info {
  * in case of fatal error, and 0 if OK.
  */
 LWS_VISIBLE LWS_EXTERN struct aws_lws_spa *
-aws_lws_spa_create_via_info(struct lws *wsi, const aws_lws_spa_create_info_t *info);
+aws_lws_spa_create_via_info(struct aws_lws *wsi, const aws_lws_spa_create_info_t *info);
 
 /**
  * aws_lws_spa_process() - parses a chunk of input data

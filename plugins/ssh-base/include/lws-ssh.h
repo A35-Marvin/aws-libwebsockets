@@ -468,7 +468,7 @@ struct per_vhost_data__sshd;
 struct per_session_data__sshd {
 	struct per_session_data__sshd *next;
 	struct per_vhost_data__sshd *vhd;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	struct aws_lws_kex *kex;
 	char *disconnect_desc;

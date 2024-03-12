@@ -42,7 +42,7 @@ elops_foreign_thread_poll(struct aws_lws_context *cx, int tsi)
 	return vpt->inside_poll;
 }
 
-struct aws_lws_event_loop_ops event_loop_ops_poll = {
+struct aws_lws_event_loop_ops aws_event_loop_ops_poll = {
 	.name				= "poll",
 
 	.foreign_thread			= elops_foreign_thread_poll,
@@ -58,5 +58,5 @@ const aws_lws_plugin_evlib_t evlib_poll = {
 		LWS_PLUGIN_API_MAGIC
 	},
 
-	.ops	= &event_loop_ops_poll
+	.ops	= &aws_event_loop_ops_poll
 };

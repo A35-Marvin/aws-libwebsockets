@@ -76,12 +76,12 @@ extern struct aws_lws_compression_support lcs_deflate;
 extern struct aws_lws_compression_support lcs_brotli;
 
 int
-aws_lws_http_compression_validate(struct lws *wsi);
+aws_lws_http_compression_validate(struct aws_lws *wsi);
 
 int
-aws_lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
+aws_lws_http_compression_transform(struct aws_lws *wsi, unsigned char *buf,
 			       size_t len, enum aws_lws_write_protocol *wp,
 			       unsigned char **outbuf, size_t *olen_oused);
 
 void
-aws_lws_http_compression_destroy(struct lws *wsi);
+aws_lws_http_compression_destroy(struct aws_lws *wsi);

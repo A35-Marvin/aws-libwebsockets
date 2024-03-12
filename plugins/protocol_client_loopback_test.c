@@ -28,7 +28,7 @@
 #include <string.h>
 
 struct per_session_data__client_loopback_test {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 };
 
 /*
@@ -65,7 +65,7 @@ struct per_session_data__client_loopback_test {
  */
 
 static int
-callback_client_loopback_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_client_loopback_test(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct aws_lws_client_connect_info i;

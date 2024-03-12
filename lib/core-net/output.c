@@ -28,7 +28,7 @@
  * notice this returns number of bytes consumed, or -1
  */
 int
-aws_lws_issue_raw(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_issue_raw(struct aws_lws *wsi, unsigned char *buf, size_t len)
 {
 	struct aws_lws_context *context = aws_lws_get_context(wsi);
 	size_t real_len = len;
@@ -211,7 +211,7 @@ aws_lws_issue_raw(struct lws *wsi, unsigned char *buf, size_t len)
 }
 
 int
-aws_lws_write(struct lws *wsi, unsigned char *buf, size_t len,
+aws_lws_write(struct aws_lws *wsi, unsigned char *buf, size_t len,
 	  enum aws_lws_write_protocol wp)
 {
 	int m;
@@ -244,7 +244,7 @@ aws_lws_write(struct lws *wsi, unsigned char *buf, size_t len,
 }
 
 int
-aws_lws_ssl_capable_read_no_ssl(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_ssl_capable_read_no_ssl(struct aws_lws *wsi, unsigned char *buf, size_t len)
 {
 	int n = 0, en;
 
@@ -305,7 +305,7 @@ do_err:
 }
 
 int
-aws_lws_ssl_capable_write_no_ssl(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_ssl_capable_write_no_ssl(struct aws_lws *wsi, unsigned char *buf, size_t len)
 {
 	int n = 0;
 #if defined(LWS_PLAT_OPTEE)
@@ -374,7 +374,7 @@ post_send:
 }
 
 int
-aws_lws_ssl_pending_no_ssl(struct lws *wsi)
+aws_lws_ssl_pending_no_ssl(struct aws_lws *wsi)
 {
 	(void)wsi;
 #if defined(LWS_PLAT_FREERTOS)

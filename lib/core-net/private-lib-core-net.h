@@ -34,9 +34,9 @@
  */
 
 struct aws_lws_muxable {
-	struct lws	*parent_wsi;
-	struct lws	*child_list;
-	struct lws	*sibling_list;
+	struct aws_lws	*parent_wsi;
+	struct aws_lws	*child_list;
+	struct aws_lws	*sibling_list;
 
 	unsigned int	my_sid;
 	unsigned int	child_count;
@@ -64,10 +64,10 @@ extern "C" {
  */
 
 /* null-terminated array of pointers to roles lws built with */
-extern const struct aws_lws_role_ops *available_roles[];
+extern const struct aws_lws_role_ops *aws_available_roles[];
 
 #define LWS_FOR_EVERY_AVAILABLE_ROLE_START(xx) { \
-		const struct aws_lws_role_ops **ppxx = available_roles; \
+		const struct aws_lws_role_ops **ppxx = aws_available_roles; \
 		while (*ppxx) { \
 			const struct aws_lws_role_ops *xx = *ppxx++;
 
@@ -249,7 +249,7 @@ typedef struct aws_lws_async_dns {
 	aws_lws_sockaddr46 		sa46; /* nameserver */
 	aws_lws_dll2_owner_t	waiting;
 	aws_lws_dll2_owner_t	cached;
-	struct lws		*wsi;
+	struct aws_lws		*wsi;
 	time_t			time_set_server;
 	uint8_t			dns_server_set:1;
 	uint8_t			dns_server_connected:1;
@@ -263,11 +263,11 @@ typedef enum {
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
 void
-aws_lws_aysnc_dns_completed(struct lws *wsi, void *sa, size_t salen,
+aws_lws_aysnc_dns_completed(struct aws_lws *wsi, void *sa, size_t salen,
 			aws_lws_async_dns_retcode_t ret);
 #endif
 void
-aws_lws_async_dns_cancel(struct lws *wsi);
+aws_lws_async_dns_cancel(struct aws_lws *wsi);
 
 void
 aws_lws_async_dns_drop_server(struct aws_lws_context *context);
@@ -318,7 +318,7 @@ struct aws_lws_context_per_thread {
 #endif
 
 #if !defined(LWS_PLAT_FREERTOS)
-	struct lws *fake_wsi;   /* used for callbacks where there's no wsi */
+	struct aws_lws *fake_wsi;   /* used for callbacks where there's no wsi */
 #endif
 
 #if defined(WIN32)
@@ -341,7 +341,7 @@ struct aws_lws_context_per_thread {
 	volatile struct aws_lws_foreign_thread_pollfd * volatile foreign_pfd_list;
 
 	aws_lws_sockfd_type dummy_pipe_fds[2];
-	struct lws *pipe_wsi;
+	struct aws_lws *pipe_wsi;
 
 	/* --- role based members --- */
 
@@ -546,34 +546,34 @@ struct aws_lws_vhost {
 void
 aws___lws_vhost_destroy2(struct aws_lws_vhost *vh);
 
-#define mux_to_wsi(_m) aws_lws_container_of(_m, struct lws, mux)
+#define mux_to_wsi(_m) aws_lws_container_of(_m, struct aws_lws, mux)
 
 void
-aws_lws_wsi_mux_insert(struct lws *wsi, struct lws *parent_wsi, unsigned int sid);
+aws_lws_wsi_mux_insert(struct aws_lws *wsi, struct aws_lws *parent_wsi, unsigned int sid);
 int
-aws_lws_wsi_mux_mark_parents_needing_writeable(struct lws *wsi);
-struct lws *
-aws_lws_wsi_mux_move_child_to_tail(struct lws **wsi2);
+aws_lws_wsi_mux_mark_parents_needing_writeable(struct aws_lws *wsi);
+struct aws_lws *
+aws_lws_wsi_mux_move_child_to_tail(struct aws_lws **wsi2);
 int
-aws_lws_wsi_mux_action_pending_writeable_reqs(struct lws *wsi);
+aws_lws_wsi_mux_action_pending_writeable_reqs(struct aws_lws *wsi);
 
 void
-aws_lws_wsi_mux_dump_children(struct lws *wsi);
+aws_lws_wsi_mux_dump_children(struct aws_lws *wsi);
 
 void
-aws_lws_wsi_mux_close_children(struct lws *wsi, int reason);
+aws_lws_wsi_mux_close_children(struct aws_lws *wsi, int reason);
 
 void
-aws_lws_wsi_mux_sibling_disconnect(struct lws *wsi);
+aws_lws_wsi_mux_sibling_disconnect(struct aws_lws *wsi);
 
 void
-aws_lws_wsi_mux_dump_waiting_children(struct lws *wsi);
+aws_lws_wsi_mux_dump_waiting_children(struct aws_lws *wsi);
 
 int
-aws_lws_wsi_mux_apply_queue(struct lws *wsi);
+aws_lws_wsi_mux_apply_queue(struct aws_lws *wsi);
 
 /*
- * struct lws
+ * struct aws_lws
  */
 
 /*
@@ -581,7 +581,7 @@ aws_lws_wsi_mux_apply_queue(struct lws *wsi);
  * and have to be valid, even in the case no real wsi is available for the cb.
  *
  * We put all this category of pointers in there and compose it at the top of
- * struct lws, so a dummy wsi providing these only needs to be this big, while
+ * struct aws_lws, so a dummy wsi providing these only needs to be this big, while
  * still being castable for being a struct wsi *
  */
 
@@ -601,7 +601,7 @@ struct aws_lws_a {
  *
  * For other platforms that have been around for years and have thousands of
  * different user protocol handler implementations, it's likely some of them
- * will be touching the struct lws content unconditionally in the handler even
+ * will be touching the struct aws_lws content unconditionally in the handler even
  * when we are calling back with a non wsi-specific reason, and may react badly
  * to it being garbage.  So continue to implement those as a full, zero-ed down
  * prepared fakewsi on heap at context creation time.
@@ -616,7 +616,7 @@ struct aws_lws_a {
 #define aws_lws_fakewsi_prep_plwsa_ctx(_c) \
 		memset(plwsa, 0, sizeof(*plwsa)); plwsa->context = _c
 
-struct lws {
+struct aws_lws {
 
 	struct aws_lws_a			a;
 
@@ -697,9 +697,9 @@ struct lws {
 
 	/* pointers */
 
-	struct lws			*parent; /* points to parent, if any */
-	struct lws			*child_list; /* points to first child */
-	struct lws			*sibling_list; /* subsequent children at same level */
+	struct aws_lws			*parent; /* points to parent, if any */
+	struct aws_lws			*child_list; /* points to first child */
+	struct aws_lws			*sibling_list; /* subsequent children at same level */
 	const struct aws_lws_role_ops	*role_ops;
 	struct aws_lws_sequencer		*seq;	/* associated sequencer if any */
 	const aws_lws_retry_bo_t		*retry_policy;
@@ -906,7 +906,7 @@ struct aws_lws_spawn_piped {
 	aws_lws_sorted_usec_list_t		sul_reap;
 
 	struct aws_lws_context		*context;
-	struct lws			*stdwsi[3];
+	struct aws_lws			*stdwsi[3];
 	aws_lws_filefd_type			pipe_fds[3][2];
 	int				count_log_lines;
 
@@ -946,35 +946,35 @@ const struct aws_lws_role_ops *
 aws_lws_role_by_name(const char *name);
 
 int
-aws_lws_socket_bind(struct aws_lws_vhost *vhost, struct lws *wsi,
+aws_lws_socket_bind(struct aws_lws_vhost *vhost, struct aws_lws *wsi,
 		aws_lws_sockfd_type sockfd, int port, const char *iface,
 		int ipv6_allowed);
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
 void
-aws_lws_wsi_fault_timedclose(struct lws *wsi);
+aws_lws_wsi_fault_timedclose(struct aws_lws *wsi);
 #else
 #define aws_lws_wsi_fault_timedclose(_w)
 #endif
 
 #if defined(LWS_WITH_IPV6)
 unsigned long
-aws_lws_get_addr_scope(struct lws *wsi, const char *ipaddr);
+aws_lws_get_addr_scope(struct aws_lws *wsi, const char *ipaddr);
 #endif
 
 void
-aws_lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status, const char *caller);
+aws_lws_close_free_wsi(struct aws_lws *wsi, enum aws_lws_close_status, const char *caller);
 void
-aws___lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status, const char *caller);
+aws___lws_close_free_wsi(struct aws_lws *wsi, enum aws_lws_close_status, const char *caller);
 
 void
-aws___lws_free_wsi(struct lws *wsi);
+aws___lws_free_wsi(struct aws_lws *wsi);
 
 void
 aws_lws_conmon_addrinfo_destroy(struct addrinfo *ai);
 
 int
-aws_lws_conmon_append_copy_new_dns_results(struct lws *wsi,
+aws_lws_conmon_append_copy_new_dns_results(struct aws_lws *wsi,
 				       const struct addrinfo *cai);
 
 #if LWS_MAX_SMP > 1
@@ -1023,23 +1023,23 @@ aws_lws_pt_stats_unlock(struct aws_lws_context_per_thread *pt)
 #endif
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_client_interpret_server_handshake(struct lws *wsi);
+aws_lws_client_interpret_server_handshake(struct aws_lws *wsi);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c);
+aws_lws_ws_rx_sm(struct aws_lws *wsi, char already_processed, unsigned char c);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len);
+aws_lws_issue_raw_ext_access(struct aws_lws *wsi, unsigned char *buf, size_t len);
 
 void
-aws_lws_role_transition(struct lws *wsi, enum aws_lwsi_role role, enum aws_lwsi_state state,
+aws_lws_role_transition(struct aws_lws *wsi, enum aws_lwsi_role role, enum aws_lwsi_state state,
 		    const struct aws_lws_role_ops *ops);
 
 int
-aws_lws_http_to_fallback(struct lws *wsi, unsigned char *buf, size_t len);
+aws_lws_http_to_fallback(struct aws_lws *wsi, unsigned char *buf, size_t len);
 
 int LWS_WARN_UNUSED_RESULT
-user_callback_handle_rxflow(aws_lws_callback_function, struct lws *wsi,
+aws_user_callback_handle_rxflow(aws_lws_callback_function, struct aws_lws *wsi,
 			    enum aws_lws_callback_reasons reason, void *user,
 			    void *in, size_t len);
 
@@ -1054,33 +1054,33 @@ int
 aws_lws_plat_set_socket_options_ip(aws_lws_sockfd_type fd, uint8_t pri, int aws_lws_flags);
 
 int
-aws_lws_plat_check_connection_error(struct lws *wsi);
+aws_lws_plat_check_connection_error(struct aws_lws *wsi);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_header_table_attach(struct lws *wsi, int autoservice);
+aws_lws_header_table_attach(struct aws_lws *wsi, int autoservice);
 
 int
-aws_lws_header_table_detach(struct lws *wsi, int autoservice);
+aws_lws_header_table_detach(struct aws_lws *wsi, int autoservice);
 int
-aws___lws_header_table_detach(struct lws *wsi, int autoservice);
+aws___lws_header_table_detach(struct aws_lws *wsi, int autoservice);
 
 void
-aws_lws_header_table_reset(struct lws *wsi, int autoservice);
+aws_lws_header_table_reset(struct aws_lws *wsi, int autoservice);
 
 void
-aws___lws_header_table_reset(struct lws *wsi, int autoservice);
+aws___lws_header_table_reset(struct aws_lws *wsi, int autoservice);
 
 char * LWS_WARN_UNUSED_RESULT
-aws_lws_hdr_simple_ptr(struct lws *wsi, enum aws_lws_token_indexes h);
+aws_lws_hdr_simple_ptr(struct aws_lws *wsi, enum aws_lws_token_indexes h);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_hdr_simple_create(struct lws *wsi, enum aws_lws_token_indexes h, const char *s);
+aws_lws_hdr_simple_create(struct aws_lws *wsi, enum aws_lws_token_indexes h, const char *s);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ensure_user_space(struct lws *wsi);
+aws_lws_ensure_user_space(struct aws_lws *wsi);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_change_pollfd(struct lws *wsi, int _and, int _or);
+aws_lws_change_pollfd(struct aws_lws *wsi, int _and, int _or);
 
 #if defined(LWS_WITH_SERVER)
  int aws__lws_vhost_init_server(const struct aws_lws_context_creation_info *info,
@@ -1088,7 +1088,7 @@ aws_lws_change_pollfd(struct lws *wsi, int _and, int _or);
 struct aws_lws_vhost *
  aws_lws_select_vhost(struct aws_lws_context *context, int port, const char *servername);
 int LWS_WARN_UNUSED_RESULT
- aws_lws_parse_ws(struct lws *wsi, unsigned char **buf, size_t len);
+ aws_lws_parse_ws(struct aws_lws *wsi, unsigned char **buf, size_t len);
 void
  aws_lws_server_get_canonical_hostname(struct aws_lws_context *context,
 				   const struct aws_lws_context_creation_info *info);
@@ -1099,7 +1099,7 @@ void
 #endif
 
 int
-__remove_wsi_socket_from_fds(struct lws *wsi);
+aws___remove_wsi_socket_from_fds(struct aws_lws *wsi);
 
 enum {
 	LWSRXFC_ERROR = -1,
@@ -1113,35 +1113,35 @@ int
 aws__lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi);
 
 int
-aws_lws_rxflow_cache(struct lws *wsi, unsigned char *buf, size_t n, size_t len);
+aws_lws_rxflow_cache(struct aws_lws *wsi, unsigned char *buf, size_t n, size_t len);
 
 int
 aws_lws_service_flag_pending(struct aws_lws_context *context, int tsi);
 
 int
-aws_lws_has_buffered_out(struct lws *wsi);
+aws_lws_has_buffered_out(struct aws_lws *wsi);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_ws_client_rx_sm(struct lws *wsi, unsigned char c);
+aws_lws_ws_client_rx_sm(struct aws_lws *wsi, unsigned char c);
 
 aws_lws_parser_return_t LWS_WARN_UNUSED_RESULT
-aws_lws_parse(struct lws *wsi, unsigned char *buf, int *len);
+aws_lws_parse(struct aws_lws *wsi, unsigned char *buf, int *len);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_parse_urldecode(struct lws *wsi, uint8_t *_c);
+aws_lws_parse_urldecode(struct aws_lws *wsi, uint8_t *_c);
 
 void
 aws_lws_sa46_copy_address(aws_lws_sockaddr46 *sa46a, const void *in, int af);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_http_action(struct lws *wsi);
+aws_lws_http_action(struct aws_lws *wsi);
 
 void
-aws___lws_close_free_wsi_final(struct lws *wsi);
+aws___lws_close_free_wsi_final(struct aws_lws *wsi);
 void
-aws_lws_libuv_closehandle(struct lws *wsi);
+aws_lws_libuv_closehandle(struct aws_lws *wsi);
 int
-aws_lws_libuv_check_watcher_active(struct lws *wsi);
+aws_lws_libuv_check_watcher_active(struct aws_lws *wsi);
 
 #if defined(LWS_WITH_EVLIB_PLUGINS) || defined(LWS_WITH_PLUGINS)
 const aws_lws_plugin_header_t *
@@ -1153,57 +1153,57 @@ int
 aws_lws_plat_destroy_dl(struct aws_lws_plugin *p);
 #endif
 
-struct lws *
+struct aws_lws *
 aws_lws_adopt_socket_vhost(struct aws_lws_vhost *vh, aws_lws_sockfd_type accept_fd);
 
 void
-aws_lws_vhost_bind_wsi(struct aws_lws_vhost *vh, struct lws *wsi);
+aws_lws_vhost_bind_wsi(struct aws_lws_vhost *vh, struct aws_lws *wsi);
 void
-aws___lws_vhost_unbind_wsi(struct lws *wsi); /* req cx + vh lock */
+aws___lws_vhost_unbind_wsi(struct aws_lws *wsi); /* req cx + vh lock */
 
 void
-aws___lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs);
+aws___lws_set_timeout(struct aws_lws *wsi, enum pending_timeout reason, int secs);
 int
-aws___lws_change_pollfd(struct lws *wsi, int _and, int _or);
+aws___lws_change_pollfd(struct aws_lws *wsi, int _and, int _or);
 
 
 int
-aws_lws_callback_as_writeable(struct lws *wsi);
+aws_lws_callback_as_writeable(struct aws_lws *wsi);
 
 int
-aws_lws_role_call_client_bind(struct lws *wsi,
+aws_lws_role_call_client_bind(struct aws_lws *wsi,
 			  const struct aws_lws_client_connect_info *i);
 void
-aws_lws_remove_child_from_any_parent(struct lws *wsi);
+aws_lws_remove_child_from_any_parent(struct aws_lws *wsi);
 
 char *
-aws_lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1);
+aws_lws_generate_client_ws_handshake(struct aws_lws *wsi, char *p, const char *conn1);
 int
-aws_lws_client_ws_upgrade(struct lws *wsi, const char **cce);
+aws_lws_client_ws_upgrade(struct aws_lws *wsi, const char **cce);
 int
 aws_lws_create_client_ws_object(const struct aws_lws_client_connect_info *i,
-			    struct lws *wsi);
+			    struct aws_lws *wsi);
 int
 aws_lws_alpn_comma_to_openssl(const char *comma, uint8_t *os, int len);
 int
-aws_lws_role_call_alpn_negotiated(struct lws *wsi, const char *alpn);
+aws_lws_role_call_alpn_negotiated(struct aws_lws *wsi, const char *alpn);
 int
-aws_lws_tls_server_conn_alpn(struct lws *wsi);
+aws_lws_tls_server_conn_alpn(struct aws_lws *wsi);
 
 int
-aws_lws_ws_client_rx_sm_block(struct lws *wsi, unsigned char **buf, size_t len);
+aws_lws_ws_client_rx_sm_block(struct aws_lws *wsi, unsigned char **buf, size_t len);
 void
-aws_lws_destroy_event_pipe(struct lws *wsi);
+aws_lws_destroy_event_pipe(struct aws_lws *wsi);
 
 /* socks */
 int
-aws_lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type, ssize_t *msg_len);
+aws_lws_socks5c_generate_msg(struct aws_lws *wsi, enum socks_msg_type type, ssize_t *msg_len);
 
 int LWS_WARN_UNUSED_RESULT
-__insert_wsi_socket_into_fds(struct aws_lws_context *context, struct lws *wsi);
+aws___insert_wsi_socket_into_fds(struct aws_lws_context *context, struct aws_lws *wsi);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_issue_raw(struct lws *wsi, unsigned char *buf, size_t len);
+aws_lws_issue_raw(struct aws_lws *wsi, unsigned char *buf, size_t len);
 
 aws_lws_usec_t
 aws___lws_seq_timeout_check(struct aws_lws_context_per_thread *pt, aws_lws_usec_t usnow);
@@ -1211,43 +1211,43 @@ aws___lws_seq_timeout_check(struct aws_lws_context_per_thread *pt, aws_lws_usec_
 aws_lws_usec_t
 aws___lws_ss_timeout_check(struct aws_lws_context_per_thread *pt, aws_lws_usec_t usnow);
 
-struct lws * LWS_WARN_UNUSED_RESULT
-aws_lws_client_connect_2_dnsreq(struct lws *wsi);
+struct aws_lws * LWS_WARN_UNUSED_RESULT
+aws_lws_client_connect_2_dnsreq(struct aws_lws *wsi);
 
-LWS_VISIBLE struct lws * LWS_WARN_UNUSED_RESULT
-aws_lws_client_reset(struct lws **wsi, int ssl, const char *address, int port,
+LWS_VISIBLE struct aws_lws * LWS_WARN_UNUSED_RESULT
+aws_lws_client_reset(struct aws_lws **wsi, int ssl, const char *address, int port,
 		 const char *path, const char *host, char weak);
 
-struct lws * LWS_WARN_UNUSED_RESULT
+struct aws_lws * LWS_WARN_UNUSED_RESULT
 aws_lws_create_new_server_wsi(struct aws_lws_vhost *vhost, int fixed_tsi, const char *desc);
 
 char * LWS_WARN_UNUSED_RESULT
-aws_lws_generate_client_handshake(struct lws *wsi, char *pkt);
+aws_lws_generate_client_handshake(struct aws_lws *wsi, char *pkt);
 
 int
-aws_lws_handle_POLLOUT_event(struct lws *wsi, struct aws_lws_pollfd *pollfd);
+aws_lws_handle_POLLOUT_event(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd);
 
-struct lws *
-aws_lws_http_client_connect_via_info2(struct lws *wsi);
+struct aws_lws *
+aws_lws_http_client_connect_via_info2(struct aws_lws *wsi);
 
 
-struct lws *
+struct aws_lws *
 aws___lws_wsi_create_with_role(struct aws_lws_context *context, int tsi,
 			 const struct aws_lws_role_ops *ops,
 			 aws_lws_log_cx_t *log_cx_template);
 int
-aws_lws_wsi_inject_to_loop(struct aws_lws_context_per_thread *pt, struct lws *wsi);
+aws_lws_wsi_inject_to_loop(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi);
 
 int
-aws_lws_wsi_extract_from_loop(struct lws *wsi);
+aws_lws_wsi_extract_from_loop(struct aws_lws *wsi);
 
 
 #if defined(LWS_WITH_CLIENT)
 int
-aws_lws_http_client_socket_service(struct lws *wsi, struct aws_lws_pollfd *pollfd);
+aws_lws_http_client_socket_service(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd);
 
 int LWS_WARN_UNUSED_RESULT
-aws_lws_http_transaction_completed_client(struct lws *wsi);
+aws_lws_http_transaction_completed_client(struct aws_lws *wsi);
 #if !defined(LWS_WITH_TLS)
 	#define aws_lws_context_init_client_ssl(_a, _b) (0)
 #endif
@@ -1258,14 +1258,14 @@ aws_lws_decode_ssl_error(void);
 #endif
 
 int
-aws___lws_rx_flow_control(struct lws *wsi);
+aws___lws_rx_flow_control(struct aws_lws *wsi);
 
 int
-aws__lws_change_pollfd(struct lws *wsi, int _and, int _or, struct aws_lws_pollargs *pa);
+aws__lws_change_pollfd(struct aws_lws *wsi, int _and, int _or, struct aws_lws_pollargs *pa);
 
 #if defined(LWS_WITH_SERVER)
 int
-aws_lws_handshake_server(struct lws *wsi, unsigned char **buf, size_t len);
+aws_lws_handshake_server(struct aws_lws *wsi, unsigned char **buf, size_t len);
 #else
 #define aws_lws_server_socket_service(_b, _c) (0)
 #define aws_lws_handshake_server(_a, _b, _c) (0)
@@ -1273,9 +1273,9 @@ aws_lws_handshake_server(struct lws *wsi, unsigned char **buf, size_t len);
 
 #ifdef LWS_WITH_ACCESS_LOG
 int
-aws_lws_access_log(struct lws *wsi);
+aws_lws_access_log(struct aws_lws *wsi);
 void
-aws_lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int len, int meth);
+aws_lws_prepare_access_log_info(struct aws_lws *wsi, char *uri_ptr, int len, int meth);
 #else
 #define aws_lws_access_log(_a)
 #endif
@@ -1291,49 +1291,49 @@ int
 aws_lws_wsi_txc_check_skint(struct aws_lws_tx_credit *txc, int32_t tx_cr);
 
 int
-aws_lws_wsi_txc_report_manual_txcr_in(struct lws *wsi, int32_t bump);
+aws_lws_wsi_txc_report_manual_txcr_in(struct aws_lws *wsi, int32_t bump);
 
 void
-aws_lws_mux_mark_immortal(struct lws *wsi);
+aws_lws_mux_mark_immortal(struct aws_lws *wsi);
 void
-aws_lws_http_close_immortal(struct lws *wsi);
+aws_lws_http_close_immortal(struct aws_lws *wsi);
 
 int
 aws_lws_cgi_kill_terminated(struct aws_lws_context_per_thread *pt);
 
 void
-aws_lws_cgi_remove_and_kill(struct lws *wsi);
+aws_lws_cgi_remove_and_kill(struct aws_lws *wsi);
 
 void
 aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
-				struct lws *wsi, int m);
+				struct aws_lws *wsi, int m);
 void
 aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context,
-				struct lws *wsi);
+				struct aws_lws *wsi);
 
 int
-aws_lws_plat_change_pollfd(struct aws_lws_context *context, struct lws *wsi,
+aws_lws_plat_change_pollfd(struct aws_lws_context *context, struct aws_lws *wsi,
 		       struct aws_lws_pollfd *pfd);
 
 #if defined(LWS_WITH_SERVER) && defined(LWS_WITH_SECURE_STREAMS)
 int
-aws_lws_adopt_ss_server_accept(struct lws *new_wsi);
+aws_lws_adopt_ss_server_accept(struct aws_lws *new_wsi);
 #endif
 
 int
-aws_lws_plat_pipe_create(struct lws *wsi);
+aws_lws_plat_pipe_create(struct aws_lws *wsi);
 int
 aws_lws_plat_pipe_signal(struct aws_lws_context *ctx, int tsi);
 void
-aws_lws_plat_pipe_close(struct lws *wsi);
+aws_lws_plat_pipe_close(struct aws_lws *wsi);
 
 void
-aws_lws_addrinfo_clean(struct lws *wsi);
+aws_lws_addrinfo_clean(struct aws_lws *wsi);
 
 void
-aws_lws_add_wsi_to_draining_ext_list(struct lws *wsi);
+aws_lws_add_wsi_to_draining_ext_list(struct aws_lws *wsi);
 void
-aws_lws_remove_wsi_from_draining_ext_list(struct lws *wsi);
+aws_lws_remove_wsi_from_draining_ext_list(struct aws_lws *wsi);
 int
 aws_lws_poll_listen_fd(struct aws_lws_pollfd *fd);
 int
@@ -1349,20 +1349,20 @@ int LWS_WARN_UNUSED_RESULT
 aws_lws_plat_inet_pton(int af, const char *src, void *dst);
 
 void
-aws_lws_same_vh_protocol_remove(struct lws *wsi);
+aws_lws_same_vh_protocol_remove(struct aws_lws *wsi);
 void
-aws___lws_same_vh_protocol_remove(struct lws *wsi);
+aws___lws_same_vh_protocol_remove(struct aws_lws *wsi);
 void
-aws_lws_same_vh_protocol_insert(struct lws *wsi, int n);
+aws_lws_same_vh_protocol_insert(struct aws_lws *wsi, int n);
 
 int
-aws_lws_client_stash_create(struct lws *wsi, const char **cisin);
+aws_lws_client_stash_create(struct aws_lws *wsi, const char **cisin);
 
 void
 aws_lws_seq_destroy_all_on_pt(struct aws_lws_context_per_thread *pt);
 
 void
-aws_lws_addrinfo_clean(struct lws *wsi);
+aws_lws_addrinfo_clean(struct aws_lws *wsi);
 
 int
 aws__lws_route_pt_close_unroutable(struct aws_lws_context_per_thread *pt);
@@ -1398,7 +1398,7 @@ aws__lws_route_est_outgoing(struct aws_lws_context_per_thread *pt,
 		        const aws_lws_sockaddr46 *dest);
 
 int
-aws_lws_sort_dns(struct lws *wsi, const struct addrinfo *result);
+aws_lws_sort_dns(struct aws_lws *wsi, const struct addrinfo *result);
 
 int
 aws_lws_broadcast(struct aws_lws_context_per_thread *pt, int reason, void *in, size_t len);
@@ -1418,9 +1418,9 @@ struct aws_lws_peer *
 aws_lws_get_or_create_peer(struct aws_lws_vhost *vhost, aws_lws_sockfd_type sockfd);
 void
 aws_lws_peer_add_wsi(struct aws_lws_context *context, struct aws_lws_peer *peer,
-		 struct lws *wsi);
+		 struct aws_lws *wsi);
 void
-aws_lws_peer_dump_from_wsi(struct lws *wsi);
+aws_lws_peer_dump_from_wsi(struct aws_lws *wsi);
 #endif
 
 #ifdef LWS_WITH_HUBBUB
@@ -1439,37 +1439,37 @@ int
 aws_lws_threadpool_tsi_context(struct aws_lws_context *context, int tsi);
 
 void
-aws_lws_threadpool_wsi_closing(struct lws *wsi);
+aws_lws_threadpool_wsi_closing(struct aws_lws *wsi);
 
 void
-aws___lws_wsi_remove_from_sul(struct lws *wsi);
+aws___lws_wsi_remove_from_sul(struct aws_lws *wsi);
 
 void
-aws_lws_validity_confirmed(struct lws *wsi);
+aws_lws_validity_confirmed(struct aws_lws *wsi);
 void
-aws__lws_validity_confirmed_role(struct lws *wsi);
+aws__lws_validity_confirmed_role(struct aws_lws *wsi);
 
 int
 aws_lws_seq_pt_init(struct aws_lws_context_per_thread *pt);
 
 int
-aws_lws_buflist_aware_read(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+aws_lws_buflist_aware_read(struct aws_lws_context_per_thread *pt, struct aws_lws *wsi,
 		       struct aws_lws_tokens *ebuf, char fr, const char *hint);
 int
-aws_lws_buflist_aware_finished_consuming(struct lws *wsi, struct aws_lws_tokens *ebuf,
+aws_lws_buflist_aware_finished_consuming(struct aws_lws *wsi, struct aws_lws_tokens *ebuf,
 				     int used, int buffered, const char *hint);
 
 extern const struct aws_lws_protocols protocol_abs_client_raw_skt,
 				  protocol_abs_client_unit_test;
 
 void
-aws___lws_reset_wsi(struct lws *wsi);
+aws___lws_reset_wsi(struct aws_lws *wsi);
 
 void
 aws_lws_metrics_dump(struct aws_lws_context *ctx);
 
 void
-aws_lws_inform_client_conn_fail(struct lws *wsi, void *arg, size_t len);
+aws_lws_inform_client_conn_fail(struct aws_lws *wsi, void *arg, size_t len);
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
 aws_lws_async_dns_server_check_t
@@ -1483,7 +1483,7 @@ aws_lws_async_dns_deinit(aws_lws_async_dns_t *dns);
 int
 aws_lws_protocol_init_vhost(struct aws_lws_vhost *vh, int *any);
 int
-aws__lws_generic_transaction_completed_active_conn(struct lws **wsi, char take_vh_lock);
+aws__lws_generic_transaction_completed_active_conn(struct aws_lws **wsi, char take_vh_lock);
 
 #define ACTIVE_CONNS_SOLO 0
 #define ACTIVE_CONNS_MUXED 1
@@ -1493,24 +1493,24 @@ aws__lws_generic_transaction_completed_active_conn(struct lws **wsi, char take_v
 #if defined(_DEBUG) && !defined(LWS_PLAT_FREERTOS) && !defined(WIN32) && !defined(LWS_PLAT_OPTEE)
 
 int
-sanity_assert_no_wsi_traces(const struct aws_lws_context *context, struct lws *wsi);
+sanity_assert_no_wsi_traces(const struct aws_lws_context *context, struct aws_lws *wsi);
 int
 sanity_assert_no_sockfd_traces(const struct aws_lws_context *context,
 			       aws_lws_sockfd_type sfd);
 #else
-static inline int sanity_assert_no_wsi_traces(const struct aws_lws_context *context, struct lws *wsi) { (void)context; (void)wsi; return 0; }
+static inline int sanity_assert_no_wsi_traces(const struct aws_lws_context *context, struct aws_lws *wsi) { (void)context; (void)wsi; return 0; }
 static inline int sanity_assert_no_sockfd_traces(const struct aws_lws_context *context, aws_lws_sockfd_type sfd) { (void)context; (void)sfd; return 0; }
 #endif
 
 
 void
-delete_from_fdwsi(const struct aws_lws_context *context, struct lws *wsi);
+delete_from_fdwsi(const struct aws_lws_context *context, struct aws_lws *wsi);
 
 int
-aws_lws_vhost_active_conns(struct lws *wsi, struct lws **nwsi, const char *adsin);
+aws_lws_vhost_active_conns(struct aws_lws *wsi, struct aws_lws **nwsi, const char *adsin);
 
 const char *
-aws_lws_wsi_client_stash_item(struct lws *wsi, int stash_idx, int hdr_idx);
+aws_lws_wsi_client_stash_item(struct aws_lws *wsi, int stash_idx, int hdr_idx);
 
 int
 aws_lws_plat_BINDTODEVICE(aws_lws_sockfd_type fd, const char *ifname);
@@ -1520,11 +1520,11 @@ aws_lws_socks5c_ads_server(struct aws_lws_vhost *vh,
 		       const struct aws_lws_context_creation_info *info);
 
 int
-aws_lws_socks5c_handle_state(struct lws *wsi, struct aws_lws_pollfd *pollfd,
+aws_lws_socks5c_handle_state(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd,
 			 const char **pcce);
 
 int
-aws_lws_socks5c_greet(struct lws *wsi, const char **pcce);
+aws_lws_socks5c_greet(struct aws_lws *wsi, const char **pcce);
 
 int
 aws_lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len);

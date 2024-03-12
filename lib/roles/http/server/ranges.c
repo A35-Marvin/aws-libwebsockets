@@ -178,7 +178,7 @@ aws_lws_ranges_reset(struct aws_lws_range_parsing *rp)
  * returns count of valid ranges
  */
 int
-aws_lws_ranges_init(struct lws *wsi, struct aws_lws_range_parsing *rp,
+aws_lws_ranges_init(struct aws_lws *wsi, struct aws_lws_range_parsing *rp,
 		unsigned long long extent)
 {
 	rp->agg = 0;

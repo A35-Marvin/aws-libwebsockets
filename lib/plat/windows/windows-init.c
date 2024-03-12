@@ -106,7 +106,7 @@ aws_lws_plat_init(struct aws_lws_context *context,
 
 	for (i = 0; i < FD_HASHTABLE_MODULUS; i++) {
 		context->fd_hashtable[i].wsi =
-			aws_lws_zalloc(sizeof(struct lws*) * context->max_fds,
+			aws_lws_zalloc(sizeof(struct aws_lws*) * context->max_fds,
 				   "win hashtable");
 
 		if (!context->fd_hashtable[i].wsi)

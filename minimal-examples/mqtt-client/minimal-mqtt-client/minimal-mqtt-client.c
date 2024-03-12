@@ -159,7 +159,7 @@ system_notify_cb(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link
 
 
 static int
-callback_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_mqtt(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;

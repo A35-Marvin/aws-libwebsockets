@@ -113,10 +113,10 @@ typedef SemaphoreHandle_t aws_lws_mutex_t;
 #define wsi_from_fd(A,B)  A->aws_lws_lookup[B - aws_lws_plat_socket_offset()]
 
 struct aws_lws_context;
-struct lws;
+struct aws_lws;
 
 int
-insert_wsi(const struct aws_lws_context *context, struct lws *wsi);
+insert_wsi(const struct aws_lws_context *context, struct aws_lws *wsi);
 
 #define delete_from_fd(A,B) A->aws_lws_lookup[B - aws_lws_plat_socket_offset()] = 0
 

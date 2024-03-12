@@ -36,7 +36,7 @@ struct aws_lws_compression_support *lcs_available[] = {
 /* compute acceptable compression encodings while we still have an ah */
 
 int
-aws_lws_http_compression_validate(struct lws *wsi)
+aws_lws_http_compression_validate(struct aws_lws *wsi)
 {
 	const char *a;
 	size_t n;
@@ -58,7 +58,7 @@ aws_lws_http_compression_validate(struct lws *wsi)
 }
 
 int
-aws_lws_http_compression_apply(struct lws *wsi, const char *name,
+aws_lws_http_compression_apply(struct aws_lws *wsi, const char *name,
 			   unsigned char **p, unsigned char *end, char decomp)
 {
 	size_t n;
@@ -105,7 +105,7 @@ aws_lws_http_compression_apply(struct lws *wsi, const char *name,
 }
 
 void
-aws_lws_http_compression_destroy(struct lws *wsi)
+aws_lws_http_compression_destroy(struct aws_lws *wsi)
 {
 	if (!wsi->http.lcs || !wsi->http.comp_ctx.u.generic_ctx_ptr)
 		return;
@@ -122,7 +122,7 @@ aws_lws_http_compression_destroy(struct lws *wsi)
  */
 
 int
-aws_lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
+aws_lws_http_compression_transform(struct aws_lws *wsi, unsigned char *buf,
 			       size_t len, enum aws_lws_write_protocol *wp,
 			       unsigned char **outbuf, size_t *olen_oused)
 {

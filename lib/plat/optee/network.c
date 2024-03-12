@@ -33,26 +33,26 @@
 #endif
 
 int
-aws_lws_plat_pipe_create(struct lws *wsi)
+aws_lws_plat_pipe_create(struct aws_lws *wsi)
 {
 	return 1;
 }
 
 int
-aws_lws_plat_pipe_signal(struct lws *wsi)
+aws_lws_plat_pipe_signal(struct aws_lws *wsi)
 {
 	return 1;
 }
 
 void
-aws_lws_plat_pipe_close(struct lws *wsi)
+aws_lws_plat_pipe_close(struct aws_lws *wsi)
 {
 }
 
 int
-aws_lws_send_pipe_choked(struct lws *wsi)
+aws_lws_send_pipe_choked(struct aws_lws *wsi)
 {
-	struct lws *wsi_eff;
+	struct aws_lws *wsi_eff;
 
 #if defined(LWS_WITH_HTTP2)
 	wsi_eff = aws_lws_get_network_wsi(wsi);
@@ -107,7 +107,7 @@ aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int t
 		timeout_ms = 2000000000;
 
 	if (!pt->service_tid_detected && context->vhost_list) {
-		struct lws _lws;
+		struct aws_lws _lws;
 
 		memset(&_lws, 0, sizeof(_lws));
 		_lws.context = context;
@@ -219,7 +219,7 @@ aws_lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 }
 
 void
-aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws *wsi)
+aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -228,7 +228,7 @@ aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws 
 
 void
 aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
-						struct lws *wsi, int m)
+						struct aws_lws *wsi, int m)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -237,7 +237,7 @@ aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
 
 int
 aws_lws_plat_change_pollfd(struct aws_lws_context *context,
-		      struct lws *wsi, struct aws_lws_pollfd *pfd)
+		      struct aws_lws *wsi, struct aws_lws_pollfd *pfd)
 {
 	return 0;
 }

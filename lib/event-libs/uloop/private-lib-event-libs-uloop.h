@@ -31,7 +31,7 @@ struct aws_lws_pt_eventlibs_uloop {
 };
 
 struct aws_lws_wsi_eventlibs_uloop {
-	struct lws				*wsi;
+	struct aws_lws				*wsi;
 	struct uloop_fd				fd;
 	unsigned int				actual_events;
 };

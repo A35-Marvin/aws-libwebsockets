@@ -66,7 +66,7 @@ aws_lws_metrics_tag_add(aws_lws_dll2_owner_t *owner, const char *name, const cha
 }
 
 int
-aws_lws_metrics_tag_wsi_add(struct lws *wsi, const char *name, const char *val)
+aws_lws_metrics_tag_wsi_add(struct aws_lws *wsi, const char *name, const char *val)
 {
 	aws___lws_lc_tag(wsi->a.context, NULL, &wsi->lc, "|%s", val);
 
@@ -593,7 +593,7 @@ happy:
 }
 
 int
-aws_lws_metrics_hist_bump_describe_wsi(struct lws *wsi, aws_lws_metric_pub_t *pub,
+aws_lws_metrics_hist_bump_describe_wsi(struct aws_lws *wsi, aws_lws_metric_pub_t *pub,
 				   const char *name)
 {
 	char desc[192], d1[48], *p = desc, *end = desc + sizeof(desc);

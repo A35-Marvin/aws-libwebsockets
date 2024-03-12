@@ -356,7 +356,7 @@ struct aws__lws_mqtt_related {
 	aws_lws_sorted_usec_list_t	sul_qos1_puback_wait; /* QoS1 puback wait TO */
 	aws_lws_sorted_usec_list_t	sul_unsuback_wait; /* QoS1 unsuback wait TO */
 	aws_lws_sorted_usec_list_t	sul_qos2_pubrec_wait; /* QoS2 pubrec wait TO */
-	struct lws		*wsi; /**< so sul can use aws_lws_container_of */
+	struct aws_lws		*wsi; /**< so sul can use aws_lws_container_of */
 	aws_lws_mqtt_subs_t		*subs_head; /**< Linked-list of heap-allocated subscription objects */
 	void			*rx_cpkt_param;
 	uint16_t		pkt_id;
@@ -409,30 +409,30 @@ void
 aws_lws_mqttc_state_transition(aws_lws_mqttc_t *ep, aws_lwsgs_mqtt_states_t s);
 
 int
-aws__lws_mqtt_rx_parser(struct lws *wsi, aws_lws_mqtt_parser_t *par,
+aws__lws_mqtt_rx_parser(struct aws_lws *wsi, aws_lws_mqtt_parser_t *par,
 		    const uint8_t *buf, size_t len);
 
 int
-aws_lws_mqtt_client_socket_service(struct lws *wsi, struct aws_lws_pollfd *pollfd,
-			       struct lws *wsi_conn);
+aws_lws_mqtt_client_socket_service(struct aws_lws *wsi, struct aws_lws_pollfd *pollfd,
+			       struct aws_lws *wsi_conn);
 
 int
 aws_lws_create_client_mqtt_object(const struct aws_lws_client_connect_info *i,
-			      struct lws *wsi);
+			      struct aws_lws *wsi);
 
-struct lws *
-aws_lws_mqtt_client_send_connect(struct lws *wsi);
+struct aws_lws *
+aws_lws_mqtt_client_send_connect(struct aws_lws *wsi);
 
-struct lws *
-aws_lws_mqtt_client_send_disconnect(struct lws *wsi);
+struct aws_lws *
+aws_lws_mqtt_client_send_disconnect(struct aws_lws *wsi);
 
 int
 aws_lws_mqtt_fill_fixed_header(uint8_t *p, aws_lws_mqtt_control_packet_t ctrl_pkt_type,
 			   uint8_t dup, aws_lws_mqtt_qos_levels_t qos,
 			   uint8_t retain);
 
-struct lws *
-aws_lws_wsi_mqtt_adopt(struct lws *parent_wsi, struct lws *wsi);
+struct aws_lws *
+aws_lws_wsi_mqtt_adopt(struct aws_lws *parent_wsi, struct aws_lws *wsi);
 
 aws_lws_mqtt_subs_t *
 aws_lws_mqtt_find_sub(struct aws__lws_mqtt_related *mqtt, const char *topic);

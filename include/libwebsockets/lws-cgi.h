@@ -51,7 +51,7 @@ enum aws_lws_cgi_hdr_state {
 };
 
 struct aws_lws_cgi_args {
-	struct lws **stdwsi; /**< get fd with aws_lws_get_socket_fd() */
+	struct aws_lws **stdwsi; /**< get fd with aws_lws_get_socket_fd() */
 	enum aws_lws_enum_stdinouterr ch; /**< channel index */
 	unsigned char *data; /**< for messages with payload */
 	enum aws_lws_cgi_hdr_state hdr_state; /**< track where we are in cgi headers */
@@ -70,7 +70,7 @@ struct aws_lws_cgi_args {
  * \param mp_cgienv: pvo list with per-vhost cgi options to put in env
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_cgi(struct lws *wsi, const char * const *exec_array,
+aws_lws_cgi(struct aws_lws *wsi, const char * const *exec_array,
 	int script_uri_path_len, int timeout_secs,
 	const struct aws_lws_protocol_vhost_options *mp_cgienv);
 
@@ -80,7 +80,7 @@ aws_lws_cgi(struct lws *wsi, const char * const *exec_array,
  * \param wsi: connection to own the process
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_cgi_write_split_stdout_headers(struct lws *wsi);
+aws_lws_cgi_write_split_stdout_headers(struct aws_lws *wsi);
 
 /**
  * aws_lws_cgi_kill: terminate cgi process associated with wsi
@@ -88,7 +88,7 @@ aws_lws_cgi_write_split_stdout_headers(struct lws *wsi);
  * \param wsi: connection to own the process
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_cgi_kill(struct lws *wsi);
+aws_lws_cgi_kill(struct aws_lws *wsi);
 
 /**
  * aws_lws_cgi_get_stdwsi: get wsi for stdin, stdout, or stderr
@@ -96,8 +96,8 @@ aws_lws_cgi_kill(struct lws *wsi);
  * \param wsi: parent wsi that has cgi
  * \param ch: which of LWS_STDIN, LWS_STDOUT or LWS_STDERR
  */
-LWS_VISIBLE LWS_EXTERN struct lws *
-aws_lws_cgi_get_stdwsi(struct lws *wsi, enum aws_lws_enum_stdinouterr ch);
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
+aws_lws_cgi_get_stdwsi(struct aws_lws *wsi, enum aws_lws_enum_stdinouterr ch);
 
 #endif
 ///@}

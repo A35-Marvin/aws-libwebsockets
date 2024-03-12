@@ -259,7 +259,7 @@ elops_init_context_glib(struct aws_lws_context *context,
 }
 
 static int
-elops_accept_glib(struct lws *wsi)
+elops_accept_glib(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_wsi_eventlibs_glib *wsipr = wsi_to_priv_glib(wsi);
@@ -296,7 +296,7 @@ elops_accept_glib(struct lws *wsi)
 static int
 elops_listen_init_glib(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 
 	elops_accept_glib(wsi);
 
@@ -343,7 +343,7 @@ elops_init_pt_glib(struct aws_lws_context *context, void *_loop, int tsi)
  */
 
 static void
-elops_io_glib(struct lws *wsi, unsigned int flags)
+elops_io_glib(struct aws_lws *wsi, unsigned int flags)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_wsi_eventlibs_glib *wsipr = wsi_to_priv_glib(wsi);
@@ -394,7 +394,7 @@ elops_run_pt_glib(struct aws_lws_context *context, int tsi)
 }
 
 static void
-elops_destroy_wsi_glib(struct lws *wsi)
+elops_destroy_wsi_glib(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt;
 
@@ -422,7 +422,7 @@ elops_destroy_wsi_glib(struct lws *wsi)
 static int
 elops_listen_destroy_glib(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws *wsi = aws_lws_container_of(d, struct aws_lws, listen_list);
 
 	elops_destroy_wsi_glib(wsi);
 
@@ -468,7 +468,7 @@ elops_destroy_context2_glib(struct aws_lws_context *context)
 }
 
 static int
-elops_wsi_logical_close_glib(struct lws *wsi)
+elops_wsi_logical_close_glib(struct aws_lws *wsi)
 {
 	elops_destroy_wsi_glib(wsi);
 

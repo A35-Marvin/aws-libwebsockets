@@ -35,7 +35,7 @@ static struct my_conn {
 	range_t			e_lat_range;
 	range_t			price_range;
 
-	struct lws		*wsi;	     /* related wsi if any */
+	struct aws_lws		*wsi;	     /* related wsi if any */
 	uint16_t		retry_count; /* count of consequetive retries */
 } mco;
 
@@ -217,7 +217,7 @@ pennies(const char *s)
 }
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		 void *user, void *in, size_t len)
 {
 	struct my_conn *mco = (struct my_conn *)user;

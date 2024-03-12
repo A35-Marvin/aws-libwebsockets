@@ -25,7 +25,7 @@
 #include <private-lib-core.h>
 
 static int
-secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
+secstream_ws(struct aws_lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 #if defined(LWS_WITH_SERVER)
@@ -120,7 +120,7 @@ secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		/*
 		 * If any hanging caliper measurement, dump it, and free any tags
 		 */
-		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 		r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 		if (r != LWSSSSRET_OK)

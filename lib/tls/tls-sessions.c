@@ -38,7 +38,7 @@ aws_lws_tls_session_tag_discrete(const char *vhname, const char *host,
 }
 
 int
-aws_lws_tls_session_tag_from_wsi(struct lws *wsi, char *buf, size_t len)
+aws_lws_tls_session_tag_from_wsi(struct aws_lws *wsi, char *buf, size_t len)
 {
 	const char *host;
 

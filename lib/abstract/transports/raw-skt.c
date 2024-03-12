@@ -27,7 +27,7 @@
 
 typedef struct aws_lws_abstxp_raw_skt_priv {
 	struct aws_lws_abs *abs;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 
 	aws_lws_dll2_t same_abs_transport_list;
 
@@ -52,7 +52,7 @@ heartbeat_cb(struct aws_lws_dll2 *d, void *user)
 }
 
 static int
-callback_abs_client_raw_skt(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_abs_client_raw_skt(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			    void *user, void *in, size_t len)
 {
 	abs_raw_skt_priv_t *priv = (abs_raw_skt_priv_t *)user;
@@ -172,7 +172,7 @@ static int
 aws_lws_atcrs_close(aws_lws_abs_transport_inst_t *ati)
 {
 	abs_raw_skt_priv_t *priv = (abs_raw_skt_priv_t *)ati;
-	struct lws *wsi = priv->wsi;
+	struct aws_lws *wsi = priv->wsi;
 
 	if (!priv->wsi)
 		return 0;

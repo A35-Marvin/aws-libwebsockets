@@ -33,7 +33,7 @@ struct pss {
  */
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	uint8_t buf[LWS_PRE + 2048], *start = &buf[LWS_PRE], *p = start,

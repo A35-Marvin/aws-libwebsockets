@@ -96,19 +96,19 @@ at 5s intervals.
 [2020/03/18 13:13:48:5197] I: aws__lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
 [2020/03/18 13:13:48:5208] U: callback_minimal_broker: established
 [2020/03/18 13:13:51:5218] I: aws_lws_validity_cb: wsi 0x5669090: scheduling validity check
-[2020/03/18 13:13:51:5325] I: rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
+[2020/03/18 13:13:51:5325] I: aws_rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
 [2020/03/18 13:13:51:5504] I: aws_lws_issue_raw: ssl_capable_write (6) says 6
 [2020/03/18 13:13:51:5809] I: aws_lws_ws_client_rx_sm: client 0x5669090 received pong
 [2020/03/18 13:13:51:5819] I: aws__lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
 [2020/03/18 13:13:51:5831] I: Client doing pong callback
 [2020/03/18 13:13:54:5821] I: aws_lws_validity_cb: wsi 0x5669090: scheduling validity check
-[2020/03/18 13:13:54:5825] I: rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
+[2020/03/18 13:13:54:5825] I: aws_rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
 [2020/03/18 13:13:54:5833] I: aws_lws_issue_raw: ssl_capable_write (6) says 6
 [2020/03/18 13:13:54:6258] I: aws_lws_ws_client_rx_sm: client 0x5669090 received pong
 [2020/03/18 13:13:54:6261] I: aws__lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
 [2020/03/18 13:13:54:6263] I: Client doing pong callback
 [2020/03/18 13:13:57:6263] I: aws_lws_validity_cb: wsi 0x5669090: scheduling validity check
-[2020/03/18 13:13:57:6267] I: rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
+[2020/03/18 13:13:57:6267] I: aws_rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
 [2020/03/18 13:13:57:6275] I: aws_lws_issue_raw: ssl_capable_write (6) says 6
 [2020/03/18 13:13:58:0034] I: aws_lws_ws_client_rx_sm: client 0x5669090 received pong
 

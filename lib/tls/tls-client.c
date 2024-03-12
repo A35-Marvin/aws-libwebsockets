@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 static int
-aws_lws_ssl_client_connect1(struct lws *wsi, char *errbuf, size_t len)
+aws_lws_ssl_client_connect1(struct aws_lws *wsi, char *errbuf, size_t len)
 {
 	int n;
 
@@ -55,7 +55,7 @@ aws_lws_ssl_client_connect1(struct lws *wsi, char *errbuf, size_t len)
 }
 
 int
-aws_lws_ssl_client_connect2(struct lws *wsi, char *errbuf, size_t len)
+aws_lws_ssl_client_connect2(struct aws_lws *wsi, char *errbuf, size_t len)
 {
 	int n;
 
@@ -171,7 +171,7 @@ int aws_lws_context_init_client_ssl(const struct aws_lws_context_creation_info *
 
 	plwsa->vhost = vhost; /* not a real bound wsi */
 
-	vhost->protocols[0].callback((struct lws *)plwsa,
+	vhost->protocols[0].callback((struct aws_lws *)plwsa,
 			LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS,
 				     vhost->tls.ssl_client_ctx, NULL, 0);
 
@@ -179,7 +179,7 @@ int aws_lws_context_init_client_ssl(const struct aws_lws_context_creation_info *
 }
 
 int
-aws_lws_client_create_tls(struct lws *wsi, const char **pcce, int do_c1)
+aws_lws_client_create_tls(struct aws_lws *wsi, const char **pcce, int do_c1)
 {
 	/* we can retry this... just cook the SSL BIO the first time */
 

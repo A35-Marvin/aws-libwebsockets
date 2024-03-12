@@ -28,7 +28,7 @@ static aws_lws_state_notify_link_t nl;
  */
 
 static int
-callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {
@@ -106,7 +106,7 @@ callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
  */
 
 static int
-callback_cpd_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_cpd_http(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		  void *user, void *in, size_t len)
 {
 	int resp;

@@ -27,7 +27,7 @@
 void
 aws_lws_client_conn_wait_timeout(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws *wsi = aws_lws_container_of(sul, struct lws,
+	struct aws_lws *wsi = aws_lws_container_of(sul, struct aws_lws,
 					   sul_connect_timeout);
 
 	/*
@@ -42,7 +42,7 @@ aws_lws_client_conn_wait_timeout(aws_lws_sorted_usec_list_t *sul)
 void
 aws_lws_client_dns_retry_timeout(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws *wsi = aws_lws_container_of(sul, struct lws,
+	struct aws_lws *wsi = aws_lws_container_of(sul, struct aws_lws,
 					   sul_connect_timeout);
 
 	/*
@@ -71,7 +71,7 @@ typedef enum {
 } lcccr_t;
 
 static lcccr_t
-aws_lws_client_connect_check(struct lws *wsi)
+aws_lws_client_connect_check(struct aws_lws *wsi)
 {
 	int en = 0;
 #if !defined(WIN32)
@@ -137,8 +137,8 @@ aws_lws_client_connect_check(struct lws *wsi)
  * connect again with the next dns result.
  */
 
-struct lws *
-aws_lws_client_connect_3_connect(struct lws *wsi, const char *ads,
+struct aws_lws *
+aws_lws_client_connect_3_connect(struct aws_lws *wsi, const char *ads,
 			     const struct addrinfo *result, int n, void *opaque)
 {
 #if defined(LWS_WITH_UNIX_SOCK)
@@ -383,7 +383,7 @@ ads_known:
 			}
 
 		aws_lws_pt_lock(pt, __func__);
-		if (__insert_wsi_socket_into_fds(wsi->a.context, wsi)) {
+		if (aws___insert_wsi_socket_into_fds(wsi->a.context, wsi)) {
 			aws_lws_snprintf(dcce, sizeof(dcce),
 				     "conn fail: insert fd");
 			cce = dcce;
@@ -473,7 +473,7 @@ ads_known:
 	wsi->socket_is_permanently_unusable = 0;
 
 	if (aws_lws_fi(&wsi->fic, "conn_cb_rej") ||
-	    user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
+	    aws_user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 			LWS_CALLBACK_CONNECTING, wsi->user_space,
 			(void *)(intptr_t)wsi->desc.sockfd, 0)) {
 		aws_lwsl_wsi_info(wsi, "CONNECTION CB closed");
@@ -685,7 +685,7 @@ connect_to:
 
 try_next_dns_result_fds:
 	aws_lws_pt_lock(pt, __func__);
-	__remove_wsi_socket_from_fds(wsi);
+	aws___remove_wsi_socket_from_fds(wsi);
 	aws_lws_pt_unlock(pt);
 
 try_next_dns_result_closesock:

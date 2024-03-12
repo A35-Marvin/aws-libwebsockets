@@ -557,7 +557,7 @@ aws_lws_sort_dns_compare(const aws_lws_dll2_t *a, const aws_lws_dll2_t *b)
 #if defined(_DEBUG)
 
 static void
-aws_lws_sort_dns_dump(struct lws *wsi)
+aws_lws_sort_dns_dump(struct aws_lws *wsi)
 {
 	int n = 1;
 
@@ -586,7 +586,7 @@ aws_lws_sort_dns_dump(struct lws *wsi)
 #endif
 
 int
-aws_lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
+aws_lws_sort_dns(struct aws_lws *wsi, const struct addrinfo *result)
 {
 #if defined(LWS_WITH_NETLINK)
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];

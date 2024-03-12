@@ -126,13 +126,13 @@ enum aws_lws_tls_extant {
 #endif
 
 int
-aws_lws_tls_restrict_borrow(struct lws *wsi);
+aws_lws_tls_restrict_borrow(struct aws_lws *wsi);
 
 void
-aws_lws_tls_restrict_return(struct lws *wsi);
+aws_lws_tls_restrict_return(struct aws_lws *wsi);
 
 void
-aws_lws_tls_restrict_return_handshake(struct lws *wsi);
+aws_lws_tls_restrict_return_handshake(struct aws_lws *wsi);
 
 typedef SSL aws_lws_tls_conn;
 typedef SSL_CTX aws_lws_tls_ctx;
@@ -150,7 +150,7 @@ void
 aws_lws_context_deinit_ssl_library(struct aws_lws_context *context);
 #define LWS_SSL_ENABLED(vh) (vh && vh->tls.use_ssl)
 
-extern const struct aws_lws_tls_ops tls_ops_openssl, tls_ops_mbedtls;
+extern const struct aws_lws_tls_ops aws_tls_ops_openssl, tls_ops_mbedtls;
 
 struct aws_lws_ec_valid_curves {
 	int id;
@@ -199,13 +199,13 @@ aws_lws_genec_confirm_curve_allowed_by_tls_id(const char *allowed, int id,
 					  struct aws_lws_jwk *jwk);
 
 void
-aws_lws_tls_reuse_session(struct lws *wsi);
+aws_lws_tls_reuse_session(struct aws_lws *wsi);
 
 void
 aws_lws_tls_session_cache(struct aws_lws_vhost *vh, uint32_t ttl);
 
 int
-aws_lws_tls_session_name_from_wsi(struct lws *wsi, char *buf, size_t len);
+aws_lws_tls_session_name_from_wsi(struct aws_lws *wsi, char *buf, size_t len);
 
 /**
  * aws_lws_tls_session_name_discrete() - form an lws session tag name from pieces
@@ -234,7 +234,7 @@ aws_lws_tls_session_tag_discrete(const char *vhname, const char *host,
  * sessions made with the host.
  */
 int
-aws_lws_tls_session_tag_from_wsi(struct lws *wsi, char *buf, size_t len);
+aws_lws_tls_session_tag_from_wsi(struct aws_lws *wsi, char *buf, size_t len);
 
 #else /* ! WITH_TLS */
 

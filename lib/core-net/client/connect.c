@@ -35,8 +35,8 @@ static const uint8_t hnames[] = {
 	_WSI_TOKEN_CLIENT_ALPN
 };
 
-struct lws *
-aws_lws_http_client_connect_via_info2(struct lws *wsi)
+struct aws_lws *
+aws_lws_http_client_connect_via_info2(struct aws_lws *wsi)
 {
 	struct client_info_stash *stash = wsi->stash;
 	int n;
@@ -82,7 +82,7 @@ bail:
 }
 
 int
-aws_lws_client_stash_create(struct lws *wsi, const char **cisin)
+aws_lws_client_stash_create(struct aws_lws *wsi, const char **cisin)
 {
 	size_t size;
 	char *pc;
@@ -124,11 +124,11 @@ aws_lws_client_stash_create(struct lws *wsi, const char **cisin)
 	return 0;
 }
 
-struct lws *
+struct aws_lws *
 aws_lws_client_connect_via_info(const struct aws_lws_client_connect_info *i)
 {
 	const char *local = i->protocol;
-	struct lws *wsi, *safe = NULL;
+	struct aws_lws *wsi, *safe = NULL;
 	const struct aws_lws_protocols *p;
 	const char *cisin[CIS_COUNT];
 	struct aws_lws_vhost *vh;

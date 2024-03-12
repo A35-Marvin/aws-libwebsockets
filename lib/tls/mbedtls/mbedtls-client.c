@@ -69,7 +69,7 @@ aws_lws_mbedtls_client_verify_callback(SSL *ssl, mbedtls_x509_crt *x509)
 #endif
 
 int
-aws_lws_ssl_client_bio_create(struct lws *wsi)
+aws_lws_ssl_client_bio_create(struct aws_lws *wsi)
 {
 	char hostname[128], *p;
 	const char *alpn_comma = wsi->a.context->tls.alpn_default;
@@ -247,7 +247,7 @@ int ERR_get_error(void)
 }
 
 enum aws_lws_ssl_capable_status
-aws_lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
+aws_lws_tls_client_connect(struct aws_lws *wsi, char *errbuf, size_t elen)
 {
 	int m, n = SSL_connect(wsi->tls.ssl), en;
 
@@ -281,7 +281,7 @@ aws_lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
 }
 
 int
-aws_lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len)
+aws_lws_tls_client_confirm_peer_cert(struct aws_lws *wsi, char *ebuf, size_t ebuf_len)
 {
 	int n;
 	unsigned int avoid = 0;
@@ -413,7 +413,7 @@ aws_lws_tls_client_create_vhost_context(struct aws_lws_vhost *vh,
 		uint8_t *buf;
 		aws_lws_filepos_t len;
 
-		if (alloc_file(vh->context, ca_filepath, &buf, &len)) {
+		if (aws_alloc_file(vh->context, ca_filepath, &buf, &len)) {
 			aws_lwsl_err("Load CA cert file %s failed\n", ca_filepath);
 			return 1;
 		}
@@ -452,7 +452,7 @@ aws_lws_tls_client_create_vhost_context(struct aws_lws_vhost *vh,
 		aws_lwsl_notice("%s: doing cert filepath %s\n", __func__,
 				cert_filepath);
 
-		if (alloc_file(vh->context, cert_filepath, &buf, &amount))
+		if (aws_alloc_file(vh->context, cert_filepath, &buf, &amount))
 			return 1;
 
 		buf[amount++] = '\0';
@@ -491,7 +491,7 @@ aws_lws_tls_client_create_vhost_context(struct aws_lws_vhost *vh,
 
 		aws_lwsl_notice("%s: doing private key filepath %s\n", __func__,
 				private_key_filepath);
-		if (alloc_file(vh->context, private_key_filepath, &buf, &amount))
+		if (aws_alloc_file(vh->context, private_key_filepath, &buf, &amount))
 			return 1;
 
 		buf[amount++] = '\0';

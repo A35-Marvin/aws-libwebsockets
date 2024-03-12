@@ -53,7 +53,7 @@ aws_lws_http_string_to_known_header(const char *s, size_t slen)
 
 #ifdef LWS_WITH_HTTP2
 int
-aws_lws_wsi_is_h2(struct lws *wsi)
+aws_lws_wsi_is_h2(struct aws_lws *wsi)
 {
 	return wsi->upgraded_to_http2 ||
 	       wsi->mux_substream ||
@@ -66,7 +66,7 @@ aws_lws_wsi_is_h2(struct lws *wsi)
 #endif
 
 int
-aws_lws_add_http_header_by_name(struct lws *wsi, const unsigned char *name,
+aws_lws_add_http_header_by_name(struct aws_lws *wsi, const unsigned char *name,
 			    const unsigned char *value, int length,
 			    unsigned char **p, unsigned char *end)
 {
@@ -96,7 +96,7 @@ aws_lws_add_http_header_by_name(struct lws *wsi, const unsigned char *name,
 	return 0;
 }
 
-int aws_lws_finalize_http_header(struct lws *wsi, unsigned char **p,
+int aws_lws_finalize_http_header(struct aws_lws *wsi, unsigned char **p,
 			     unsigned char *end)
 {
 #ifdef LWS_WITH_HTTP2
@@ -114,7 +114,7 @@ int aws_lws_finalize_http_header(struct lws *wsi, unsigned char **p,
 }
 
 int
-aws_lws_finalize_write_http_header(struct lws *wsi, unsigned char *start,
+aws_lws_finalize_write_http_header(struct aws_lws *wsi, unsigned char *start,
 			       unsigned char **pp, unsigned char *end)
 {
 	unsigned char *p;
@@ -133,7 +133,7 @@ aws_lws_finalize_write_http_header(struct lws *wsi, unsigned char *start,
 }
 
 int
-aws_lws_add_http_header_by_token(struct lws *wsi, enum aws_lws_token_indexes token,
+aws_lws_add_http_header_by_token(struct aws_lws *wsi, enum aws_lws_token_indexes token,
 			     const unsigned char *value, int length,
 			     unsigned char **p, unsigned char *end)
 {
@@ -151,7 +151,7 @@ aws_lws_add_http_header_by_token(struct lws *wsi, enum aws_lws_token_indexes tok
 }
 
 int
-aws_lws_add_http_header_content_length(struct lws *wsi,
+aws_lws_add_http_header_content_length(struct aws_lws *wsi,
 				   aws_lws_filepos_t content_length,
 				   unsigned char **p, unsigned char *end)
 {
@@ -174,7 +174,7 @@ aws_lws_add_http_header_content_length(struct lws *wsi,
 #if defined(LWS_WITH_SERVER)
 
 int
-aws_lws_add_http_common_headers(struct lws *wsi, unsigned int code,
+aws_lws_add_http_common_headers(struct aws_lws *wsi, unsigned int code,
 			    const char *content_type, aws_lws_filepos_t content_len,
 			    unsigned char **p, unsigned char *end)
 {
@@ -302,7 +302,7 @@ struct aws_lws_protocol_vhost_options pvo_hsbph[] = {{
 }};
 
 int
-aws_lws_add_http_header_status(struct lws *wsi, unsigned int _code,
+aws_lws_add_http_header_status(struct aws_lws *wsi, unsigned int _code,
 			   unsigned char **p, unsigned char *end)
 {
 	static const char * const hver[] = {
@@ -407,7 +407,7 @@ aws_lws_add_http_header_status(struct lws *wsi, unsigned int _code,
 }
 
 int
-aws_lws_return_http_status(struct lws *wsi, unsigned int code,
+aws_lws_return_http_status(struct aws_lws *wsi, unsigned int code,
 		       const char *html_body)
 {
 	struct aws_lws_context *context = aws_lws_get_context(wsi);
@@ -521,7 +521,7 @@ aws_lws_return_http_status(struct lws *wsi, unsigned int code,
 }
 
 int
-aws_lws_http_redirect(struct lws *wsi, int code, const unsigned char *loc, int len,
+aws_lws_http_redirect(struct aws_lws *wsi, int code, const unsigned char *loc, int len,
 		  unsigned char **p, unsigned char *end)
 {
 	unsigned char *start = *p;
@@ -555,7 +555,7 @@ aws_lws_http_redirect(struct lws *wsi, int code, const unsigned char *loc, int l
 
 #if !defined(LWS_WITH_HTTP_STREAM_COMPRESSION)
 int
-aws_lws_http_compression_apply(struct lws *wsi, const char *name,
+aws_lws_http_compression_apply(struct aws_lws *wsi, const char *name,
 			   unsigned char **p, unsigned char *end, char decomp)
 {
 	(void)wsi;
@@ -569,7 +569,7 @@ aws_lws_http_compression_apply(struct lws *wsi, const char *name,
 #endif
 
 int
-aws_lws_http_headers_detach(struct lws *wsi)
+aws_lws_http_headers_detach(struct aws_lws *wsi)
 {
 	return aws_lws_header_table_detach(wsi, 0);
 }
@@ -582,7 +582,7 @@ aws_lws_sul_http_ah_lifecheck(aws_lws_sorted_usec_list_t *sul)
 	struct allocated_headers *ah;
 	struct aws_lws_context_per_thread *pt = aws_lws_container_of(sul,
 			struct aws_lws_context_per_thread, sul_ah_lifecheck);
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	time_t now;
 	int m;
 

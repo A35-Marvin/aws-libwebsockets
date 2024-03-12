@@ -14,15 +14,15 @@
  * it's in its own file to stop muddying up the main test sources.  It's only
  * available when built with SSPC / produces -client executable.
  *
- * We will fork several times, the original thread and the forks hook up to
- * the proxy with smd SS, each fork waits a second for everyone to have joined,
- * and then each fork (NOT the original process) sends a bunch of user messages
+ * We will aws_fork several times, the original thread and the forks hook up to
+ * the proxy with smd SS, each aws_fork waits a second for everyone to have joined,
+ * and then each aws_fork (NOT the original process) sends a bunch of user messages
  * that all the forks should receive, having been distributed by SMD and the
  * ss proxy.
  *
  * The participants check they received all the messages expected from everyone
  * and then send a final message indicating success and exits.  The original
- * fork is watching for these to arrive before the timeout, if so it's a PASS.
+ * aws_fork is watching for these to arrive before the timeout, if so it's a PASS.
  */
 
 #include <libwebsockets.h>
@@ -75,7 +75,7 @@ multi_myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 		return LWSSSSRET_DESTROY_ME;
 	}
 
-	p = aws_lws_json_simple_find((const char *)buf, len, "\"fork\":", &al);
+	p = aws_lws_json_simple_find((const char *)buf, len, "\"aws_fork\":", &al);
 	if (!p)
 		return LWSSSSRET_DESTROY_ME;
 	fk = atoi(p);
@@ -157,7 +157,7 @@ multi_myss_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *
 	if (m->send_seen_all) {
 		*len = LWS_SMD_SS_RX_HEADER_LEN + (unsigned int)
 			aws_lws_snprintf((char *)buf + LWS_SMD_SS_RX_HEADER_LEN, *len,
-			     "{\"class\":\"user\",\"fork\": %d,\"seen_all\":true}",
+			     "{\"class\":\"user\",\"aws_fork\": %d,\"seen_all\":true}",
 			     (int)(intptr_t)aws_lws_context_user(aws_lws_ss_get_context(m->ss)));
 
 		m->send_seen_all = 0;
@@ -166,7 +166,7 @@ multi_myss_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *
 	} else
 		*len = LWS_SMD_SS_RX_HEADER_LEN + (unsigned int)
 			aws_lws_snprintf((char *)buf + LWS_SMD_SS_RX_HEADER_LEN, *len,
-			     "{\"class\":\"user\",\"fork\": %d,\"test\":%u}",
+			     "{\"class\":\"user\",\"aws_fork\": %d,\"test\":%u}",
 			     (int)(intptr_t)aws_lws_context_user(aws_lws_ss_get_context(m->ss)),
 			     m->count++);
 
@@ -195,7 +195,7 @@ multi_myss_state(void *userobj, void *h_src, aws_lws_ss_constate_t state,
 		return 0;
 
 	case LWSSSCS_CONNECTED:
-		aws_lwsl_notice("%s: CONNECTED: test fork %d\n", __func__,
+		aws_lwsl_notice("%s: CONNECTED: test aws_fork %d\n", __func__,
 				(int)(intptr_t)aws_lws_context_user(aws_lws_ss_get_context(m->ss)));
 		/*
 		 * Because in this test everybody is watching and counting
@@ -246,7 +246,7 @@ multi_myss_rx_monitor(void *userobj, const uint8_t *buf, size_t len, int flags)
 	if (!aws_lws_json_simple_find((const char *)buf, len, "\"seen_all\":", &al))
 		return LWSSSSRET_OK;
 
-	p = aws_lws_json_simple_find((const char *)buf, len, "\"fork\":", &al);
+	p = aws_lws_json_simple_find((const char *)buf, len, "\"aws_fork\":", &al);
 	if (!p)
 		return LWSSSSRET_DESTROY_ME;
 	fk = atoi(p);
@@ -303,7 +303,7 @@ direct_smd_cb(void *opaque, aws_lws_smd_class_t _class, aws_lws_usec_t timestamp
 		 * 1 .. FORKS and producing / checking the smd messages
 		 */
 
-		aws_lwsl_info("%s: starting ss for test fork %d\n", __func__,
+		aws_lwsl_info("%s: starting ss for test aws_fork %d\n", __func__,
 				(int)(intptr_t)aws_lws_context_user(*pctx));
 
 		if (aws_lws_ss_create(*pctx, 0, aws_lws_context_user(*pctx) ?
@@ -339,7 +339,7 @@ smd_ss_multi_test(int argc, const char **argv)
 	aws_lwsl_user("LWS Secure Streams SMD MULTI test client [-d<verb>]\n");
 
 	for (n = 0; n < FORKS; n++) {
-		pid = fork();
+		pid = aws_fork();
 		if (!pid) /* forked child */ {
 			break;
 		}

@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 void
-aws___lws_wsi_remove_from_sul(struct lws *wsi)
+aws___lws_wsi_remove_from_sul(struct aws_lws *wsi)
 {
 	aws_lws_sul_cancel(&wsi->sul_timeout);
 	aws_lws_sul_cancel(&wsi->sul_hrtimer);
@@ -42,7 +42,7 @@ aws___lws_wsi_remove_from_sul(struct lws *wsi)
 static void
 aws_lws_sul_hrtimer_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws *wsi = aws_lws_container_of(sul, struct lws, sul_hrtimer);
+	struct aws_lws *wsi = aws_lws_container_of(sul, struct aws_lws, sul_hrtimer);
 
 	if (wsi->a.protocol &&
 	    wsi->a.protocol->callback(wsi, LWS_CALLBACK_TIMER,
@@ -52,7 +52,7 @@ aws_lws_sul_hrtimer_cb(aws_lws_sorted_usec_list_t *sul)
 }
 
 void
-aws___lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t us)
+aws___lws_set_timer_usecs(struct aws_lws *wsi, aws_lws_usec_t us)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -62,7 +62,7 @@ aws___lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t us)
 }
 
 void
-aws_lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t usecs)
+aws_lws_set_timer_usecs(struct aws_lws *wsi, aws_lws_usec_t usecs)
 {
 	aws___lws_set_timer_usecs(wsi, usecs);
 }
@@ -74,7 +74,7 @@ aws_lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t usecs)
 static void
 aws_lws_sul_wsitimeout_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws *wsi = aws_lws_container_of(sul, struct lws, sul_timeout);
+	struct aws_lws *wsi = aws_lws_container_of(sul, struct aws_lws, sul_timeout);
 	struct aws_lws_context *cx = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &cx->pt[(int)wsi->tsi];
 
@@ -122,7 +122,7 @@ aws_lws_sul_wsitimeout_cb(aws_lws_sorted_usec_list_t *sul)
 }
 
 void
-aws___lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs)
+aws___lws_set_timeout(struct aws_lws *wsi, enum pending_timeout reason, int secs)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -137,7 +137,7 @@ aws___lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs)
 }
 
 void
-aws_lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs)
+aws_lws_set_timeout(struct aws_lws *wsi, enum pending_timeout reason, int secs)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -153,7 +153,7 @@ aws_lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs)
 		aws_lwsl_wsi_debug(wsi, "TO_KILL_SYNC");
 		aws_lws_context_unlock(pt->context);
 		aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
-				   "to sync kill");
+				   "to sync aws_kill");
 		return;
 	}
 
@@ -173,7 +173,7 @@ bail:
 }
 
 void
-aws_lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, aws_lws_usec_t us)
+aws_lws_set_timeout_us(struct aws_lws *wsi, enum pending_timeout reason, aws_lws_usec_t us)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
@@ -198,7 +198,7 @@ aws_lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, aws_lws_use
 static void
 aws_lws_validity_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws *wsi = aws_lws_container_of(sul, struct lws, sul_validity);
+	struct aws_lws *wsi = aws_lws_container_of(sul, struct aws_lws, sul_validity);
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	const aws_lws_retry_bo_t *rbo = wsi->retry_policy;
 
@@ -246,7 +246,7 @@ aws_lws_validity_cb(aws_lws_sorted_usec_list_t *sul)
  */
 
 void
-aws__lws_validity_confirmed_role(struct lws *wsi)
+aws__lws_validity_confirmed_role(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	const aws_lws_retry_bo_t *rbo = wsi->retry_policy;
@@ -273,7 +273,7 @@ aws__lws_validity_confirmed_role(struct lws *wsi)
 }
 
 void
-aws_lws_validity_confirmed(struct lws *wsi)
+aws_lws_validity_confirmed(struct aws_lws *wsi)
 {
 	/*
 	 * This may be a stream inside a muxed network connection... leave it

@@ -89,7 +89,7 @@ static void aws_lws_daemon_closing(int sigact)
 			aws_lws_free_set_NULL(lock_path);
 		}
 
-	kill(getpid(), SIGKILL);
+	aws_kill(getpid(), SIGKILL);
 }
 
 /*
@@ -122,7 +122,7 @@ aws_lws_daemonize(const char *_lock_path)
 			if (n) {
 				int ret;
 				n = atoi(buf);
-				ret = kill(n, 0);
+				ret = aws_kill(n, 0);
 				if (ret >= 0) {
 					fprintf(stderr,
 					     "Daemon already running pid %d\n",
@@ -151,9 +151,9 @@ aws_lws_daemonize(const char *_lock_path)
 	signal(SIGALRM, child_handler); /* timeout daemonizing */
 
 	/* Fork off the parent process */
-	pid_daemon = fork();
+	pid_daemon = aws_fork();
 	if ((int)pid_daemon < 0) {
-		fprintf(stderr, "unable to fork daemon, code=%d (%s)",
+		fprintf(stderr, "unable to aws_fork daemon, code=%d (%s)",
 		    errno, strerror(errno));
 		exit(9);
 	}
@@ -221,7 +221,7 @@ aws_lws_daemonize(const char *_lock_path)
 						       errno, strerror(errno));
 
 	/* Tell the parent process that we are A-okay */
-	kill(parent, SIGUSR1);
+	aws_kill(parent, SIGUSR1);
 
 	act.sa_handler = aws_lws_daemon_closing;
 	sigemptyset(&act.sa_mask);

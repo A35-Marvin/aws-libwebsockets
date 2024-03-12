@@ -33,7 +33,7 @@ int openssl_websocket_private_data_index,
  * lws convention of 0 for success.
  */
 
-int aws_lws_openssl_describe_cipher(struct lws *wsi)
+int aws_lws_openssl_describe_cipher(struct aws_lws *wsi)
 {
 #if !defined(LWS_WITH_NO_LOGS) && !defined(USE_WOLFSSL)
 	int np = -1;
@@ -48,7 +48,7 @@ int aws_lws_openssl_describe_cipher(struct lws *wsi)
 	return 0;
 }
 
-int aws_lws_ssl_get_error(struct lws *wsi, int n)
+int aws_lws_ssl_get_error(struct aws_lws *wsi, int n)
 {
 	int m;
 
@@ -196,7 +196,7 @@ aws_lws_ssl_destroy(struct aws_lws_vhost *vhost)
 }
 
 int
-aws_lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_ssl_capable_read(struct aws_lws *wsi, unsigned char *buf, size_t len)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -326,7 +326,7 @@ bail:
 }
 
 int
-aws_lws_ssl_pending(struct lws *wsi)
+aws_lws_ssl_pending(struct aws_lws *wsi)
 {
 	if (!wsi->tls.ssl)
 		return 0;
@@ -335,7 +335,7 @@ aws_lws_ssl_pending(struct lws *wsi)
 }
 
 int
-aws_lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_ssl_capable_write(struct aws_lws *wsi, unsigned char *buf, size_t len)
 {
 	int n, m;
 
@@ -399,7 +399,7 @@ aws_lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len)
 void
 aws_lws_ssl_info_callback(const SSL *ssl, int where, int ret)
 {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	struct aws_lws_context *context;
 	struct aws_lws_ssl_info si;
 	int fd;
@@ -430,7 +430,7 @@ aws_lws_ssl_info_callback(const SSL *ssl, int where, int ret)
 	si.where = where;
 	si.ret = ret;
 
-	if (user_callback_handle_rxflow(wsi->a.protocol->callback,
+	if (aws_user_callback_handle_rxflow(wsi->a.protocol->callback,
 					wsi, LWS_CALLBACK_SSL_INFO,
 					wsi->user_space, &si, 0))
 		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_KILLED_BY_SSL_INFO, -1);
@@ -438,7 +438,7 @@ aws_lws_ssl_info_callback(const SSL *ssl, int where, int ret)
 
 
 int
-aws_lws_ssl_close(struct lws *wsi)
+aws_lws_ssl_close(struct aws_lws *wsi)
 {
 	aws_lws_sockfd_type n;
 
@@ -446,7 +446,7 @@ aws_lws_ssl_close(struct lws *wsi)
 		return 0; /* not handled */
 
 #if defined (LWS_HAVE_SSL_SET_INFO_CALLBACK)
-	/* kill ssl callbacks, because we will remove the fd from the
+	/* aws_kill ssl callbacks, because we will remove the fd from the
 	 * table linking it to the wsi
 	 */
 	if (wsi->a.vhost->tls.ssl_info_event_mask)
@@ -521,7 +521,7 @@ aws_lws_ssl_context_destroy(struct aws_lws_context *context)
 }
 
 aws_lws_tls_ctx *
-aws_lws_tls_ctx_from_wsi(struct lws *wsi)
+aws_lws_tls_ctx_from_wsi(struct aws_lws *wsi)
 {
 	if (!wsi->tls.ssl)
 		return NULL;
@@ -530,7 +530,7 @@ aws_lws_tls_ctx_from_wsi(struct lws *wsi)
 }
 
 enum aws_lws_ssl_capable_status
-aws___lws_tls_shutdown(struct lws *wsi)
+aws___lws_tls_shutdown(struct aws_lws *wsi)
 {
 	int n;
 
@@ -576,6 +576,6 @@ tops_fake_POLLIN_for_buffered_openssl(struct aws_lws_context_per_thread *pt)
 	return aws_lws_tls_fake_POLLIN_for_buffered(pt);
 }
 
-const struct aws_lws_tls_ops tls_ops_openssl = {
+const struct aws_lws_tls_ops aws_tls_ops_openssl = {
 	/* fake_POLLIN_for_buffered */	tops_fake_POLLIN_for_buffered_openssl,
 };

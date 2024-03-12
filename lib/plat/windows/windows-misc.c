@@ -99,15 +99,15 @@ aws_lwsl_emit_syslog(int level, const char *line)
 }
 
 
-int kill(int pid, int sig)
+int aws_kill(int pid, int sig)
 {
-	aws_lwsl_err("Sorry Windows doesn't support kill().");
+	aws_lwsl_err("Sorry Windows doesn't support aws_kill().");
 	exit(0);
 }
 
-int fork(void)
+int aws_fork(void)
 {
-	aws_lwsl_err("Sorry Windows doesn't support fork().");
+	aws_lwsl_err("Sorry Windows doesn't support aws_fork().");
 	exit(0);
 }
 

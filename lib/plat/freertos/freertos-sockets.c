@@ -33,9 +33,9 @@
 #endif
 
 int
-aws_lws_send_pipe_choked(struct lws *wsi)
+aws_lws_send_pipe_choked(struct aws_lws *wsi)
 {
-	struct lws *wsi_eff = wsi;
+	struct aws_lws *wsi_eff = wsi;
 	fd_set writefds;
 	struct timeval tv = { 0, 0 };
 	int n;

@@ -86,7 +86,7 @@ struct aws_lws_range_parsing {
 };
 
 int
-aws_lws_ranges_init(struct lws *wsi, struct aws_lws_range_parsing *rp,
+aws_lws_ranges_init(struct aws_lws *wsi, struct aws_lws_range_parsing *rp,
 		unsigned long long extent);
 int
 aws_lws_ranges_next(struct aws_lws_range_parsing *rp);
@@ -103,7 +103,7 @@ aws_lws_ranges_reset(struct aws_lws_range_parsing *rp);
 
 struct allocated_headers {
 	struct allocated_headers *next; /* linked list */
-	struct lws *wsi; /* owner */
+	struct aws_lws *wsi; /* owner */
 	char *data; /* prepared by context init to point to dedicated storage */
 	ah_data_idx_t data_length;
 	/*
@@ -157,7 +157,7 @@ struct aws_lws_rewrite {
 	const char *from, *to;
 	int from_len, to_len;
 	unsigned char *p, *end;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 };
 static LWS_INLINE int hstrcmp(hubbub_string *s, const char *p, int len)
 {
@@ -168,7 +168,7 @@ static LWS_INLINE int hstrcmp(hubbub_string *s, const char *p, int len)
 }
 typedef hubbub_error (*hubbub_callback_t)(const hubbub_token *token, void *pw);
 LWS_EXTERN struct aws_lws_rewrite *
-aws_lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from, const char *to);
+aws_lws_rewrite_create(struct aws_lws *wsi, hubbub_callback_t cb, const char *from, const char *to);
 LWS_EXTERN void
 aws_lws_rewrite_destroy(struct aws_lws_rewrite *r);
 LWS_EXTERN int
@@ -177,7 +177,7 @@ aws_lws_rewrite_parse(struct aws_lws_rewrite *r, const unsigned char *in, int in
 
 struct aws_lws_pt_role_http {
 	struct allocated_headers *ah_list;
-	struct lws *ah_wait_list;
+	struct aws_lws *ah_wait_list;
 #ifdef LWS_WITH_CGI
 	struct aws_lws_cgi *cgi_list;
 #endif
@@ -217,7 +217,7 @@ struct aws_lws_access_log {
 #define LWS_HTTP_CHUNK_TRL_MAX_SIZE (2 + 5) /* CRLF, then maybe 0 CRLF CRLF */
 
 struct aws__lws_http_mode_related {
-	struct lws *new_wsi_list;
+	struct aws_lws *new_wsi_list;
 
 	unsigned char *pending_return_headers;
 	size_t pending_return_headers_len;
@@ -228,7 +228,7 @@ struct aws__lws_http_mode_related {
 	struct aws_lws_buflist *buflist_post_body;
 #endif
 	struct allocated_headers *ah;
-	struct lws *ah_wait_list;
+	struct aws_lws *ah_wait_list;
 
 	unsigned long		writeable_len;
 
@@ -308,13 +308,13 @@ enum aws_lws_check_basic_auth_results {
 };
 
 enum aws_lws_check_basic_auth_results
-aws_lws_check_basic_auth(struct lws *wsi, const char *basic_auth_login_file, unsigned int auth_mode);
+aws_lws_check_basic_auth(struct aws_lws *wsi, const char *basic_auth_login_file, unsigned int auth_mode);
 
 int
-aws_lws_unauthorised_basic_auth(struct lws *wsi);
+aws_lws_unauthorised_basic_auth(struct aws_lws *wsi);
 
 int
-aws_lws_read_h1(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
+aws_lws_read_h1(struct aws_lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
 
 void
 aws__lws_header_table_reset(struct allocated_headers *ah);
@@ -323,14 +323,14 @@ LWS_EXTERN int
 aws__lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers *ah);
 
 int
-aws_lws_http_proxy_start(struct lws *wsi, const struct aws_lws_http_mount *hit,
+aws_lws_http_proxy_start(struct aws_lws *wsi, const struct aws_lws_http_mount *hit,
 		     char *uri_ptr, char ws);
 
 void
 aws_lws_sul_http_ah_lifecheck(aws_lws_sorted_usec_list_t *sul);
 
 uint8_t *
-aws_lws_http_multipart_headers(struct lws *wsi, uint8_t *p);
+aws_lws_http_multipart_headers(struct aws_lws *wsi, uint8_t *p);
 
 int
 aws_lws_http_string_to_known_header(const char *s, size_t slen);
@@ -348,4 +348,4 @@ enum {
 };
 
 int
-aws_lws_client_create_tls(struct lws *wsi, const char **pcce, int do_c1);
+aws_lws_client_create_tls(struct aws_lws *wsi, const char **pcce, int do_c1);

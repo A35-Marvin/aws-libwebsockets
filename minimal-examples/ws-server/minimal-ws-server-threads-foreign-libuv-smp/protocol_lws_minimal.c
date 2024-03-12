@@ -31,7 +31,7 @@ struct msg {
 
 struct per_session_data__minimal {
 	struct per_session_data__minimal *pss_list;
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	uint32_t tail;
 };
 
@@ -144,7 +144,7 @@ wait_unlock:
 /* this runs under the lws service thread context only */
 
 static int
-callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal *pss =

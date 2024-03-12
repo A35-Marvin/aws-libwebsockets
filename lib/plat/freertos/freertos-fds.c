@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 void
-aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws *wsi)
+aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -34,7 +34,7 @@ aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws 
 
 void
 aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
-						struct lws *wsi, int m)
+						struct aws_lws *wsi, int m)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
@@ -43,13 +43,13 @@ aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
 
 int
 aws_lws_plat_change_pollfd(struct aws_lws_context *context,
-		      struct lws *wsi, struct aws_lws_pollfd *pfd)
+		      struct aws_lws *wsi, struct aws_lws_pollfd *pfd)
 {
 	return 0;
 }
 
 int
-insert_wsi(const struct aws_lws_context *context, struct lws *wsi)
+insert_wsi(const struct aws_lws_context *context, struct aws_lws *wsi)
 {
     assert(context->aws_lws_lookup[wsi->desc.sockfd -
                                aws_lws_plat_socket_offset()] == 0);

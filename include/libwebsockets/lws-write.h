@@ -115,7 +115,7 @@ enum aws_lws_write_protocol {
 /* used with LWS_CALLBACK_CHILD_WRITE_VIA_PARENT */
 
 struct aws_lws_write_passthru {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	unsigned char *buf;
 	size_t len;
 	enum aws_lws_write_protocol wp;
@@ -223,7 +223,7 @@ struct aws_lws_write_passthru {
  * the same ~2 x mtu limit mentioned above.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_write(struct lws *wsi, unsigned char *buf, size_t len,
+aws_lws_write(struct aws_lws *wsi, unsigned char *buf, size_t len,
 	  enum aws_lws_write_protocol protocol);
 
 /* helper for case where buffer may be const */
@@ -260,7 +260,7 @@ aws_lws_write_ws_flags(int initial, int is_start, int is_end)
 /**
  * aws_lws_raw_transaction_completed() - Helper for flushing before close
  *
- * \param wsi: the struct lws to operate on
+ * \param wsi: the struct aws_lws to operate on
  *
  * Returns -1 if the wsi can close now.  However if there is buffered, unsent
  * data, the wsi is marked as to be closed when the output buffer data is
@@ -271,6 +271,6 @@ aws_lws_write_ws_flags(int initial, int is_start, int is_end)
  * return -1.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_raw_transaction_completed(struct lws *wsi);
+aws_lws_raw_transaction_completed(struct aws_lws *wsi);
 
 ///@}

@@ -290,7 +290,7 @@ aws__lws_route_find_source(struct aws_lws_context_per_thread *pt,
 }
 
 int
-aws__lws_route_check_wsi(struct lws *wsi)
+aws__lws_route_check_wsi(struct aws_lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	char buf[72];
@@ -338,7 +338,7 @@ aws__lws_route_check_wsi(struct lws *wsi)
 int
 aws__lws_route_pt_close_unroutable(struct aws_lws_context_per_thread *pt)
 {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	unsigned int n;
 
 	if (!pt->context->nl_initial_done
@@ -372,7 +372,7 @@ int
 aws__lws_route_pt_close_route_users(struct aws_lws_context_per_thread *pt,
 				aws_lws_route_uidx_t uidx)
 {
-	struct lws *wsi;
+	struct aws_lws *wsi;
 	unsigned int n;
 
 	if (!uidx)

@@ -72,11 +72,11 @@ aws_lws_get_mimetype(const char *file, const struct aws_lws_http_mount *m);
  *	the wsi should be left alone.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_serve_http_file(struct lws *wsi, const char *file, const char *content_type,
+aws_lws_serve_http_file(struct aws_lws *wsi, const char *file, const char *content_type,
 		    const char *other_headers, int other_headers_len);
 
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_serve_http_file_fragment(struct lws *wsi);
+aws_lws_serve_http_file_fragment(struct aws_lws *wsi);
 //@}
 
 
@@ -400,7 +400,7 @@ aws_lws_token_to_string(enum aws_lws_token_indexes token);
  * \param h: which header index we are interested in
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_hdr_total_length(struct lws *wsi, enum aws_lws_token_indexes h);
+aws_lws_hdr_total_length(struct aws_lws *wsi, enum aws_lws_token_indexes h);
 
 /**
  * aws_lws_hdr_fragment_length: report length of a single fragment of a header
@@ -412,7 +412,7 @@ aws_lws_hdr_total_length(struct lws *wsi, enum aws_lws_token_indexes h);
  * \param frag_idx: which fragment of h we want to get the length of
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_hdr_fragment_length(struct lws *wsi, enum aws_lws_token_indexes h,
+aws_lws_hdr_fragment_length(struct aws_lws *wsi, enum aws_lws_token_indexes h,
 			int frag_idx);
 
 /**
@@ -430,7 +430,7 @@ aws_lws_hdr_fragment_length(struct lws *wsi, enum aws_lws_token_indexes h,
  * header.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum aws_lws_token_indexes h);
+aws_lws_hdr_copy(struct aws_lws *wsi, char *dest, int len, enum aws_lws_token_indexes h);
 
 /**
  * aws_lws_hdr_copy_fragment() - copy a single fragment of the given header to a buffer
@@ -450,7 +450,7 @@ aws_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum aws_lws_token_indexe
  * fragment 0 will contain "x=1" and fragment 1 "y=2"
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_hdr_copy_fragment(struct lws *wsi, char *dest, int len,
+aws_lws_hdr_copy_fragment(struct aws_lws *wsi, char *dest, int len,
 		      enum aws_lws_token_indexes h, int frag_idx);
 
 /**
@@ -470,7 +470,7 @@ aws_lws_hdr_copy_fragment(struct lws *wsi, char *dest, int len,
  * use this api.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen);
+aws_lws_hdr_custom_length(struct aws_lws *wsi, const char *name, int nlen);
 
 /**
  * aws_lws_hdr_custom_copy() - copy value part of a custom header
@@ -491,7 +491,7 @@ aws_lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen);
  * must be built with LWS_WITH_CUSTOM_HEADERS (on by default) to use this api.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
+aws_lws_hdr_custom_copy(struct aws_lws *wsi, char *dst, int len, const char *name,
 		    int nlen);
 
 typedef void (*aws_lws_hdr_custom_fe_cb_t)(const char *name, int nlen, void *opaque);
@@ -512,7 +512,7 @@ typedef void (*aws_lws_hdr_custom_fe_cb_t)(const char *name, int nlen, void *opa
  * default) to use this api.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_hdr_custom_name_foreach(struct lws *wsi, aws_lws_hdr_custom_fe_cb_t cb, void *opaque);
+aws_lws_hdr_custom_name_foreach(struct aws_lws *wsi, aws_lws_hdr_custom_fe_cb_t cb, void *opaque);
 
 /**
  * aws_lws_get_urlarg_by_name_safe() - get copy and return length of y for x=y urlargs
@@ -538,7 +538,7 @@ aws_lws_hdr_custom_name_foreach(struct lws *wsi, aws_lws_hdr_custom_fe_cb_t cb, 
  * Use aws_lws_get_urlarg_by_name_safe() instead of this, which returns the length.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_get_urlarg_by_name_safe(struct lws *wsi, const char *name, char *buf, int len);
+aws_lws_get_urlarg_by_name_safe(struct aws_lws *wsi, const char *name, char *buf, int len);
 
 /**
  * aws_lws_get_urlarg_by_name() - return pointer to arg value if present
@@ -558,7 +558,7 @@ aws_lws_get_urlarg_by_name_safe(struct lws *wsi, const char *name, char *buf, in
  * Use aws_lws_get_urlarg_by_name_safe() instead of this, which returns the length.
  */
 LWS_VISIBLE LWS_EXTERN const char *
-aws_lws_get_urlarg_by_name(struct lws *wsi, const char *name, char *buf, int len)
+aws_lws_get_urlarg_by_name(struct aws_lws *wsi, const char *name, char *buf, int len)
 /* LWS_WARN_DEPRECATED */;
 ///@}
 
@@ -596,7 +596,7 @@ aws_lws_get_urlarg_by_name(struct lws *wsi, const char *name, char *buf, int len
  *    LWSAHH_FLAG_NO_SERVER_NAME:  don't apply server name header this time
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_add_http_header_status(struct lws *wsi,
+aws_lws_add_http_header_status(struct aws_lws *wsi,
 			   unsigned int code, unsigned char **p,
 			   unsigned char *end);
 /**
@@ -612,7 +612,7 @@ aws_lws_add_http_header_status(struct lws *wsi,
  * Appends name: value to the headers
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_add_http_header_by_name(struct lws *wsi, const unsigned char *name,
+aws_lws_add_http_header_by_name(struct aws_lws *wsi, const unsigned char *name,
 			    const unsigned char *value, int length,
 			    unsigned char **p, unsigned char *end);
 /**
@@ -629,7 +629,7 @@ aws_lws_add_http_header_by_name(struct lws *wsi, const unsigned char *name,
  * HTTP/2 coding mechanisms where possible.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_add_http_header_by_token(struct lws *wsi, enum aws_lws_token_indexes token,
+aws_lws_add_http_header_by_token(struct aws_lws *wsi, enum aws_lws_token_indexes token,
 			     const unsigned char *value, int length,
 			     unsigned char **p, unsigned char *end);
 /**
@@ -643,7 +643,7 @@ aws_lws_add_http_header_by_token(struct lws *wsi, enum aws_lws_token_indexes tok
  * Appends content-length: content_length to the headers
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_add_http_header_content_length(struct lws *wsi,
+aws_lws_add_http_header_content_length(struct aws_lws *wsi,
 				   aws_lws_filepos_t content_length,
 				   unsigned char **p, unsigned char *end);
 /**
@@ -656,7 +656,7 @@ aws_lws_add_http_header_content_length(struct lws *wsi,
  * Indicates no more headers will be added
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_finalize_http_header(struct lws *wsi, unsigned char **p,
+aws_lws_finalize_http_header(struct aws_lws *wsi, unsigned char **p,
 			 unsigned char *end);
 
 /**
@@ -671,7 +671,7 @@ aws_lws_finalize_http_header(struct lws *wsi, unsigned char **p,
  * and writes the headers.  Returns nonzero for error.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_finalize_write_http_header(struct lws *wsi, unsigned char *start,
+aws_lws_finalize_write_http_header(struct aws_lws *wsi, unsigned char *start,
 			       unsigned char **p, unsigned char *end);
 
 #define LWS_ILLEGAL_HTTP_CONTENT_LEN ((aws_lws_filepos_t)-1ll)
@@ -703,7 +703,7 @@ aws_lws_finalize_write_http_header(struct lws *wsi, unsigned char *start,
  * headers after calling this.  You will need to call that yourself at the end.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_add_http_common_headers(struct lws *wsi, unsigned int code,
+aws_lws_add_http_common_headers(struct aws_lws *wsi, unsigned int code,
 			    const char *content_type, aws_lws_filepos_t content_len,
 			    unsigned char **p, unsigned char *end);
 
@@ -733,7 +733,7 @@ enum {
  */
 
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len);
+aws_lws_http_get_uri_and_method(struct aws_lws *wsi, char **puri_ptr, int *puri_len);
 
 ///@}
 
@@ -831,7 +831,7 @@ aws_lws_http_date_parse_unix(const char *b, size_t len, time_t *t);
  * *us_interval_in_out is left alone and the function returns nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_http_check_retry_after(struct lws *wsi, aws_lws_usec_t *us_interval_in_out);
+aws_lws_http_check_retry_after(struct aws_lws *wsi, aws_lws_usec_t *us_interval_in_out);
 
 /**
  * aws_lws_return_http_status() - Return simple http status
@@ -843,7 +843,7 @@ aws_lws_http_check_retry_after(struct lws *wsi, aws_lws_usec_t *us_interval_in_o
  *	consistently
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_return_http_status(struct lws *wsi, unsigned int code,
+aws_lws_return_http_status(struct aws_lws *wsi, unsigned int code,
 		       const char *html_body);
 
 /**
@@ -859,7 +859,7 @@ aws_lws_return_http_status(struct lws *wsi, unsigned int code,
  * Returns amount written, or < 0 indicating fatal write failure.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_http_redirect(struct lws *wsi, int code, const unsigned char *loc, int len,
+aws_lws_http_redirect(struct aws_lws *wsi, int code, const unsigned char *loc, int len,
 		  unsigned char **p, unsigned char *end);
 
 /**
@@ -871,7 +871,7 @@ aws_lws_http_redirect(struct lws *wsi, int code, const unsigned char *loc, int l
  *	  transaction if possible
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-aws_lws_http_transaction_completed(struct lws *wsi);
+aws_lws_http_transaction_completed(struct aws_lws *wsi);
 
 /**
  * aws_lws_http_headers_detach() - drop the associated headers storage and allow
@@ -881,7 +881,7 @@ aws_lws_http_transaction_completed(struct lws *wsi);
  * If the wsi has an ah headers struct attached, detach it.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_http_headers_detach(struct lws *wsi);
+aws_lws_http_headers_detach(struct aws_lws *wsi);
 
 /**
  * aws_lws_http_mark_sse() - called to indicate this http stream is now doing SSE
@@ -892,7 +892,7 @@ aws_lws_http_headers_detach(struct lws *wsi);
  * containing an immortal stream for the duration the SSE stream is open.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_http_mark_sse(struct lws *wsi);
+aws_lws_http_mark_sse(struct aws_lws *wsi);
 
 /**
  * aws_lws_h2_client_stream_long_poll_rxonly() - h2 stream to immortal read-only
@@ -910,7 +910,7 @@ aws_lws_http_mark_sse(struct lws *wsi);
  * if it wasn't an h2 stream.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_h2_client_stream_long_poll_rxonly(struct lws *wsi);
+aws_lws_h2_client_stream_long_poll_rxonly(struct aws_lws *wsi);
 
 /**
  * aws_lws_http_compression_apply() - apply an http compression transform
@@ -938,7 +938,7 @@ aws_lws_h2_client_stream_long_poll_rxonly(struct lws *wsi);
  * allowing user code to build either way and use compression if available.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_http_compression_apply(struct lws *wsi, const char *name,
+aws_lws_http_compression_apply(struct aws_lws *wsi, const char *name,
 			   unsigned char **p, unsigned char *end, char decomp);
 
 /**
@@ -950,7 +950,7 @@ aws_lws_http_compression_apply(struct lws *wsi, const char *name,
  * receiving a 303.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_http_is_redirected_to_get(struct lws *wsi);
+aws_lws_http_is_redirected_to_get(struct aws_lws *wsi);
 
 /**
  * aws_lws_http_cookie_get() - return copy of named cookie if present
@@ -970,7 +970,7 @@ aws_lws_http_is_redirected_to_get(struct lws *wsi);
  * terminating the requested cookie at the next ; if present.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_http_cookie_get(struct lws *wsi, const char *name, char *buf, size_t *max);
+aws_lws_http_cookie_get(struct aws_lws *wsi, const char *name, char *buf, size_t *max);
 
 /**
  * aws_lws_http_client_http_error() - determine if the response code indicates an error
@@ -1009,7 +1009,7 @@ aws_lws_http_cookie_get(struct lws *wsi, const char *name, char *buf, size_t *ma
  */
 #define LWS_H2_STREAM_SID -1
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_h2_update_peer_txcredit(struct lws *wsi, unsigned int sid, int bump);
+aws_lws_h2_update_peer_txcredit(struct aws_lws *wsi, unsigned int sid, int bump);
 
 
 /**
@@ -1024,7 +1024,7 @@ aws_lws_h2_update_peer_txcredit(struct lws *wsi, unsigned int sid, int bump);
  * towards us and actually already used.
  */
 LWS_VISIBLE LWS_EXTERN int
-aws_lws_h2_get_peer_txcredit_estimate(struct lws *wsi);
+aws_lws_h2_get_peer_txcredit_estimate(struct aws_lws *wsi);
 
 ///@}
 

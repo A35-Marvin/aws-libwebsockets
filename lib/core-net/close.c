@@ -28,7 +28,7 @@
 static int
 aws_lws_close_trans_q_leader(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *w = aws_lws_container_of(d, struct lws, dll2_cli_txn_queue);
+	struct aws_lws *w = aws_lws_container_of(d, struct aws_lws, dll2_cli_txn_queue);
 
 	aws___lws_close_free_wsi(w, (enum aws_lws_close_status)-1, "trans q leader closing");
 
@@ -37,7 +37,7 @@ aws_lws_close_trans_q_leader(struct aws_lws_dll2 *d, void *user)
 #endif
 
 void
-aws___lws_reset_wsi(struct lws *wsi)
+aws___lws_reset_wsi(struct aws_lws *wsi)
 {
 	if (!wsi)
 		return;
@@ -203,7 +203,7 @@ aws___lws_reset_wsi(struct lws *wsi)
 /* req cx lock */
 
 void
-aws___lws_free_wsi(struct lws *wsi)
+aws___lws_free_wsi(struct aws_lws *wsi)
 {
 	struct aws_lws_vhost *vh;
 
@@ -269,9 +269,9 @@ aws___lws_free_wsi(struct lws *wsi)
 
 
 void
-aws_lws_remove_child_from_any_parent(struct lws *wsi)
+aws_lws_remove_child_from_any_parent(struct aws_lws *wsi)
 {
-	struct lws **pwsi;
+	struct aws_lws **pwsi;
 	int seen = 0;
 
 	if (!wsi->parent)
@@ -303,7 +303,7 @@ aws_lws_remove_child_from_any_parent(struct lws *wsi)
 
 #if defined(LWS_WITH_CLIENT)
 void
-aws_lws_inform_client_conn_fail(struct lws *wsi, void *arg, size_t len)
+aws_lws_inform_client_conn_fail(struct aws_lws *wsi, void *arg, size_t len)
 {
 	aws_lws_addrinfo_clean(wsi);
 
@@ -323,7 +323,7 @@ aws_lws_inform_client_conn_fail(struct lws *wsi, void *arg, size_t len)
 #endif
 
 void
-aws_lws_addrinfo_clean(struct lws *wsi)
+aws_lws_addrinfo_clean(struct aws_lws *wsi)
 {
 #if defined(LWS_WITH_CLIENT)
 	struct aws_lws_dll2 *d = aws_lws_dll2_get_head(&wsi->dns_sorted_list), *d1;
@@ -343,13 +343,13 @@ aws_lws_addrinfo_clean(struct lws *wsi)
 /* requires cx and pt lock */
 
 void
-aws___lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
+aws___lws_close_free_wsi(struct aws_lws *wsi, enum aws_lws_close_status reason,
 		     const char *caller)
 {
 	struct aws_lws_context_per_thread *pt;
 	const struct aws_lws_protocols *pro;
 	struct aws_lws_context *context;
-	struct lws *wsi1, *wsi2;
+	struct aws_lws *wsi1, *wsi2;
 	int n, ccb;
 
 	if (!wsi)
@@ -373,7 +373,7 @@ aws___lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
 	/* wsi level: only reports if dangling caliper */
 	if (wsi->cal_conn.mt && wsi->cal_conn.us_start) {
 		if ((aws_lws_metrics_priv_to_pub(wsi->cal_conn.mt)->flags) & LWSMTFL_REPORT_HIST) {
-			aws_lws_metrics_caliper_report_hist(wsi->cal_conn, (struct lws *)NULL);
+			aws_lws_metrics_caliper_report_hist(wsi->cal_conn, (struct aws_lws *)NULL);
 		} else {
 			aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
 			aws_lws_metrics_caliper_done(wsi->cal_conn);
@@ -420,7 +420,7 @@ aws___lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
 #if defined(LWS_ROLE_RAW_FILE)
 	if (wsi->role_ops == &role_ops_raw_file) {
 		aws_lws_remove_child_from_any_parent(wsi);
-		__remove_wsi_socket_from_fds(wsi);
+		aws___remove_wsi_socket_from_fds(wsi);
 		if (wsi->a.protocol)
 			wsi->a.protocol->callback(wsi, wsi->role_ops->close_cb[0],
 					wsi->user_space, NULL, 0);
@@ -616,7 +616,7 @@ just_kill_connection:
 		 * ESTABLISHED if we did not get the upgrade server reply
 		 */
 		(aws_lwsi_state(wsi) == LRS_WAITING_SERVER_REPLY &&
-		 wsi->role_ops == &role_ops_ws) ||
+		 wsi->role_ops == &aws_role_ops_ws) ||
 #endif
 	     aws_lwsi_state(wsi) == LRS_WAITING_DNS ||
 	     aws_lwsi_state(wsi) == LRS_WAITING_CONNECT) &&
@@ -720,7 +720,7 @@ just_kill_connection:
 	//	return;
 
 	/* checking return redundant since we anyway close */
-	__remove_wsi_socket_from_fds(wsi);
+	aws___remove_wsi_socket_from_fds(wsi);
 
 	aws_lwsi_set_state(wsi, LRS_DEAD_SOCKET);
 	aws_lws_buflist_destroy_all_segments(&wsi->buflist);
@@ -826,7 +826,7 @@ async_close:
 					/*
 					 * If any hanging caliper measurement, dump it, and free any tags
 					 */
-					aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+					aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct aws_lws *)NULL);
 #endif
 
 					h->cwsi = NULL;
@@ -874,7 +874,7 @@ async_close:
 /* cx + vh lock */
 
 void
-aws___lws_close_free_wsi_final(struct lws *wsi)
+aws___lws_close_free_wsi_final(struct aws_lws *wsi)
 {
 	int n;
 
@@ -885,7 +885,7 @@ aws___lws_close_free_wsi_final(struct lws *wsi)
 		if (n)
 			aws_lwsl_wsi_debug(wsi, "closing: close ret %d", LWS_ERRNO);
 
-		__remove_wsi_socket_from_fds(wsi);
+		aws___remove_wsi_socket_from_fds(wsi);
 		if (aws_lws_socket_is_valid(wsi->desc.sockfd))
 			delete_from_fd(wsi->a.context, wsi->desc.sockfd);
 
@@ -919,7 +919,7 @@ aws___lws_close_free_wsi_final(struct lws *wsi)
 		aws_lwsl_wsi_info(wsi, "picking up redirection");
 
 		aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED,
-				    &role_ops_h1);
+				    &aws_role_ops_h1);
 
 #if defined(LWS_WITH_HTTP2)
 		if (wsi->client_mux_substream_was)
@@ -1005,7 +1005,7 @@ aws___lws_close_free_wsi_final(struct lws *wsi)
 
 
 void
-aws_lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason, const char *caller)
+aws_lws_close_free_wsi(struct aws_lws *wsi, enum aws_lws_close_status reason, const char *caller)
 {
 	struct aws_lws_context *cx = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];

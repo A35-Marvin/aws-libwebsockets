@@ -48,7 +48,7 @@ enum {
 	SIGNIFICANT_HDR_COUNT
 };
 
-struct lws;
+struct aws_lws;
 
 /* wsi who is owns the cgi points to an aws_lws_cgi */
 
@@ -58,7 +58,7 @@ struct aws_lws_cgi {
 	struct aws_lws_spawn_piped		*lsp;
 	aws_lws_sorted_usec_list_t		sul_grace;
 
-	struct lws *wsi; /* owner */
+	struct aws_lws *wsi; /* owner */
 	unsigned char *headers_buf;
 	unsigned char *headers_start;
 	unsigned char *headers_pos;

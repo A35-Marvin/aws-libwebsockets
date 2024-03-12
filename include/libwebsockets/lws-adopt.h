@@ -45,7 +45,7 @@
  * LWS adopts the socket in http serving mode, it's ready to accept an upgrade
  * to ws or just serve http.
  */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_adopt_socket(struct aws_lws_context *context, aws_lws_sockfd_type accept_fd);
 /**
  * aws_lws_adopt_socket_vhost() - adopt foreign socket as if listen socket accepted
@@ -60,7 +60,7 @@ aws_lws_adopt_socket(struct aws_lws_context *context, aws_lws_sockfd_type accept
  * LWS adopts the socket in http serving mode, it's ready to accept an upgrade
  * to ws or just serve http.
  */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_adopt_socket_vhost(struct aws_lws_vhost *vh, aws_lws_sockfd_type accept_fd);
 
 typedef enum {
@@ -129,7 +129,7 @@ struct aws_lws_udp {
 * \param type: OR-ed combinations of aws_lws_adoption_type flags
 * \param fd: union with either .sockfd or .filefd set
 * \param vh_prot_name: NULL or vh protocol name to bind raw connection to
-* \param parent: NULL or struct lws to attach new_wsi to as a child
+* \param parent: NULL or struct aws_lws to attach new_wsi to as a child
 *
 * Either returns new wsi bound to accept_fd, or closes accept_fd and
 * returns NULL, having cleaned up any new wsi pieces.
@@ -140,17 +140,17 @@ struct aws_lws_udp {
 * parent may be NULL, if given it should be an existing wsi that will become the
 * parent of the new wsi created by this call.
 */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_adopt_descriptor_vhost(struct aws_lws_vhost *vh, aws_lws_adoption_type type,
 			   aws_lws_sock_file_fd_type fd, const char *vh_prot_name,
-			   struct lws *parent);
+			   struct aws_lws *parent);
 
 typedef struct aws_lws_adopt_desc {
 	struct aws_lws_vhost *vh;		/**< vhost the wsi should belong to */
 	aws_lws_adoption_type type;		/**< OR-ed combinations of aws_lws_adoption_type flags */
 	aws_lws_sock_file_fd_type fd;	/**< union with either .sockfd or .filefd set */
 	const char *vh_prot_name;	/**< NULL or vh protocol name to bind raw connection to */
-	struct lws *parent;		/**< NULL or struct lws to attach new_wsi to as a child */
+	struct aws_lws *parent;		/**< NULL or struct aws_lws to attach new_wsi to as a child */
 	void *opaque;			/**< opaque pointer to set on created wsi */
 	const char *fi_wsi_name;	/**< NULL, or Fault Injection inheritence filter for wsi=string/ context faults */
 } aws_lws_adopt_desc_t;
@@ -165,7 +165,7 @@ typedef struct aws_lws_adopt_desc {
 *  - type: OR-ed combinations of aws_lws_adoption_type flags
 *  - fd: union with either .sockfd or .filefd set
 *  - vh_prot_name: NULL or vh protocol name to bind raw connection to
-*  - parent: NULL or struct lws to attach new_wsi to as a child
+*  - parent: NULL or struct aws_lws to attach new_wsi to as a child
 *  - opaque: opaque pointer to set on created wsi
 *
 * Either returns new wsi bound to accept_fd, or closes accept_fd and
@@ -177,7 +177,7 @@ typedef struct aws_lws_adopt_desc {
 * parent may be NULL, if given it should be an existing wsi that will become the
 * parent of the new wsi created by this call.
 */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_adopt_descriptor_vhost_via_info(const aws_lws_adopt_desc_t *info);
 
 /**
@@ -203,7 +203,7 @@ aws_lws_adopt_descriptor_vhost_via_info(const aws_lws_adopt_desc_t *info);
  *
  * \p readbuf is limited to the size of the ah rx buf, currently 2048 bytes.
  */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_adopt_socket_readbuf(struct aws_lws_context *context, aws_lws_sockfd_type accept_fd,
                          const char *readbuf, size_t len);
 /**
@@ -228,7 +228,7 @@ aws_lws_adopt_socket_readbuf(struct aws_lws_context *context, aws_lws_sockfd_typ
  *
  * \p readbuf is limited to the size of the ah rx buf, currently 2048 bytes.
  */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_adopt_socket_vhost_readbuf(struct aws_lws_vhost *vhost,
 			       aws_lws_sockfd_type accept_fd, const char *readbuf,
 			       size_t len);
@@ -259,10 +259,10 @@ aws_lws_adopt_socket_vhost_readbuf(struct aws_lws_vhost *vhost,
  * Either returns new wsi bound to accept_fd, or closes accept_fd and
  * returns NULL, having cleaned up any new wsi pieces.
  * */
-LWS_VISIBLE LWS_EXTERN struct lws *
+LWS_VISIBLE LWS_EXTERN struct aws_lws *
 aws_lws_create_adopt_udp(struct aws_lws_vhost *vhost, const char *ads, int port,
 		     int flags, const char *protocol_name, const char *ifname,
-		     struct lws *parent_wsi, void *opaque,
+		     struct aws_lws *parent_wsi, void *opaque,
 		     const aws_lws_retry_bo_t *retry_policy, const char *fi_wsi_name);
 #endif
 

@@ -29,7 +29,7 @@
  *   sync with changes here, esp related to ext draining
  */
 
-int aws_lws_ws_client_rx_sm(struct lws *wsi, unsigned char c)
+int aws_lws_ws_client_rx_sm(struct aws_lws *wsi, unsigned char c)
 {
 	int callback_action = LWS_CALLBACK_CLIENT_RECEIVE;
 	struct aws_lws_ext_pm_deflate_rx_ebufs pmdrx;
@@ -234,7 +234,7 @@ int aws_lws_ws_client_rx_sm(struct lws *wsi, unsigned char c)
 	case LWS_RXPS_04_FRAME_HDR_LEN64_8:
 		if (c & 0x80) {
 			aws_lwsl_wsi_warn(wsi, "b63 of length must be zero");
-			/* kill the connection */
+			/* aws_kill the connection */
 			return -1;
 		}
 #if defined __LP64__
@@ -414,7 +414,7 @@ spill:
 					pp[1] = LWS_CLOSE_STATUS_PROTOCOL_ERR & 0xff;
 				}
 			}
-			if (user_callback_handle_rxflow(
+			if (aws_user_callback_handle_rxflow(
 					wsi->a.protocol->callback, wsi,
 					LWS_CALLBACK_WS_PEER_INITIATED_CLOSE,
 					wsi->user_space, pp,
@@ -676,7 +676,7 @@ already_done:
 illegal_ctl_length:
 	aws_lwsl_wsi_warn(wsi, "Control frame asking for extended length is illegal");
 
-	/* kill the connection */
+	/* aws_kill the connection */
 	return -1;
 
 server_cannot_mask:
@@ -686,7 +686,7 @@ server_cannot_mask:
 
 	aws_lwsl_wsi_warn(wsi, "Server must not mask");
 
-	/* kill the connection */
+	/* aws_kill the connection */
 	return -1;
 }
 

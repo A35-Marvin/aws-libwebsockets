@@ -26,5 +26,5 @@
  *  Most of the h1 business is defined in the h1 / h2 common roles/http dir
  */
 
-extern const struct aws_lws_role_ops role_ops_h1;
-#define aws_lwsi_role_h1(wsi) (wsi->role_ops == &role_ops_h1)
+extern const struct aws_lws_role_ops aws_role_ops_h1;
+#define aws_lwsi_role_h1(wsi) (wsi->role_ops == &aws_role_ops_h1)

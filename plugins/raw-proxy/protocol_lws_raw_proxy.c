@@ -60,7 +60,7 @@ enum {
  */
 
 struct conn {
-	struct lws *wsi[2];
+	struct aws_lws *wsi[2];
 
 	/* rings containing unsent rx from accepted and onward sides */
 	struct aws_lws_ring *r[2];
@@ -116,7 +116,7 @@ connect_client(struct raw_vhd *vhd, struct raw_pss *pss)
 {
 	struct aws_lws_client_connect_info i;
 	char host[128];
-	struct lws *cwsi;
+	struct aws_lws *cwsi;
 
 	aws_lws_snprintf(host, sizeof(host), "%s:%u", vhd->addr, vhd->port);
 
@@ -170,7 +170,7 @@ flow_control(struct conn *conn, int side, int enable)
 }
 
 static int
-callback_raw_proxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_raw_proxy(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 		   void *user, void *in, size_t len)
 {
 	struct raw_pss *pss = (struct raw_pss *)user;

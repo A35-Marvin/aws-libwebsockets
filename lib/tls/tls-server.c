@@ -99,12 +99,12 @@ aws_lws_context_init_server_ssl(const struct aws_lws_context_creation_info *info
 	 * allowing it to verify incoming client certs
 	 */
 	if (vhost->tls.use_ssl) {
-		if (aws_lws_tls_server_vhost_backend_init(info, vhost, (struct lws *)plwsa))
+		if (aws_lws_tls_server_vhost_backend_init(info, vhost, (struct aws_lws *)plwsa))
 			return -1;
 
 		aws_lws_tls_server_client_cert_verify_config(vhost);
 
-		if (vhost->protocols[0].callback((struct lws *)plwsa,
+		if (vhost->protocols[0].callback((struct aws_lws *)plwsa,
 			    LWS_CALLBACK_OPENSSL_LOAD_EXTRA_SERVER_VERIFY_CERTS,
 			    vhost->tls.ssl_ctx, vhost, 0))
 			return -1;
@@ -125,7 +125,7 @@ aws_lws_context_init_server_ssl(const struct aws_lws_context_creation_info *info
 #endif
 
 int
-aws_lws_server_socket_service_ssl(struct lws *wsi, aws_lws_sockfd_type accept_fd, char from_pollin)
+aws_lws_server_socket_service_ssl(struct aws_lws *wsi, aws_lws_sockfd_type accept_fd, char from_pollin)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
@@ -165,7 +165,7 @@ aws_lws_server_socket_service_ssl(struct lws *wsi, aws_lws_sockfd_type accept_fd
 		aws_lwsi_set_state(wsi, LRS_SSL_ACK_PENDING);
 
 		aws_lws_pt_lock(pt, __func__);
-		if (__insert_wsi_socket_into_fds(context, wsi)) {
+		if (aws___insert_wsi_socket_into_fds(context, wsi)) {
 			aws_lwsl_err("%s: failed to insert into fds\n", __func__);
 			goto fail;
 		}
@@ -225,7 +225,7 @@ aws_lws_server_socket_service_ssl(struct lws *wsi, aws_lws_sockfd_type accept_fd
 				*
 				* A non-ssl session will start with the HTTP
 				* method in ASCII.  If we see it's not a legit
-				* SSL handshake kill the SSL for this
+				* SSL handshake aws_kill the SSL for this
 				* connection and try to handle as a HTTP
 				* connection upgrade directly.
 				*/

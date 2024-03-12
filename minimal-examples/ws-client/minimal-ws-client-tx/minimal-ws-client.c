@@ -51,7 +51,7 @@ struct per_vhost_data__minimal {
 	uint32_t tail;
 
 	struct aws_lws_client_connect_info i;
-	struct lws *client_wsi;
+	struct aws_lws *client_wsi;
 
 	int counter;
 	char finished;
@@ -155,7 +155,7 @@ sul_connect_attempt(struct aws_lws_sorted_usec_list *sul)
 }
 
 static int
-callback_minimal_broker(struct lws *wsi, enum aws_lws_callback_reasons reason,
+callback_minimal_broker(struct aws_lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_vhost_data__minimal *vhd =
