@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 void
-__lws_wsi_remove_from_sul(struct lws *wsi)
+aws___lws_wsi_remove_from_sul(struct lws *wsi)
 {
 	aws_lws_sul_cancel(&wsi->sul_timeout);
 	aws_lws_sul_cancel(&wsi->sul_hrtimer);
@@ -47,24 +47,24 @@ aws_lws_sul_hrtimer_cb(aws_lws_sorted_usec_list_t *sul)
 	if (wsi->a.protocol &&
 	    wsi->a.protocol->callback(wsi, LWS_CALLBACK_TIMER,
 				    wsi->user_space, NULL, 0))
-		__lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
+		aws___lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
 				     "hrtimer cb errored");
 }
 
 void
-__lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t us)
+aws___lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t us)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	wsi->sul_hrtimer.cb = aws_lws_sul_hrtimer_cb;
-	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &wsi->sul_hrtimer, us);
 }
 
 void
 aws_lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t usecs)
 {
-	__lws_set_timer_usecs(wsi, usecs);
+	aws___lws_set_timer_usecs(wsi, usecs);
 }
 
 /*
@@ -116,18 +116,18 @@ aws_lws_sul_wsitimeout_cb(aws_lws_sorted_usec_list_t *sul)
 
 	aws_lws_context_lock(cx, __func__);
 	aws_lws_pt_lock(pt, __func__);
-	__lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "timeout");
+	aws___lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "timeout");
 	aws_lws_pt_unlock(pt);
 	aws_lws_context_unlock(cx);
 }
 
 void
-__lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs)
+aws___lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	wsi->sul_timeout.cb = aws_lws_sul_wsitimeout_cb;
-	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &wsi->sul_timeout,
 			    ((aws_lws_usec_t)secs) * LWS_US_PER_SEC);
 
@@ -165,7 +165,7 @@ aws_lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs)
 		aws_lwsl_wsi_err(wsi, "on immortal stream %d %d", reason, secs);
 
 	aws_lws_pt_lock(pt, __func__);
-	__lws_set_timeout(wsi, reason, secs);
+	aws___lws_set_timeout(wsi, reason, secs);
 	aws_lws_pt_unlock(pt);
 
 bail:
@@ -185,7 +185,7 @@ aws_lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, aws_lws_use
 		return;
 
 	aws_lws_pt_lock(pt, __func__);
-	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &wsi->sul_timeout, us);
 
 	aws_lwsl_wsi_notice(wsi, "%llu us, reason %d",
@@ -210,7 +210,7 @@ aws_lws_validity_cb(aws_lws_sorted_usec_list_t *sul)
 
 		aws_lws_context_lock(wsi->a.context, __func__);
 		aws_lws_pt_lock(pt, __func__);
-		__lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
+		aws___lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
 				     "validity timeout");
 		aws_lws_pt_unlock(pt);
 		aws_lws_context_unlock(wsi->a.context);
@@ -234,7 +234,7 @@ aws_lws_validity_cb(aws_lws_sorted_usec_list_t *sul)
 	assert(rbo->secs_since_valid_hangup > rbo->secs_since_valid_ping);
 
 	wsi->validity_hup = 1;
-	__lws_sul_insert_us(&pt->pt_sul_owner[!!wsi->conn_validity_wakesuspend],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[!!wsi->conn_validity_wakesuspend],
 			    &wsi->sul_validity,
 			    ((uint64_t)rbo->secs_since_valid_hangup -
 				 rbo->secs_since_valid_ping) * LWS_US_PER_SEC);
@@ -246,7 +246,7 @@ aws_lws_validity_cb(aws_lws_sorted_usec_list_t *sul)
  */
 
 void
-_lws_validity_confirmed_role(struct lws *wsi)
+aws__lws_validity_confirmed_role(struct lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	const aws_lws_retry_bo_t *rbo = wsi->retry_policy;
@@ -265,7 +265,7 @@ _lws_validity_confirmed_role(struct lws *wsi)
 					    rbo->secs_since_valid_ping,
 			   wsi->validity_hup);
 
-	__lws_sul_insert_us(&pt->pt_sul_owner[!!wsi->conn_validity_wakesuspend],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[!!wsi->conn_validity_wakesuspend],
 			    &wsi->sul_validity,
 			    ((uint64_t)(wsi->validity_hup ?
 				rbo->secs_since_valid_hangup :

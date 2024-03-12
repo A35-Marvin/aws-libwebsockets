@@ -68,7 +68,7 @@ aws_lws_metrics_tag_add(aws_lws_dll2_owner_t *owner, const char *name, const cha
 int
 aws_lws_metrics_tag_wsi_add(struct lws *wsi, const char *name, const char *val)
 {
-	__lws_lc_tag(wsi->a.context, NULL, &wsi->lc, "|%s", val);
+	aws___lws_lc_tag(wsi->a.context, NULL, &wsi->lc, "|%s", val);
 
 	return aws_lws_metrics_tag_add(&wsi->cal_conn.mtags_owner, name, val);
 }
@@ -77,7 +77,7 @@ aws_lws_metrics_tag_wsi_add(struct lws *wsi, const char *name, const char *val)
 int
 aws_lws_metrics_tag_ss_add(struct aws_lws_ss_handle *ss, const char *name, const char *val)
 {
-	__lws_lc_tag(ss->context, NULL, &ss->lc, "|%s", val);
+	aws___lws_lc_tag(ss->context, NULL, &ss->lc, "|%s", val);
 	return aws_lws_metrics_tag_add(&ss->cal_txn.mtags_owner, name, val);
 }
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
@@ -85,7 +85,7 @@ int
 aws_lws_metrics_tag_sspc_add(struct aws_lws_sspc_handle *sspc, const char *name,
 			 const char *val)
 {
-	__lws_lc_tag(sspc->context, NULL, &sspc->lc, "|%s", val);
+	aws___lws_lc_tag(sspc->context, NULL, &sspc->lc, "|%s", val);
 	return aws_lws_metrics_tag_add(&sspc->cal_txn.mtags_owner, name, val);
 }
 #endif
@@ -726,7 +726,7 @@ aws_lws_metrics_dump(struct aws_lws_context *ctx)
 }
 
 static int
-_lws_metrics_format(aws_lws_metric_pub_t *pub, aws_lws_usec_t now, int gng,
+aws__lws_metrics_format(aws_lws_metric_pub_t *pub, aws_lws_usec_t now, int gng,
 		    char *buf, size_t len)
 {
 	const aws_lws_humanize_unit_t *schema = humanize_schema_si;
@@ -813,13 +813,13 @@ aws_lws_metrics_format(aws_lws_metric_pub_t *pub, aws_lws_metric_bucket_t **sub,
 		if (!(pub->flags & LWSMTFL_REPORT_ONLY_GO))
 			buf += aws_lws_snprintf(buf, aws_lws_ptr_diff_size_t(end, buf),
 					    "Go: ");
-		buf += _lws_metrics_format(pub, t, METRES_GO, buf,
+		buf += aws__lws_metrics_format(pub, t, METRES_GO, buf,
 					   aws_lws_ptr_diff_size_t(end, buf));
 	}
 
 	if (!(pub->flags & LWSMTFL_REPORT_ONLY_GO) && pub->u.agg.count[METRES_NOGO]) {
 		buf += aws_lws_snprintf(buf, aws_lws_ptr_diff_size_t(end, buf), ", NoGo: ");
-		buf += _lws_metrics_format(pub, t, METRES_NOGO, buf,
+		buf += aws__lws_metrics_format(pub, t, METRES_NOGO, buf,
 					   aws_lws_ptr_diff_size_t(end, buf));
 	}
 

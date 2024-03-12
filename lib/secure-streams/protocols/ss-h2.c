@@ -88,7 +88,7 @@ secstream_h2(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		h->txn_ok = 1;
 		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		if (h->hanging_som && r == LWSSSSRET_DESTROY_ME)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		h->hanging_som = 0;
 		break;
 

@@ -525,7 +525,7 @@ aws_lws_http_transaction_completed_client(struct lws *wsi)
 	 * destroyed during this.
 	 */
 	aws_lws_pt_lock(pt, __func__);
-	n = _lws_generic_transaction_completed_active_conn(&wsi, 1);
+	n = aws__lws_generic_transaction_completed_active_conn(&wsi, 1);
 	aws_lws_pt_unlock(pt);
 
 	if (wsi->http.ah) {
@@ -535,10 +535,10 @@ aws_lws_http_transaction_completed_client(struct lws *wsi)
 			 * it for us.  Further transactions will happen as new
 			 * SIDs on the connection.
 			 */
-			__lws_header_table_detach(wsi, 0);
+			aws___lws_header_table_detach(wsi, 0);
 		else
 			if (!n)
-				_lws_header_table_reset(wsi->http.ah);
+				aws__lws_header_table_reset(wsi->http.ah);
 	}
 
 	if (!n || !wsi->http.ah)
@@ -1593,7 +1593,7 @@ aws_lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 {
 	struct aws_lws_context_per_thread *pt;
 #if defined(LWS_ROLE_WS)
-	struct _lws_websocket_related *ws;
+	struct aws__lws_websocket_related *ws;
 #endif
 	const char *cisin[CIS_COUNT];
 	struct lws *wsi;
@@ -1678,7 +1678,7 @@ aws_lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 	 * We must use the copies in the wsi->stash instead if we want them.
 	 */
 
-	__lws_reset_wsi(wsi); /* detaches ah here */
+	aws___lws_reset_wsi(wsi); /* detaches ah here */
 #if defined(LWS_ROLE_WS)
 	if (weak)
 		wsi->ws = ws;

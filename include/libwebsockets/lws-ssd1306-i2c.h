@@ -39,7 +39,7 @@ typedef struct aws_lws_display_ssd1306 {
 	const aws_lws_i2c_ops_t	*i2c;	      /* i2c ops */
 
 	const aws_lws_gpio_ops_t	*gpio;	      /* NULL or gpio ops */
-	_lws_plat_gpio_t	reset_gpio;   /* if gpio ops, nReset gpio # */
+	aws__lws_plat_gpio_t	reset_gpio;   /* if gpio ops, nReset gpio # */
 
 	uint8_t			i2c7_address; /* one of SSD1306_I2C7_ADS... */
 

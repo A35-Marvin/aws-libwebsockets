@@ -56,7 +56,7 @@ aws_lws_ss_policy_lookup(const struct aws_lws_context *context, const char *stre
 }
 
 int
-_lws_ss_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
+aws__lws_ss_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 		     const void *value, size_t len)
 {
 	/*
@@ -88,7 +88,7 @@ aws_lws_ss_set_metadata(struct aws_lws_ss_handle *h, const char *name,
 	aws_lws_service_assert_loop_thread(h->context, h->tsi);
 
 	if (omd)
-		return _lws_ss_set_metadata(omd, name, value, len);
+		return aws__lws_ss_set_metadata(omd, name, value, len);
 
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
 	if (h->policy->flags & LWSSSPOLF_DIRECT_PROTO_STR) {
@@ -115,7 +115,7 @@ aws_lws_ss_set_metadata(struct aws_lws_ss_handle *h, const char *name,
 }
 
 int
-_lws_ss_alloc_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
+aws__lws_ss_alloc_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 			   const void *value, size_t len)
 {
 	uint8_t *p;
@@ -130,7 +130,7 @@ _lws_ss_alloc_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 	if (!p)
 		return 1;
 
-	n = _lws_ss_set_metadata(omd, name, p, len);
+	n = aws__lws_ss_set_metadata(omd, name, p, len);
 	if (n) {
 		aws_lws_free(p);
 		return n;
@@ -156,7 +156,7 @@ aws_lws_ss_alloc_set_metadata(struct aws_lws_ss_handle *h, const char *name,
 		return 1;
 	}
 
-	return _lws_ss_alloc_set_metadata(omd, name, value, len);
+	return aws__lws_ss_alloc_set_metadata(omd, name, value, len);
 }
 
 int

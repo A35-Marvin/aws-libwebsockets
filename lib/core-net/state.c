@@ -89,7 +89,7 @@ _report(aws_lws_state_manager_t *mgr, int a, int b)
 }
 
 static int
-_lws_state_transition(aws_lws_state_manager_t *mgr, int target)
+aws__lws_state_transition(aws_lws_state_manager_t *mgr, int target)
 {
 #if (_LWS_ENABLED_LOGS & LLL_DEBUG)
 	char temp8[8];
@@ -133,7 +133,7 @@ aws_lws_state_transition_steps(aws_lws_state_manager_t *mgr, int target)
 		return 0;
 
 	while (!n && mgr->state != target)
-		n = _lws_state_transition(mgr, mgr->state + 1);
+		n = aws__lws_state_transition(mgr, mgr->state + 1);
 
 #if (_LWS_ENABLED_LOGS & LLL_INFO)
 	aws_lwsl_cx_info(mgr->context, "%s -> %s", _systnm(mgr, i, temp8),
@@ -147,7 +147,7 @@ int
 aws_lws_state_transition(aws_lws_state_manager_t *mgr, int target)
 {
 	if (mgr->state != target)
-		_lws_state_transition(mgr, target);
+		aws__lws_state_transition(mgr, target);
 
 	return 0;
 }

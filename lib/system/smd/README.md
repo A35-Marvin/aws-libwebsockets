@@ -114,10 +114,10 @@ aws_lws_smd_msg_printf(struct aws_lws_context *ctx, aws_lws_smd_class_t _class,
 ## Secure Streams `aws_lws_smd` streamtype
 
 When built with LWS_WITH_SECURE_STREAMS, aws_lws_smd exposes a built-in streamtype
-`_lws_smd` which user Secure Streams may use to interoperate with aws_lws_smd using
+`aws__lws_smd` which user Secure Streams may use to interoperate with aws_lws_smd using
 SS payload semantics.
 
-When using `_lws_smd`, the SS info struct member `manual_initial_tx_credit`
+When using `aws__lws_smd`, the SS info struct member `manual_initial_tx_credit`
 provided by the user when creating the Secure Stream is overloaded to be used as
 the RX class mask for the SMD connection associated with the Secure Stream.
 

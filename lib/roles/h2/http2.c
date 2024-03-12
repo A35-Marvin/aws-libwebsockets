@@ -213,7 +213,7 @@ aws_lws_h2_update_peer_txcredit_thresh(struct lws *wsi, unsigned int sid, int th
 /* cx + vh lock */
 
 static struct lws *
-__lws_wsi_server_new(struct aws_lws_vhost *vh, struct lws *parent_wsi,
+aws___lws_wsi_server_new(struct aws_lws_vhost *vh, struct lws *parent_wsi,
 		     unsigned int sid)
 {
 	struct lws *nwsi = aws_lws_get_network_wsi(parent_wsi);
@@ -316,7 +316,7 @@ bail1:
 	if (wsi->user_space)
 		aws_lws_free_set_NULL(wsi->user_space);
 	vh->protocols[0].callback(wsi, LWS_CALLBACK_WSI_DESTROY, NULL, NULL, 0);
-	__lws_vhost_unbind_wsi(wsi);
+	aws___lws_vhost_unbind_wsi(wsi);
 	aws_lws_free(wsi);
 
 	return NULL;
@@ -815,7 +815,7 @@ int aws_lws_h2_do_pps_send(struct lws *wsi)
 			aws_lws_context_lock(wsi->a.context, "h2 mig");
 			aws_lws_vhost_lock(wsi->a.vhost);
 
-			h2n->swsi = __lws_wsi_server_new(wsi->a.vhost, wsi, 1);
+			h2n->swsi = aws___lws_wsi_server_new(wsi->a.vhost, wsi, 1);
 
 			aws_lws_vhost_unlock(wsi->a.vhost);
 			aws_lws_context_unlock(wsi->a.context);
@@ -1287,7 +1287,7 @@ aws_lws_h2_parse_frame_header(struct lws *wsi)
 			aws_lws_context_lock(wsi->a.context, "h2 new str");
 			aws_lws_vhost_lock(wsi->a.vhost);
 
-			h2n->swsi = __lws_wsi_server_new(wsi->a.vhost, wsi,
+			h2n->swsi = aws___lws_wsi_server_new(wsi->a.vhost, wsi,
 						         h2n->sid);
 
 			aws_lws_vhost_unlock(wsi->a.vhost);
@@ -1476,7 +1476,7 @@ aws_lws_h2_parse_end_of_frame(struct lws *wsi)
 			aws_lws_context_lock(wsi->a.context, "h2 mig");
 			aws_lws_vhost_lock(wsi->a.vhost);
 
-			h2n->swsi = __lws_wsi_server_new(wsi->a.vhost, wsi, 1);
+			h2n->swsi = aws___lws_wsi_server_new(wsi->a.vhost, wsi, 1);
 
 			aws_lws_vhost_unlock(wsi->a.vhost);
 			aws_lws_context_unlock(wsi->a.context);

@@ -174,7 +174,7 @@ aws_lws_glib_hrtimer_cb(void *p)
 
 	aws_lws_gs_destroy(pt_to_priv_glib(pt)->hrtimer);
 
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us) {
 		ms = (unsigned int)(us / LWS_US_PER_MS);
@@ -207,7 +207,7 @@ aws_lws_glib_idle_timer_cb(void *p)
 	 */
 	if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 		/* -1 timeout means just do forced service */
-		_lws_plat_service_forced_tsi(pt->context, pt->tid);
+		aws__lws_plat_service_forced_tsi(pt->context, pt->tid);
 		/* still somebody left who wants forced service? */
 		if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid))
 			return TRUE;

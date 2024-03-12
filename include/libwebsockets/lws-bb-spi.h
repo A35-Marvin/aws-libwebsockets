@@ -42,11 +42,11 @@ typedef struct aws_lws_bb_spi {
 	/* implementation-specific members */
 	const aws_lws_gpio_ops_t	*gpio;
 
-	_lws_plat_gpio_t	clk;
-	_lws_plat_gpio_t	ncs[LWS_SPI_BB_MAX_CH];
-	_lws_plat_gpio_t	ncmd[LWS_SPI_BB_MAX_CH];
-	_lws_plat_gpio_t	mosi;
-	_lws_plat_gpio_t	miso;
+	aws__lws_plat_gpio_t	clk;
+	aws__lws_plat_gpio_t	ncs[LWS_SPI_BB_MAX_CH];
+	aws__lws_plat_gpio_t	ncmd[LWS_SPI_BB_MAX_CH];
+	aws__lws_plat_gpio_t	mosi;
+	aws__lws_plat_gpio_t	miso;
 
 	uint8_t			flags;
 } aws_lws_bb_spi_t;

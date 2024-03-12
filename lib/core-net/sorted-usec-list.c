@@ -48,7 +48,7 @@ sul_compare(const aws_lws_dll2_t *d, const aws_lws_dll2_t *i)
  */
 
 int
-__lws_sul_insert(aws_lws_dll2_owner_t *own, aws_lws_sorted_usec_list_t *sul)
+aws___lws_sul_insert(aws_lws_dll2_owner_t *own, aws_lws_sorted_usec_list_t *sul)
 {
 	aws_lws_dll2_remove(&sul->list);
 
@@ -83,7 +83,7 @@ aws_lws_sul2_schedule(struct aws_lws_context *context, int tsi, int flags,
 
 	assert(sul->cb);
 
-	__lws_sul_insert(
+	aws___lws_sul_insert(
 		&pt->pt_sul_owner[!!(flags & LWSSULLI_WAKE_IF_SUSPENDED)], sul);
 }
 
@@ -97,7 +97,7 @@ aws_lws_sul2_schedule(struct aws_lws_context *context, int tsi, int flags,
  */
 
 aws_lws_usec_t
-__lws_sul_service_ripe(aws_lws_dll2_owner_t *own, int own_len, aws_lws_usec_t usnow)
+aws___lws_sul_service_ripe(aws_lws_dll2_owner_t *own, int own_len, aws_lws_usec_t usnow)
 {
 	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)
 			aws_lws_container_of(own, struct aws_lws_context_per_thread,

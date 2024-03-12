@@ -272,7 +272,7 @@ int
 aws_lws_tls_server_abort_connection(struct lws *wsi)
 {
 	if (wsi->tls.use_ssl)
-		__lws_tls_shutdown(wsi);
+		aws___lws_tls_shutdown(wsi);
 	
 	SSL_free(wsi->tls.ssl);
 

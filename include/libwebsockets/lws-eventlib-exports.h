@@ -111,7 +111,7 @@ wsi_from_fd(const struct aws_lws_context *context, int fd);
 #endif
 
 LWS_VISIBLE LWS_EXTERN int
-_lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi);
+aws__lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi);
 
 LWS_VISIBLE LWS_EXTERN void
 aws_lws_context_destroy2(struct aws_lws_context *context);
@@ -120,7 +120,7 @@ LWS_VISIBLE LWS_EXTERN void
 aws_lws_destroy_event_pipe(struct lws *wsi);
 
 LWS_VISIBLE LWS_EXTERN void
-__lws_close_free_wsi_final(struct lws *wsi);
+aws___lws_close_free_wsi_final(struct lws *wsi);
 
 #if LWS_MAX_SMP > 1
 

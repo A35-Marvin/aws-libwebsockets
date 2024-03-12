@@ -27,7 +27,7 @@
 
 /* requires context->lock */
 static void
-__lws_peer_remove_from_peer_wait_list(struct aws_lws_context *context,
+aws___lws_peer_remove_from_peer_wait_list(struct aws_lws_context *context,
 				      struct aws_lws_peer *peer)
 {
 	struct aws_lws_peer *df;
@@ -61,10 +61,10 @@ aws_lws_sul_peer_limits_cb(aws_lws_sorted_usec_list_t *sul)
 
 /* requires context->lock */
 static void
-__lws_peer_add_to_peer_wait_list(struct aws_lws_context *context,
+aws___lws_peer_add_to_peer_wait_list(struct aws_lws_context *context,
 				 struct aws_lws_peer *peer)
 {
-	__lws_peer_remove_from_peer_wait_list(context, peer);
+	aws___lws_peer_remove_from_peer_wait_list(context, peer);
 
 	peer->peer_wait_list = context->peer_wait_list;
 	context->peer_wait_list = peer;
@@ -157,7 +157,7 @@ hit:
 	 * wait list.  When a wsi is added it is removed from the wait list.
 	 */
 	time(&peer->time_closed_all);
-	__lws_peer_add_to_peer_wait_list(context, peer);
+	aws___lws_peer_add_to_peer_wait_list(context, peer);
 
 	aws_lws_context_unlock(context); /* ====================================> */
 
@@ -166,7 +166,7 @@ hit:
 
 /* requires context->lock */
 static int
-__lws_peer_destroy(struct aws_lws_context *context, struct aws_lws_peer *peer)
+aws___lws_peer_destroy(struct aws_lws_context *context, struct aws_lws_peer *peer)
 {
 	aws_lws_start_foreach_llp(struct aws_lws_peer **, p,
 			      context->pl_hash_table[peer->hash]) {
@@ -206,7 +206,7 @@ aws_lws_peer_cull_peer_wait_list(struct aws_lws_context *context)
 			*p = df->peer_wait_list;
 			df->peer_wait_list = NULL;
 
-			__lws_peer_destroy(context, df);
+			aws___lws_peer_destroy(context, df);
 			continue; /* we already point to next, if any */
 		}
 	} aws_lws_end_foreach_llp(p, peer_wait_list);
@@ -225,7 +225,7 @@ aws_lws_peer_add_wsi(struct aws_lws_context *context, struct aws_lws_peer *peer,
 
 	peer->count_wsi++;
 	wsi->peer = peer;
-	__lws_peer_remove_from_peer_wait_list(context, peer);
+	aws___lws_peer_remove_from_peer_wait_list(context, peer);
 
 	aws_lws_context_unlock(context); /* ====================================> */
 }
@@ -279,7 +279,7 @@ aws_lws_peer_track_wsi_close(struct aws_lws_context *context, struct aws_lws_pee
 		 * later if no further activity is coming.
 		 */
 		time(&peer->time_closed_all);
-		__lws_peer_add_to_peer_wait_list(context, peer);
+		aws___lws_peer_add_to_peer_wait_list(context, peer);
 	}
 
 	aws_lws_context_unlock(context); /* ====================================> */

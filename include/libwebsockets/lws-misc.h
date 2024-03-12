@@ -939,10 +939,10 @@ aws_lws_vbi_decode(const void *buf, uint64_t *value, size_t len);
 struct aws_lws_spawn_piped;
 
 #if defined(WIN32)
-struct _lws_siginfo_t {
+struct aws__lws_siginfo_t {
 	int retcode;
 };
-typedef struct _lws_siginfo_t siginfo_t;
+typedef struct aws__lws_siginfo_t siginfo_t;
 #endif
 
 typedef void (*lsp_cb_t)(void *opaque, aws_lws_usec_t *accounting, siginfo_t *si,

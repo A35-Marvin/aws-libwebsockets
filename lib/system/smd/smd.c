@@ -108,7 +108,7 @@ aws_lws_smd_dump(aws_lws_smd_t *smd)
 #endif
 
 static int
-_lws_smd_msg_peer_interested_in_msg(aws_lws_smd_peer_t *pr, aws_lws_smd_msg_t *msg)
+aws__lws_smd_msg_peer_interested_in_msg(aws_lws_smd_peer_t *pr, aws_lws_smd_msg_t *msg)
 {
     return !!(msg->_class & pr->_class_filter);
 }
@@ -118,7 +118,7 @@ _lws_smd_msg_peer_interested_in_msg(aws_lws_smd_peer_t *pr, aws_lws_smd_msg_t *m
  */
 
 static int
-_lws_smd_msg_assess_peers_interested(aws_lws_smd_t *smd, aws_lws_smd_msg_t *msg,
+aws__lws_smd_msg_assess_peers_interested(aws_lws_smd_t *smd, aws_lws_smd_msg_t *msg,
 				     struct aws_lws_smd_peer *exc)
 {
 	struct aws_lws_context *ctx = aws_lws_container_of(smd, struct aws_lws_context, smd);
@@ -127,7 +127,7 @@ _lws_smd_msg_assess_peers_interested(aws_lws_smd_t *smd, aws_lws_smd_msg_t *msg,
 	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, ctx->smd.owner_peers.head) {
 		aws_lws_smd_peer_t *pr = aws_lws_container_of(p, aws_lws_smd_peer_t, list);
 
-		if (pr != exc && _lws_smd_msg_peer_interested_in_msg(pr, msg))
+		if (pr != exc && aws__lws_smd_msg_peer_interested_in_msg(pr, msg))
 			/*
 			 * This peer wants to consume it
 			 */
@@ -139,7 +139,7 @@ _lws_smd_msg_assess_peers_interested(aws_lws_smd_t *smd, aws_lws_smd_msg_t *msg,
 }
 
 static int
-_lws_smd_class_mask_union(aws_lws_smd_t *smd)
+aws__lws_smd_class_mask_union(aws_lws_smd_t *smd)
 {
 	uint32_t mask = 0;
 
@@ -159,7 +159,7 @@ _lws_smd_class_mask_union(aws_lws_smd_t *smd)
 /* Call with message lock held */
 
 static void
-_lws_smd_msg_destroy(struct aws_lws_context *cx, aws_lws_smd_t *smd, aws_lws_smd_msg_t *msg)
+aws__lws_smd_msg_destroy(struct aws_lws_context *cx, aws_lws_smd_t *smd, aws_lws_smd_msg_t *msg)
 {
 	/*
 	 * We think we gave the message to everyone and can destroy it.
@@ -194,7 +194,7 @@ _lws_smd_msg_destroy(struct aws_lws_context *cx, aws_lws_smd_t *smd, aws_lws_smd
  */
 
 int
-_lws_smd_msg_send(struct aws_lws_context *ctx, void *pay, struct aws_lws_smd_peer *exc)
+aws__lws_smd_msg_send(struct aws_lws_context *ctx, void *pay, struct aws_lws_smd_peer *exc)
 {
 	aws_lws_smd_msg_t *msg = (aws_lws_smd_msg_t *)(((uint8_t *)pay) -
 				LWS_SMD_SS_RX_HEADER_LEN_EFF - sizeof(*msg));
@@ -213,7 +213,7 @@ _lws_smd_msg_send(struct aws_lws_context *ctx, void *pay, struct aws_lws_smd_pee
 	if (aws_lws_mutex_lock(ctx->smd.lock_messages)) /* +++++++++++++++++ messages */
 		goto bail;
 
-	msg->refcount = (uint16_t)_lws_smd_msg_assess_peers_interested(
+	msg->refcount = (uint16_t)aws__lws_smd_msg_assess_peers_interested(
 							&ctx->smd, msg, exc);
 	if (!msg->refcount) {
 		/* possible, condsidering exc and no other participants */
@@ -241,7 +241,7 @@ _lws_smd_msg_send(struct aws_lws_context *ctx, void *pay, struct aws_lws_smd_pee
 		aws_lws_smd_peer_t *pr = aws_lws_container_of(p, aws_lws_smd_peer_t, list);
 
 		if (pr != exc &&
-                   !pr->tail && _lws_smd_msg_peer_interested_in_msg(pr, msg)) {
+                   !pr->tail && aws__lws_smd_msg_peer_interested_in_msg(pr, msg)) {
 			pr->tail = msg;
 			/* tail message has to actually be of interest to the peer */
 			assert(!pr->tail || (pr->tail->_class & pr->_class_filter));
@@ -274,7 +274,7 @@ bail:
 int
 aws_lws_smd_msg_send(struct aws_lws_context *ctx, void *pay)
 {
-	return _lws_smd_msg_send(ctx, pay, NULL);
+	return aws__lws_smd_msg_send(ctx, pay, NULL);
 }
 
 /*
@@ -367,7 +367,7 @@ aws_lws_smd_ss_msg_printf(const char *tag, uint8_t *buf, size_t *len,
  */
 
 static int
-_lws_smd_ss_rx_forward(struct aws_lws_context *ctx, const char *tag,
+aws__lws_smd_ss_rx_forward(struct aws_lws_context *ctx, const char *tag,
 		       struct aws_lws_smd_peer *pr, const uint8_t *buf, size_t len)
 {
 	aws_lws_smd_class_t _class;
@@ -412,7 +412,7 @@ _lws_smd_ss_rx_forward(struct aws_lws_context *ctx, const char *tag,
 	 * locks taken and released in here
 	 */
 
-	if (_lws_smd_msg_send(ctx, p, pr)) {
+	if (aws__lws_smd_msg_send(ctx, p, pr)) {
 		/* we couldn't send it after all that... */
 		aws_lws_smd_msg_free(&p);
 
@@ -433,7 +433,7 @@ aws_lws_smd_ss_rx_forward(void *ss_user, const uint8_t *buf, size_t len)
 					(((char *)ss_user) - sizeof(*h));
 	struct aws_lws_context *ctx = aws_lws_ss_get_context(h);
 
-	return _lws_smd_ss_rx_forward(ctx, aws_lws_ss_tag(h), h->u.smd.smd_peer, buf, len);
+	return aws__lws_smd_ss_rx_forward(ctx, aws_lws_ss_tag(h), h->u.smd.smd_peer, buf, len);
 }
 
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
@@ -444,7 +444,7 @@ aws_lws_smd_sspc_rx_forward(void *ss_user, const uint8_t *buf, size_t len)
 					(((char *)ss_user) - sizeof(*h));
 	struct aws_lws_context *ctx = aws_lws_sspc_get_context(h);
 
-	return _lws_smd_ss_rx_forward(ctx, aws_lws_sspc_tag(h), NULL, buf, len);
+	return aws__lws_smd_ss_rx_forward(ctx, aws_lws_sspc_tag(h), NULL, buf, len);
 }
 #endif
 
@@ -456,7 +456,7 @@ aws_lws_smd_sspc_rx_forward(void *ss_user, const uint8_t *buf, size_t len)
  */
 
 static void
-_lws_smd_peer_destroy(aws_lws_smd_peer_t *pr)
+aws__lws_smd_peer_destroy(aws_lws_smd_peer_t *pr)
 {
 	aws_lws_smd_t *smd = aws_lws_container_of(pr->list.owner, aws_lws_smd_t,
 					  owner_peers);
@@ -476,9 +476,9 @@ _lws_smd_peer_destroy(aws_lws_smd_peer_t *pr)
 		aws_lws_smd_msg_t *m1 = aws_lws_container_of(pr->tail->list.next,
 							aws_lws_smd_msg_t, list);
 
-		if (_lws_smd_msg_peer_interested_in_msg(pr, pr->tail)) {
+		if (aws__lws_smd_msg_peer_interested_in_msg(pr, pr->tail)) {
 			if (!--pr->tail->refcount)
-				_lws_smd_msg_destroy(pr->ctx, smd, pr->tail);
+				aws__lws_smd_msg_destroy(pr->ctx, smd, pr->tail);
 		}
 
 		pr->tail = m1;
@@ -490,7 +490,7 @@ _lws_smd_peer_destroy(aws_lws_smd_peer_t *pr)
 }
 
 static aws_lws_smd_msg_t *
-_lws_smd_msg_next_matching_filter(aws_lws_smd_peer_t *pr)
+aws__lws_smd_msg_next_matching_filter(aws_lws_smd_peer_t *pr)
 {
 	aws_lws_dll2_t *tail = &pr->tail->list;
 	aws_lws_smd_msg_t *msg;
@@ -502,7 +502,7 @@ _lws_smd_msg_next_matching_filter(aws_lws_smd_peer_t *pr)
 
 		msg = aws_lws_container_of(tail, aws_lws_smd_msg_t, list);
 		if (msg->exc != pr &&
-		    _lws_smd_msg_peer_interested_in_msg(pr, msg))
+		    aws__lws_smd_msg_peer_interested_in_msg(pr, msg))
 			return msg;
 	} while (1);
 
@@ -524,7 +524,7 @@ _lws_smd_msg_next_matching_filter(aws_lws_smd_peer_t *pr)
  */
 
 static int
-_lws_smd_msg_deliver_peer(struct aws_lws_context *ctx, aws_lws_smd_peer_t *pr)
+aws__lws_smd_msg_deliver_peer(struct aws_lws_context *ctx, aws_lws_smd_peer_t *pr)
 {
 	aws_lws_smd_msg_t *msg;
 
@@ -548,7 +548,7 @@ _lws_smd_msg_deliver_peer(struct aws_lws_context *ctx, aws_lws_smd_peer_t *pr)
 	 * If there is one, move forward to the next queued
 	 * message that meets the filters of this peer
 	 */
-	pr->tail = _lws_smd_msg_next_matching_filter(pr);
+	pr->tail = aws__lws_smd_msg_next_matching_filter(pr);
 
 	/* tail message has to actually be of interest to the peer */
 	assert(!pr->tail || (pr->tail->_class & pr->_class_filter));
@@ -557,7 +557,7 @@ _lws_smd_msg_deliver_peer(struct aws_lws_context *ctx, aws_lws_smd_peer_t *pr)
 		return 1; /* For Coverity */
 
 	if (!--msg->refcount)
-		_lws_smd_msg_destroy(ctx, &ctx->smd, msg);
+		aws__lws_smd_msg_destroy(ctx, &ctx->smd, msg);
 	aws_lws_mutex_unlock(ctx->smd.lock_messages); /* messages ------- */
 
 	return !!pr->tail;
@@ -589,7 +589,7 @@ aws_lws_smd_msg_distribute(struct aws_lws_context *ctx)
 					   ctx->smd.owner_peers.head) {
 			aws_lws_smd_peer_t *pr = aws_lws_container_of(p, aws_lws_smd_peer_t, list);
 
-			more = (char)(more | !!_lws_smd_msg_deliver_peer(ctx, pr));
+			more = (char)(more | !!aws__lws_smd_msg_deliver_peer(ctx, pr));
 
 		} aws_lws_end_foreach_dll_safe(p, p1);
 
@@ -634,7 +634,7 @@ aws_lws_smd_register(struct aws_lws_context *ctx, void *opaque, int flags,
 	aws_lws_dll2_add_tail(&pr->list, &ctx->smd.owner_peers);
 
 	/* update the global class mask union to account for new peer mask */
-	_lws_smd_class_mask_union(&ctx->smd);
+	aws__lws_smd_class_mask_union(&ctx->smd);
 
 	/*
 	 * Now there's a new peer added, any messages we have stashed will try
@@ -647,7 +647,7 @@ aws_lws_smd_register(struct aws_lws_context *ctx, void *opaque, int flags,
 				   ctx->smd.owner_messages.head) {
 		aws_lws_smd_msg_t *msg = aws_lws_container_of(p, aws_lws_smd_msg_t, list);
 
-		if (_lws_smd_msg_peer_interested_in_msg(pr, msg))
+		if (aws__lws_smd_msg_peer_interested_in_msg(pr, msg))
 			msg->refcount++;
 
 	} aws_lws_end_foreach_dll_safe(p, p1);
@@ -675,7 +675,7 @@ aws_lws_smd_unregister(struct aws_lws_smd_peer *pr)
 	    aws_lws_mutex_lock(smd->lock_peers)) /* +++++++++++++++++++ peers */
 		return; /* For Coverity */
 	aws_lwsl_cx_notice(pr->ctx, "destroying peer %p", pr);
-	_lws_smd_peer_destroy(pr);
+	aws__lws_smd_peer_destroy(pr);
 	if (!smd->delivering)
 		aws_lws_mutex_unlock(smd->lock_peers); /* ----------------- peers */
 }
@@ -725,7 +725,7 @@ aws_lws_smd_message_pending(struct aws_lws_context *ctx)
 							aws_lws_smd_peer_t, list);
 
 				if (pr->tail == msg)
-					pr->tail = _lws_smd_msg_next_matching_filter(pr);
+					pr->tail = aws__lws_smd_msg_next_matching_filter(pr);
 
 			} aws_lws_end_foreach_dll_safe(pp, pp1);
 
@@ -734,7 +734,7 @@ aws_lws_smd_message_pending(struct aws_lws_context *ctx)
 			 * when destroying the message now.
 			 */
 
-			_lws_smd_msg_destroy(ctx, &ctx->smd, msg);
+			aws__lws_smd_msg_destroy(ctx, &ctx->smd, msg);
 		}
 	} aws_lws_end_foreach_dll_safe(p, p1);
 
@@ -765,7 +765,7 @@ bail:
 }
 
 int
-_lws_smd_destroy(struct aws_lws_context *ctx)
+aws__lws_smd_destroy(struct aws_lws_context *ctx)
 {
 	/* stop any message creation */
 
@@ -793,7 +793,7 @@ _lws_smd_destroy(struct aws_lws_context *ctx)
 		aws_lws_smd_peer_t *pr = aws_lws_container_of(p, aws_lws_smd_peer_t, list);
 
 		pr->tail = NULL; /* we just nuked all the messages, ignore */
-		_lws_smd_peer_destroy(pr);
+		aws__lws_smd_peer_destroy(pr);
 
 	} aws_lws_end_foreach_dll_safe(p, p1);
 

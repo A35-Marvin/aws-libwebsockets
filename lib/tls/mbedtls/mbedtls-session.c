@@ -38,7 +38,7 @@ typedef struct aws_lws_tls_session_cache_mbedtls {
 
 
 static void
-__lws_tls_session_destroy(aws_lws_tls_scm_t *ts)
+aws___lws_tls_session_destroy(aws_lws_tls_scm_t *ts)
 {
 	aws_lwsl_tlssess("%s: %s (%u)\n", __func__, (const char *)&ts[1],
 				     (unsigned int)(ts->list.owner->count - 1));
@@ -51,7 +51,7 @@ __lws_tls_session_destroy(aws_lws_tls_scm_t *ts)
 }
 
 static aws_lws_tls_scm_t *
-__lws_tls_session_lookup_by_name(struct aws_lws_vhost *vh, const char *name)
+aws___lws_tls_session_lookup_by_name(struct aws_lws_vhost *vh, const char *name)
 {
 	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p,
 			      aws_lws_dll2_get_head(&vh->tls_sessions)) {
@@ -87,7 +87,7 @@ aws_lws_tls_reuse_session(struct lws *wsi)
 	if (aws_lws_tls_session_tag_from_wsi(wsi, buf, sizeof(buf)))
 		goto bail;
 
-	ts = __lws_tls_session_lookup_by_name(wsi->a.vhost, buf);
+	ts = aws___lws_tls_session_lookup_by_name(wsi->a.vhost, buf);
 
 	if (!ts) {
 		aws_lwsl_tlssess("%s: no existing session for %s\n", __func__, buf);
@@ -130,7 +130,7 @@ aws_lws_tls_session_destroy_dll(struct aws_lws_dll2 *d, void *user)
 {
 	aws_lws_tls_scm_t *ts = aws_lws_container_of(d, aws_lws_tls_scm_t, list);
 
-	__lws_tls_session_destroy(ts);
+	aws___lws_tls_session_destroy(ts);
 
 	return 0;
 }
@@ -151,7 +151,7 @@ aws_lws_tls_session_expiry_cb(aws_lws_sorted_usec_list_t *sul)
 
 	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
 	aws_lws_vhost_lock(vh); /* -------------- vh { */
-	__lws_tls_session_destroy(ts);
+	aws___lws_tls_session_destroy(ts);
 	aws_lws_vhost_unlock(vh); /* } vh --------------  */
 	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 }
@@ -186,7 +186,7 @@ aws_lws_tls_session_new_mbedtls(struct lws *wsi)
 	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
 	aws_lws_vhost_lock(vh); /* -------------- vh { */
 
-	ts = __lws_tls_session_lookup_by_name(vh, buf);
+	ts = aws___lws_tls_session_lookup_by_name(vh, buf);
 
 	if (!ts) {
 		/*
@@ -207,7 +207,7 @@ aws_lws_tls_session_new_mbedtls(struct lws *wsi)
 				     (unsigned int)vh->tls_session_cache_max);
 
 			aws_lws_vhost_lock(vh); /* -------------- vh { */
-			__lws_tls_session_destroy(ts);
+			aws___lws_tls_session_destroy(ts);
 			aws_lws_vhost_unlock(vh); /* } vh --------------  */
 		}
 

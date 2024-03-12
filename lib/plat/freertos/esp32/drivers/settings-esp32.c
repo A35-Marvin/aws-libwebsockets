@@ -39,7 +39,7 @@ aws_lws_settings_plat_get(aws_lws_settings_instance_t *si, const char *name,
 		return 1;
 
 	if (nvs_open_from_partition((const char *)si->opaque_plat,
-				    "_lws_settings", NVS_READONLY,
+				    "aws__lws_settings", NVS_READONLY,
 				    (nvs_handle_t *)&si->handle_plat))
 		return 1;
 
@@ -62,7 +62,7 @@ aws_lws_settings_plat_set(aws_lws_settings_instance_t *si, const char *name,
 		return 1;
 
 	if (nvs_open_from_partition((const char *)si->opaque_plat,
-				    "_lws_settings", NVS_READWRITE,
+				    "aws__lws_settings", NVS_READWRITE,
 				    (nvs_handle_t *)&si->handle_plat))
 		return 1;
 

@@ -106,7 +106,7 @@ aws_lws_jwk_dump(struct aws_lws_jwk *jwk)
 }
 
 int
-_lws_jwk_set_el_jwk(struct aws_lws_gencrypto_keyelem *e, char *in, size_t len)
+aws__lws_jwk_set_el_jwk(struct aws_lws_gencrypto_keyelem *e, char *in, size_t len)
 {
 	e->buf = aws_lws_malloc(len + 1, "jwk");
 	if (!e->buf)

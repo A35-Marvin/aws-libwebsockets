@@ -66,7 +66,7 @@ aws_lws_sul_plat_unix(aws_lws_sorted_usec_list_t *sul)
 			      context->no_listener_vhost_list) {
 		struct aws_lws_vhost *v = *pv;
 		aws_lwsl_debug("deferred iface: checking if on vh %s\n", (*pv)->name);
-		if (_lws_vhost_init_server(NULL, *pv) == 0) {
+		if (aws__lws_vhost_init_server(NULL, *pv) == 0) {
 			/* became happy */
 			aws_lwsl_notice("vh %s: became connected\n", v->name);
 			*pv = v->no_listener_vhost_list;
@@ -77,7 +77,7 @@ aws_lws_sul_plat_unix(aws_lws_sorted_usec_list_t *sul)
 	aws_lws_context_unlock(context);
 #endif
 
-	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &pt->sul_plat, 30 * LWS_US_PER_SEC);
 }
 #endif
@@ -203,7 +203,7 @@ aws_lws_plat_init(struct aws_lws_context *context,
 	/* we only need to do this on pt[0] */
 
 	context->pt[0].sul_plat.cb = aws_lws_sul_plat_unix;
-	__lws_sul_insert_us(&context->pt[0].pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+	aws___lws_sul_insert_us(&context->pt[0].pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &context->pt[0].sul_plat, 30 * LWS_US_PER_SEC);
 #endif
 

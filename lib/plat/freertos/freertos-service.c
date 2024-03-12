@@ -27,7 +27,7 @@
 int
 aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 {
-	int n = _lws_plat_service_tsi(context, timeout_ms, 0);
+	int n = aws__lws_plat_service_tsi(context, timeout_ms, 0);
 
 #if !defined(LWS_AMAZON_RTOS)
 	esp_task_wdt_reset();
@@ -38,7 +38,7 @@ aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 
 
 int
-_lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
+aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 {
 	volatile struct aws_lws_context_per_thread *vpt;
 	struct aws_lws_context_per_thread *pt;
@@ -116,7 +116,7 @@ again:
 
 			aws_lws_pt_lock(pt, __func__);
 			/* don't stay in poll wait longer than next hr timeout */
-			us = __lws_sul_service_ripe(pt->pt_sul_owner,
+			us = aws___lws_sul_service_ripe(pt->pt_sul_owner,
 						    LWS_COUNT_PT_SUL_OWNERS,
 						    aws_lws_now_usecs());
 			if (us && us < timeout_us)

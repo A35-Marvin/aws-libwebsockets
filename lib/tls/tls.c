@@ -93,7 +93,7 @@ aws_lws_tls_restrict_borrow(struct lws *wsi)
 }
 
 static void
-_lws_tls_restrict_return(struct lws *wsi)
+aws__lws_tls_restrict_return(struct lws *wsi)
 {
 #if defined(LWS_WITH_SERVER)
 	struct aws_lws_context *cx = wsi->a.context;
@@ -126,7 +126,7 @@ aws_lws_tls_restrict_return_handshake(struct lws *wsi)
 		  cx->simultaneous_ssl_handshake + 1,
 		  cx->simultaneous_ssl_handshake);
 
-	_lws_tls_restrict_return(wsi);
+	aws__lws_tls_restrict_return(wsi);
 }
 
 void
@@ -149,7 +149,7 @@ aws_lws_tls_restrict_return(struct lws *wsi)
 	if (wsi->tls_borrowed_hs)
 		aws_lws_tls_restrict_return_handshake(wsi);
 	else
-		_lws_tls_restrict_return(wsi);
+		aws__lws_tls_restrict_return(wsi);
 }
 
 void

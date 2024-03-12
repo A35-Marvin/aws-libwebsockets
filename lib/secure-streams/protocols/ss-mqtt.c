@@ -240,11 +240,11 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 		secstream_mqtt_cleanup(h);
 
 		if (r == LWSSSSRET_DESTROY_ME)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		r = aws_lws_ss_backoff(h);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		break;
 
@@ -266,13 +266,13 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 		secstream_mqtt_cleanup(h);
 
 		if (r)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		if (h->policy && !(h->policy->flags & LWSSSPOLF_OPPORTUNISTIC) &&
 		    !h->txn_ok && !wsi->a.context->being_destroyed) {
 			r = aws_lws_ss_backoff(h);
 			if (r != LWSSSSRET_OK)
-				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+				return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 		break;
 
@@ -322,7 +322,7 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 #endif
 		r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		if (h->policy->u.mqtt.topic)
 			aws_lws_callback_on_writable(wsi);
 		break;
@@ -345,7 +345,7 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 		r = h->info.rx(ss_to_userobj(h), (const uint8_t *)pmqpp->payload,
 			   len, f);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		return 0; /* don't passthru */
 
@@ -358,7 +358,7 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 			aws_lws_sul_cancel(&h->sul);
 			r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 			if (r != LWSSSSRET_OK)
-				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+				return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 		wsi->mqtt->done_subscribe = 1;
 		aws_lws_callback_on_writable(wsi);
@@ -376,7 +376,7 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 		}
 		r = aws_lws_ss_event_helper(h, LWSSSCS_QOS_ACK_REMOTE);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		break;
 
 	case LWS_CALLBACK_MQTT_CLIENT_WRITEABLE:
@@ -432,7 +432,7 @@ secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user
 		}
 
 		if (r < 0)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		return secstream_mqtt_publish(wsi, buf + LWS_PRE, buflen,
 					      h->policy->u.mqtt.topic,

@@ -383,9 +383,9 @@ aws_lws_protocol_init_vhost(struct aws_lws_vhost *vh, int *any)
 	const struct aws_lws_protocol_vhost_options *pvo, *pvo1;
 	int n;
 #if defined(LWS_PLAT_FREERTOS)
-	struct aws_lws_a _lwsa, *aws_lwsa = &_lwsa;
+	struct aws_lws_a aws__lwsa, *aws_lwsa = &aws__lwsa;
 
-	memset(&_lwsa, 0, sizeof(_lwsa));
+	memset(&aws__lwsa, 0, sizeof(aws__lwsa));
 #else
 	struct lws _lws;
 	struct aws_lws_a *aws_lwsa = &_lws.a;
@@ -637,7 +637,7 @@ aws_lws_create_vhost(struct aws_lws_context *context,
 			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "|%u", info->port);
 	}
 
-	__lws_lc_tag(context, &context->lcg[LWSLCG_VHOST], &vh->lc, "%s|%s|%d",
+	aws___lws_lc_tag(context, &context->lcg[LWSLCG_VHOST], &vh->lc, "%s|%s|%d",
 		     buf, info->iface ? info->iface : "", info->port);
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
@@ -1007,7 +1007,7 @@ aws_lws_create_vhost(struct aws_lws_context *context,
 	if (aws_lws_fi(&vh->fic, "vh_create_srv_init"))
 		n = -1;
 	else
-		n = _lws_vhost_init_server(info, vh);
+		n = aws__lws_vhost_init_server(info, vh);
 	aws_lws_context_unlock(context);
 	if (n < 0) {
 		aws_lwsl_vhost_err(vh, "init server failed\n");
@@ -1049,7 +1049,7 @@ bail1:
 	return NULL;
 
 bail:
-	__lws_lc_untag(vh->context, &vh->lc);
+	aws___lws_lc_untag(vh->context, &vh->lc);
 	aws_lws_fi_destroy(&vh->fic);
 	aws_lws_free(vh);
 
@@ -1096,7 +1096,7 @@ aws_lws_cancel_service(struct aws_lws_context *context)
 }
 
 int
-__lws_create_event_pipes(struct aws_lws_context *context)
+aws___lws_create_event_pipes(struct aws_lws_context *context)
 {
 	struct aws_lws_context_per_thread *pt;
 	struct lws *wsi;
@@ -1118,12 +1118,12 @@ __lws_create_event_pipes(struct aws_lws_context *context)
 		if (pt->pipe_wsi)
 			return 0;
 
-		wsi = __lws_wsi_create_with_role(context, n, &role_ops_pipe,
+		wsi = aws___lws_wsi_create_with_role(context, n, &role_ops_pipe,
 							NULL);
 		if (!wsi)
 			return 1;
 
-		__lws_lc_tag(context, &context->lcg[LWSLCG_WSI], &wsi->lc,
+		aws___lws_lc_tag(context, &context->lcg[LWSLCG_WSI], &wsi->lc,
 				"pipe");
 
 		wsi->event_pipe = 1;
@@ -1178,7 +1178,7 @@ aws_lws_destroy_event_pipe(struct lws *wsi)
  */
 
 void
-__lws_vhost_destroy_pt_wsi_dieback_start(struct aws_lws_vhost *vh)
+aws___lws_vhost_destroy_pt_wsi_dieback_start(struct aws_lws_vhost *vh)
 {
 #if LWS_MAX_SMP > 1
 	/* calling pt thread has done its wsi dieback */
@@ -1367,7 +1367,7 @@ aws_lws_vhost_destroy1(struct aws_lws_vhost *vh)
 				 * bind temporarily to disallow this...
 				 */
 				v->count_bound_wsi++;
-				__lws_vhost_unbind_wsi(wsi);
+				aws___lws_vhost_unbind_wsi(wsi);
 				aws_lws_vhost_bind_wsi(v, wsi);
 				/*
 				 * ... remove the fake wsi bind
@@ -1426,7 +1426,7 @@ destroy_ais(struct aws_lws_dll2 *d, void *user)
  */
 
 void
-__lws_vhost_destroy2(struct aws_lws_vhost *vh)
+aws___lws_vhost_destroy2(struct aws_lws_vhost *vh)
 {
 	const struct aws_lws_protocols *protocol = NULL;
 	struct aws_lws_context *context = vh->context;
@@ -1579,7 +1579,7 @@ __lws_vhost_destroy2(struct aws_lws_vhost *vh)
 	aws_lws_sul_cancel(&vh->sul_unref);
 #endif
 
-	__lws_lc_untag(vh->context, &vh->lc);
+	aws___lws_lc_untag(vh->context, &vh->lc);
 
 	memset(vh, 0, sizeof(*vh));
 	aws_lws_free(vh);
@@ -1622,13 +1622,13 @@ aws_lws_vhost_destroy(struct aws_lws_vhost *vh)
 	aws_lws_vhost_destroy1(vh);
 
 	/* start async closure of all wsi on this pt thread attached to vh */
-	__lws_vhost_destroy_pt_wsi_dieback_start(vh);
+	aws___lws_vhost_destroy_pt_wsi_dieback_start(vh);
 
 	aws_lwsl_vhost_info(vh, "count_bound_wsi %d", vh->count_bound_wsi);
 
 	/* if there are none, finalize now since no further chance */
 	if (!vh->count_bound_wsi) {
-		__lws_vhost_destroy2(vh);
+		aws___lws_vhost_destroy2(vh);
 
 		goto out;
 	}
@@ -1638,7 +1638,7 @@ aws_lws_vhost_destroy(struct aws_lws_vhost *vh)
 	 * complete close and unbind before progressing the vhost removal.
 	 *
 	 * When the last bound wsi on this vh is destroyed we will auto-call
-	 * __lws_vhost_destroy2() to finalize vh destruction
+	 * aws___lws_vhost_destroy2() to finalize vh destruction
 	 */
 
 #if LWS_MAX_SMP > 1
@@ -1834,7 +1834,7 @@ aws_lws_vhost_active_conns(struct lws *wsi, struct lws **nwsi, const char *adsin
 						   aws_lwsi_state(w));
 
 				if (aws_lwsi_state(w) == LRS_IDLING)
-					_lws_generic_transaction_completed_active_conn(&w, 0);
+					aws__lws_generic_transaction_completed_active_conn(&w, 0);
 
 				//aws_lwsi_set_state(w, LRS_H1C_ISSUE_HANDSHAKE2);
 
@@ -1888,7 +1888,7 @@ aws_lws_vhost_active_conns(struct lws *wsi, struct lws **nwsi, const char *adsin
 					  &w->dll2_cli_txn_queue_owner);
 
 			if (aws_lwsi_state(w) == LRS_IDLING)
-				_lws_generic_transaction_completed_active_conn(&w, 0);
+				aws__lws_generic_transaction_completed_active_conn(&w, 0);
 
 			/*
 			 * For eg, h1 next we'd pipeline our headers out on him,

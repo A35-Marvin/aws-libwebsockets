@@ -90,5 +90,5 @@ int
 aws_lws_smd_msg_distribute(struct aws_lws_context *ctx);
 
 int
-_lws_smd_destroy(struct aws_lws_context *ctx);
+aws__lws_smd_destroy(struct aws_lws_context *ctx);
 

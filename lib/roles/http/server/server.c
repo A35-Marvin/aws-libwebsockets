@@ -82,7 +82,7 @@ check_extant(struct aws_lws_dll2 *d, void *user)
  */
 
 int
-_lws_vhost_init_server_af(struct vh_sock_args *a)
+aws__lws_vhost_init_server_af(struct vh_sock_args *a)
 {
 	struct aws_lws_context *cx = a->vhost->context;
 	struct aws_lws_context_per_thread *pt;
@@ -300,7 +300,7 @@ done_list:
 		 */
 
 		aws_lws_context_lock(cx, __func__);
-		wsi = __lws_wsi_create_with_role(cx, m, &role_ops_listen, NULL);
+		wsi = aws___lws_wsi_create_with_role(cx, m, &role_ops_listen, NULL);
 		aws_lws_context_unlock(cx);
 		if (wsi == NULL) {
 			aws_lwsl_err("Out of mem\n");
@@ -371,7 +371,7 @@ done_list:
 		}
 
 		if (wsi)
-			__lws_lc_tag(a->vhost->context,
+			aws___lws_lc_tag(a->vhost->context,
 				     &a->vhost->context->lcg[LWSLCG_WSI],
 				     &wsi->lc, "listen|%s|%s|%d",
 				     a->vhost->name,
@@ -403,7 +403,7 @@ bail:
 
 
 int
-_lws_vhost_init_server(const struct aws_lws_context_creation_info *info,
+aws__lws_vhost_init_server(const struct aws_lws_context_creation_info *info,
 		       struct aws_lws_vhost *vhost)
 {
 	struct vh_sock_args a;
@@ -479,7 +479,7 @@ _lws_vhost_init_server(const struct aws_lws_context_creation_info *info,
 	      (vhost->options & LWS_SERVER_OPTION_IPV6_V6ONLY_VALUE))) {
 #endif
 		a.af = AF_INET;
-		if (_lws_vhost_init_server_af(&a))
+		if (aws__lws_vhost_init_server_af(&a))
 			return 1;
 
 #if defined(LWS_WITH_IPV6)
@@ -493,7 +493,7 @@ _lws_vhost_init_server(const struct aws_lws_context_creation_info *info,
 	return 0;
 
 single:
-	return _lws_vhost_init_server_af(&a);
+	return aws__lws_vhost_init_server_af(&a);
 }
 
 #endif

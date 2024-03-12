@@ -62,7 +62,7 @@ typedef struct aws_lws_button_regime {
  */
 
 typedef struct aws_lws_button_map {
-	_lws_plat_gpio_t		gpio;
+	aws__lws_plat_gpio_t		gpio;
 	const char			*smd_interaction_name;
 	const aws_lws_button_regime_t	*regime;
 	/**< a default regime is applied if this is left NULL */

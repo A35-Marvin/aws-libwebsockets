@@ -141,7 +141,7 @@ do_err:
 			aws_lws_dll2_add_head(&wsi->tls.dll_pending_tls,
 					  &pt->tls.dll_pending_tls_owner);
 	} else
-		__lws_ssl_remove_wsi_from_buffered_list(wsi);
+		aws___lws_ssl_remove_wsi_from_buffered_list(wsi);
 
 	return n;
 bail:
@@ -311,7 +311,7 @@ aws_lws_tls_ctx_from_wsi(struct lws *wsi)
 }
 
 enum aws_lws_ssl_capable_status
-__lws_tls_shutdown(struct lws *wsi)
+aws___lws_tls_shutdown(struct lws *wsi)
 {
 	int n = SSL_shutdown(wsi->tls.ssl);
 
@@ -323,7 +323,7 @@ __lws_tls_shutdown(struct lws *wsi)
 		return LWS_SSL_CAPABLE_DONE;
 
 	case 0: /* needs a retry */
-		__lws_change_pollfd(wsi, 0, LWS_POLLIN);
+		aws___lws_change_pollfd(wsi, 0, LWS_POLLIN);
 		return LWS_SSL_CAPABLE_MORE_SERVICE;
 
 	default: /* fatal error, or WANT */
@@ -331,12 +331,12 @@ __lws_tls_shutdown(struct lws *wsi)
 		if (n != SSL_ERROR_SYSCALL && n != SSL_ERROR_SSL) {
 			if (SSL_want_read(wsi->tls.ssl)) {
 				aws_lwsl_debug("(wants read)\n");
-				__lws_change_pollfd(wsi, 0, LWS_POLLIN);
+				aws___lws_change_pollfd(wsi, 0, LWS_POLLIN);
 				return LWS_SSL_CAPABLE_MORE_SERVICE_READ;
 			}
 			if (SSL_want_write(wsi->tls.ssl)) {
 				aws_lwsl_debug("(wants write)\n");
-				__lws_change_pollfd(wsi, 0, LWS_POLLOUT);
+				aws___lws_change_pollfd(wsi, 0, LWS_POLLOUT);
 				return LWS_SSL_CAPABLE_MORE_SERVICE_WRITE;
 			}
 		}

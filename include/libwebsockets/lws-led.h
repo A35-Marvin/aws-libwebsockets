@@ -87,7 +87,7 @@ typedef struct aws_lws_led_ops {
 
 typedef struct aws_lws_led_gpio_map {
 	const char			*name;
-	_lws_plat_gpio_t		gpio;
+	aws__lws_plat_gpio_t		gpio;
 	aws_lws_led_lookup_t		intensity_correction;
 	/**< May be NULL.  If GPIO-based LED, ignored.  If pwm_ops provided,
 	 * NULL means use default CIE 100% correction function.  If non-NULL,

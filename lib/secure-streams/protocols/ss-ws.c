@@ -52,12 +52,12 @@ secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 
 		r = aws_lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
 		if (r == LWSSSSRET_DESTROY_ME)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		h->wsi = NULL;
 		r = aws_lws_ss_backoff(h);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		break;
 
 	case LWS_CALLBACK_CLOSED: /* server */
@@ -72,7 +72,7 @@ secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 
 		r = aws_lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
 		if (r == LWSSSSRET_DESTROY_ME)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		if (h->wsi)
 			aws_lws_set_opaque_user_data(h->wsi, NULL);
@@ -93,7 +93,7 @@ secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 			    !wsi->a.context->being_destroyed) {
 				r = aws_lws_ss_backoff(h);
 				if (r != LWSSSSRET_OK)
-					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+					return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 				break;
 			}
 
@@ -124,7 +124,7 @@ secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 #endif
 		r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		break;
 
 	case LWS_CALLBACK_RECEIVE:
@@ -142,7 +142,7 @@ secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 
 		r = h->info.rx(ss_to_userobj(h), (const uint8_t *)in, len, f);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		return 0; /* don't passthru */
 
@@ -163,7 +163,7 @@ secstream_ws(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		if (r == LWSSSSRET_TX_DONT_SEND)
 			return 0;
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		f1 = aws_lws_write_ws_flags(h->policy->u.http.u.ws.binary ?
 					   LWS_WRITE_BINARY : LWS_WRITE_TEXT,

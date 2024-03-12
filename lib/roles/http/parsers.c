@@ -40,7 +40,7 @@ static const unsigned char lextable_h1[] = {
 #endif
 
 static struct allocated_headers *
-_lws_create_ah(struct aws_lws_context_per_thread *pt, ah_data_idx_t data_size)
+aws__lws_create_ah(struct aws_lws_context_per_thread *pt, ah_data_idx_t data_size)
 {
 	struct allocated_headers *ah = aws_lws_zalloc(sizeof(*ah), "ah struct");
 
@@ -65,7 +65,7 @@ _lws_create_ah(struct aws_lws_context_per_thread *pt, ah_data_idx_t data_size)
 }
 
 int
-_lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers *ah)
+aws__lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers *ah)
 {
 	aws_lws_start_foreach_llp(struct allocated_headers **, a, pt->http.ah_list) {
 		if ((*a) == ah) {
@@ -86,7 +86,7 @@ _lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers 
 }
 
 void
-_lws_header_table_reset(struct allocated_headers *ah)
+aws__lws_header_table_reset(struct allocated_headers *ah)
 {
 	/* init the ah to reflect no headers or data have appeared yet */
 	memset(ah->frag_index, 0, sizeof(ah->frag_index));
@@ -106,7 +106,7 @@ _lws_header_table_reset(struct allocated_headers *ah)
 // doesn't scrub the ah rxbuffer by default, parent must do if needed
 
 void
-__lws_header_table_reset(struct lws *wsi, int autoservice)
+aws___lws_header_table_reset(struct lws *wsi, int autoservice)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 	struct aws_lws_context_per_thread *pt;
@@ -117,13 +117,13 @@ __lws_header_table_reset(struct lws *wsi, int autoservice)
 	/* ah also concurs with ownership */
 	assert(ah->wsi == wsi);
 
-	_lws_header_table_reset(ah);
+	aws__lws_header_table_reset(ah);
 
 	/* since we will restart the ah, our new headers are not completed */
 	wsi->hdr_parsing_completed = 0;
 
 	/* while we hold the ah, keep a timeout on the wsi */
-	__lws_set_timeout(wsi, PENDING_TIMEOUT_HOLDING_AH,
+	aws___lws_set_timeout(wsi, PENDING_TIMEOUT_HOLDING_AH,
 			  wsi->a.vhost->timeout_secs_ah_idle);
 
 	time(&ah->assigned);
@@ -152,13 +152,13 @@ aws_lws_header_table_reset(struct lws *wsi, int autoservice)
 
 	aws_lws_pt_lock(pt, __func__);
 
-	__lws_header_table_reset(wsi, autoservice);
+	aws___lws_header_table_reset(wsi, autoservice);
 
 	aws_lws_pt_unlock(pt);
 }
 
 static void
-_lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
+aws__lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
 {
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct aws_lws_pollargs pa;
@@ -177,11 +177,11 @@ _lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
 
 	/* we cannot accept input then */
 
-	_lws_change_pollfd(wsi, LWS_POLLIN, 0, &pa);
+	aws__lws_change_pollfd(wsi, LWS_POLLIN, 0, &pa);
 }
 
 static int
-__lws_remove_from_ah_waiting_list(struct lws *wsi)
+aws___lws_remove_from_ah_waiting_list(struct lws *wsi)
 {
         struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct lws **pwsi =&pt->http.ah_wait_list;
@@ -247,16 +247,16 @@ aws_lws_header_table_attach(struct lws *wsi, int autoservice)
 		 * Make sure we are on the waiting list, and return that we
 		 * weren't able to provide the ah
 		 */
-		_lws_header_ensure_we_are_on_waiting_list(wsi);
+		aws__lws_header_ensure_we_are_on_waiting_list(wsi);
 
 		goto bail;
 	}
 
-	__lws_remove_from_ah_waiting_list(wsi);
+	aws___lws_remove_from_ah_waiting_list(wsi);
 
-	wsi->http.ah = _lws_create_ah(pt, context->max_http_header_data);
+	wsi->http.ah = aws__lws_create_ah(pt, context->max_http_header_data);
 	if (!wsi->http.ah) { /* we could not create an ah */
-		_lws_header_ensure_we_are_on_waiting_list(wsi);
+		aws__lws_header_ensure_we_are_on_waiting_list(wsi);
 
 		goto bail;
 	}
@@ -273,13 +273,13 @@ aws_lws_header_table_attach(struct lws *wsi, int autoservice)
 	aws_lws_context_unlock(context); /* ====================================> */
 #endif
 
-	_lws_change_pollfd(wsi, 0, LWS_POLLIN, &pa);
+	aws__lws_change_pollfd(wsi, 0, LWS_POLLIN, &pa);
 
 	aws_lwsl_info("%s: did attach wsi %s: ah %p: count %d (on exit)\n", __func__,
 		  aws_lws_wsi_tag(wsi), (void *)wsi->http.ah, pt->http.ah_count_in_use);
 
 reset:
-	__lws_header_table_reset(wsi, autoservice);
+	aws___lws_header_table_reset(wsi, autoservice);
 
 	aws_lws_pt_unlock(pt);
 
@@ -303,7 +303,7 @@ bail:
 	return 1;
 }
 
-int __lws_header_table_detach(struct lws *wsi, int autoservice)
+int aws___lws_header_table_detach(struct lws *wsi, int autoservice)
 {
 	struct aws_lws_context *context = wsi->a.context;
 	struct allocated_headers *ah = wsi->http.ah;
@@ -312,7 +312,7 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 	struct lws **pwsi, **pwsi_eligible;
 	time_t now;
 
-	__lws_remove_from_ah_waiting_list(wsi);
+	aws___lws_remove_from_ah_waiting_list(wsi);
 
 	if (!ah)
 		return 0;
@@ -386,7 +386,7 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 	wsi->http.ah = ah;
 	ah->wsi = wsi; /* new owner */
 
-	__lws_header_table_reset(wsi, autoservice);
+	aws___lws_header_table_reset(wsi, autoservice);
 #if defined(LWS_WITH_PEER_LIMITS) && (defined(LWS_ROLE_H1) || \
     defined(LWS_ROLE_H2))
 	aws_lws_context_lock(context, "ah detach"); /* <========================= */
@@ -402,7 +402,7 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 		/* he has been stuck waiting for an ah, but now his wait is
 		 * over, let him progress */
 
-		_lws_change_pollfd(wsi, 0, LWS_POLLIN, &pa);
+		aws__lws_change_pollfd(wsi, 0, LWS_POLLIN, &pa);
 	}
 
 	/* point prev guy to next guy in list instead */
@@ -436,7 +436,7 @@ bail:
 
 nobody_usable_waiting:
 	aws_lwsl_info("%s: nobody usable waiting\n", __func__);
-	_lws_destroy_ah(pt, ah);
+	aws__lws_destroy_ah(pt, ah);
 	pt->http.ah_count_in_use--;
 
 	goto bail;
@@ -449,7 +449,7 @@ int aws_lws_header_table_detach(struct lws *wsi, int autoservice)
 	int n;
 
 	aws_lws_pt_lock(pt, __func__);
-	n = __lws_header_table_detach(wsi, autoservice);
+	n = aws___lws_header_table_detach(wsi, autoservice);
 	aws_lws_pt_unlock(pt);
 
 	return n;

@@ -40,7 +40,7 @@ arguments through to a non-threadsafe helper
 
 ```
 int
-__lws_system_attach(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t *cb,
+aws___lws_system_attach(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t *cb,
 		    aws_lws_system_states_t state, void *opaque,
 		    struct aws_lws_attach_item **get);
 ```

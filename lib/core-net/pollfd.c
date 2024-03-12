@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 int
-_lws_change_pollfd(struct lws *wsi, int _and, int _or, struct aws_lws_pollargs *pa)
+aws__lws_change_pollfd(struct lws *wsi, int _and, int _or, struct aws_lws_pollargs *pa)
 {
 #if !defined(LWS_WITH_EVENT_LIBS)
 	volatile struct aws_lws_context_per_thread *vpt;
@@ -235,7 +235,7 @@ aws_lws_accept_modulation(struct aws_lws_context *context,
 			struct lws *wsi = aws_lws_container_of(d, struct lws,
 							   listen_list);
 
-			_lws_change_pollfd(wsi, allow ? 0 : LWS_POLLIN,
+			aws__lws_change_pollfd(wsi, allow ? 0 : LWS_POLLIN,
 						allow ? LWS_POLLIN : 0, &pa1);
 		} aws_lws_end_foreach_dll(d);
 
@@ -386,7 +386,7 @@ __remove_wsi_socket_from_fds(struct lws *wsi)
 		return -1;
 #endif
 
-	__lws_same_vh_protocol_remove(wsi);
+	aws___lws_same_vh_protocol_remove(wsi);
 
 	/* the guy who is to be deleted's slot index in pt->fds */
 	m = wsi->position_in_fds_table;
@@ -470,7 +470,7 @@ __remove_wsi_socket_from_fds(struct lws *wsi)
 }
 
 int
-__lws_change_pollfd(struct lws *wsi, int _and, int _or)
+aws___lws_change_pollfd(struct lws *wsi, int _and, int _or)
 {
 	struct aws_lws_context *context;
 	struct aws_lws_pollargs pa;
@@ -491,7 +491,7 @@ __lws_change_pollfd(struct lws *wsi, int _and, int _or)
 		return -1;
 #endif
 
-	ret = _lws_change_pollfd(wsi, _and, _or, &pa);
+	ret = aws__lws_change_pollfd(wsi, _and, _or, &pa);
 
 #if defined(LWS_WITH_EXTERNAL_POLL)
 	if (wsi->a.vhost &&
@@ -512,7 +512,7 @@ aws_lws_change_pollfd(struct lws *wsi, int _and, int _or)
 	pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	aws_lws_pt_lock(pt, __func__);
-	ret = __lws_change_pollfd(wsi, _and, _or);
+	ret = aws___lws_change_pollfd(wsi, _and, _or);
 	aws_lws_pt_unlock(pt);
 
 	return ret;
@@ -543,7 +543,7 @@ aws_lws_callback_on_writable(struct lws *wsi)
 			return -1;
 		}
 
-	if (__lws_change_pollfd(w, 0, LWS_POLLOUT))
+	if (aws___lws_change_pollfd(w, 0, LWS_POLLOUT))
 		return -1;
 
 	return 1;
@@ -576,7 +576,7 @@ aws_lws_same_vh_protocol_insert(struct lws *wsi, int n)
 }
 
 void
-__lws_same_vh_protocol_remove(struct lws *wsi)
+aws___lws_same_vh_protocol_remove(struct lws *wsi)
 {
 	if (wsi->a.vhost && wsi->a.vhost->same_vh_protocol_owner)
 		aws_lws_dll2_remove(&wsi->same_vh_protocol);
@@ -591,7 +591,7 @@ aws_lws_same_vh_protocol_remove(struct lws *wsi)
 	aws_lws_context_lock(wsi->a.context, __func__);
 	aws_lws_vhost_lock(wsi->a.vhost);
 
-	__lws_same_vh_protocol_remove(wsi);
+	aws___lws_same_vh_protocol_remove(wsi);
 
 	aws_lws_vhost_unlock(wsi->a.vhost);
 	aws_lws_context_unlock(wsi->a.context);

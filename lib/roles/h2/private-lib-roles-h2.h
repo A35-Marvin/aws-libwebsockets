@@ -303,7 +303,7 @@ struct aws_lws_h2_netconn {
 	uint8_t ext_count;
 };
 
-struct _lws_h2_related {
+struct aws__lws_h2_related {
 
 	struct aws_lws_h2_netconn	*h2n; /* malloc'd for root net conn */
 

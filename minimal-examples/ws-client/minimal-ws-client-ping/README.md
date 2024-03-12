@@ -74,7 +74,7 @@ at 5s intervals.
 [2020/03/18 13:13:47:7662] I: aws_lws_client_connect_via_info: protocol binding to lws-ping-test
 [2020/03/18 13:13:47:7699] I: aws_lws_client_connect_via_info: wsi 0x5669090: h1 lws-ping-test entry
 [2020/03/18 13:13:47:7720] I: aws_lws_header_table_attach: wsi 0x5669090: ah (nil) (tsi 0, count = 0) in
-[2020/03/18 13:13:47:7729] I: _lws_create_ah: created ah 0x5669620 (size 4096): pool length 1
+[2020/03/18 13:13:47:7729] I: aws__lws_create_ah: created ah 0x5669620 (size 4096): pool length 1
 [2020/03/18 13:13:47:7735] I: aws_lws_header_table_attach: did attach wsi 0x5669090: ah 0x5669620: count 1 (on exit)
 [2020/03/18 13:13:47:7780] I: aws_lws_client_connect_2_dnsreq: 0x5669090: lookup libwebsockets.org:443
 [2020/03/18 13:13:47:8784] I: aws_lws_getaddrinfo46: getaddrinfo 'libwebsockets.org' says 0
@@ -89,23 +89,23 @@ at 5s intervals.
 [2020/03/18 13:13:48:4717] I: aws_lws_client_socket_service: HANDSHAKE2: 0x5669090: sending headers (wsistate 0x10000204), w sock 5
 [2020/03/18 13:13:48:4992] I: aws_lws_buflist_aware_read: wsi 0x5669090: aws_lws_client_socket_service: ssl_capable_read -4
 [2020/03/18 13:13:48:5005] I: aws_lws_buflist_aware_read: wsi 0x5669090: aws_lws_client_socket_service: ssl_capable_read 174
-[2020/03/18 13:13:48:5166] I: __lws_header_table_detach: wsi 0x5669090: ah 0x5669620 (tsi=0, count = 1)
-[2020/03/18 13:13:48:5171] I: __lws_header_table_detach: nobody usable waiting
-[2020/03/18 13:13:48:5175] I: _lws_destroy_ah: freed ah 0x5669620 : pool length 0
-[2020/03/18 13:13:48:5180] I: __lws_header_table_detach: wsi 0x5669090: ah 0x5669620 (tsi=0, count = 0)
-[2020/03/18 13:13:48:5197] I: _lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
+[2020/03/18 13:13:48:5166] I: aws___lws_header_table_detach: wsi 0x5669090: ah 0x5669620 (tsi=0, count = 1)
+[2020/03/18 13:13:48:5171] I: aws___lws_header_table_detach: nobody usable waiting
+[2020/03/18 13:13:48:5175] I: aws__lws_destroy_ah: freed ah 0x5669620 : pool length 0
+[2020/03/18 13:13:48:5180] I: aws___lws_header_table_detach: wsi 0x5669090: ah 0x5669620 (tsi=0, count = 0)
+[2020/03/18 13:13:48:5197] I: aws__lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
 [2020/03/18 13:13:48:5208] U: callback_minimal_broker: established
 [2020/03/18 13:13:51:5218] I: aws_lws_validity_cb: wsi 0x5669090: scheduling validity check
 [2020/03/18 13:13:51:5325] I: rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
 [2020/03/18 13:13:51:5504] I: aws_lws_issue_raw: ssl_capable_write (6) says 6
 [2020/03/18 13:13:51:5809] I: aws_lws_ws_client_rx_sm: client 0x5669090 received pong
-[2020/03/18 13:13:51:5819] I: _lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
+[2020/03/18 13:13:51:5819] I: aws__lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
 [2020/03/18 13:13:51:5831] I: Client doing pong callback
 [2020/03/18 13:13:54:5821] I: aws_lws_validity_cb: wsi 0x5669090: scheduling validity check
 [2020/03/18 13:13:54:5825] I: rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0
 [2020/03/18 13:13:54:5833] I: aws_lws_issue_raw: ssl_capable_write (6) says 6
 [2020/03/18 13:13:54:6258] I: aws_lws_ws_client_rx_sm: client 0x5669090 received pong
-[2020/03/18 13:13:54:6261] I: _lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
+[2020/03/18 13:13:54:6261] I: aws__lws_validity_confirmed_role: wsi 0x5669090: setting validity timer 3s (hup 0)
 [2020/03/18 13:13:54:6263] I: Client doing pong callback
 [2020/03/18 13:13:57:6263] I: aws_lws_validity_cb: wsi 0x5669090: scheduling validity check
 [2020/03/18 13:13:57:6267] I: rops_handle_POLLOUT_ws: issuing ping on wsi 0x5669090: ws lws-ping-test h2: 0

@@ -29,7 +29,7 @@
 
 
 int
-_lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi)
+aws__lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
 	int m, n, r;
@@ -57,7 +57,7 @@ _lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi)
 extern void aws_lws_client_conn_wait_timeout(aws_lws_sorted_usec_list_t *sul);
 
 int
-_lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
+aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 {
 	struct aws_lws_context_per_thread *pt;
 	struct aws_lws_pollfd *pfd;
@@ -129,7 +129,7 @@ _lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 
 		aws_lws_pt_lock(pt, __func__);
 		/* don't stay in poll wait longer than next hr timeout */
-		us = __lws_sul_service_ripe(pt->pt_sul_owner,
+		us = aws___lws_sul_service_ripe(pt->pt_sul_owner,
 					    LWS_COUNT_PT_SUL_OWNERS,
 					    aws_lws_now_usecs());
 		if (us && us < timeout_us)
@@ -144,7 +144,7 @@ _lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 		aws_lws_pt_unlock(pt);
 	}
 
-	if (_lws_plat_service_forced_tsi(context, tsi))
+	if (aws__lws_plat_service_forced_tsi(context, tsi))
 		timeout_us = 0;
 
 	/*
@@ -182,5 +182,5 @@ _lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 int
 aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 {
-	return _lws_plat_service_tsi(context, timeout_ms, 0);
+	return aws__lws_plat_service_tsi(context, timeout_ms, 0);
 }

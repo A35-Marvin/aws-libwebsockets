@@ -97,9 +97,9 @@ int main(int argc, const char **argv)
 	}
 
 
-	unlink("_lws_apitest.sq3");
+	unlink("aws__lws_apitest.sq3");
 
-	if (aws_lws_struct_sq3_open(context, "_lws_apitest.sq3", 1, &db)) {
+	if (aws_lws_struct_sq3_open(context, "aws__lws_apitest.sq3", 1, &db)) {
 		aws_lwsl_err("%s: failed to open table\n", __func__);
 		goto bail;
 	}

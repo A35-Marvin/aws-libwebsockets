@@ -49,7 +49,7 @@ static const char decode[] = "|$$$}rstuvwxyz{$$$$$$$>?@ABCDEFGHIJKLMNOPQRSTUVW"
 			     "$$$$$$XYZ[\\]^_`abcdefghijklmnopq";
 
 static int
-_lws_b64_encode_string(const char *encode, const char *in, int in_len,
+aws__lws_b64_encode_string(const char *encode, const char *in, int in_len,
 		       char *out, int out_size)
 {
 	unsigned char triple[3];
@@ -90,13 +90,13 @@ _lws_b64_encode_string(const char *encode, const char *in, int in_len,
 int
 aws_lws_b64_encode_string(const char *in, int in_len, char *out, int out_size)
 {
-	return _lws_b64_encode_string(encode_orig, in, in_len, out, out_size);
+	return aws__lws_b64_encode_string(encode_orig, in, in_len, out, out_size);
 }
 
 int
 aws_lws_b64_encode_string_url(const char *in, int in_len, char *out, int out_size)
 {
-	return _lws_b64_encode_string(encode_url, in, in_len, out, out_size);
+	return aws__lws_b64_encode_string(encode_url, in, in_len, out, out_size);
 }
 
 
@@ -181,7 +181,7 @@ aws_lws_b64_decode_stateful(struct aws_lws_b64state *s, const char *in, size_t *
  */
 
 static size_t
-_lws_b64_decode_string(const char *in, int in_len, char *out, size_t out_size)
+aws__lws_b64_decode_string(const char *in, int in_len, char *out, size_t out_size)
 {
 	struct aws_lws_b64state state;
 	size_t il = (size_t)in_len, ol = out_size;
@@ -201,13 +201,13 @@ _lws_b64_decode_string(const char *in, int in_len, char *out, size_t out_size)
 int
 aws_lws_b64_decode_string(const char *in, char *out, int out_size)
 {
-	return (int)_lws_b64_decode_string(in, -1, out, (unsigned int)out_size);
+	return (int)aws__lws_b64_decode_string(in, -1, out, (unsigned int)out_size);
 }
 
 int
 aws_lws_b64_decode_string_len(const char *in, int in_len, char *out, int out_size)
 {
-	return (int)_lws_b64_decode_string(in, in_len, out, (unsigned int)out_size);
+	return (int)aws__lws_b64_decode_string(in, in_len, out, (unsigned int)out_size);
 }
 
 #if 0

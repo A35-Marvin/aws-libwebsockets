@@ -27,8 +27,8 @@
 #ifndef _LWS_MQTT_H
 #define _LWS_MQTT_H 1
 
-struct _lws_mqtt_related;
-typedef struct _lws_mqtt_related aws_lws_mqtt_related_t;
+struct aws__lws_mqtt_related;
+typedef struct aws__lws_mqtt_related aws_lws_mqtt_related_t;
 struct aws_lws_mqtt_str_st;
 typedef struct aws_lws_mqtt_str_st aws_lws_mqtt_str_t;
 

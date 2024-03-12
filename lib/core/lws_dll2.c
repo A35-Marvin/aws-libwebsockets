@@ -258,7 +258,7 @@ aws_lws_dll2_add_sorted(aws_lws_dll2_t *d, aws_lws_dll2_owner_t *own,
 }
 
 void *
-_lws_dll2_search_sz_pl(aws_lws_dll2_owner_t *own, const char *name, size_t namelen,
+aws__lws_dll2_search_sz_pl(aws_lws_dll2_owner_t *own, const char *name, size_t namelen,
 		       size_t dll2_ofs, size_t ptr_ofs)
 {
 	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, aws_lws_dll2_get_head(own)) {

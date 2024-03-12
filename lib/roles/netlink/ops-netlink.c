@@ -168,7 +168,7 @@ rops_handle_POLLIN_netlink(struct aws_lws_context_per_thread *pt, struct lws *ws
 				aws_lwsl_cx_netlink(cx, "NEWLINK: ifdown %d",
 						ifi->ifi_index);
 				aws_lws_pt_lock(pt, __func__);
-				_lws_route_table_ifdown(pt, ifi->ifi_index);
+				aws__lws_route_table_ifdown(pt, ifi->ifi_index);
 				aws_lws_pt_unlock(pt);
 			}
 			continue; /* ie, not break, no second half */
@@ -234,7 +234,7 @@ rops_handle_POLLIN_netlink(struct aws_lws_context_per_thread *pt, struct lws *ws
 				}
 			}
 			aws_lws_pt_lock(pt, __func__);
-			_lws_route_pt_close_unroutable(pt);
+			aws__lws_route_pt_close_unroutable(pt);
 			aws_lws_pt_unlock(pt);
 			continue;
 
@@ -312,7 +312,7 @@ second_half:
 			aws_lwsl_cx_netlink(cx, "DELROUTE: if_idx %d",
 					robj.if_idx);
 			aws_lws_pt_lock(pt, __func__);
-			_lws_route_remove(pt, &robj, 0);
+			aws__lws_route_remove(pt, &robj, 0);
 			aws_lws_pt_unlock(pt);
 			goto inform;
 
@@ -339,11 +339,11 @@ second_half:
 		case RTM_DELADDR:
 			aws_lwsl_cx_notice(cx, "DELADDR");
 #if defined(_DEBUG)
-			_lws_routing_entry_dump(cx, &robj);
+			aws__lws_routing_entry_dump(cx, &robj);
 #endif
 			aws_lws_pt_lock(pt, __func__);
-			_lws_route_remove(pt, &robj, LRR_MATCH_SRC | LRR_IGNORE_PRI);
-			_lws_route_pt_close_unroutable(pt);
+			aws__lws_route_remove(pt, &robj, LRR_MATCH_SRC | LRR_IGNORE_PRI);
+			aws__lws_route_pt_close_unroutable(pt);
 			aws_lws_pt_unlock(pt);
 			break;
 
@@ -362,7 +362,7 @@ ana:
 			aws_lws_pt_lock(pt, __func__);
 
 			/* returns zero on match already in table */
-			rmat = _lws_route_remove(pt, &robj, LRR_MATCH_SRC |
+			rmat = aws__lws_route_remove(pt, &robj, LRR_MATCH_SRC |
 							    LRR_JUST_CHECK |
 							    LRR_IGNORE_PRI);
 			aws_lws_pt_unlock(pt);
@@ -387,12 +387,12 @@ ana:
 			 * cannot race
 			 */
 
-			rou->uidx = _lws_route_get_uidx(cx);
+			rou->uidx = aws__lws_route_get_uidx(cx);
 			aws_lws_dll2_add_tail(&rou->list, &cx->routing_table);
 			aws_lwsl_cx_info(cx, "route list size %u",
 					cx->routing_table.count);
 
-			_lws_route_pt_close_unroutable(pt);
+			aws__lws_route_pt_close_unroutable(pt);
 
 			aws_lws_pt_unlock(pt);
 
@@ -435,7 +435,7 @@ inform:
 #if defined(_DEBUG)
 	if (route_change) {
 		aws_lws_context_lock(cx, __func__);
-		_lws_routing_table_dump(cx);
+		aws__lws_routing_table_dump(cx);
 		aws_lws_context_unlock(cx);
 	}
 #endif
@@ -480,7 +480,7 @@ rops_pt_init_destroy_netlink(struct aws_lws_context *context,
 		 * pt netlink wsi closed + freed as part of pt's destroy
 		 * wsi mass close, just need to take down the routing table
 		 */
-		_lws_route_table_empty(pt);
+		aws__lws_route_table_empty(pt);
 
 		return 0;
 	}
@@ -499,7 +499,7 @@ rops_pt_init_destroy_netlink(struct aws_lws_context *context,
 	 */
 
 	aws_lws_context_lock(context, __func__);
-	wsi = __lws_wsi_create_with_role(context, (int)(pt - &context->pt[0]),
+	wsi = aws___lws_wsi_create_with_role(context, (int)(pt - &context->pt[0]),
 				       &role_ops_netlink, NULL);
 	aws_lws_context_unlock(context);
 	if (!wsi)
@@ -513,7 +513,7 @@ rops_pt_init_destroy_netlink(struct aws_lws_context *context,
 
 	aws_lws_plat_set_nonblocking(wsi->desc.sockfd);
 
-	__lws_lc_tag(context, &context->lcg[LWSLCG_VHOST], &wsi->lc,
+	aws___lws_lc_tag(context, &context->lcg[LWSLCG_VHOST], &wsi->lc,
 			"netlink");
 
 	memset(&sanl, 0, sizeof(sanl));
@@ -590,7 +590,7 @@ rops_pt_init_destroy_netlink(struct aws_lws_context *context,
 	return 0;
 
 bail2:
-	__lws_lc_untag(wsi->a.context, &wsi->lc);
+	aws___lws_lc_untag(wsi->a.context, &wsi->lc);
 	compatible_close(wsi->desc.sockfd);
 bail1:
 	aws_lws_free(wsi);

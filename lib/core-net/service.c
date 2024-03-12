@@ -320,7 +320,7 @@ aws_lws_service_adjust_timeout(struct aws_lws_context *context, int timeout_ms, 
 
 		aws_lws_pt_lock(pt, __func__); /* -------------- pt { */
 
-		u = __lws_sul_service_ripe(pt->pt_sul_owner,
+		u = aws___lws_sul_service_ripe(pt->pt_sul_owner,
 				      LWS_COUNT_PT_SUL_OWNERS, aws_lws_now_usecs());
 		/*
 		 * We will come back with 0 if nothing to do at the moment, or
@@ -724,7 +724,7 @@ aws_lws_service_fd_tsi(struct aws_lws_context *context, struct aws_lws_pollfd *p
 #if defined(LWS_WITH_TLS)
 	if (aws_lwsi_state(wsi) == LRS_SHUTDOWN &&
 	    aws_lws_is_ssl(wsi) && wsi->tls.ssl) {
-		switch (__lws_tls_shutdown(wsi)) {
+		switch (aws___lws_tls_shutdown(wsi)) {
 		case LWS_SSL_CAPABLE_DONE:
 		case LWS_SSL_CAPABLE_ERROR:
 			goto close_and_handled;
@@ -867,7 +867,7 @@ aws_lws_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 		return 1;
 	}
 
-	n = _lws_plat_service_tsi(context, timeout_ms, tsi);
+	n = aws__lws_plat_service_tsi(context, timeout_ms, tsi);
 
 	pt->inside_service = 0;
 

@@ -431,7 +431,7 @@ aws_lws_ss_deserialize_parse(struct aws_lws_ss_serialization_parser *par,
 
 				if ((proxy_pss_to_ss_h(pss) &&
 				     aws_lws_fi(&proxy_pss_to_ss_h(pss)->fic, "ssproxy_onward_conn_fail")) ||
-				    _lws_ss_client_connect(proxy_pss_to_ss_h(pss),
+				    aws__lws_ss_client_connect(proxy_pss_to_ss_h(pss),
 							   0, parconn) ==
 							   LWSSSSRET_DESTROY_ME)
 					goto hangup;
@@ -746,7 +746,7 @@ payload_ff:
 				}
 
 				if (hss)
-					_lws_ss_request_tx(hss);
+					aws__lws_ss_request_tx(hss);
 			} else {
 
 				/*
@@ -921,7 +921,7 @@ payload_ff:
 						 __func__, par->temp32,
 						 proxy_pss_to_ss_h(pss)->wsi->
 							 txc.peer_tx_cr_est);
-					_lws_ss_request_tx(proxy_pss_to_ss_h(pss));
+					aws__lws_ss_request_tx(proxy_pss_to_ss_h(pss));
 				} else
 #endif
 					aws_lwsl_info("%s: dropping TXCR\n", __func__);
@@ -1231,7 +1231,7 @@ payload_ff:
 				ssi->manual_initial_tx_credit = par->txcr_out;
 
 			/*
-			 * Even for a synthetic SS proxing action like _lws_smd,
+			 * Even for a synthetic SS proxing action like aws__lws_smd,
 			 * we create an actual SS in the proxy representing the
 			 * connection
 			 */

@@ -87,7 +87,7 @@ aws_lws_poll_listen_fd(struct aws_lws_pollfd *fd)
 
 
 int
-_lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
+aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 {
 	aws_lws_usec_t timeout_us = timeout_ms * LWS_US_PER_MS;
 	struct aws_lws_context_per_thread *pt;
@@ -128,7 +128,7 @@ again:
 
 			aws_lws_pt_lock(pt, __func__);
 			/* don't stay in poll wait longer than next hr timeout */
-			us = __lws_sul_service_ripe(pt->pt_sul_owner,
+			us = aws___lws_sul_service_ripe(pt->pt_sul_owner,
 						    LWS_COUNT_PT_SUL_OWNERS,
 						    aws_lws_now_usecs());
 			if (us && us < timeout_us)
@@ -191,7 +191,7 @@ again:
 int
 aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 {
-	return _lws_plat_service_tsi(context, timeout_ms, 0);
+	return aws__lws_plat_service_tsi(context, timeout_ms, 0);
 }
 
 int

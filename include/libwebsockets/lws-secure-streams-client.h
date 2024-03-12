@@ -63,7 +63,7 @@ struct aws_lws_sspc_handle;
 #define aws_lws_ss_change_handlers		aws_lws_sspc_change_handlers
 #define aws_lws_smd_ss_rx_forward		aws_lws_smd_sspc_rx_forward
 #define aws_lws_ss_tag			aws_lws_sspc_tag
-#define _lws_fi_user_ss_fi		_lws_fi_user_sspc_fi
+#define aws__lws_fi_user_ss_fi		aws__lws_fi_user_sspc_fi
 #define aws_lwsl_ss_get_cx			aws_lwsl_sspc_get_cx
 
 LWS_VISIBLE LWS_EXTERN void
@@ -80,7 +80,7 @@ aws_lwsl_sspc_get_cx(struct aws_lws_sspc_handle *ss);
 #endif
 
 #define aws_lwsl_sspc(_h, _fil, ...) \
-		 _lws_log_cx(aws_lwsl_sspc_get_cx(_h), aws_lws_log_prepend_sspc, _h, \
+		 aws__lws_log_cx(aws_lwsl_sspc_get_cx(_h), aws_lws_log_prepend_sspc, _h, \
 					_fil, __func__, __VA_ARGS__)
 
 #define aws_lwsl_hexdump_sspc(_h, _fil, _buf, _len) \

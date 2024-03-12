@@ -158,7 +158,7 @@ aws_lws_client_connect_via_info(const struct aws_lws_client_connect_info *i)
 
 	/* PHASE 2: create a bare wsi */
 
-	wsi = __lws_wsi_create_with_role(i->context, tsi, NULL, i->log_cx);
+	wsi = aws___lws_wsi_create_with_role(i->context, tsi, NULL, i->log_cx);
 	aws_lws_context_unlock(i->context);
 	if (wsi == NULL)
 		return NULL;
@@ -379,7 +379,7 @@ aws_lws_client_connect_via_info(const struct aws_lws_client_connect_info *i)
 		 * LCCSCF_SECSTREAM_PROXY_LINK  : client SSPC link to proxy
 		 * LCCSCF_SECSTREAM_PROXY_ONWARD: proxy's onward connection
 		 */
-		__lws_lc_tag(i->context, &i->context->lcg[
+		aws___lws_lc_tag(i->context, &i->context->lcg[
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
 		         i->ssl_connection & LCCSCF_SECSTREAM_PROXY_LINK ? LWSLCG_WSI_SSP_CLIENT :
 #if defined(LWS_WITH_SERVER)
@@ -402,7 +402,7 @@ aws_lws_client_connect_via_info(const struct aws_lws_client_connect_info *i)
 			aws_lws_ss_tag(((aws_lws_ss_handle_t *)i->opaque_user_data)));
 	} else
 #endif
-		__lws_lc_tag(i->context, &i->context->lcg[LWSLCG_WSI_CLIENT], &wsi->lc,
+		aws___lws_lc_tag(i->context, &i->context->lcg[LWSLCG_WSI_CLIENT], &wsi->lc,
 			     "%s/%s/%s/%s", i->method ? i->method : "WS",
 			     wsi->role_ops->name ? wsi->role_ops->name : "novh", vh->name, i->address);
 

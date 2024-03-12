@@ -1031,7 +1031,7 @@ rops_handle_POLLIN_ws(struct aws_lws_context_per_thread *pt, struct lws *wsi,
 		 */
 		aws_lwsl_info("%s: flowcontrolled, ignoring rx\n", __func__);
 
-		if (__lws_change_pollfd(wsi, LWS_POLLIN, 0))
+		if (aws___lws_change_pollfd(wsi, LWS_POLLIN, 0))
 			return -1;
 
 		return LWS_HPI_RET_HANDLED;
@@ -1240,7 +1240,7 @@ drain:
 #if !defined(LWS_WITH_SERVER)
 		n =
 #endif
-		__lws_rx_flow_control(wsi);
+		aws___lws_rx_flow_control(wsi);
 		/* n ignored, needed for NO_SERVER case */
 	}
 
@@ -1518,7 +1518,7 @@ rops_close_via_role_protocol_ws(struct lws *wsi, enum aws_lws_close_status reaso
 	wsi->waiting_to_send_close_frame = 1;
 	wsi->close_needs_ack = 1;
 	aws_lwsi_set_state(wsi, LRS_WAITING_TO_SEND_CLOSE);
-	__lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_SEND, 5);
+	aws___lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_SEND, 5);
 
 	aws_lws_callback_on_writable(wsi);
 
@@ -2058,7 +2058,7 @@ rops_issue_keepalive_ws(struct lws *wsi, int isvalid)
 #endif
 
 	if (isvalid)
-		_lws_validity_confirmed_role(wsi);
+		aws__lws_validity_confirmed_role(wsi);
 	else {
 		us = (uint64_t)aws_lws_now_usecs();
 		memcpy(&wsi->ws->ping_payload_buf[LWS_PRE], &us, 8);

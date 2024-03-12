@@ -51,7 +51,7 @@ sort_expiry(const aws_lws_dll2_t *a, const aws_lws_dll2_t *b)
 }
 
 static void
-_lws_cache_heap_item_destroy(aws_lws_cache_ttl_lru_t_heap_t *cache,
+aws__lws_cache_heap_item_destroy(aws_lws_cache_ttl_lru_t_heap_t *cache,
 			     aws_lws_cache_ttl_item_heap_t *item)
 {
 	aws_lwsl_cache("%s: %s (%s)\n", __func__, cache->cache.info.name,
@@ -126,7 +126,7 @@ aws_lws_cache_heap_item_destroy(aws_lws_cache_ttl_lru_t_heap_t *cache,
 					assert (!backing->info.ops->tag_match(
 						 backing, iname + 1, tag, 1));
 #endif
-					_lws_cache_heap_item_destroy(cache, i);
+					aws__lws_cache_heap_item_destroy(cache, i);
 					break;
 				}
 				pay += 8 + tlen + 1;
@@ -146,7 +146,7 @@ aws_lws_cache_heap_item_destroy(aws_lws_cache_ttl_lru_t_heap_t *cache,
 	} aws_lws_end_foreach_dll_safe(d, d1);
 
 post:
-	_lws_cache_heap_item_destroy(cache, item);
+	aws__lws_cache_heap_item_destroy(cache, item);
 }
 
 static void
@@ -357,7 +357,7 @@ aws_lws_cache_heap_write(struct aws_lws_cache_ttl_lru *_c, const char *specific_
 			 */
 
 			if (!strcmp(iname + 1, specific_key))
-				_lws_cache_heap_item_destroy(cache, i);
+				aws__lws_cache_heap_item_destroy(cache, i);
 		}
 
 	} aws_lws_end_foreach_dll_safe(d, d1);
@@ -483,7 +483,7 @@ aws_lws_cache_heap_invalidate(struct aws_lws_cache_ttl_lru *_c, const char *spec
 
 			if (!backing->info.ops->tag_match(backing, iname + 1,
 							  specific_key, 1))
-				_lws_cache_heap_item_destroy(cache, i);
+				aws__lws_cache_heap_item_destroy(cache, i);
 		}
 
 	} aws_lws_end_foreach_dll_safe(d, d1);

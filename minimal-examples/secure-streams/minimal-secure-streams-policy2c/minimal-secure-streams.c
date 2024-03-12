@@ -139,7 +139,7 @@ int main(int argc, const char **argv)
 	 * objects.
 	 *
 	 * For const strings, we aggregate them and avoid generating extra
-	 * pointers by encoding the reference as &_lws_ss_staticpol_str[xxx]
+	 * pointers by encoding the reference as &aws__lws_ss_staticpol_str[xxx]
 	 * where xxx is the fixed offset in the aggregated monster-string.  When
 	 * doing that, we keep a map of original pointers to offsets.
 	 *

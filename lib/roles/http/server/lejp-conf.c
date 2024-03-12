@@ -29,7 +29,7 @@
 #include <dirent.h>
 #endif
 
-#define ESC_INSTALL_DATADIR "_lws_ddir_"
+#define ESC_INSTALL_DATADIR "aws__lws_ddir_"
 
 static const char * const paths_global[] = {
 	"global.uid",

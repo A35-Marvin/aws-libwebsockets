@@ -28,7 +28,7 @@
 #if !defined(__LWS_GPIO_H__)
 #define __LWS_GPIO_H__
 
-typedef int _lws_plat_gpio_t;
+typedef int aws__lws_plat_gpio_t;
 
 typedef enum {
 	LWSGGPIO_IRQ_NONE,
@@ -50,10 +50,10 @@ enum {
 typedef void (*aws_lws_gpio_irq_cb_t)(void *arg);
 
 typedef struct aws_lws_gpio_ops {
-	void (*mode)(_lws_plat_gpio_t gpio, int flags);
-	int (*read)(_lws_plat_gpio_t gpio);
-	void (*set)(_lws_plat_gpio_t gpio, int val);
-	int (*irq_mode)(_lws_plat_gpio_t gpio, aws_lws_gpio_irq_t irq,
+	void (*mode)(aws__lws_plat_gpio_t gpio, int flags);
+	int (*read)(aws__lws_plat_gpio_t gpio);
+	void (*set)(aws__lws_plat_gpio_t gpio, int val);
+	int (*irq_mode)(aws__lws_plat_gpio_t gpio, aws_lws_gpio_irq_t irq,
 			aws_lws_gpio_irq_cb_t cb, void *arg);
 } aws_lws_gpio_ops_t;
 

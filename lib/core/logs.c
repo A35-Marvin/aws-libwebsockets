@@ -50,7 +50,7 @@ static const char * log_level_names ="EWNIDPHXCLUT??";
  */
 
 void
-__lws_lc_tag(struct aws_lws_context *context, aws_lws_lifecycle_group_t *grp,
+aws___lws_lc_tag(struct aws_lws_context *context, aws_lws_lifecycle_group_t *grp,
 	     aws_lws_lifecycle_t *lc, const char *format, ...)
 {
 	va_list ap;
@@ -139,7 +139,7 @@ __lws_lc_tag(struct aws_lws_context *context, aws_lws_lifecycle_group_t *grp,
  */
 
 void
-__lws_lc_tag_append(aws_lws_lifecycle_t *lc, const char *app)
+aws___lws_lc_tag_append(aws_lws_lifecycle_t *lc, const char *app)
 {
 	int n = (int)strlen(lc->gutag);
 
@@ -160,7 +160,7 @@ __lws_lc_tag_append(aws_lws_lifecycle_t *lc, const char *app)
  */
 
 void
-__lws_lc_untag(struct aws_lws_context *context, aws_lws_lifecycle_t *lc)
+aws___lws_lc_untag(struct aws_lws_context *context, aws_lws_lifecycle_t *lc)
 {
 	//aws_lws_lifecycle_group_t *grp;
 	char buf[24];
@@ -270,7 +270,7 @@ static const char * const colours[] = {
 static char tty;
 
 static void
-_lwsl_emit_stderr(int level, const char *line)
+aws__lwsl_emit_stderr(int level, const char *line)
 {
 	int n, m = LWS_ARRAY_SIZE(colours) - 1;
 
@@ -293,13 +293,13 @@ _lwsl_emit_stderr(int level, const char *line)
 void
 aws_lwsl_emit_stderr(int level, const char *line)
 {
-	_lwsl_emit_stderr(level, line);
+	aws__lwsl_emit_stderr(level, line);
 }
 
 void
 aws_lwsl_emit_stderr_notimestamp(int level, const char *line)
 {
-	_lwsl_emit_stderr(level, line);
+	aws__lwsl_emit_stderr(level, line);
 }
 
 #if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE)
@@ -353,7 +353,7 @@ aws_lws_log_use_cx_file(struct aws_lws_log_cx *cx, int _new)
 
 #if !(defined(LWS_PLAT_OPTEE) && !defined(LWS_WITH_NETWORK))
 void
-__lws_logv(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
+aws___lws_logv(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 	   int filter, const char *_fun, const char *format, va_list vl)
 {
 #if LWS_MAX_SMP == 1 && !defined(LWS_WITH_THREADPOOL)
@@ -456,21 +456,21 @@ __lws_logv(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 		cx->u.emit(filter, buf);
 }
 
-void _lws_logv(int filter, const char *format, va_list vl)
+void aws__lws_logv(int filter, const char *format, va_list vl)
 {
-	__lws_logv(&log_cx, NULL, NULL, filter, NULL, format, vl);
+	aws___lws_logv(&log_cx, NULL, NULL, filter, NULL, format, vl);
 }
 
-void _lws_log(int filter, const char *format, ...)
+void aws__lws_log(int filter, const char *format, ...)
 {
 	va_list ap;
 
 	va_start(ap, format);
-	__lws_logv(&log_cx, NULL, NULL, filter, NULL, format, ap);
+	aws___lws_logv(&log_cx, NULL, NULL, filter, NULL, format, ap);
 	va_end(ap);
 }
 
-void _lws_log_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
+void aws__lws_log_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 		 int filter, const char *_fun, const char *format, ...)
 {
 	va_list ap;
@@ -479,7 +479,7 @@ void _lws_log_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 		cx = &log_cx;
 
 	va_start(ap, format);
-	__lws_logv(cx, prep, obj, filter, _fun, format, ap);
+	aws___lws_logv(cx, prep, obj, filter, _fun, format, ap);
 	va_end(ap);
 }
 #endif
@@ -531,18 +531,18 @@ aws_lwsl_hexdump_level_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, v
 		return;
 
 	if (!len) {
-		_lws_log_cx(cx, prep, obj, hexdump_level, NULL,
+		aws__lws_log_cx(cx, prep, obj, hexdump_level, NULL,
 					"(hexdump: zero length)\n");
 		return;
 	}
 
 	if (!vbuf) {
-		_lws_log_cx(cx, prep, obj, hexdump_level, NULL,
+		aws__lws_log_cx(cx, prep, obj, hexdump_level, NULL,
 					"(hexdump: NULL ptr)\n");
 		return;
 	}
 
-	_lws_log_cx(cx, prep, obj, hexdump_level, NULL, "\n");
+	aws__lws_log_cx(cx, prep, obj, hexdump_level, NULL, "\n");
 
 	for (n = 0; n < len;) {
 		unsigned int start = n, m;
@@ -568,11 +568,11 @@ aws_lwsl_hexdump_level_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, v
 
 		*p++ = '\n';
 		*p = '\0';
-		_lws_log_cx(cx, prep, obj, hexdump_level, NULL, "%s", line);
+		aws__lws_log_cx(cx, prep, obj, hexdump_level, NULL, "%s", line);
 		(void)line;
 	}
 
-	_lws_log_cx(cx, prep, obj, hexdump_level, NULL, "\n");
+	aws__lws_log_cx(cx, prep, obj, hexdump_level, NULL, "\n");
 }
 
 void

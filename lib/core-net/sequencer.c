@@ -78,7 +78,7 @@ aws_lws_sul_seq_heartbeat_cb(aws_lws_sorted_usec_list_t *sul)
 
 	/* schedule the next one */
 
-	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &pt->sul_seq_heartbeat, LWS_US_PER_SEC);
 }
 
@@ -88,7 +88,7 @@ aws_lws_seq_pt_init(struct aws_lws_context_per_thread *pt)
 	pt->sul_seq_heartbeat.cb = aws_lws_sul_seq_heartbeat_cb;
 
 	/* schedule the first heartbeat */
-	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &pt->sul_seq_heartbeat, LWS_US_PER_SEC);
 
 	return 0;
@@ -244,7 +244,7 @@ aws_lws_seq_queue_event(aws_lws_seq_t *seq, aws_lws_seq_events_t e, void *data, 
 	aws_lws_dll2_add_tail(&seqe->seq_event_list, &seq->seq_event_owner);
 
 	seq->sul_pending.cb = aws_lws_seq_sul_pending_cb;
-	__lws_sul_insert_us(&seq->pt->pt_sul_owner[seq->wakesuspend],
+	aws___lws_sul_insert_us(&seq->pt->pt_sul_owner[seq->wakesuspend],
 			    &seq->sul_pending, 1);
 
 	aws_lws_pt_unlock(seq->pt); /* } pt ------------------------------------- */
@@ -303,7 +303,7 @@ aws_lws_seq_timeout_us(aws_lws_seq_t *seq, aws_lws_usec_t us)
 {
 	seq->sul_timeout.cb = aws_lws_seq_sul_timeout_cb;
 	/* list is always at the very top of the sul */
-	__lws_sul_insert_us(&seq->pt->pt_sul_owner[seq->wakesuspend],
+	aws___lws_sul_insert_us(&seq->pt->pt_sul_owner[seq->wakesuspend],
 			(aws_lws_sorted_usec_list_t *)&seq->sul_timeout.list, us);
 
 	return 0;

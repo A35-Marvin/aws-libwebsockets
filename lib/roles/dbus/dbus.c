@@ -46,7 +46,7 @@
  */
 
 static struct lws *
-__lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int create_ok)
+aws___lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int create_ok)
 {
 	struct lws *wsi;
 
@@ -72,7 +72,7 @@ __lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int create_
 	aws_lws_vhost_assert_lock_held(wsi->a.vhost);
 
 	/* requires context lock */
-	wsi = __lws_wsi_create_with_role(ctx->vh->context, ctx->tsi, NULL,
+	wsi = aws___lws_wsi_create_with_role(ctx->vh->context, ctx->tsi, NULL,
 						ctx->vh->lc.log_cx);
 	if (wsi == NULL) {
 		aws_lwsl_err("Out of mem\n");
@@ -88,13 +88,13 @@ __lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int create_
 	wsi->opaque_parent_data = ctx;
 	ctx->w[0] = w;
 
-	__lws_lc_tag(ctx->vh->context, &ctx->vh->context->lcg[LWSLCG_WSI],
+	aws___lws_lc_tag(ctx->vh->context, &ctx->vh->context->lcg[LWSLCG_WSI],
 		     &wsi->lc, "dbus|%s", ctx->vh->name);
 
 	aws_lws_vhost_bind_wsi(ctx->vh, wsi);
 	if (__insert_wsi_socket_into_fds(ctx->vh->context, wsi)) {
 		aws_lwsl_err("inserting wsi socket into fds failed\n");
-		__lws_vhost_unbind_wsi(wsi); /* cx + vh lock */
+		aws___lws_vhost_unbind_wsi(wsi); /* cx + vh lock */
 		aws_lws_free(wsi);
 		return NULL;
 	}
@@ -107,7 +107,7 @@ __lws_shadow_wsi(struct aws_lws_dbus_ctx *ctx, DBusWatch *w, int fd, int create_
  */
 
 static int
-__lws_shadow_wsi_destroy(struct aws_lws_dbus_ctx *ctx, struct lws *wsi)
+aws___lws_shadow_wsi_destroy(struct aws_lws_dbus_ctx *ctx, struct lws *wsi)
 {
 	aws_lwsl_info("%s: destroying shadow wsi\n", __func__);
 
@@ -121,7 +121,7 @@ __lws_shadow_wsi_destroy(struct aws_lws_dbus_ctx *ctx, struct lws *wsi)
 		return 1;
 	}
 
-	__lws_vhost_unbind_wsi(wsi);
+	aws___lws_vhost_unbind_wsi(wsi);
 
 	aws_lws_free(wsi);
 
@@ -157,7 +157,7 @@ aws_lws_dbus_add_watch(DBusWatch *w, void *data)
 	aws_lws_context_lock(pt->context, __func__);
 	aws_lws_pt_lock(pt, __func__);
 
-	wsi = __lws_shadow_wsi(ctx, w, dbus_watch_get_unix_fd(w), 1);
+	wsi = aws___lws_shadow_wsi(ctx, w, dbus_watch_get_unix_fd(w), 1);
 	if (!wsi) {
 		aws_lws_pt_unlock(pt);
 		aws_lws_context_unlock(pt->context);
@@ -191,7 +191,7 @@ aws_lws_dbus_add_watch(DBusWatch *w, void *data)
 		  data, aws_lws_flags);
 
 	if (aws_lws_flags)
-		__lws_change_pollfd(wsi, 0, (int)aws_lws_flags);
+		aws___lws_change_pollfd(wsi, 0, (int)aws_lws_flags);
 
 	aws_lws_pt_unlock(pt);
 	aws_lws_context_unlock(pt->context);
@@ -212,7 +212,7 @@ __check_destroy_shadow_wsi(struct aws_lws_dbus_ctx *ctx, struct lws *wsi)
 		if (ctx->w[n])
 			return 0;
 
-	__lws_shadow_wsi_destroy(ctx, wsi);
+	aws___lws_shadow_wsi_destroy(ctx, wsi);
 
 	if (!ctx->conn || !ctx->hup || ctx->timeouts)
 		return 0;
@@ -239,7 +239,7 @@ aws_lws_dbus_remove_watch(DBusWatch *w, void *data)
 	aws_lws_context_lock(pt->context, __func__);
 	aws_lws_pt_lock(pt, __func__);
 
-	wsi = __lws_shadow_wsi(ctx, w, dbus_watch_get_unix_fd(w), 0);
+	wsi = aws___lws_shadow_wsi(ctx, w, dbus_watch_get_unix_fd(w), 0);
 	if (!wsi)
 		goto bail;
 
@@ -262,7 +262,7 @@ aws_lws_dbus_remove_watch(DBusWatch *w, void *data)
 		  __func__, w, dbus_watch_get_unix_fd(w),
 		  data, aws_lws_flags);
 
-	__lws_change_pollfd(wsi, (int)aws_lws_flags, 0);
+	aws___lws_change_pollfd(wsi, (int)aws_lws_flags, 0);
 
 bail:
 	aws_lws_pt_unlock(pt);

@@ -83,7 +83,7 @@ aws_lws_create_stdwsi(struct aws_lws_context *context, int tsi,
 	}
 
 	aws_lws_context_lock(context, __func__);
-	new_wsi = __lws_wsi_create_with_role(context, tsi, ops, NULL);
+	new_wsi = aws___lws_wsi_create_with_role(context, tsi, ops, NULL);
 	aws_lws_context_unlock(context);
 	if (new_wsi == NULL) {
 		aws_lwsl_err("Out of memory for new connection\n");
@@ -382,7 +382,7 @@ aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *i)
 			goto bail2;
 		}
 
-                __lws_lc_tag(i->vh->context, &i->vh->context->lcg[LWSLCG_WSI],
+                aws___lws_lc_tag(i->vh->context, &i->vh->context->lcg[LWSLCG_WSI],
                 	     &lsp->stdwsi[n]->lc, "nspawn-stdwsi-%d", n);
 
 		lsp->stdwsi[n]->lsp_channel = (uint8_t)n;
@@ -572,7 +572,7 @@ bail3:
 bail2:
 	for (n = 0; n < 3; n++)
 		if (lsp->stdwsi[n])
-			__lws_free_wsi(lsp->stdwsi[n]);
+			aws___lws_free_wsi(lsp->stdwsi[n]);
 
 bail1:
 	for (n = 0; n < 3; n++) {

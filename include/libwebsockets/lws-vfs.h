@@ -254,17 +254,17 @@ aws_lws_vfs_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
  */
 
 LWS_VISIBLE LWS_EXTERN aws_lws_fop_fd_t
-_lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
+aws__lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
 		    const char *vpath, aws_lws_fop_flags_t *flags);
 LWS_VISIBLE LWS_EXTERN int
-_lws_plat_file_close(aws_lws_fop_fd_t *fop_fd);
+aws__lws_plat_file_close(aws_lws_fop_fd_t *fop_fd);
 LWS_VISIBLE LWS_EXTERN aws_lws_fileofs_t
-_lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset);
+aws__lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset);
 LWS_VISIBLE LWS_EXTERN int
-_lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+aws__lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
 		    uint8_t *buf, aws_lws_filepos_t len);
 LWS_VISIBLE LWS_EXTERN int
-_lws_plat_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+aws__lws_plat_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
 		     uint8_t *buf, aws_lws_filepos_t len);
 
 LWS_VISIBLE LWS_EXTERN int

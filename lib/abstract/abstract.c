@@ -241,7 +241,7 @@ bail:
  */
 
 static void
-__lws_abs_destroy_instance2(aws_lws_abs_t **ai)
+aws___lws_abs_destroy_instance2(aws_lws_abs_t **ai)
 {
 	aws_lws_abs_t *a = *ai;
 
@@ -265,7 +265,7 @@ __reap_children(struct aws_lws_dll2 *d, void *user)
 
 	/* then destroy ourselves */
 
-	__lws_abs_destroy_instance2(&ac);
+	aws___lws_abs_destroy_instance2(&ac);
 
 	return 0;
 }
@@ -283,7 +283,7 @@ aws_lws_abs_destroy_instance(aws_lws_abs_t **ai)
 
 	/* ...then destroy ourselves */
 
-	__lws_abs_destroy_instance2(ai);
+	aws___lws_abs_destroy_instance2(ai);
 
 	aws_lws_vhost_unlock(a->vh); /* } vh --------------------------------- */
 }

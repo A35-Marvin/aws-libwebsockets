@@ -40,12 +40,12 @@ policy and smd_ server part to the Secure Streams Proxy.
  
 1) When the client starts, we waits to hear the client state is OPERATIONAL in
 a direct smd participant callback.  When it is, he creates a Secure Stream of
-streamtype "_lws_smd", creating a local SS handle.
+streamtype "aws__lws_smd", creating a local SS handle.
 
 2) The SS creation request is proxied to the SS proxy process over Unix Domain
 Sockets.  There it creates a Secure Stream object proxyside, and registers as
 an SMD participant... this smd-related behaviour is tied to the special
-streamtype name "_lws_smd".  The SMD registration uses a class mask passed to
+streamtype name "aws__lws_smd".  The SMD registration uses a class mask passed to
 the proxy in the tx credit field of the serialization.
 
 3) SMD messages that pass the class mask filter are proxied back to the client
@@ -85,7 +85,7 @@ $ ./bin/lws-minimal-secure-streams-smd -d 1151
 [2020/06/18 21:44:54:5605] I: Libwebsockets version: 4.0.99-v4.0.0-174-ga8a2eb954 v4.0.0-174-ga8a2eb954
 [2020/06/18 21:44:54:5607] I: IPV6 not compiled in
 ...
-[2020/06/18 21:44:54:7906] D: _lws_state_transition: system: changed 11 'AUTH2' -> 12 'OPERATIONAL'
+[2020/06/18 21:44:54:7906] D: aws__lws_state_transition: system: changed 11 'AUTH2' -> 12 'OPERATIONAL'
 [2020/06/18 21:44:54:7906] D: _realloc: size 81: aws_lws_smd_msg_alloc
 [2020/06/18 21:44:54:7907] I: aws_lws_cancel_service
 [2020/06/18 21:44:54:7912] I: aws_lws_state_transition_steps: CONTEXT_CREATED -> OPERATIONAL
@@ -116,7 +116,7 @@ $ ./bin/lws-minimal-secure-streams-smd -d 1151
 [2020/06/18 21:44:54:8115] D: 
 [2020/06/18 21:44:57:5823] I: 11 12 1
 [2020/06/18 21:44:57:5838] I: aws_lws_context_destroy: ctx 0x4f61db0
-[2020/06/18 21:44:57:5849] D: _lws_state_transition: system: changed 12 'OPERATIONAL' -> 13 'POLICY_INVALID'
+[2020/06/18 21:44:57:5849] D: aws__lws_state_transition: system: changed 12 'OPERATIONAL' -> 13 'POLICY_INVALID'
 [2020/06/18 21:44:57:5851] D: _realloc: size 84: aws_lws_smd_msg_alloc
 [2020/06/18 21:44:57:5853] I: aws_lws_cancel_service
 [2020/06/18 21:44:57:5871] I: aws_lws_destroy_event_pipe

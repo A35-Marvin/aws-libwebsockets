@@ -38,7 +38,7 @@ struct aws_lws_pt_role_ws {
 	struct lws *tx_draining_ext_list;
 };
 
-struct _lws_raw_proxy_related {
+struct aws__lws_raw_proxy_related {
 	struct lws *wsi_onward;
 };
 #endif

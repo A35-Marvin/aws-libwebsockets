@@ -871,11 +871,11 @@ aws_lws_create_context(const struct aws_lws_context_creation_info *info)
 #if defined(LWS_WITH_FILE_OPS)
 	/* default to just the platform fops implementation */
 
-	context->fops_platform.LWS_FOP_OPEN	= _lws_plat_file_open;
-	context->fops_platform.LWS_FOP_CLOSE	= _lws_plat_file_close;
-	context->fops_platform.LWS_FOP_SEEK_CUR	= _lws_plat_file_seek_cur;
-	context->fops_platform.LWS_FOP_READ	= _lws_plat_file_read;
-	context->fops_platform.LWS_FOP_WRITE	= _lws_plat_file_write;
+	context->fops_platform.LWS_FOP_OPEN	= aws__lws_plat_file_open;
+	context->fops_platform.LWS_FOP_CLOSE	= aws__lws_plat_file_close;
+	context->fops_platform.LWS_FOP_SEEK_CUR	= aws__lws_plat_file_seek_cur;
+	context->fops_platform.LWS_FOP_READ	= aws__lws_plat_file_read;
+	context->fops_platform.LWS_FOP_WRITE	= aws__lws_plat_file_write;
 	context->fops_platform.fi[0].sig	= NULL;
 
 	/*
@@ -1240,7 +1240,7 @@ aws_lws_create_context(const struct aws_lws_context_creation_info *info)
 		}
 
 	aws_lws_context_lock(context, __func__);
-	n = __lws_create_event_pipes(context);
+	n = aws___lws_create_event_pipes(context);
 	aws_lws_context_unlock(context);
 	if (n)
 		goto bail_libuv_aware;
@@ -1521,7 +1521,7 @@ fail_event_libs:
 free_context_fail:
 	if (context) {
 #if defined(LWS_WITH_SYS_SMD)
-		_lws_smd_destroy(context);
+		aws__lws_smd_destroy(context);
 #endif
 	}
 #endif
@@ -1703,7 +1703,7 @@ aws_lws_pt_destroy(struct aws_lws_context_per_thread *pt)
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 		while (pt->http.ah_list)
-			_lws_destroy_ah(pt, pt->http.ah_list);
+			aws__lws_destroy_ah(pt, pt->http.ah_list);
 #endif
 
 #endif
@@ -1992,7 +1992,7 @@ next:
 		while (vh) {
 			vh1 = vh->vhost_next;
 		//	aws_lwsl_vhost_debug(vh, "vh %s destroy2", vh->name);
-			__lws_vhost_destroy2(vh);
+			aws___lws_vhost_destroy2(vh);
 			vh = vh1;
 		}
 
@@ -2000,7 +2000,7 @@ next:
 
 		while (context->vhost_pending_destruction_list)
 			/* removes itself from list */
-			__lws_vhost_destroy2(context->vhost_pending_destruction_list);
+			aws___lws_vhost_destroy2(context->vhost_pending_destruction_list);
 #endif
 
 #if defined(LWS_WITH_NETWORK)
@@ -2045,7 +2045,7 @@ next:
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 			while (pt->http.ah_list)
-				_lws_destroy_ah(pt, pt->http.ah_list);
+				aws__lws_destroy_ah(pt, pt->http.ah_list);
 #endif
 			aws_lwsl_cx_info(context, "pt destroy %d", n);
 			aws_lws_pt_destroy(pt);
@@ -2137,7 +2137,7 @@ next:
 #endif
 
 #if defined(LWS_WITH_SYS_SMD)
-		_lws_smd_destroy(context);
+		aws__lws_smd_destroy(context);
 #endif
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)

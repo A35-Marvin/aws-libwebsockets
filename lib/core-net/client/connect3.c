@@ -668,7 +668,7 @@ oom4:
 		aws_lws_sockfd_type sfd = wsi->desc.sockfd;
 
 		//aws_lws_vhost_lock(vhost);
-		__lws_free_wsi(wsi); /* acquires vhost lock in wsi reset */
+		aws___lws_free_wsi(wsi); /* acquires vhost lock in wsi reset */
 		//aws_lws_vhost_unlock(vhost);
 
 		sanity_assert_no_wsi_traces(vhost->context, wsi);

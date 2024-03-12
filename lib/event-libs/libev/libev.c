@@ -38,7 +38,7 @@ aws_lws_ev_hrtimer_cb(struct ev_loop *loop, struct ev_timer *watcher, int revent
 	aws_lws_usec_t us;
 
 	aws_lws_pt_lock(pt, __func__);
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us) {
 		ev_timer_set(&ptpr->hrtimer, ((float)us) / 1000000.0, 0);
@@ -63,12 +63,12 @@ aws_lws_ev_idle_cb(struct ev_loop *loop, struct ev_idle *handle, int revents)
 	 */
 	if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid))
 		/* -1 timeout means just do forced service */
-		reschedule = _lws_plat_service_forced_tsi(pt->context, pt->tid);
+		reschedule = aws__lws_plat_service_forced_tsi(pt->context, pt->tid);
 
 	/* account for hrtimer */
 
 	aws_lws_pt_lock(pt, __func__);
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us) {
 		ev_timer_set(&ptpr->hrtimer, ((float)us) / 1000000.0, 0);

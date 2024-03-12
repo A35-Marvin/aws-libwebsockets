@@ -23,14 +23,14 @@
  */
 
 typedef struct aws_lws_pwm_map {
-	_lws_plat_gpio_t		gpio;
+	aws__lws_plat_gpio_t		gpio;
 	uint8_t				index;
 	uint8_t				active_level;
 } aws_lws_pwm_map_t;
 
 typedef struct aws_lws_pwm_ops {
 	int (*init)(const struct aws_lws_pwm_ops *lo);
-	void (*intensity)(const struct aws_lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
+	void (*intensity)(const struct aws_lws_pwm_ops *lo, aws__lws_plat_gpio_t gpio,
 			  aws_lws_led_intensity_t inten);
 	const aws_lws_pwm_map_t		*pwm_map;
 	uint8_t				count_pwm_map;
@@ -40,7 +40,7 @@ LWS_VISIBLE LWS_EXTERN int
 aws_lws_pwm_plat_init(const struct aws_lws_pwm_ops *lo);
 
 LWS_VISIBLE LWS_EXTERN void
-aws_lws_pwm_plat_intensity(const struct aws_lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
+aws_lws_pwm_plat_intensity(const struct aws_lws_pwm_ops *lo, aws__lws_plat_gpio_t gpio,
 		       aws_lws_led_intensity_t inten);
 
 #define aws_lws_pwm_plat_ops \

@@ -187,7 +187,7 @@ aws_lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *ord
 	int n, m;
 
 	if (!order)
-		order = "_lws_idx";
+		order = "aws__lws_idx";
 
 	memset(&a, 0, sizeof(a));
 	a.ac = *ac;
@@ -210,7 +210,7 @@ aws_lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *ord
 				  n + 1 == (int)schema->child_map_size ? ' ' : ',');
 
 	where[0] = '\0';
-	aws_lws_snprintf(where, sizeof(where), " where _lws_idx >= %llu %s",
+	aws_lws_snprintf(where, sizeof(where), " where aws__lws_idx >= %llu %s",
 			     (unsigned long long)start, filter ? filter : "");
 
 	aws_lws_snprintf(s, sizeof(s) - 1, "select %s "
@@ -237,13 +237,13 @@ aws_lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *ord
  */
 
 static int
-_lws_struct_sq3_ser_one(sqlite3 *pdb, const aws_lws_struct_map_t *schema,
+aws__lws_struct_sq3_ser_one(sqlite3 *pdb, const aws_lws_struct_map_t *schema,
 			uint32_t idx, void *st)
 {
 	const aws_lws_struct_map_t *map = schema->child_map;
 	int n, m, pk = 0, nentries = (int)(ssize_t)schema->child_map_size, nef = 0, did;
 	size_t sql_est = 46 + strlen(schema->colname) + 1;
-		/* "insert into  (_lws_idx, ) values (00000001,);" ...
+		/* "insert into  (aws__lws_idx, ) values (00000001,);" ...
 		 * plus the table name */
 	uint8_t *stb = (uint8_t *)st;
 	const char *p;
@@ -326,7 +326,7 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const aws_lws_struct_map_t *schema,
 	if (!sql)
 		return -1;
 
-	m = aws_lws_snprintf(sql, sql_est, "insert into %s(_lws_idx, ",
+	m = aws_lws_snprintf(sql, sql_est, "insert into %s(aws__lws_idx, ",
 			 schema->colname);
 
 	/*
@@ -438,7 +438,7 @@ aws_lws_struct_sq3_serialize(sqlite3 *pdb, const aws_lws_struct_map_t *schema,
 
 	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, owner->head) {
 		void *item = (void *)((uint8_t *)p - schema->ofs_clist);
-		if (_lws_struct_sq3_ser_one(pdb, schema, idx++, item))
+		if (aws__lws_struct_sq3_ser_one(pdb, schema, idx++, item))
 			return 1;
 
 	} aws_lws_end_foreach_dll(p);
@@ -455,7 +455,7 @@ aws_lws_struct_sq3_create_table(sqlite3 *pdb, const aws_lws_struct_map_t *schema
 	     *pri = " primary key autoincrement", *use;
 
 	p += aws_lws_snprintf(p, (unsigned int)aws_lws_ptr_diff(end, p),
-			  "create table if not exists %s (_lws_idx integer, ",
+			  "create table if not exists %s (aws__lws_idx integer, ",
 			  schema->colname);
 
 	while (map_size--) {
@@ -475,7 +475,7 @@ aws_lws_struct_sq3_create_table(sqlite3 *pdb, const aws_lws_struct_map_t *schema
 		} else {
 			if (map->type < LSMT_STRING_CHAR_ARRAY) {
 				use = "";
-				if (map->colname[0] != '_') /* _lws_idx is not primary key */
+				if (map->colname[0] != '_') /* aws__lws_idx is not primary key */
 					use = pri;
 				p += aws_lws_snprintf(p, (unsigned int)aws_lws_ptr_diff(end, p), "%s integer%s",
 						map->colname, use);

@@ -321,7 +321,7 @@ aws_lws_sort_dns_scomp(struct aws_lws_context_per_thread *pt, const aws_lws_rout
 	 * prefer SB.
 	 */
 
-	rd = _lws_route_est_outgoing(pt, (aws_lws_sockaddr46 *)dst);
+	rd = aws__lws_route_est_outgoing(pt, (aws_lws_sockaddr46 *)dst);
 	if (rd) {
 		if (rd->if_idx == sa->if_idx)
 			return SAS_PREFER_A;
@@ -648,7 +648,7 @@ aws_lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
 
 		if (pt->context->routing_table.count) {
 
-			estr = _lws_route_est_outgoing(pt, &ds->dest);
+			estr = aws__lws_route_est_outgoing(pt, &ds->dest);
 			if (!estr) {
 				aws_lws_free(ds);
 				aws_lwsl_wsi_notice(wsi, "%s has no route out\n",

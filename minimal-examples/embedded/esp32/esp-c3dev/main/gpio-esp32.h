@@ -7,7 +7,7 @@
  * Universal Public Domain Dedication.
  */
 
-typedef int _lws_plat_gpio_t;
+typedef int aws__lws_plat_gpio_t;
 #include "gpio.h"
 
 extern const aws_lws_gpio_ops_t aws_lws_gpio_esp32;

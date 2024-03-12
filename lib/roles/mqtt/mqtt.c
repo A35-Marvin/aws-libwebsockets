@@ -323,7 +323,7 @@ aws_lws_mqtt_is_topic_matched(const char* sub, const char* pub)
 	return LMMTR_TOPIC_NOMATCH;
 }
 
-aws_lws_mqtt_subs_t* aws_lws_mqtt_find_sub(struct _lws_mqtt_related* mqtt,
+aws_lws_mqtt_subs_t* aws_lws_mqtt_find_sub(struct aws__lws_mqtt_related* mqtt,
 				   const char* ptopic) {
 	aws_lws_mqtt_subs_t *s = mqtt->subs_head;
 
@@ -402,7 +402,7 @@ aws_lws_mqtt_validate_topic(const char *topic, size_t topiclen, uint8_t awsiot)
 }
 
 static aws_lws_mqtt_subs_t *
-aws_lws_mqtt_create_sub(struct _lws_mqtt_related *mqtt, const char *topic)
+aws_lws_mqtt_create_sub(struct aws__lws_mqtt_related *mqtt, const char *topic)
 {
 	aws_lws_mqtt_subs_t *mysub;
 	size_t topiclen = strlen(topic);
@@ -451,7 +451,7 @@ aws_lws_mqtt_create_sub(struct _lws_mqtt_related *mqtt, const char *topic)
 }
 
 static int
-aws_lws_mqtt_client_remove_subs(struct _lws_mqtt_related *mqtt)
+aws_lws_mqtt_client_remove_subs(struct aws__lws_mqtt_related *mqtt)
 {
 	aws_lws_mqtt_subs_t *s = mqtt->subs_head;
 	aws_lws_mqtt_subs_t *temp = NULL;
@@ -478,7 +478,7 @@ aws_lws_mqtt_client_remove_subs(struct _lws_mqtt_related *mqtt)
 }
 
 int
-_lws_mqtt_rx_parser(struct lws *wsi, aws_lws_mqtt_parser_t *par,
+aws__lws_mqtt_rx_parser(struct lws *wsi, aws_lws_mqtt_parser_t *par,
 		    const uint8_t *buf, size_t len)
 {
 	struct lws *w;
@@ -1315,7 +1315,7 @@ bail1:
 				w->a.vhost->protocols[0].callback(w,
 							LWS_CALLBACK_WSI_DESTROY,
 							NULL, NULL, 0);
-				__lws_vhost_unbind_wsi(w); /* cx + vh lock */
+				aws___lws_vhost_unbind_wsi(w); /* cx + vh lock */
 				aws_lws_free(w);
 
 				return 0;
@@ -1355,7 +1355,7 @@ bail1:
 							  sul_qos_puback_pubrec_wait);
 
 						if (requested_close) {
-							__lws_close_free_wsi(w,
+							aws___lws_close_free_wsi(w,
 								0, "ack cb");
 							break;
 						}
@@ -1441,7 +1441,7 @@ bail1:
 						aws_lws_sul_cancel(&w->mqtt->sul_qos_puback_pubrec_wait);
 
 						if (requested_close) {
-							__lws_close_free_wsi(w,
+							aws___lws_close_free_wsi(w,
 								0, "ack cb");
 							break;
 						}
@@ -1551,7 +1551,7 @@ bail1:
 
 						aws_lws_sul_cancel(&w->mqtt->sul_unsuback_wait);
 						if (requested_close) {
-							__lws_close_free_wsi(w,
+							aws___lws_close_free_wsi(w,
 									     0, "unsub ack cb");
 							break;
 						}
@@ -1916,8 +1916,8 @@ aws_lws_mqtt_fill_fixed_header(uint8_t *p, aws_lws_mqtt_control_packet_t ctrl_pk
 static void
 aws_lws_mqtt_publish_resend(struct aws_lws_sorted_usec_list *sul)
 {
-	struct _lws_mqtt_related *mqtt = aws_lws_container_of(sul,
-			struct _lws_mqtt_related, sul_qos_puback_pubrec_wait);
+	struct aws__lws_mqtt_related *mqtt = aws_lws_container_of(sul,
+			struct aws__lws_mqtt_related, sul_qos_puback_pubrec_wait);
 
 	aws_lwsl_notice("%s: %s\n", __func__, aws_lws_wsi_tag(mqtt->wsi));
 
@@ -1929,8 +1929,8 @@ aws_lws_mqtt_publish_resend(struct aws_lws_sorted_usec_list *sul)
 static void
 aws_lws_mqtt_unsuback_timeout(struct aws_lws_sorted_usec_list *sul)
 {
-	struct _lws_mqtt_related *mqtt = aws_lws_container_of(sul,
-			struct _lws_mqtt_related, sul_unsuback_wait);
+	struct aws__lws_mqtt_related *mqtt = aws_lws_container_of(sul,
+			struct aws__lws_mqtt_related, sul_unsuback_wait);
 
 	aws_lwsl_debug("%s: %s\n", __func__, aws_lws_wsi_tag(mqtt->wsi));
 
@@ -2086,7 +2086,7 @@ do_write:
 		 * we must RETRY the publish
 		 */
 		wsi->mqtt->sul_qos_puback_pubrec_wait.cb = aws_lws_mqtt_publish_resend;
-		__lws_sul_insert_us(&pt->pt_sul_owner[wsi->conn_validity_wakesuspend],
+		aws___lws_sul_insert_us(&pt->pt_sul_owner[wsi->conn_validity_wakesuspend],
 				    &wsi->mqtt->sul_qos_puback_pubrec_wait,
 				    3 * LWS_USEC_PER_SEC);
 	}
@@ -2426,7 +2426,7 @@ aws_lws_mqtt_client_send_unsubcribe(struct lws *wsi,
 	wsi->mqtt->inside_unsubscribe = 1;
 
 	wsi->mqtt->sul_unsuback_wait.cb = aws_lws_mqtt_unsuback_timeout;
-	__lws_sul_insert_us(&pt->pt_sul_owner[wsi->conn_validity_wakesuspend],
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[wsi->conn_validity_wakesuspend],
 			    &wsi->mqtt->sul_unsuback_wait,
 			    3 * LWS_USEC_PER_SEC);
 

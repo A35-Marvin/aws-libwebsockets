@@ -136,7 +136,7 @@ struct lexico {
 };
 
 static int
-_lws_jwk_set_el_jwk_b64(struct aws_lws_gencrypto_keyelem *e, char *in, int len)
+aws__lws_jwk_set_el_jwk_b64(struct aws_lws_gencrypto_keyelem *e, char *in, int len)
 {
 	size_t dec_size = (unsigned int)aws_lws_base64_size(len);
 	int n;
@@ -156,7 +156,7 @@ _lws_jwk_set_el_jwk_b64(struct aws_lws_gencrypto_keyelem *e, char *in, int len)
 }
 
 static int
-_lws_jwk_set_el_jwk_b64u(struct aws_lws_gencrypto_keyelem *e, char *in, int len)
+aws__lws_jwk_set_el_jwk_b64u(struct aws_lws_gencrypto_keyelem *e, char *in, int len)
 {
 	size_t dec_size = (size_t)aws_lws_base64_size(len);
 	int n;
@@ -367,7 +367,7 @@ cont:
 			goto elements_mismatch;
 
 		if (idx & F_META) {
-			if (_lws_jwk_set_el_jwk(&jwk->meta[idx & 0x7f],
+			if (aws__lws_jwk_set_el_jwk(&jwk->meta[idx & 0x7f],
 						jps->b64, (unsigned int)jps->pos) < 0)
 				goto bail;
 
@@ -376,7 +376,7 @@ cont:
 
 		if (idx & F_B64U) {
 			/* key data... do the base64 decode as needed */
-			if (_lws_jwk_set_el_jwk_b64u(&jwk->e[idx & 0x7f],
+			if (aws__lws_jwk_set_el_jwk_b64u(&jwk->e[idx & 0x7f],
 						     jps->b64, jps->pos) < 0)
 				goto bail;
 
@@ -392,13 +392,13 @@ cont:
 		if (idx & F_B64) {
 
 			/* cert data... do non-urlcoded base64 decode */
-			if (_lws_jwk_set_el_jwk_b64(&jwk->e[idx & 0x7f],
+			if (aws__lws_jwk_set_el_jwk_b64(&jwk->e[idx & 0x7f],
 						    jps->b64, jps->pos) < 0)
 				goto bail;
 			return 0;
 		}
 
-			if (_lws_jwk_set_el_jwk(&jwk->e[idx & 0x7f],
+			if (aws__lws_jwk_set_el_jwk(&jwk->e[idx & 0x7f],
 						jps->b64, (unsigned int)jps->pos) < 0)
 				goto bail;
 		break;

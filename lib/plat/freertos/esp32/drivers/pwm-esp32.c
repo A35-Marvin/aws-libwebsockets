@@ -61,7 +61,7 @@ aws_lws_pwm_plat_init(const struct aws_lws_pwm_ops *lo)
 }
 
 void
-aws_lws_pwm_plat_intensity(const struct aws_lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
+aws_lws_pwm_plat_intensity(const struct aws_lws_pwm_ops *lo, aws__lws_plat_gpio_t gpio,
 		       aws_lws_led_intensity_t inten)
 {
 	size_t n;

@@ -89,7 +89,7 @@ struct aws_lws_pt_role_ws {
 
 #define PAYLOAD_BUF_SIZE 128 - 3 + LWS_PRE
 
-struct _lws_websocket_related {
+struct aws__lws_websocket_related {
 	unsigned char *rx_ubuf;
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 	const struct aws_lws_extension *active_extensions[LWS_MAX_EXTENSIONS_ACTIVE];

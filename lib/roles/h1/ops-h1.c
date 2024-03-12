@@ -873,7 +873,7 @@ rops_destroy_role_h1(struct lws *wsi)
 
 	/* we may not have an ah, but may be on the waiting list... */
 	aws_lwsl_info("%s: ah det due to close\n", __func__);
-	__lws_header_table_detach(wsi, 0);
+	aws___lws_header_table_detach(wsi, 0);
 
 	 ah = pt->http.ah_list;
 
@@ -1095,7 +1095,7 @@ rops_pt_init_destroy_h1(struct aws_lws_context *context,
 
 		pt->sul_ah_lifecheck.cb = aws_lws_sul_http_ah_lifecheck;
 
-		__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
+		aws___lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 				 &pt->sul_ah_lifecheck, 30 * LWS_US_PER_SEC);
 	} else
 		aws_lws_dll2_remove(&pt->sul_ah_lifecheck.list);

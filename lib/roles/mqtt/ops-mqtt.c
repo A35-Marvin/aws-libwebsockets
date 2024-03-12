@@ -186,7 +186,7 @@ drain:
 #if !defined(LWS_WITH_SERVER)
 		n =
 #endif
-		__lws_rx_flow_control(wsi);
+		aws___lws_rx_flow_control(wsi);
 		/* n ignored, needed for NO_SERVER case */
 	}
 
@@ -434,7 +434,7 @@ rops_issue_keepalive_mqtt(struct lws *wsi, int isvalid)
 	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (isvalid) {
-		_lws_validity_confirmed_role(nwsi);
+		aws__lws_validity_confirmed_role(nwsi);
 
 		return 0;
 	}

@@ -210,7 +210,7 @@ direct_smd_cb(void *opaque, aws_lws_smd_class_t _class, aws_lws_usec_t timestamp
 		 *
 		 * This process doesn't run the smd / captive portal action
 		 * when it's a client of the SS proxy.  SMD has to be passed
-		 * via the SS _lws_smd proxied connection in that case.
+		 * via the SS aws__lws_smd proxied connection in that case.
 		 */
 		(void)aws_lws_smd_msg_printf(*pctx, LWSSMDCL_NETWORK,
 				   "{\"trigger\": \"cpdcheck\", \"src\":\"direct-test\"}");
@@ -337,7 +337,7 @@ int main(int argc, const char **argv)
 #if defined(LWS_SS_USE_SSPC)
 	/* if SSPC
 	 *
-	 *  - the SS _lws_smd link does not enable INTERACTION class, so doesn't
+	 *  - the SS aws__lws_smd link does not enable INTERACTION class, so doesn't
 	 *    see these messages (count_p1 is half count_tx)
 	 *
 	 *  - the direct smd participant sees local state, but it doesn't send

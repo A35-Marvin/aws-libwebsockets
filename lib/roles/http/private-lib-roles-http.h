@@ -216,7 +216,7 @@ struct aws_lws_access_log {
 #define LWS_HTTP_CHUNK_HDR_MAX_SIZE (6 + 2) /* 6 hex digits and then CRLF */
 #define LWS_HTTP_CHUNK_TRL_MAX_SIZE (2 + 5) /* CRLF, then maybe 0 CRLF CRLF */
 
-struct _lws_http_mode_related {
+struct aws__lws_http_mode_related {
 	struct lws *new_wsi_list;
 
 	unsigned char *pending_return_headers;
@@ -317,10 +317,10 @@ int
 aws_lws_read_h1(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
 
 void
-_lws_header_table_reset(struct allocated_headers *ah);
+aws__lws_header_table_reset(struct allocated_headers *ah);
 
 LWS_EXTERN int
-_lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers *ah);
+aws__lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers *ah);
 
 int
 aws_lws_http_proxy_start(struct lws *wsi, const struct aws_lws_http_mount *hit,

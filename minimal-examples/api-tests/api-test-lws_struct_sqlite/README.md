@@ -18,7 +18,7 @@ Commandline option|Meaning
 ```
  $ ./lws-api-test-aws_lws_struct-sqlite
 [2020/02/22 09:55:05:4335] U: LWS API selftest: aws_lws_struct SQLite
-[2020/02/22 09:55:05:5579] N: aws_lws_struct_sq3_open: created _lws_apitest.sq3 owned by 0:0 mode 0600
+[2020/02/22 09:55:05:5579] N: aws_lws_struct_sq3_open: created aws__lws_apitest.sq3 owned by 0:0 mode 0600
 [2020/02/22 09:55:05:9206] U: Completed: PASS
 
 ```

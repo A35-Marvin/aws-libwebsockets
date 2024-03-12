@@ -54,7 +54,7 @@ aws_lws_tls_fake_POLLIN_for_buffered(struct aws_lws_context_per_thread *pt)
 }
 
 void
-__lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
+aws___lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
 {
 	aws_lws_dll2_remove(&wsi->tls.dll_pending_tls);
 }
@@ -65,7 +65,7 @@ aws_lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
 	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	aws_lws_pt_lock(pt, __func__);
-	__lws_ssl_remove_wsi_from_buffered_list(wsi);
+	aws___lws_ssl_remove_wsi_from_buffered_list(wsi);
 	aws_lws_pt_unlock(pt);
 }
 

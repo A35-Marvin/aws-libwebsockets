@@ -114,12 +114,12 @@ LWS_VISIBLE LWS_EXTERN int
 aws_lwsl_timestamp(int level, char *p, size_t len);
 
 #if defined(LWS_PLAT_OPTEE) && !defined(LWS_WITH_NETWORK)
-#define _lws_log(aaa, ...) SMSG(__VA_ARGS__)
+#define aws__lws_log(aaa, ...) SMSG(__VA_ARGS__)
 #else
 LWS_VISIBLE LWS_EXTERN void
-_lws_log(int filter, const char *format, ...) LWS_FORMAT(2);
+aws__lws_log(int filter, const char *format, ...) LWS_FORMAT(2);
 LWS_VISIBLE LWS_EXTERN void
-_lws_logv(int filter, const char *format, va_list vl);
+aws__lws_logv(int filter, const char *format, va_list vl);
 #endif
 
 struct aws_lws_vhost;
@@ -161,20 +161,20 @@ aws_lws_log_prepend_sspc(struct aws_lws_log_cx *cx, void *obj, char **p, char *e
 #endif
 
 LWS_VISIBLE LWS_EXTERN void
-_lws_log_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
+aws__lws_log_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 	    int filter, const char *_fun, const char *format, ...) LWS_FORMAT(6);
 
 #define aws_lwsl_cx(_c, _fil, ...) \
-		 _lws_log_cx(aws_lwsl_context_get_cx(_c), aws_lws_log_prepend_context, \
+		 aws__lws_log_cx(aws_lwsl_context_get_cx(_c), aws_lws_log_prepend_context, \
 					_c, _fil, __func__, __VA_ARGS__)
 #define aws_lwsl_vhost(_v, _fil, ...) \
-		 _lws_log_cx(aws_lwsl_vhost_get_cx(_v), aws_lws_log_prepend_vhost, _v, \
+		 aws__lws_log_cx(aws_lwsl_vhost_get_cx(_v), aws_lws_log_prepend_vhost, _v, \
 					_fil, __func__, __VA_ARGS__)
 #define aws_lwsl_wsi(_w, _fil, ...) \
-		 _lws_log_cx(aws_lwsl_wsi_get_cx(_w), aws_lws_log_prepend_wsi, _w, \
+		 aws__lws_log_cx(aws_lwsl_wsi_get_cx(_w), aws_lws_log_prepend_wsi, _w, \
 					_fil, __func__, __VA_ARGS__)
 #define aws_lwsl_ss(_h, _fil, ...) \
-		 _lws_log_cx(aws_lwsl_ss_get_cx(_h), aws_lws_log_prepend_ss, _h, \
+		 aws__lws_log_cx(aws_lwsl_ss_get_cx(_h), aws_lws_log_prepend_ss, _h, \
 					_fil, __func__, __VA_ARGS__)
 
 #define aws_lwsl_hexdump_context(_c, _fil, _buf, _len) \
@@ -251,73 +251,73 @@ _lws_log_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
  */
 
 #if (_LWS_ENABLED_LOGS & LLL_ERR)
-#define aws_lwsl_err(...) _lws_log(LLL_ERR, __VA_ARGS__)
+#define aws_lwsl_err(...) aws__lws_log(LLL_ERR, __VA_ARGS__)
 #else
 #define aws_lwsl_err(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_WARN)
-#define aws_lwsl_warn(...) _lws_log(LLL_WARN, __VA_ARGS__)
+#define aws_lwsl_warn(...) aws__lws_log(LLL_WARN, __VA_ARGS__)
 #else
 #define aws_lwsl_warn(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_NOTICE)
-#define aws_lwsl_notice(...) _lws_log(LLL_NOTICE, __VA_ARGS__)
+#define aws_lwsl_notice(...) aws__lws_log(LLL_NOTICE, __VA_ARGS__)
 #else
 #define aws_lwsl_notice(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_INFO)
-#define aws_lwsl_info(...) _lws_log(LLL_INFO, __VA_ARGS__)
+#define aws_lwsl_info(...) aws__lws_log(LLL_INFO, __VA_ARGS__)
 #else
 #define aws_lwsl_info(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_DEBUG)
-#define aws_lwsl_debug(...) _lws_log(LLL_DEBUG, __VA_ARGS__)
+#define aws_lwsl_debug(...) aws__lws_log(LLL_DEBUG, __VA_ARGS__)
 #else
 #define aws_lwsl_debug(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_PARSER)
-#define aws_lwsl_parser(...) _lws_log(LLL_PARSER, __VA_ARGS__)
+#define aws_lwsl_parser(...) aws__lws_log(LLL_PARSER, __VA_ARGS__)
 #else
 #define aws_lwsl_parser(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_HEADER)
-#define aws_lwsl_header(...) _lws_log(LLL_HEADER, __VA_ARGS__)
+#define aws_lwsl_header(...) aws__lws_log(LLL_HEADER, __VA_ARGS__)
 #else
 #define aws_lwsl_header(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_EXT)
-#define aws_lwsl_ext(...) _lws_log(LLL_EXT, __VA_ARGS__)
+#define aws_lwsl_ext(...) aws__lws_log(LLL_EXT, __VA_ARGS__)
 #else
 #define aws_lwsl_ext(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_CLIENT)
-#define aws_lwsl_client(...) _lws_log(LLL_CLIENT, __VA_ARGS__)
+#define aws_lwsl_client(...) aws__lws_log(LLL_CLIENT, __VA_ARGS__)
 #else
 #define aws_lwsl_client(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_LATENCY)
-#define aws_lwsl_latency(...) _lws_log(LLL_LATENCY, __VA_ARGS__)
+#define aws_lwsl_latency(...) aws__lws_log(LLL_LATENCY, __VA_ARGS__)
 #else
 #define aws_lwsl_latency(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_THREAD)
-#define aws_lwsl_thread(...) _lws_log(LLL_THREAD, __VA_ARGS__)
+#define aws_lwsl_thread(...) aws__lws_log(LLL_THREAD, __VA_ARGS__)
 #else
 #define aws_lwsl_thread(...) do {} while(0)
 #endif
 
 #if (_LWS_ENABLED_LOGS & LLL_USER)
-#define aws_lwsl_user(...) _lws_log(LLL_USER, __VA_ARGS__)
+#define aws_lwsl_user(...) aws__lws_log(LLL_USER, __VA_ARGS__)
 #else
 #define aws_lwsl_user(...) do {} while(0)
 #endif

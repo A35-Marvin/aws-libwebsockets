@@ -25,7 +25,7 @@
 #include <libwebsockets.h>
 	
 static void
-aws_lws_gpio_esp32_mode(_lws_plat_gpio_t gpio, int flags)
+aws_lws_gpio_esp32_mode(aws__lws_plat_gpio_t gpio, int flags)
 {
 	int mode, pup = GPIO_FLOATING;
 
@@ -65,18 +65,18 @@ aws_lws_gpio_esp32_mode(_lws_plat_gpio_t gpio, int flags)
 }
 
 static int
-aws_lws_gpio_esp32_read(_lws_plat_gpio_t gpio)
+aws_lws_gpio_esp32_read(aws__lws_plat_gpio_t gpio)
 {
 	return gpio_get_level(gpio);
 }
 static void
-aws_lws_gpio_esp32_set(_lws_plat_gpio_t gpio, int val)
+aws_lws_gpio_esp32_set(aws__lws_plat_gpio_t gpio, int val)
 {
 	gpio_set_level(gpio, val);
 }
 
 static int
-aws_lws_gpio_esp32_irq_mode(_lws_plat_gpio_t gpio, aws_lws_gpio_irq_t irq_type,
+aws_lws_gpio_esp32_irq_mode(aws__lws_plat_gpio_t gpio, aws_lws_gpio_irq_t irq_type,
 			aws_lws_gpio_irq_cb_t cb, void *arg)
 {
 	if (gpio_set_intr_type(gpio, irq_type))

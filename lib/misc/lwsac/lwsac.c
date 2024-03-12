@@ -93,7 +93,7 @@ aws_lwsac_extend(struct aws_lwsac *head, size_t amount)
 }
 
 static void *
-_lwsac_use(struct aws_lwsac **head, size_t ensure, size_t chunk_size, char backfill)
+aws__lwsac_use(struct aws_lwsac **head, size_t ensure, size_t chunk_size, char backfill)
 {
 	struct aws_lwsac_head *lachead = NULL;
 	size_t ofs, alloc, al, hp;
@@ -201,13 +201,13 @@ do_use:
 void *
 aws_lwsac_use(struct aws_lwsac **head, size_t ensure, size_t chunk_size)
 {
-	return _lwsac_use(head, ensure, chunk_size, 0);
+	return aws__lwsac_use(head, ensure, chunk_size, 0);
 }
 
 void *
 aws_lwsac_use_backfill(struct aws_lwsac **head, size_t ensure, size_t chunk_size)
 {
-	return _lwsac_use(head, ensure, chunk_size, 1);
+	return aws__lwsac_use(head, ensure, chunk_size, 1);
 }
 
 uint8_t *

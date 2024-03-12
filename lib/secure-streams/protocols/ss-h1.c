@@ -336,7 +336,7 @@ aws_lws_extract_metadata(aws_lws_ss_handle_t *h, struct lws *wsi)
 				 * set the related metadata name to it then
 				 */
 
-				_lws_ss_alloc_set_metadata(omd, polmd->name, cp,
+				aws__lws_ss_alloc_set_metadata(omd, polmd->name, cp,
 							   (unsigned int)n);
 
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
@@ -398,7 +398,7 @@ aws_lws_extract_metadata(aws_lws_ss_handle_t *h, struct lws *wsi)
 								   polmd->name);
 					if (omd) {
 
-						_lws_ss_set_metadata(omd,
+						aws__lws_ss_set_metadata(omd,
 							polmd->name, p, (size_t)n);
 						omd->value_on_lws_heap = 1;
 
@@ -466,7 +466,7 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 			/* already disconnected, no action for DISCONNECT_ME */
 			r = aws_lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
 			if (r != LWSSSSRET_OK)
-				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+				return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 		/* already disconnected, no action for DISCONNECT_ME */
 		r = aws_lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
@@ -476,7 +476,7 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 				break;
 			}
 
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 
 		h->wsi = NULL;
@@ -486,7 +486,7 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 				h->pending_ret = r;
 				break;
 			}
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 		break;
 
@@ -541,7 +541,7 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		    !h->txn_ok && !wsi->a.context->being_destroyed) {
 			r = aws_lws_ss_backoff(h);
 			if (r != LWSSSSRET_OK)
-				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+				return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			break;
 		} else
 			h->seqstate = SSSEQ_IDLE;
@@ -550,7 +550,7 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 			/* already disconnected, no action for DISCONNECT_ME */
 			r = aws_lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
 			if (r != LWSSSSRET_OK)
-				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+				return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 		break;
 
@@ -596,9 +596,9 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 			inter = 0;
 			aws_lws_http_check_retry_after(wsi, &inter);
 
-			r = _lws_ss_backoff(h, inter);
+			r = aws__lws_ss_backoff(h, inter);
 			if (r != LWSSSSRET_OK)
-				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+				return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 			return -1; /* end this stream */
 		}
@@ -628,7 +628,7 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 			if (n) {
 				r = aws_lws_ss_event_helper(h, (aws_lws_ss_constate_t)n);
 				if (r != LWSSSSRET_OK)
-					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi,
+					return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi,
 									&h);
 			}
 		}
@@ -653,7 +653,7 @@ secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 			if (h->prev_ss_state != LWSSSCS_CONNECTED) {
 				r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 				if (r != LWSSSSRET_OK)
-					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+					return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			}
 		}
 
@@ -834,7 +834,7 @@ malformed:
 			if (h->prev_ss_state != LWSSSCS_CONNECTED) {
 				r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 				if (r)
-					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+					return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			}
 		}
 
@@ -865,7 +865,7 @@ malformed:
 
 		r = h->info.rx(ss_to_userobj(h), (const uint8_t *)in, len, f);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		return 0; /* don't passthru */
 
@@ -910,7 +910,7 @@ malformed:
 						LWSSSCS_QOS_ACK_REMOTE :
 						LWSSSCS_QOS_NACK_REMOTE);
 		if (r != LWSSSSRET_OK)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
@@ -986,7 +986,7 @@ malformed:
 		if (r == LWSSSSRET_TX_DONT_SEND)
 			return 0;
 		if (r < 0)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
 		// aws_lwsl_notice("%s: WRITEABLE: user tx says len %d fl 0x%x\n",
 		//	    __func__, (int)buflen, (int)f);
@@ -1107,13 +1107,13 @@ malformed:
 			if (h->prev_ss_state != LWSSSCS_CONNECTED) {
 				r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 				if (r)
-					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
+					return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			}
 		}
 
 		r = aws_lws_ss_event_helper(h, LWSSSCS_SERVER_TXN);
 		if (r)
-			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r,
+			return aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r,
 								wsi, &h);
 
 		return 0;

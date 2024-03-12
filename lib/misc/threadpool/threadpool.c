@@ -122,7 +122,7 @@ pc_delta(aws_lws_usec_t now, aws_lws_usec_t then, aws_lws_usec_t us)
 }
 
 static void
-__lws_threadpool_task_dump(struct aws_lws_threadpool_task *task, char *buf, int len)
+aws___lws_threadpool_task_dump(struct aws_lws_threadpool_task *task, char *buf, int len)
 {
 	aws_lws_usec_t now = aws_lws_now_usecs();
 	char *end = buf + len - 1;
@@ -187,7 +187,7 @@ aws_lws_threadpool_dump(struct aws_lws_threadpool *tp)
 	c = &tp->task_queue_head;
 	while (*c) {
 		struct aws_lws_threadpool_task *task = *c;
-		__lws_threadpool_task_dump(task, buf, sizeof(buf));
+		aws___lws_threadpool_task_dump(task, buf, sizeof(buf));
 		aws_lwsl_thread("  - %s\n", buf);
 		count++;
 
@@ -204,7 +204,7 @@ aws_lws_threadpool_dump(struct aws_lws_threadpool *tp)
 		struct aws_lws_threadpool_task *task = pool->task;
 
 		if (task) {
-			__lws_threadpool_task_dump(task, buf, sizeof(buf));
+			aws___lws_threadpool_task_dump(task, buf, sizeof(buf));
 			aws_lwsl_thread("  - worker %d: %s\n", n, buf);
 			count++;
 		}
@@ -218,7 +218,7 @@ aws_lws_threadpool_dump(struct aws_lws_threadpool *tp)
 	c = &tp->task_done_head;
 	while (*c) {
 		struct aws_lws_threadpool_task *task = *c;
-		__lws_threadpool_task_dump(task, buf, sizeof(buf));
+		aws___lws_threadpool_task_dump(task, buf, sizeof(buf));
 		aws_lwsl_thread("  - %s\n", buf);
 		count++;
 
@@ -266,7 +266,7 @@ aws_lws_threadpool_task_cleanup_destroy(struct aws_lws_threadpool_task *task)
 }
 
 static void
-__lws_threadpool_reap(struct aws_lws_threadpool_task *task)
+aws___lws_threadpool_reap(struct aws_lws_threadpool_task *task)
 {
 	struct aws_lws_threadpool_task **c, *t = NULL;
 	struct aws_lws_threadpool *tp = task->tp;
@@ -546,7 +546,7 @@ aws_lws_threadpool_worker(void *d)
 
 		/* we have acquired a new task */
 
-		__lws_threadpool_task_dump(task, buf, sizeof(buf));
+		aws___lws_threadpool_task_dump(task, buf, sizeof(buf));
 
 		aws_lwsl_thread("%s: %s: worker %d ACQUIRING: %s\n",
 			    __func__, tp->name, pool->worker_index, buf);
@@ -639,7 +639,7 @@ aws_lws_threadpool_worker(void *d)
 		    (pool->task->status == LWS_TP_STATUS_STOPPED ||
 		     pool->task->status == LWS_TP_STATUS_FINISHED)) {
 
-			__lws_threadpool_task_dump(pool->task, buf, sizeof(buf));
+			aws___lws_threadpool_task_dump(pool->task, buf, sizeof(buf));
 			aws_lwsl_thread("%s: %s: worker %d REAPING: %s\n",
 				    __func__, tp->name, pool->worker_index,
 				    buf);
@@ -649,10 +649,10 @@ aws_lws_threadpool_worker(void *d)
 			 * going to take care of reaping us.  So we must take
 			 * care of it ourselves.
 			 */
-			__lws_threadpool_reap(pool->task);
+			aws___lws_threadpool_reap(pool->task);
 		} else {
 
-			__lws_threadpool_task_dump(pool->task, buf, sizeof(buf));
+			aws___lws_threadpool_task_dump(pool->task, buf, sizeof(buf));
 			aws_lwsl_thread("%s: %s: worker %d DONE: %s\n",
 				    __func__, tp->name, pool->worker_index,
 				    buf);
@@ -1068,10 +1068,10 @@ aws_lws_threadpool_task_status(struct aws_lws_threadpool_task *task, void **user
 		char buf[160];
 
 		pthread_mutex_lock(&tp->lock); /* ================ tpool lock */
-		__lws_threadpool_task_dump(task, buf, sizeof(buf));
+		aws___lws_threadpool_task_dump(task, buf, sizeof(buf));
 		aws_lwsl_thread("%s: %s: service thread REAPING: %s\n",
 			    __func__, tp->name, buf);
-		__lws_threadpool_reap(task);
+		aws___lws_threadpool_reap(task);
 		aws_lws_memory_barrier();
 		pthread_mutex_unlock(&tp->lock); /* ------------ tpool unlock */
 	}

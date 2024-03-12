@@ -17,8 +17,8 @@ typedef struct aws_lws_bb_i2c {
 
 	/* implementation-specific members */
 
-	_lws_plat_gpio_t	scl;
-	_lws_plat_gpio_t	sda;
+	aws__lws_plat_gpio_t	scl;
+	aws__lws_plat_gpio_t	sda;
 
 	const aws_lws_gpio_ops_t	*gpio;
 	void (*delay)(void);

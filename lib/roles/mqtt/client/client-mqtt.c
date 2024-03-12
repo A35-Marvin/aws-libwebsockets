@@ -92,7 +92,7 @@ aws_lws_read_mqtt(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len)
 {
 	aws_lws_mqttc_t *c = &wsi->mqtt->client;
 
-	return _lws_mqtt_rx_parser(wsi, &c->par, buf, (size_t)len);
+	return aws__lws_mqtt_rx_parser(wsi, &c->par, buf, (size_t)len);
 }
 
 int

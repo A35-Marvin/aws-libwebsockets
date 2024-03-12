@@ -41,6 +41,6 @@ struct aws_lws_pt_role_dbus {
 	aws_lws_sorted_usec_list_t sul;
 };
 
-struct _lws_dbus_mode_related {
+struct aws__lws_dbus_mode_related {
 	DBusConnection *conn;
 };

@@ -30,14 +30,14 @@ aws_lws_close_trans_q_leader(struct aws_lws_dll2 *d, void *user)
 {
 	struct lws *w = aws_lws_container_of(d, struct lws, dll2_cli_txn_queue);
 
-	__lws_close_free_wsi(w, (enum aws_lws_close_status)-1, "trans q leader closing");
+	aws___lws_close_free_wsi(w, (enum aws_lws_close_status)-1, "trans q leader closing");
 
 	return 0;
 }
 #endif
 
 void
-__lws_reset_wsi(struct lws *wsi)
+aws___lws_reset_wsi(struct lws *wsi)
 {
 	if (!wsi)
 		return;
@@ -145,7 +145,7 @@ __lws_reset_wsi(struct lws *wsi)
 		aws_lws_dll2_remove(&wsi->dll_cli_active_conns);
 #endif
 
-	__lws_same_vh_protocol_remove(wsi);
+	aws___lws_same_vh_protocol_remove(wsi);
 #if defined(LWS_WITH_CLIENT)
 	//aws_lws_free_set_NULL(wsi->stash);
 	aws_lws_free_set_NULL(wsi->cli_hostname_copy);
@@ -159,16 +159,16 @@ __lws_reset_wsi(struct lws *wsi)
 	/* since we will destroy the wsi, make absolutely sure now */
 
 #if defined(LWS_WITH_OPENSSL)
-	__lws_ssl_remove_wsi_from_buffered_list(wsi);
+	aws___lws_ssl_remove_wsi_from_buffered_list(wsi);
 #endif
-	__lws_wsi_remove_from_sul(wsi);
+	aws___lws_wsi_remove_from_sul(wsi);
 
 	if (aws_lws_rops_fidx(wsi->role_ops, LWS_ROPS_destroy_role))
 		aws_lws_rops_func_fidx(wsi->role_ops,
 				   LWS_ROPS_destroy_role).destroy_role(wsi);
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-	__lws_header_table_detach(wsi, 0);
+	aws___lws_header_table_detach(wsi, 0);
 #endif
 
 #if defined(LWS_ROLE_H2)
@@ -203,7 +203,7 @@ __lws_reset_wsi(struct lws *wsi)
 /* req cx lock */
 
 void
-__lws_free_wsi(struct lws *wsi)
+aws___lws_free_wsi(struct lws *wsi)
 {
 	struct aws_lws_vhost *vh;
 
@@ -242,12 +242,12 @@ __lws_free_wsi(struct lws *wsi)
 
 	vh = wsi->a.vhost;
 
-	__lws_reset_wsi(wsi);
-	__lws_wsi_remove_from_sul(wsi);
+	aws___lws_reset_wsi(wsi);
+	aws___lws_wsi_remove_from_sul(wsi);
 
 	if (vh)
 		/* this may destroy vh */
-		__lws_vhost_unbind_wsi(wsi); /* req cx + vh lock */
+		aws___lws_vhost_unbind_wsi(wsi); /* req cx + vh lock */
 
 #if defined(LWS_WITH_CLIENT)
 	if (wsi->stash)
@@ -263,7 +263,7 @@ __lws_free_wsi(struct lws *wsi)
 	/* confirm no sul left scheduled in wsi itself */
 	aws_lws_sul_debug_zombies(wsi->a.context, wsi, sizeof(*wsi), __func__);
 
-	__lws_lc_untag(wsi->a.context, &wsi->lc);
+	aws___lws_lc_untag(wsi->a.context, &wsi->lc);
 	aws_lws_free(wsi);
 }
 
@@ -343,7 +343,7 @@ aws_lws_addrinfo_clean(struct lws *wsi)
 /* requires cx and pt lock */
 
 void
-__lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
+aws___lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
 		     const char *caller)
 {
 	struct aws_lws_context_per_thread *pt;
@@ -410,7 +410,7 @@ __lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
 //			wsi2->parent = NULL;
 			/* stop it doing shutdown processing */
 			wsi2->socket_is_permanently_unusable = 1;
-			__lws_close_free_wsi(wsi2, reason,
+			aws___lws_close_free_wsi(wsi2, reason,
 					     "general child recurse");
 			wsi2 = wsi1;
 		}
@@ -514,7 +514,7 @@ __lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason,
 		) {
 			aws_lwsl_wsi_info(wsi, "LRS_FLUSHING_BEFORE_CLOSE");
 			aws_lwsi_set_state(wsi, LRS_FLUSHING_BEFORE_CLOSE);
-			__lws_set_timeout(wsi,
+			aws___lws_set_timeout(wsi,
 				PENDING_FLUSH_STORED_SEND_BEFORE_CLOSE, 5);
 			return;
 		}
@@ -649,7 +649,7 @@ just_kill_connection:
 #if defined(LWS_WITH_TLS)
 		if (aws_lws_is_ssl(wsi) && wsi->tls.ssl) {
 			n = 0;
-			switch (__lws_tls_shutdown(wsi)) {
+			switch (aws___lws_tls_shutdown(wsi)) {
 			case LWS_SSL_CAPABLE_DONE:
 			case LWS_SSL_CAPABLE_ERROR:
 			case LWS_SSL_CAPABLE_MORE_SERVICE_READ:
@@ -686,9 +686,9 @@ just_kill_connection:
 		    aws_lws_socket_is_valid(wsi->desc.sockfd) &&
 		    aws_lwsi_state(wsi) != LRS_SHUTDOWN &&
 		    (context->event_loop_ops->flags & LELOF_ISPOLL)) {
-			__lws_change_pollfd(wsi, LWS_POLLOUT, LWS_POLLIN);
+			aws___lws_change_pollfd(wsi, LWS_POLLOUT, LWS_POLLIN);
 			aws_lwsi_set_state(wsi, LRS_SHUTDOWN);
-			__lws_set_timeout(wsi, PENDING_TIMEOUT_SHUTDOWN_FLUSH,
+			aws___lws_set_timeout(wsi, PENDING_TIMEOUT_SHUTDOWN_FLUSH,
 					  (int)context->timeout_secs);
 
 			return;
@@ -713,8 +713,8 @@ just_kill_connection:
 	 * we won't be servicing or receiving anything further from this guy
 	 * delete socket from the internal poll list if still present
 	 */
-	__lws_ssl_remove_wsi_from_buffered_list(wsi);
-	__lws_wsi_remove_from_sul(wsi);
+	aws___lws_ssl_remove_wsi_from_buffered_list(wsi);
+	aws___lws_wsi_remove_from_sul(wsi);
 
 	//if (wsi->told_event_loop_closed) // cgi std close case (dummy-callback)
 	//	return;
@@ -867,14 +867,14 @@ async_close:
 		if (wsi->a.context->event_loop_ops->wsi_logical_close(wsi))
 			return;
 
-	__lws_close_free_wsi_final(wsi);
+	aws___lws_close_free_wsi_final(wsi);
 }
 
 
 /* cx + vh lock */
 
 void
-__lws_close_free_wsi_final(struct lws *wsi)
+aws___lws_close_free_wsi_final(struct lws *wsi)
 {
 	int n;
 
@@ -953,7 +953,7 @@ __lws_close_free_wsi_final(struct lws *wsi)
 			return;
 		}
 //		}
-		//_lws_header_table_reset(wsi->http.ah);
+		//aws__lws_header_table_reset(wsi->http.ah);
 
 #if defined(LWS_WITH_TLS)
 		wsi->tls.use_ssl = wsi->flags & LCCSCF_USE_SSL;
@@ -998,9 +998,9 @@ __lws_close_free_wsi_final(struct lws *wsi)
 	aws_lws_fi_destroy(&wsi->fic);
 #endif
 
-	__lws_wsi_remove_from_sul(wsi);
+	aws___lws_wsi_remove_from_sul(wsi);
 	sanity_assert_no_wsi_traces(wsi->a.context, wsi);
-	__lws_free_wsi(wsi);
+	aws___lws_free_wsi(wsi);
 }
 
 
@@ -1014,7 +1014,7 @@ aws_lws_close_free_wsi(struct lws *wsi, enum aws_lws_close_status reason, const 
 
 	aws_lws_pt_lock(pt, __func__);
 	/* may destroy vhost, cannot hold vhost lock outside it */
-	__lws_close_free_wsi(wsi, reason, caller);
+	aws___lws_close_free_wsi(wsi, reason, caller);
 	aws_lws_pt_unlock(pt);
 
 	aws_lws_context_unlock(cx);

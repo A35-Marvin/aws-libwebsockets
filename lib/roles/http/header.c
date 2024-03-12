@@ -650,7 +650,7 @@ aws_lws_sul_http_ah_lifecheck(aws_lws_sorted_usec_list_t *sul)
 
 		/* ... and then drop the connection */
 
-		__lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
+		aws___lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
 					     "excessive ah");
 
 		ah = pt->http.ah_list;

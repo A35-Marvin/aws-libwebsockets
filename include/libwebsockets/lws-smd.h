@@ -25,7 +25,7 @@
 #define LWS_SMD_MAX_PAYLOAD		384
 #define LWS_SMD_CLASS_BITFIELD_BYTES	4
 
-#define LWS_SMD_STREAMTYPENAME		"_lws_smd"
+#define LWS_SMD_STREAMTYPENAME		"aws__lws_smd"
 #define LWS_SMD_SS_RX_HEADER_LEN	16
 
 typedef uint32_t aws_lws_smd_class_t;

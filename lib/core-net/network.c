@@ -325,14 +325,14 @@ aws_lws_socket_bind(struct aws_lws_vhost *vhost, struct lws *wsi,
 	} else
 #endif
 	if (n < 0) {
-		int _lws_errno = LWS_ERRNO;
+		int aws__lws_errno = LWS_ERRNO;
 
 		aws_lwsl_wsi_err(wsi, "ERROR on binding fd %d to port %d (%d %d)",
-				  sockfd, port, n, _lws_errno);
+				  sockfd, port, n, aws__lws_errno);
 
 		/* if something already listening, tell caller to fail permanently */
 
-		if (_lws_errno == LWS_EADDRINUSE)
+		if (aws__lws_errno == LWS_EADDRINUSE)
 			return LWS_ITOSA_BUSY;
 
 		/* otherwise ask caller to retry later */

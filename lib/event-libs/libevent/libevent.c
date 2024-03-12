@@ -37,7 +37,7 @@ aws_lws_event_hrtimer_cb(evutil_socket_t fd, short event, void *p)
 	aws_lws_usec_t us;
 
 	aws_lws_pt_lock(pt, __func__);
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us) {
 #if defined(__APPLE__)
@@ -70,7 +70,7 @@ aws_lws_event_idle_timer_cb(evutil_socket_t fd, short event, void *p)
 	 */
 	if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 		/* -1 timeout means just do forced service */
-		_lws_plat_service_forced_tsi(pt->context, pt->tid);
+		aws__lws_plat_service_forced_tsi(pt->context, pt->tid);
 		/* still somebody left who wants forced service? */
 		if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 			/* yes... come back again later */
@@ -86,7 +86,7 @@ aws_lws_event_idle_timer_cb(evutil_socket_t fd, short event, void *p)
 	/* account for hrtimer */
 
 	aws_lws_pt_lock(pt, __func__);
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us) {
 		tv.tv_sec = (suseconds_t)(us / LWS_US_PER_SEC);

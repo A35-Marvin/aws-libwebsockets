@@ -37,7 +37,7 @@ aws_lws_uloop_hrtimer_cb(struct uloop_timeout *ti)
 	aws_lws_usec_t us;
 
 	aws_lws_pt_lock(pt, __func__);
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us)
 		uloop_timeout_set(ti, us < 1000 ? 1 : (int)(us / 1000));
@@ -64,7 +64,7 @@ aws_lws_uloop_idle_timer_cb(struct uloop_timeout *ti)
 	 */
 	if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 		/* -1 timeout means just do forced service */
-		_lws_plat_service_forced_tsi(pt->context, pt->tid);
+		aws__lws_plat_service_forced_tsi(pt->context, pt->tid);
 		/* still somebody left who wants forced service? */
 		if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 			/* yes... come back again later */
@@ -78,7 +78,7 @@ aws_lws_uloop_idle_timer_cb(struct uloop_timeout *ti)
 	/* account for hrtimer */
 
 	aws_lws_pt_lock(pt, __func__);
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us) {
 		uloop_timeout_cancel(&upt->hrtimer);

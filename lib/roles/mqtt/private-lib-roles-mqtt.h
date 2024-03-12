@@ -350,7 +350,7 @@ typedef struct aws_lws_mqttc {
 	uint8_t			aws_iot;
 } aws_lws_mqttc_t;
 
-struct _lws_mqtt_related {
+struct aws__lws_mqtt_related {
 	aws_lws_mqttc_t		client;
 	aws_lws_sorted_usec_list_t	sul_qos_puback_pubrec_wait; /* QoS1 puback or QoS2 pubrec wait TO */
 	aws_lws_sorted_usec_list_t	sul_qos1_puback_wait; /* QoS1 puback wait TO */
@@ -409,7 +409,7 @@ void
 aws_lws_mqttc_state_transition(aws_lws_mqttc_t *ep, aws_lwsgs_mqtt_states_t s);
 
 int
-_lws_mqtt_rx_parser(struct lws *wsi, aws_lws_mqtt_parser_t *par,
+aws__lws_mqtt_rx_parser(struct lws *wsi, aws_lws_mqtt_parser_t *par,
 		    const uint8_t *buf, size_t len);
 
 int
@@ -435,7 +435,7 @@ struct lws *
 aws_lws_wsi_mqtt_adopt(struct lws *parent_wsi, struct lws *wsi);
 
 aws_lws_mqtt_subs_t *
-aws_lws_mqtt_find_sub(struct _lws_mqtt_related *mqtt, const char *topic);
+aws_lws_mqtt_find_sub(struct aws__lws_mqtt_related *mqtt, const char *topic);
 
 #endif /* _PRIVATE_LIB_ROLES_MQTT */
 

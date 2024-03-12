@@ -33,7 +33,7 @@ int aws_lws_plat_apply_FD_CLOEXEC(int n)
 }
 
 aws_lws_fop_fd_t
-_lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
+aws__lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
 		    const char *vpath, aws_lws_fop_flags_t *flags)
 {
 	HANDLE ret;
@@ -79,7 +79,7 @@ bail:
 }
 
 int
-_lws_plat_file_close(aws_lws_fop_fd_t *fop_fd)
+aws__lws_plat_file_close(aws_lws_fop_fd_t *fop_fd)
 {
 	HANDLE fd = (*fop_fd)->filesystem_priv;
 
@@ -92,7 +92,7 @@ _lws_plat_file_close(aws_lws_fop_fd_t *fop_fd)
 }
 
 aws_lws_fileofs_t
-_lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
+aws__lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
 {
 	LARGE_INTEGER l;
 
@@ -117,7 +117,7 @@ _lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
 }
 
 int
-_lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+aws__lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
 		    uint8_t *buf, aws_lws_filepos_t len)
 {
 	DWORD _amount;
@@ -135,7 +135,7 @@ _lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
 }
 
 int
-_lws_plat_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+aws__lws_plat_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
 			 uint8_t* buf, aws_lws_filepos_t len)
 {
 	DWORD _amount;

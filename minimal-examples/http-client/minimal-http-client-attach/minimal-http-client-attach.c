@@ -159,7 +159,7 @@ aws_lws_attach_with_pthreads_locking(struct aws_lws_context *context, int tsi,
 	 * We just provide system-specific locking around the lws non-threadsafe
 	 * helper that adds and removes things from the pt list
 	 */
-	n = __lws_system_attach(context, tsi, cb, state, opaque, get);
+	n = aws___lws_system_attach(context, tsi, cb, state, opaque, get);
 	pthread_mutex_unlock(&lock);
 
 	return n;

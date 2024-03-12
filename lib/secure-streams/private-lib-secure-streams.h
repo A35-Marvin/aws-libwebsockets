@@ -457,13 +457,13 @@ aws_lws_ss_state_return_t
 aws_lws_ss_event_helper(aws_lws_ss_handle_t *h, aws_lws_ss_constate_t cs);
 
 aws_lws_ss_state_return_t
-_lws_ss_backoff(aws_lws_ss_handle_t *h, aws_lws_usec_t us_override);
+aws__lws_ss_backoff(aws_lws_ss_handle_t *h, aws_lws_usec_t us_override);
 
 aws_lws_ss_state_return_t
 aws_lws_ss_backoff(aws_lws_ss_handle_t *h);
 
 int
-_lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct lws *wsi,
+aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct lws *wsi,
 			 aws_lws_ss_handle_t **ph);
 
 int
@@ -496,21 +496,21 @@ aws_lws_ss_exp_cb_metadata(void *priv, const char *name, char *out, size_t *pos,
 			size_t olen, size_t *exp_ofs);
 
 int
-_lws_ss_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
+aws__lws_ss_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 		     const void *value, size_t len);
 
 int
-_lws_ss_alloc_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
+aws__lws_ss_alloc_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 			   const void *value, size_t len);
 
 aws_lws_ss_state_return_t
-_lws_ss_client_connect(aws_lws_ss_handle_t *h, int is_retry, void *conn_if_sspc_onw);
+aws__lws_ss_client_connect(aws_lws_ss_handle_t *h, int is_retry, void *conn_if_sspc_onw);
 
 aws_lws_ss_state_return_t
-_lws_ss_request_tx(aws_lws_ss_handle_t *h);
+aws__lws_ss_request_tx(aws_lws_ss_handle_t *h);
 
 int
-__lws_ss_proxy_bind_ss_to_conn_wsi(void *parconn, size_t dsh_size);
+aws___lws_ss_proxy_bind_ss_to_conn_wsi(void *parconn, size_t dsh_size);
 
 struct aws_lws_vhost *
 aws_lws_ss_policy_ref_trust_store(struct aws_lws_context *context,

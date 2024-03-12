@@ -113,27 +113,27 @@ aws_lws_fi_range(const aws_lws_fi_ctx_t *fic, const char *name, uint64_t *result
 }
 
 int
-_lws_fi_user_wsi_fi(struct lws *wsi, const char *name)
+aws__lws_fi_user_wsi_fi(struct lws *wsi, const char *name)
 {
 	return aws_lws_fi(&wsi->fic, name);
 }
 
 int
-_lws_fi_user_context_fi(struct aws_lws_context *ctx, const char *name)
+aws__lws_fi_user_context_fi(struct aws_lws_context *ctx, const char *name)
 {
 	return aws_lws_fi(&ctx->fic, name);
 }
 
 #if defined(LWS_WITH_SECURE_STREAMS)
 int
-_lws_fi_user_ss_fi(struct aws_lws_ss_handle *h, const char *name)
+aws__lws_fi_user_ss_fi(struct aws_lws_ss_handle *h, const char *name)
 {
 	return aws_lws_fi(&h->fic, name);
 }
 
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
 int
-_lws_fi_user_sspc_fi(struct aws_lws_sspc_handle *h, const char *name)
+aws__lws_fi_user_sspc_fi(struct aws_lws_sspc_handle *h, const char *name)
 {
 	return aws_lws_fi(&h->fic, name);
 }

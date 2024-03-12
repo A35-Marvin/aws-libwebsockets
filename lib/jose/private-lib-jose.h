@@ -40,7 +40,7 @@ aws_lws_jose_render(struct aws_lws_jose *jose, struct aws_lws_jwk *aux_jwk,
 		char *out, size_t out_len);
 
 int
-_lws_jwk_set_el_jwk(struct aws_lws_gencrypto_keyelem *e, char *in, size_t len);
+aws__lws_jwk_set_el_jwk(struct aws_lws_gencrypto_keyelem *e, char *in, size_t len);
 
 void
 aws_lws_jwk_init_jps(struct aws_lws_jwk_parse_state *jps,

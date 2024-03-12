@@ -42,7 +42,7 @@ aws_lws_uv_sultimer_cb(uv_timer_t *timer
 
 	aws_lws_context_lock(pt->context, __func__);
 	aws_lws_pt_lock(pt, __func__);
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us)
 		uv_timer_start(&pt_to_priv_uv(pt)->sultimer, aws_lws_uv_sultimer_cb,
@@ -72,11 +72,11 @@ aws_lws_uv_idle(uv_idle_t *handle
 	 */
 	if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid))
 		/* -1 timeout means just do forced service */
-		_lws_plat_service_forced_tsi(pt->context, pt->tid);
+		aws__lws_plat_service_forced_tsi(pt->context, pt->tid);
 
 	/* account for sultimer */
 
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
 				    aws_lws_now_usecs());
 	if (us)
 		uv_timer_start(&pt_to_priv_uv(pt)->sultimer, aws_lws_uv_sultimer_cb,
@@ -820,7 +820,7 @@ aws_lws_libuv_closewsi(uv_handle_t* handle)
 			   ptpriv->extant_handles - 1,
 			   context->requested_stop_internal_loops);
 
-	__lws_close_free_wsi_final(wsi);
+	aws___lws_close_free_wsi_final(wsi);
 	assert(ptpriv->extant_handles);
 	ptpriv->extant_handles--;
 	aws_lws_pt_unlock(pt);

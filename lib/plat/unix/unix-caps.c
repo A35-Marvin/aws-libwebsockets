@@ -32,7 +32,7 @@
 
 #if defined(LWS_HAVE_SYS_CAPABILITY_H) && defined(LWS_HAVE_LIBCAP)
 static void
-_lws_plat_apply_caps(unsigned int mode, const cap_value_t *cv, int count)
+aws__lws_plat_apply_caps(unsigned int mode, const cap_value_t *cv, int count)
 {
 	cap_t caps;
 
@@ -211,7 +211,7 @@ aws_lws_plat_drop_app_privileges(struct aws_lws_context *context, int actually_d
 		}
 
 #if defined(LWS_HAVE_SYS_CAPABILITY_H) && defined(LWS_HAVE_LIBCAP)
-		_lws_plat_apply_caps(CAP_PERMITTED, context->caps,
+		aws__lws_plat_apply_caps(CAP_PERMITTED, context->caps,
 				     context->count_caps);
 #endif
 
@@ -232,7 +232,7 @@ aws_lws_plat_drop_app_privileges(struct aws_lws_context *context, int actually_d
 					p->pw_name);
 
 #if defined(LWS_HAVE_SYS_CAPABILITY_H) && defined(LWS_HAVE_LIBCAP)
-		_lws_plat_apply_caps(CAP_EFFECTIVE, context->caps,
+		aws__lws_plat_apply_caps(CAP_EFFECTIVE, context->caps,
 				     context->count_caps);
 
 		if (context->count_caps) {

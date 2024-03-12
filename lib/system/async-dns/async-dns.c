@@ -554,7 +554,7 @@ aws_lws_async_dns_deinit(aws_lws_async_dns_t *dns)
 
 	if (dns->wsi && !dns->dns_server_connected) {
 		aws_lwsl_wsi_notice(dns->wsi, "late free of incomplete dns wsi");
-		__lws_lc_untag(dns->wsi->a.context, &dns->wsi->lc);
+		aws___lws_lc_untag(dns->wsi->a.context, &dns->wsi->lc);
 #if defined(LWS_WITH_SYS_METRICS)
 		aws_lws_metrics_tags_destroy(&dns->wsi->cal_conn.mtags_owner);
 #endif

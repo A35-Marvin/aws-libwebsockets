@@ -90,7 +90,7 @@ aws_lws_vhost_bind_wsi(struct aws_lws_vhost *vh, struct lws *wsi)
 
 /* req cx lock... acquires vh lock */
 void
-__lws_vhost_unbind_wsi(struct lws *wsi)
+aws___lws_vhost_unbind_wsi(struct lws *wsi)
 {
         struct aws_lws_vhost *vh = wsi->a.vhost;
 
@@ -122,7 +122,7 @@ __lws_vhost_unbind_wsi(struct lws *wsi)
 		 *
 		 * Finalize the vh destruction... must drop vh lock
 		 */
-		__lws_vhost_destroy2(vh);
+		aws___lws_vhost_destroy2(vh);
 
 	wsi->a.vhost = NULL;
 }
@@ -286,7 +286,7 @@ aws_lws_wsi_fault_timedclose(struct lws *wsi)
  */
 
 struct lws *
-__lws_wsi_create_with_role(struct aws_lws_context *context, int tsi,
+aws___lws_wsi_create_with_role(struct aws_lws_context *context, int tsi,
 			   const struct aws_lws_role_ops *ops,
 			   aws_lws_log_cx_t *log_cx_template)
 {
@@ -455,7 +455,7 @@ aws_lws_rx_flow_control(struct lws *wsi, int _enable)
 
 	if (_enable & LWS_RXFLOW_REASON_FLAG_PROCESS_NOW ||
 	    !wsi->rxflow_will_be_applied) {
-		en = __lws_rx_flow_control(wsi);
+		en = aws___lws_rx_flow_control(wsi);
 		aws_lws_pt_unlock(pt);
 
 		return en;
@@ -498,13 +498,13 @@ int user_callback_handle_rxflow(aws_lws_callback_function callback_function,
 	n = callback_function(wsi, reason, user, in, len);
 	wsi->rxflow_will_be_applied = 0;
 	if (!n)
-		n = __lws_rx_flow_control(wsi);
+		n = aws___lws_rx_flow_control(wsi);
 
 	return n;
 }
 
 int
-__lws_rx_flow_control(struct lws *wsi)
+aws___lws_rx_flow_control(struct lws *wsi)
 {
 	struct lws *wsic = wsi->child_list;
 
@@ -516,7 +516,7 @@ __lws_rx_flow_control(struct lws *wsi)
 	/* if he has children, do those if they were changed */
 	while (wsic) {
 		if (wsic->rxflow_change_to & LWS_RXFLOW_PENDING_CHANGE)
-			__lws_rx_flow_control(wsic);
+			aws___lws_rx_flow_control(wsic);
 
 		wsic = wsic->sibling_list;
 	}
@@ -544,12 +544,12 @@ __lws_rx_flow_control(struct lws *wsi)
 	if (wsi->rxflow_change_to & LWS_RXFLOW_ALLOW) {
 		aws_lwsl_wsi_info(wsi, "reenable POLLIN");
 		// aws_lws_buflist_describe(&wsi->buflist, NULL, __func__);
-		if (__lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
+		if (aws___lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
 			aws_lwsl_wsi_info(wsi, "fail");
 			return -1;
 		}
 	} else
-		if (__lws_change_pollfd(wsi, LWS_POLLIN, 0))
+		if (aws___lws_change_pollfd(wsi, LWS_POLLIN, 0))
 			return -1;
 
 	return 0;
@@ -1026,7 +1026,7 @@ aws_lwsl_wsi_get_cx(struct lws *wsi)
 
 #if defined(LWS_WITH_CLIENT)
 int
-_lws_generic_transaction_completed_active_conn(struct lws **_wsi, char take_vh_lock)
+aws__lws_generic_transaction_completed_active_conn(struct lws **_wsi, char take_vh_lock)
 {
 	struct lws *wnew, *wsi = *_wsi;
 
@@ -1086,7 +1086,7 @@ _lws_generic_transaction_completed_active_conn(struct lws **_wsi, char take_vh_l
 
 	assert(aws_lws_socket_is_valid(wsi->desc.sockfd));
 
-	__lws_change_pollfd(wsi, LWS_POLLOUT | LWS_POLLIN, 0);
+	aws___lws_change_pollfd(wsi, LWS_POLLOUT | LWS_POLLIN, 0);
 
 	/* copy the fd */
 	wnew->desc = wsi->desc;
@@ -1102,7 +1102,7 @@ _lws_generic_transaction_completed_active_conn(struct lws **_wsi, char take_vh_l
 	sanity_assert_no_sockfd_traces(wsi->a.context, wsi->desc.sockfd);
 	wsi->desc.sockfd = LWS_SOCK_INVALID;
 
-	__lws_wsi_remove_from_sul(wsi);
+	aws___lws_wsi_remove_from_sul(wsi);
 
 	/*
 	 * ... we're doing some magic here in terms of handing off the socket
@@ -1429,7 +1429,7 @@ aws_lws_wsi_mux_close_children(struct lws *wsi, int reason)
 		assert (wsi2 != *w);
 		(*w)->mux.sibling_list = NULL;
 		(*w)->socket_is_permanently_unusable = 1;
-		__lws_close_free_wsi(*w, (enum aws_lws_close_status)reason, "mux child recurse");
+		aws___lws_close_free_wsi(*w, (enum aws_lws_close_status)reason, "mux child recurse");
 		*w = wsi2;
 	}
 }

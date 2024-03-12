@@ -32,7 +32,7 @@ typedef struct aws_lws_display_ili9341 {
 	const aws_lws_spi_ops_t	*spi;	      /* spi ops */
 
 	const aws_lws_gpio_ops_t	*gpio;	      /* NULL or gpio ops */
-	_lws_plat_gpio_t	reset_gpio;   /* if gpio ops, nReset gpio # */
+	aws__lws_plat_gpio_t	reset_gpio;   /* if gpio ops, nReset gpio # */
 
 	uint8_t			spi_index; /* cs index starting from 0 */
 

@@ -199,14 +199,14 @@ typedef struct aws_lws_lifecycle {
 } aws_lws_lifecycle_t;
 
 void
-__lws_lc_tag(struct aws_lws_context *cx, aws_lws_lifecycle_group_t *grp,
+aws___lws_lc_tag(struct aws_lws_context *cx, aws_lws_lifecycle_group_t *grp,
 	     aws_lws_lifecycle_t *lc, const char *format, ...);
 
 void
-__lws_lc_tag_append(aws_lws_lifecycle_t *lc, const char *app);
+aws___lws_lc_tag_append(aws_lws_lifecycle_t *lc, const char *app);
 
 void
-__lws_lc_untag(struct aws_lws_context *cx, aws_lws_lifecycle_t *lc);
+aws___lws_lc_untag(struct aws_lws_context *cx, aws_lws_lifecycle_t *lc);
 
 const char *
 aws_lws_lc_tag(aws_lws_lifecycle_t *lc);
@@ -822,7 +822,7 @@ void aws_lwsl_emit_stderr(int level, const char *line);
  #define aws_lws_ssl_context_destroy(_a)
  #define aws_lws_ssl_SSL_CTX_destroy(_a)
  #define aws_lws_ssl_remove_wsi_from_buffered_list(_a)
- #define __lws_ssl_remove_wsi_from_buffered_list(_a)
+ #define aws___lws_ssl_remove_wsi_from_buffered_list(_a)
  #define aws_lws_context_init_ssl_library(_a, _b)
  #define aws_lws_context_deinit_ssl_library(_a)
  #define aws_lws_tls_check_all_cert_lifetimes(_a)
@@ -908,7 +908,7 @@ void aws_lws_free(void *p);
 #endif
 
 int
-__lws_create_event_pipes(struct aws_lws_context *context);
+aws___lws_create_event_pipes(struct aws_lws_context *context);
 
 int
 aws_lws_plat_apply_FD_CLOEXEC(int n);

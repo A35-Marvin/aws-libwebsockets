@@ -36,7 +36,7 @@ typedef struct aws_lws_tls_session_cache_openssl {
 #define aws_lwsl_tlssess aws_lwsl_info
 
 static void
-__lws_tls_session_destroy(aws_lws_tls_sco_t *ts)
+aws___lws_tls_session_destroy(aws_lws_tls_sco_t *ts)
 {
 	aws_lwsl_tlssess("%s: %s (%u)\n", __func__, (const char *)&ts[1],
 				     ts->list.owner->count - 1);
@@ -49,7 +49,7 @@ __lws_tls_session_destroy(aws_lws_tls_sco_t *ts)
 }
 
 static aws_lws_tls_sco_t *
-__lws_tls_session_lookup_by_name(struct aws_lws_vhost *vh, const char *name)
+aws___lws_tls_session_lookup_by_name(struct aws_lws_vhost *vh, const char *name)
 {
 	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p,
 			      aws_lws_dll2_get_head(&vh->tls_sessions)) {
@@ -83,7 +83,7 @@ aws_lws_tls_reuse_session(struct lws *wsi)
 
 	if (aws_lws_tls_session_tag_from_wsi(wsi, tag, sizeof(tag)))
 		goto bail;
-	ts = __lws_tls_session_lookup_by_name(wsi->a.vhost, tag);
+	ts = aws___lws_tls_session_lookup_by_name(wsi->a.vhost, tag);
 
 	if (!ts) {
 		aws_lwsl_tlssess("%s: no existing session for %s\n", __func__, tag);
@@ -138,7 +138,7 @@ aws_lws_tls_session_destroy_dll(struct aws_lws_dll2 *d, void *user)
 {
 	aws_lws_tls_sco_t *ts = aws_lws_container_of(d, aws_lws_tls_sco_t, list);
 
-	__lws_tls_session_destroy(ts);
+	aws___lws_tls_session_destroy(ts);
 
 	return 0;
 }
@@ -159,7 +159,7 @@ aws_lws_tls_session_expiry_cb(aws_lws_sorted_usec_list_t *sul)
 
 	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
 	aws_lws_vhost_lock(vh); /* -------------- vh { */
-	__lws_tls_session_destroy(ts);
+	aws___lws_tls_session_destroy(ts);
 	aws_lws_vhost_unlock(vh); /* } vh --------------  */
 	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 }
@@ -184,7 +184,7 @@ aws_lws_tls_session_add_entry(struct aws_lws_vhost *vh, const char *tag)
 			aws_lwsl_tlssess("%s: pruning oldest session\n", __func__);
 
 			aws_lws_vhost_lock(vh); /* -------------- vh { */
-			__lws_tls_session_destroy(ts);
+			aws___lws_tls_session_destroy(ts);
 			aws_lws_vhost_unlock(vh); /* } vh --------------  */
 		}
 	}
@@ -235,7 +235,7 @@ aws_lws_tls_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
 	aws_lws_vhost_lock(vh); /* -------------- vh { */
 
-	ts = __lws_tls_session_lookup_by_name(vh, tag);
+	ts = aws___lws_tls_session_lookup_by_name(vh, tag);
 
 	if (!ts) {
 		ts = aws_lws_tls_session_add_entry(vh, tag);
@@ -375,7 +375,7 @@ aws_lws_tls_session_dump_save(struct aws_lws_vhost *vh, const char *host, uint16
 	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
 	aws_lws_vhost_lock(vh); /* -------------- vh { */
 
-	ts = __lws_tls_session_lookup_by_name(vh, d.tag);
+	ts = aws___lws_tls_session_lookup_by_name(vh, d.tag);
 	if (!ts)
 		goto bail;
 
@@ -428,7 +428,7 @@ aws_lws_tls_session_dump_load(struct aws_lws_vhost *vh, const char *host, uint16
 	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
 	aws_lws_vhost_lock(vh); /* -------------- vh { */
 
-	ts = __lws_tls_session_lookup_by_name(vh, d.tag);
+	ts = aws___lws_tls_session_lookup_by_name(vh, d.tag);
 
 	if (ts) {
 		/*

@@ -850,11 +850,11 @@ agin:
 		if (wsi->mux_substream) {
 			struct lws *nwsi = aws_lws_get_network_wsi(wsi);
 
-			__lws_set_timeout(wsi,
+			aws___lws_set_timeout(wsi,
 				PENDING_TIMEOUT_HTTP_KEEPALIVE_IDLE, 31);
 
 			if (!nwsi->immortal_substream_count)
-				__lws_set_timeout(nwsi,
+				aws___lws_set_timeout(nwsi,
 					PENDING_TIMEOUT_HTTP_KEEPALIVE_IDLE, 31);
 		}
 #endif

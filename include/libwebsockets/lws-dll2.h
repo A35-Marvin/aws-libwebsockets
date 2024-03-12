@@ -253,7 +253,7 @@ aws_lws_dll2_add_sorted_priv(aws_lws_dll2_t *d, aws_lws_dll2_owner_t *own, void 
 					 const aws_lws_dll2_t *i));
 
 LWS_VISIBLE LWS_EXTERN void *
-_lws_dll2_search_sz_pl(aws_lws_dll2_owner_t *own, const char *name, size_t namelen,
+aws__lws_dll2_search_sz_pl(aws_lws_dll2_owner_t *own, const char *name, size_t namelen,
 		      size_t dll2_ofs, size_t ptr_ofs);
 
 /*
@@ -263,7 +263,7 @@ _lws_dll2_search_sz_pl(aws_lws_dll2_owner_t *own, const char *name, size_t namel
  */
 
 #define aws_lws_dll2_search_sz_pl(own, name, namelen, type, membd2list, membptr) \
-		((type *)_lws_dll2_search_sz_pl(own, name, namelen, \
+		((type *)aws__lws_dll2_search_sz_pl(own, name, namelen, \
 				       offsetof(type, membd2list), \
 				       offsetof(type, membptr)))
 

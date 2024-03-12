@@ -31,7 +31,7 @@ int aws_lws_plat_apply_FD_CLOEXEC(int n)
 
 
 aws_lws_fop_fd_t IRAM_ATTR
-_lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
+aws__lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
 		    const char *vpath, aws_lws_fop_flags_t *flags)
 {
 	struct stat stat_buf;
@@ -64,7 +64,7 @@ bail:
 }
 
 int IRAM_ATTR
-_lws_plat_file_close(aws_lws_fop_fd_t *fops_fd)
+aws__lws_plat_file_close(aws_lws_fop_fd_t *fops_fd)
 {
 	int fd = (*fops_fd)->fd;
 
@@ -75,13 +75,13 @@ _lws_plat_file_close(aws_lws_fop_fd_t *fops_fd)
 }
 
 aws_lws_fileofs_t IRAM_ATTR
-_lws_plat_file_seek_cur(aws_lws_fop_fd_t fops_fd, aws_lws_fileofs_t offset)
+aws__lws_plat_file_seek_cur(aws_lws_fop_fd_t fops_fd, aws_lws_fileofs_t offset)
 {
 	return lseek(fops_fd->fd, offset, SEEK_CUR);
 }
 
 int IRAM_ATTR
-_lws_plat_file_read(aws_lws_fop_fd_t fops_fd, aws_lws_filepos_t *amount,
+aws__lws_plat_file_read(aws_lws_fop_fd_t fops_fd, aws_lws_filepos_t *amount,
 		    uint8_t *buf, aws_lws_filepos_t len)
 {
 	long n;
@@ -98,7 +98,7 @@ _lws_plat_file_read(aws_lws_fop_fd_t fops_fd, aws_lws_filepos_t *amount,
 }
 
 int IRAM_ATTR
-_lws_plat_file_write(aws_lws_fop_fd_t fops_fd, aws_lws_filepos_t *amount,
+aws__lws_plat_file_write(aws_lws_fop_fd_t fops_fd, aws_lws_filepos_t *amount,
 		     uint8_t *buf, aws_lws_filepos_t len)
 {
 	long n;

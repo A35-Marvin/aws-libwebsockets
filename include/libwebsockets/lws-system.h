@@ -177,7 +177,7 @@ typedef struct aws_lws_system_ops {
 	 * It's done like this so (*attach) can perform system-specific
 	 * locking outside of lws core, for both getting and adding items the
 	 * same so it is thread-safe.  A non-threadsafe helper
-	 * __lws_system_attach() is provided to do the actual work inside the
+	 * aws___lws_system_attach() is provided to do the actual work inside the
 	 * system-specific locking.
 	 */
 	int (*captive_portal_detect_request)(struct aws_lws_context *context);
@@ -252,7 +252,7 @@ aws_lws_system_context_from_system_mgr(aws_lws_state_manager_t *mgr);
 #endif
 
 /**
- * __lws_system_attach() - get and set items on context attach list
+ * aws___lws_system_attach() - get and set items on context attach list
  *
  * \param context: context to get or set attach items to
  * \param tsi: thread service index (normally 0)
@@ -283,7 +283,7 @@ aws_lws_system_context_from_system_mgr(aws_lws_state_manager_t *mgr);
  * specific locking has been applied around it, making it threadsafe.
  */
 LWS_EXTERN LWS_VISIBLE int
-__lws_system_attach(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t cb,
+aws___lws_system_attach(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t cb,
 		    aws_lws_system_states_t state, void *opaque,
 		    struct aws_lws_attach_item **get);
 

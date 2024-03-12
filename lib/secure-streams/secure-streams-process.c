@@ -90,7 +90,7 @@ ss_proxy_onward_link_req_writeable(aws_lws_ss_handle_t *h_onward)
 }
 
 int
-__lws_ss_proxy_bind_ss_to_conn_wsi(void *parconn, size_t dsh_size)
+aws___lws_ss_proxy_bind_ss_to_conn_wsi(void *parconn, size_t dsh_size)
 {
 	struct conn *conn = (struct conn *)parconn;
 	struct aws_lws_context_per_thread *pt;
@@ -106,7 +106,7 @@ __lws_ss_proxy_bind_ss_to_conn_wsi(void *parconn, size_t dsh_size)
 	if (!conn->dsh)
 		return -1;
 
-	__lws_lc_tag_append(&conn->wsi->lc, aws_lws_ss_tag(conn->ss));
+	aws___lws_lc_tag_append(&conn->wsi->lc, aws_lws_ss_tag(conn->ss));
 
 	return 0;
 }
@@ -207,7 +207,7 @@ ss_proxy_onward_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 
 	/* ... there's more we want to send? */
 	if (!aws_lws_dsh_get_head(m->conn->dsh, KIND_C_TO_P, (void **)&p, &si))
-		_lws_ss_request_tx(m->conn->ss);
+		aws__lws_ss_request_tx(m->conn->ss);
 
 	if (!*len && !*flags)
 		/* we don't actually want to send anything */
@@ -255,7 +255,7 @@ ss_proxy_onward_state(void *userobj, void *sh,
 
 		/* this includes ssproxy_dsh_create_oom fault generation */
 
-		if (__lws_ss_proxy_bind_ss_to_conn_wsi(m->conn, dsh_size)) {
+		if (aws___lws_ss_proxy_bind_ss_to_conn_wsi(m->conn, dsh_size)) {
 
 			/* failed to allocate the dsh */
 

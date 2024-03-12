@@ -296,9 +296,9 @@ aws_lws_validity_confirmed(struct lws *wsi);
  */
 
 LWS_VISIBLE LWS_EXTERN int
-__lws_sul_insert(aws_lws_dll2_owner_t *own, aws_lws_sorted_usec_list_t *sul);
+aws___lws_sul_insert(aws_lws_dll2_owner_t *own, aws_lws_sorted_usec_list_t *sul);
 
 LWS_VISIBLE LWS_EXTERN aws_lws_usec_t
-__lws_sul_service_ripe(aws_lws_dll2_owner_t *own, int own_len, aws_lws_usec_t usnow);
+aws___lws_sul_service_ripe(aws_lws_dll2_owner_t *own, int own_len, aws_lws_usec_t usnow);
 
 ///@}

@@ -35,7 +35,7 @@ struct aws_lws_dsh_search {
 };
 
 static int
-_lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
+aws__lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		    const void *src2, size_t size2, aws_lws_dll2_t *replace);
 
 static size_t
@@ -147,7 +147,7 @@ aws_lws_dsh_get_size(struct aws_lws_dsh *dsh, int kind)
 }
 
 static int
-_lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
+aws__lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		    const void *src2, size_t size2, aws_lws_dll2_t *replace)
 {
 	size_t asize = sizeof(aws_lws_dsh_obj_t) + aws_lws_dsh_align(size1 + size2);
@@ -273,7 +273,7 @@ int
 aws_lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		   const void *src2, size_t size2)
 {
-	return _lws_dsh_alloc_tail(dsh, kind, src1, size1, src2, size2, NULL);
+	return aws__lws_dsh_alloc_tail(dsh, kind, src1, size1, src2, size2, NULL);
 }
 
 static int

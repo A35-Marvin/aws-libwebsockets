@@ -113,7 +113,7 @@ aws_lws_ssl_SSL_CTX_destroy(struct aws_lws_vhost *vhost);
 void
 aws_lws_ssl_context_destroy(struct aws_lws_context *context);
 void
-__lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi);
+aws___lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi);
 LWS_VISIBLE void
 aws_lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi);
 int
@@ -171,7 +171,7 @@ enum aws_lws_ssl_capable_status
 aws_lws_tls_server_abort_connection(struct lws *wsi);
 
 enum aws_lws_ssl_capable_status
-__lws_tls_shutdown(struct lws *wsi);
+aws___lws_tls_shutdown(struct lws *wsi);
 
 enum aws_lws_ssl_capable_status
 aws_lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t len);

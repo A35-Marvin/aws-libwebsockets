@@ -443,7 +443,7 @@ aws_lws_ss_event_helper(aws_lws_ss_handle_t *h, aws_lws_ss_constate_t cs)
 }
 
 int
-_lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct lws *wsi,
+aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct lws *wsi,
 			 aws_lws_ss_handle_t **ph)
 {
 	if (r == LWSSSSRET_DESTROY_ME) {
@@ -475,8 +475,8 @@ aws_lws_ss_timeout_sul_check_cb(aws_lws_sorted_usec_list_t *sul)
 	/* we want to retry... */
 	h->seqstate = SSSEQ_DO_RETRY;
 
-	r = _lws_ss_request_tx(h);
-	_lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, NULL, &h);
+	r = aws__lws_ss_request_tx(h);
+	aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, NULL, &h);
 }
 
 int
@@ -527,7 +527,7 @@ aws_lws_ss_set_timeout_us(aws_lws_ss_handle_t *h, aws_lws_usec_t us)
 	struct aws_lws_context_per_thread *pt = &h->context->pt[h->tsi];
 
 	h->sul.cb = aws_lws_ss_timeout_sul_check_cb;
-	__lws_sul_insert_us(&pt->pt_sul_owner[
+	aws___lws_sul_insert_us(&pt->pt_sul_owner[
 	            !!(h->policy->flags & LWSSSPOLF_WAKE_SUSPEND__VALIDITY)],
 		    &h->sul, us);
 
@@ -535,7 +535,7 @@ aws_lws_ss_set_timeout_us(aws_lws_ss_handle_t *h, aws_lws_usec_t us)
 }
 
 aws_lws_ss_state_return_t
-_lws_ss_backoff(aws_lws_ss_handle_t *h, aws_lws_usec_t us_override)
+aws__lws_ss_backoff(aws_lws_ss_handle_t *h, aws_lws_usec_t us_override)
 {
 	uint64_t ms;
 	char conceal;
@@ -578,7 +578,7 @@ _lws_ss_backoff(aws_lws_ss_handle_t *h, aws_lws_usec_t us_override)
 aws_lws_ss_state_return_t
 aws_lws_ss_backoff(aws_lws_ss_handle_t *h)
 {
-	return _lws_ss_backoff(h, 0);
+	return aws__lws_ss_backoff(h, 0);
 }
 
 #if defined(LWS_WITH_SYS_SMD)
@@ -639,7 +639,7 @@ aws_lws_ss_smd_tx_cb(aws_lws_sorted_usec_list_t *sul)
 		/* nonzero return means don't want to send anything */
 		return;
 
-	// aws_lwsl_notice("%s: (SS %p bound to _lws_smd creates message) tx len %d\n", __func__, h, (int)len);
+	// aws_lwsl_notice("%s: (SS %p bound to aws__lws_smd creates message) tx len %d\n", __func__, h, (int)len);
 	// aws_lwsl_hexdump_notice(buf, len);
 
 	assert(len >= LWS_SMD_SS_RX_HEADER_LEN);
@@ -661,7 +661,7 @@ aws_lws_ss_smd_tx_cb(aws_lws_sorted_usec_list_t *sul)
 #endif
 
 aws_lws_ss_state_return_t
-_lws_ss_client_connect(aws_lws_ss_handle_t *h, int is_retry, void *conn_if_sspc_onw)
+aws__lws_ss_client_connect(aws_lws_ss_handle_t *h, int is_retry, void *conn_if_sspc_onw)
 {
 	const char *prot, *_prot, *ipath, *_ipath, *ads, *_ads;
 	struct aws_lws_client_connect_info i;
@@ -698,7 +698,7 @@ _lws_ss_client_connect(aws_lws_ss_handle_t *h, int is_retry, void *conn_if_sspc_
 		if (h->u.smd.smd_peer)
 			return LWSSSSRET_OK;
 
-		// aws_lwsl_notice("%s: received connect for _lws_smd, registering for class mask 0x%x\n",
+		// aws_lwsl_notice("%s: received connect for aws__lws_smd, registering for class mask 0x%x\n",
 		//		__func__, h->info.manual_initial_tx_credit);
 
 		h->u.smd.smd_peer = aws_lws_smd_register(h->context, h,
@@ -920,7 +920,7 @@ aws_lws_ss_client_connect(aws_lws_ss_handle_t *h)
 
 	aws_lws_service_assert_loop_thread(h->context, h->tsi);
 
-	r = _lws_ss_client_connect(h, 0, 0);
+	r = aws__lws_ss_client_connect(h, 0, 0);
 
 	return r;
 }
@@ -1043,13 +1043,13 @@ aws_lws_ss_create(struct aws_lws_context *context, int tsi, const aws_lws_ss_inf
 	h->lc.log_cx = context->log_cx;
 
 	if (ssi->sss_protocol_version)
-		__lws_lc_tag(context, &context->lcg[LWSLCG_WSI_SS_CLIENT],
+		aws___lws_lc_tag(context, &context->lcg[LWSLCG_WSI_SS_CLIENT],
 			     &h->lc, "%s|v%u|%u",
 			     ssi->streamtype ? ssi->streamtype : "nostreamtype",
 			     (unsigned int)ssi->sss_protocol_version,
 			     (unsigned int)ssi->client_pid);
 	else
-		__lws_lc_tag(context, &context->lcg[LWSLCG_WSI_SS_CLIENT],
+		aws___lws_lc_tag(context, &context->lcg[LWSLCG_WSI_SS_CLIENT],
 			     &h->lc, "%s",
 			     ssi->streamtype ? ssi->streamtype : "nostreamtype");
 
@@ -1319,7 +1319,7 @@ extant:
 				)
 #endif
 			    )) {
-		r = _lws_ss_client_connect(h, 0, 0);
+		r = aws__lws_ss_client_connect(h, 0, 0);
 		if (aws_lws_fi(&h->fic, "ss_create_conn"))
 			r = LWSSSSRET_DESTROY_ME;
 		switch (r) {
@@ -1529,7 +1529,7 @@ aws_lws_ss_destroy(aws_lws_ss_handle_t **ppss)
 	aws_lws_sul_debug_zombies(h->context, h, sizeof(*h) + h->info.user_alloc,
 			      __func__);
 
-	__lws_lc_untag(h->context, &h->lc);
+	aws___lws_lc_untag(h->context, &h->lc);
 
 	aws_lws_explicit_bzero((void *)h, sizeof(*h) + h->info.user_alloc);
 
@@ -1563,13 +1563,13 @@ aws_lws_ss_request_tx(aws_lws_ss_handle_t *h)
 {
 	aws_lws_ss_state_return_t r;
 
-	r = _lws_ss_request_tx(h);
+	r = aws__lws_ss_request_tx(h);
 
 	return r;
 }
 
 aws_lws_ss_state_return_t
-_lws_ss_request_tx(aws_lws_ss_handle_t *h)
+aws__lws_ss_request_tx(aws_lws_ss_handle_t *h)
 {
 	aws_lws_ss_state_return_t r;
 
@@ -1599,7 +1599,7 @@ _lws_ss_request_tx(aws_lws_ss_handle_t *h)
 #if defined(LWS_WITH_SYS_SMD)
 	if (h->policy == &pol_smd) {
 		/*
-		 * He's an _lws_smd... and no wsi... since we're just going
+		 * He's an aws__lws_smd... and no wsi... since we're just going
 		 * to queue it, we could call his tx() right here, but rather
 		 * than surprise him let's set a sul to do it next time around
 		 * the event loop
@@ -1625,7 +1625,7 @@ _lws_ss_request_tx(aws_lws_ss_handle_t *h)
 	 * Retries operate via aws_lws_ss_request_tx(), explicitly ask for a
 	 * reconnection to clear the retry limit
 	 */
-	r = _lws_ss_client_connect(h, 1, 0);
+	r = aws__lws_ss_client_connect(h, 1, 0);
 	if (r == LWSSSSRET_DESTROY_ME)
 		return r;
 
@@ -1748,7 +1748,7 @@ aws_lws_ss_to_cb(aws_lws_sorted_usec_list_t *sul)
 	if (h->wsi)
 		aws_lws_set_timeout(h->wsi, 1, LWS_TO_KILL_ASYNC);
 
-	_lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, h->wsi, &h);
+	aws__lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, h->wsi, &h);
 }
 
 void

@@ -34,7 +34,7 @@ aws_lws_poll_listen_fd(struct aws_lws_pollfd *fd)
 }
 
 int
-_lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi)
+aws__lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi)
 {
 	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
 	int m, n, r;
@@ -69,7 +69,7 @@ _lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi)
 #define LWS_POLL_WAIT_LIMIT 2000000000
 
 int
-_lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
+aws__lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 {
 	volatile struct aws_lws_foreign_thread_pollfd *ftp, *next;
 	volatile struct aws_lws_context_per_thread *vpt;
@@ -122,7 +122,7 @@ _lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 	/*
 	 * service ripe scheduled events, and limit wait to next expected one
 	 */
-	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS, us);
+	us = aws___lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS, us);
 	if (us && us < timeout_us)
 		/*
 		 * If something wants zero wait, that's OK, but if the next sul
@@ -182,7 +182,7 @@ _lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 		if (aws_lws_socket_is_valid(pfd->fd)) {
 			wsi = wsi_from_fd(context, pfd->fd);
 			if (wsi)
-				__lws_change_pollfd(wsi, ftp->_and,
+				aws___lws_change_pollfd(wsi, ftp->_and,
 						    ftp->_or);
 		}
 		aws_lws_free((void *)ftp);
@@ -213,7 +213,7 @@ _lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 		!n) /* nothing to do */
 		aws_lws_service_do_ripe_rxflow(pt);
 	else
-		if (_lws_plat_service_forced_tsi(context, tsi) < 0)
+		if (aws__lws_plat_service_forced_tsi(context, tsi) < 0)
 			return -1;
 
 #if defined(LWS_WITH_SYS_METRICS)
@@ -232,5 +232,5 @@ _lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 int
 aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 {
-	return _lws_plat_service_tsi(context, timeout_ms, 0);
+	return aws__lws_plat_service_tsi(context, timeout_ms, 0);
 }

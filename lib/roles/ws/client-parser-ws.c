@@ -427,7 +427,7 @@ spill:
 					(uint8_t)wsi->ws->rx_ubuf_head;
 
 			aws_lwsl_wsi_info(wsi, "scheduling return close as ack");
-			__lws_change_pollfd(wsi, LWS_POLLIN, 0);
+			aws___lws_change_pollfd(wsi, LWS_POLLIN, 0);
 			aws_lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_SEND, 3);
 			wsi->waiting_to_send_close_frame = 1;
 			wsi->close_needs_ack = 0;

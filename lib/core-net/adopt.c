@@ -59,7 +59,7 @@ aws_lws_create_new_server_wsi(struct aws_lws_vhost *vhost, int fixed_tsi, const 
 	}
 
 	aws_lws_context_lock(vhost->context, __func__);
-	new_wsi = __lws_wsi_create_with_role(vhost->context, n, NULL,
+	new_wsi = aws___lws_wsi_create_with_role(vhost->context, n, NULL,
 					     vhost->lc.log_cx);
 	aws_lws_context_unlock(vhost->context);
 	if (new_wsi == NULL) {
@@ -69,7 +69,7 @@ aws_lws_create_new_server_wsi(struct aws_lws_vhost *vhost, int fixed_tsi, const 
 
 	aws_lws_wsi_fault_timedclose(new_wsi);
 
-	__lws_lc_tag(vhost->context, &vhost->context->lcg[
+	aws___lws_lc_tag(vhost->context, &vhost->context->lcg[
 #if defined(LWS_ROLE_H2) || defined(LWS_ROLE_MQTT)
 	strcmp(desc, "adopted") ? LWSLCG_WSI_MUX :
 #endif
@@ -118,7 +118,7 @@ aws_lws_create_new_server_wsi(struct aws_lws_vhost *vhost, int fixed_tsi, const 
  */
 
 static struct lws *
-__lws_adopt_descriptor_vhost1(struct aws_lws_vhost *vh, aws_lws_adoption_type type,
+aws___lws_adopt_descriptor_vhost1(struct aws_lws_vhost *vh, aws_lws_adoption_type type,
 			    const char *vh_prot_name, struct lws *parent,
 			    void *opaque, const char *fi_wsi_name)
 {
@@ -220,7 +220,7 @@ bail:
 	aws_lws_fi_destroy(&new_wsi->fic);
 
 	aws_lws_pt_unlock(pt);
-	__lws_vhost_unbind_wsi(new_wsi); /* req cx, acq vh lock */
+	aws___lws_vhost_unbind_wsi(new_wsi); /* req cx, acq vh lock */
 
 	aws_lws_free(new_wsi);
 
@@ -446,7 +446,7 @@ aws_lws_adopt_descriptor_vhost2(struct lws *new_wsi, aws_lws_adoption_type type,
 	 *
 	 * !!! For mux protocols, this will cause an additional inactive ss
 	 * representing the nwsi.  Doing that allows us to support both h1
-	 * (here) and h2 (at __lws_wsi_server_new())
+	 * (here) and h2 (at aws___lws_wsi_server_new())
 	 */
 
 	aws_lwsl_wsi_info(new_wsi, "vhost %s", new_wsi->a.vhost->lc.gutag);
@@ -523,7 +523,7 @@ aws_lws_adopt_descriptor_vhost_via_info(const aws_lws_adopt_desc_t *info)
 
 	aws_lws_context_lock(info->vh->context, __func__);
 
-	new_wsi = __lws_adopt_descriptor_vhost1(info->vh, info->type,
+	new_wsi = aws___lws_adopt_descriptor_vhost1(info->vh, info->type,
 					      info->vh_prot_name, info->parent,
 					      info->opaque, info->fi_wsi_name);
 	if (!new_wsi) {
@@ -805,7 +805,7 @@ aws_lws_create_adopt_udp(struct aws_lws_vhost *vhost, const char *ads, int port,
 
 	aws_lws_context_lock(vhost->context, __func__);
 
-	wsi = __lws_adopt_descriptor_vhost1(vhost, LWS_ADOPT_SOCKET |
+	wsi = aws___lws_adopt_descriptor_vhost1(vhost, LWS_ADOPT_SOCKET |
 						 LWS_ADOPT_RAW_SOCKET_UDP,
 					  protocol_name, parent_wsi, opaque,
 					  fi_wsi_name);

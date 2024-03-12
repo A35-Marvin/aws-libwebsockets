@@ -657,7 +657,7 @@ aws_lws_sspc_create(struct aws_lws_context *context, int tsi, const aws_lws_ss_i
 		return 1;
 	}
 
-	__lws_lc_tag(context, &context->lcg[LWSLCG_SSP_CLIENT], &h->lc,
+	aws___lws_lc_tag(context, &context->lcg[LWSLCG_SSP_CLIENT], &h->lc,
 			ssi->streamtype);
 
 	memcpy(&h->ssi, ssi, sizeof(*ssi));
@@ -794,7 +794,7 @@ aws_lws_sspc_destroy(aws_lws_sspc_handle_t **ph)
 	aws_lws_sul_debug_zombies(h->context, h, sizeof(*h) + h->ssi.user_alloc,
 			      __func__);
 
-	__lws_lc_untag(h->context, &h->lc);
+	aws___lws_lc_untag(h->context, &h->lc);
 
 	free(h);
 }
@@ -929,7 +929,7 @@ aws_lws_sspc_rideshare(struct aws_lws_sspc_handle *h)
 }
 
 static int
-_lws_sspc_set_metadata(struct aws_lws_sspc_handle *h, const char *name,
+aws__lws_sspc_set_metadata(struct aws_lws_sspc_handle *h, const char *name,
 		       const void *value, size_t len, int tx_cr_adjust)
 {
 	aws_lws_sspc_metadata_t *md;
@@ -999,7 +999,7 @@ int
 aws_lws_sspc_set_metadata(struct aws_lws_sspc_handle *h, const char *name,
 		      const void *value, size_t len)
 {
-	return _lws_sspc_set_metadata(h, name, value, len, 0);
+	return aws__lws_sspc_set_metadata(h, name, value, len, 0);
 }
 
 int
@@ -1039,7 +1039,7 @@ aws_lws_sspc_add_peer_tx_credit(struct aws_lws_sspc_handle *h, int32_t bump)
 {
 	aws_lws_service_assert_loop_thread(h->context, 0);
 	aws_lwsl_sspc_notice(h, "%d\n", bump);
-	return _lws_sspc_set_metadata(h, "", NULL, 0, (int)bump);
+	return aws__lws_sspc_set_metadata(h, "", NULL, 0, (int)bump);
 }
 
 int

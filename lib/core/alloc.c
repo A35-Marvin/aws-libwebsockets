@@ -147,16 +147,16 @@ _realloc(void *ptr, size_t size, const char *reason)
 	return NULL;
 }
 
-void *(*_lws_realloc)(void *ptr, size_t size, const char *reason) = _realloc;
+void *(*aws__lws_realloc)(void *ptr, size_t size, const char *reason) = _realloc;
 
 void *aws_lws_realloc(void *ptr, size_t size, const char *reason)
 {
-	return _lws_realloc(ptr, size, reason);
+	return aws__lws_realloc(ptr, size, reason);
 }
 
 void *aws_lws_zalloc(size_t size, const char *reason)
 {
-	void *ptr = _lws_realloc(NULL, size, reason);
+	void *ptr = aws__lws_realloc(NULL, size, reason);
 
 	if (ptr)
 		memset(ptr, 0, size);
@@ -166,7 +166,7 @@ void *aws_lws_zalloc(size_t size, const char *reason)
 
 void aws_lws_set_allocator(void *(*cb)(void *ptr, size_t size, const char *reason))
 {
-	_lws_realloc = cb;
+	aws__lws_realloc = cb;
 }
 
 size_t aws_lws_get_allocated_heap(void)
