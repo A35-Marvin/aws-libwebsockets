@@ -47,28 +47,28 @@ typedef enum {
 	LPE_FAILED_UNEXPECTED_CLOSE,
 	LPE_SKIPPED,
 	LPE_CLOSING
-} lws_unit_test_packet_disposition;
+} aws_lws_unit_test_packet_disposition;
 
-typedef int (*lws_unit_test_packet_test_cb)(const void *cb_user, int disposition);
-typedef int (*lws_unit_test_packet_cb)(lws_abs_t *instance);
+typedef int (*aws_lws_unit_test_packet_test_cb)(const void *cb_user, int disposition);
+typedef int (*aws_lws_unit_test_packet_cb)(aws_lws_abs_t *instance);
 
 /* each step in the unit test */
 
-typedef struct lws_unit_test_packet {
+typedef struct aws_lws_unit_test_packet {
 	void				*buffer;
-	lws_unit_test_packet_cb		pre;
+	aws_lws_unit_test_packet_cb		pre;
 	size_t				len;
 
 	uint32_t			flags;
-} lws_unit_test_packet_t;
+} aws_lws_unit_test_packet_t;
 
 /* each unit test */
 
-typedef struct lws_unit_test {
+typedef struct aws_lws_unit_test {
 	const char *		name; /* NULL indicates end of test array */
-	lws_unit_test_packet_t *		expect_array;
+	aws_lws_unit_test_packet_t *		expect_array;
 	int			max_secs;
-} lws_unit_test_t;
+} aws_lws_unit_test_t;
 
 enum {
 	LTMI_PEER_V_EXPECT_TEST = LTMI_TRANSPORT_BASE,	/* u.value */
@@ -77,5 +77,5 @@ enum {
 };
 
 LWS_VISIBLE LWS_EXTERN const char *
-lws_unit_test_result_name(int in);
+aws_lws_unit_test_result_name(int in);
 

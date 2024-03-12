@@ -21,10 +21,10 @@
 
 #include "private.h"
 
-extern struct lws_ss_handle *hss_avs_event, *hss_avs_sync;
+extern struct aws_lws_ss_handle *hss_avs_event, *hss_avs_sync;
 
 int
-avs_query_start(struct lws_context *context);
+avs_query_start(struct aws_lws_context *context);
 
 enum {
 	MODE_IDLE,
@@ -90,7 +90,7 @@ spool_capture(uint8_t *buf, size_t len)
 		s--;
 	}
 
-	lwsl_info("Copied %d samples (%d %d)\n", (int)(os - s),
+	aws_lwsl_info("Copied %d samples (%d %d)\n", (int)(os - s),
 			avhd->wpos, avhd->npos);
 
 	return (os - s) * 2;
@@ -123,37 +123,37 @@ play_mp3(mpg123_handle *mh, mp3_done_cb cb, void *opaque)
  */
 
 static int
-set_hw_params(struct lws_vhost *vh, snd_pcm_t **pcm, int type)
+set_hw_params(struct aws_lws_vhost *vh, snd_pcm_t **pcm, int type)
 {
 	unsigned int rate = pv_sample_rate(); /* it's 16kHz */
 	snd_pcm_hw_params_t *params;
-	lws_sock_file_fd_type u;
+	aws_lws_sock_file_fd_type u;
 	struct pollfd pfd;
 	struct lws *wsi1;
 	int n;
 
 	n = snd_pcm_open(pcm, "default", type, SND_PCM_NONBLOCK);
 	if (n < 0) {
-		lwsl_err("%s: Can't open default for playback: %s\n",
+		aws_lwsl_err("%s: Can't open default for playback: %s\n",
 			 __func__, snd_strerror(n));
 
 		return -1;
 	}
 
 	if (snd_pcm_poll_descriptors(*pcm, &pfd, 1) != 1) {
-		lwsl_err("%s: failed to get playback desc\n", __func__);
+		aws_lwsl_err("%s: failed to get playback desc\n", __func__);
 		return -1;
 	}
 
-	u.filefd = (lws_filefd_type)(long long)pfd.fd;
-	wsi1 = lws_adopt_descriptor_vhost(vh, LWS_ADOPT_RAW_FILE_DESC, u,
+	u.filefd = (aws_lws_filefd_type)(long long)pfd.fd;
+	wsi1 = aws_lws_adopt_descriptor_vhost(vh, LWS_ADOPT_RAW_FILE_DESC, u,
 					  "lws-audio-test", NULL);
 	if (!wsi1) {
-		lwsl_err("%s: Failed to adopt playback desc\n", __func__);
+		aws_lwsl_err("%s: Failed to adopt playback desc\n", __func__);
 		goto bail;
 	}
 	if (type == SND_PCM_STREAM_PLAYBACK)
-		lws_rx_flow_control(wsi1, 0); /* no POLLIN */
+		aws_lws_rx_flow_control(wsi1, 0); /* no POLLIN */
 
 	snd_pcm_hw_params_malloc(&params);
 	snd_pcm_hw_params_any(*pcm, params);
@@ -175,7 +175,7 @@ set_hw_params(struct lws_vhost *vh, snd_pcm_t **pcm, int type)
 	if (n < 0)
 		goto bail1;
 
-	lwsl_notice("%s: %s rate %d\n", __func__,
+	aws_lwsl_notice("%s: %s rate %d\n", __func__,
 		type == SND_PCM_STREAM_PLAYBACK ? "Playback" : "Capture", rate);
 
 	n = snd_pcm_hw_params(*pcm, params);
@@ -188,7 +188,7 @@ set_hw_params(struct lws_vhost *vh, snd_pcm_t **pcm, int type)
 bail1:
 	snd_pcm_hw_params_free(params);
 bail:
-	lwsl_err("%s: Set hw params failed: %s\n", __func__, snd_strerror(n));
+	aws_lwsl_err("%s: Set hw params failed: %s\n", __func__, snd_strerror(n));
 
 	return -1;
 }
@@ -201,11 +201,11 @@ bail:
  */
 
 static int
-callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_audio(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	       void *in, size_t len)
 {
-	struct raw_vhd *vhd = (struct raw_vhd *)lws_protocol_vh_priv_get(
-				   lws_get_vhost(wsi), lws_get_protocol(wsi));
+	struct raw_vhd *vhd = (struct raw_vhd *)aws_lws_protocol_vh_priv_get(
+				   aws_lws_get_vhost(wsi), aws_lws_get_protocol(wsi));
 	uint16_t rands[50];
 	int16_t temp[256];
 	bool det;
@@ -218,8 +218,8 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		if (avhd) /* just on one vhost */
 			return 0;
 
-		avhd = vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi), sizeof(struct raw_vhd));
+		avhd = vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi), sizeof(struct raw_vhd));
 
 		/*
 		 * Set up the wakeword library
@@ -228,31 +228,31 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		n = pv_porcupine_init("porcupine_params.pv", "alexa_linux.ppn",
 					1.0, &vhd->porc);
 		if (n) {
-			lwsl_err("%s: porcupine init fail %d\n", __func__, n);
+			aws_lwsl_err("%s: porcupine init fail %d\n", __func__, n);
 
 			return -1;
 		}
 		vhd->porc_spf = pv_porcupine_frame_length();
 		vhd->porcbuf = malloc(vhd->porc_spf * 2);
-		lwsl_info("%s: %s porc frame length is %d samples\n", __func__,
-				lws_get_vhost_name(lws_get_vhost(wsi)),
+		aws_lwsl_info("%s: %s porc frame length is %d samples\n", __func__,
+				aws_lws_get_vhost_name(aws_lws_get_vhost(wsi)),
 				vhd->porc_spf);
 
 		vhd->rate = pv_sample_rate(); /* 16kHz */
 
 		/* set up alsa */
 
-		if (set_hw_params(lws_get_vhost(wsi), &vhd->pcm_playback,
+		if (set_hw_params(aws_lws_get_vhost(wsi), &vhd->pcm_playback,
 				  SND_PCM_STREAM_PLAYBACK))  {
-			lwsl_err("%s: Can't open default for playback\n",
+			aws_lwsl_err("%s: Can't open default for playback\n",
 				 __func__);
 
 			return -1;
 		}
 
-		if (set_hw_params(lws_get_vhost(wsi), &vhd->pcm_capture,
+		if (set_hw_params(aws_lws_get_vhost(wsi), &vhd->pcm_capture,
 				  SND_PCM_STREAM_CAPTURE))  {
-			lwsl_err("%s: Can't open default for capture\n",
+			aws_lwsl_err("%s: Can't open default for capture\n",
 				 __func__);
 
 			return -1;
@@ -263,7 +263,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 
 	case LWS_CALLBACK_PROTOCOL_DESTROY:
-		lwsl_info("%s: LWS_CALLBACK_PROTOCOL_DESTROY\n", __func__);
+		aws_lwsl_info("%s: LWS_CALLBACK_PROTOCOL_DESTROY\n", __func__);
 		if (!vhd)
 			break;
 
@@ -292,7 +292,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 
 	case LWS_CALLBACK_RAW_CLOSE_FILE:
-		lwsl_info("%s: closed\n", __func__);
+		aws_lwsl_info("%s: closed\n", __func__);
 		break;
 
 	case LWS_CALLBACK_RAW_RX_FILE:
@@ -311,7 +311,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 				n = mpg123_read(vhd->mh, (uint8_t *)vhd->p,
 						try * 2, &amt);
-				lwsl_info("%s: PLAYING: mpg123 read %d, n %d\n",
+				aws_lwsl_info("%s: PLAYING: mpg123 read %d, n %d\n",
 						__func__, (int)amt, n);
 				if (n == MPG123_NEW_FORMAT) {
 					snd_pcm_start(vhd->pcm_playback);
@@ -326,10 +326,10 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 				n = snd_pcm_writei(vhd->pcm_playback,
 						   vhd->p, amt / 2);
 				if (n < 0)
-					lwsl_notice("%s: snd_pcm_writei: %d %s\n",
+					aws_lwsl_notice("%s: snd_pcm_writei: %d %s\n",
 						    __func__, n, snd_strerror(n));
 				if (n == -EPIPE) {
-					lwsl_err("%s: did EPIPE prep\n", __func__);
+					aws_lwsl_err("%s: did EPIPE prep\n", __func__);
 					snd_pcm_prepare(vhd->pcm_playback);
 				}
 			} else
@@ -337,7 +337,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 				    n != MPG123_NEW_FORMAT) {
 					snd_pcm_drain(vhd->pcm_playback);
 					vhd->destroy_mh_on_drain = 0;
-					lwsl_notice("%s: mp3 destroyed\n",
+					aws_lwsl_notice("%s: mp3 destroyed\n",
 							__func__);
 					mpg123_close(vhd->mh);
 					mpg123_delete(vhd->mh);
@@ -378,7 +378,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 #define SILENCE_THRESH 125
 
 			avg = 0;
-			lws_get_random(lws_get_context(wsi), rands, sizeof(rands));
+			aws_lws_get_random(aws_lws_get_context(wsi), rands, sizeof(rands));
 			for (s = 0; s < (int)LWS_ARRAY_SIZE(rands); s++) {
 				long q;
 
@@ -388,7 +388,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			}
 			avg = (avg / (int)LWS_ARRAY_SIZE(rands)) / 10000;
 
-			lwsl_notice("est audio energy: %ld %d\n", avg, vhd->mode);
+			aws_lwsl_notice("est audio energy: %ld %d\n", avg, vhd->mode);
 
 			/*
 			 * Only start looking for "silence" after 1.5s, in case
@@ -400,7 +400,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 				vhd->quietcount += n;
 				/* then 500ms of "silence" does it for us */
 				if (vhd->quietcount >= ((vhd->rate * 3) / 4)) {
-					lwsl_warn("%s: ended capture\n", __func__);
+					aws_lwsl_warn("%s: ended capture\n", __func__);
 					vhd->mode = MODE_IDLE;
 					vhd->quietcount = 0;
 				}
@@ -417,7 +417,7 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			 * We must send an extra one at the end so we can finish
 			 * the tx.
 			 */
-			lws_ss_request_tx(hss_avs_sync);
+			aws_lws_ss_request_tx(hss_avs_sync);
 		}
 
 		/*
@@ -438,12 +438,12 @@ callback_audio(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			}
 
 			if (pv_porcupine_process(vhd->porc, vhd->porcbuf, &det))
-				lwsl_err("%s: porc_process failed\n", __func__);
+				aws_lwsl_err("%s: porc_process failed\n", __func__);
 
 			if (!det && vhd->last_wake_detect &&
 			    vhd->mode == MODE_IDLE) {
-				lwsl_warn("************* Wakeword\n");
-				if (!avs_query_start(lws_get_context(wsi))) {
+				aws_lwsl_warn("************* Wakeword\n");
+				if (!avs_query_start(aws_lws_get_context(wsi))) {
 					vhd->mode = MODE_CAPTURING;
 					vhd->quietcount = 0;
 					vhd->last_wake_detect = det;
@@ -465,5 +465,5 @@ eol:
 	return 0;
 }
 
-struct lws_protocols protocol_audio_test =
+struct aws_lws_protocols protocol_audio_test =
 	{ "lws-audio-test", callback_audio, 0, 0 };

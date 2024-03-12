@@ -32,13 +32,13 @@
  * lws implementation already does the right thing.
  */
 
-enum lws_enum_stdinouterr {
+enum aws_lws_enum_stdinouterr {
 	LWS_STDIN = 0,
 	LWS_STDOUT = 1,
 	LWS_STDERR = 2,
 };
 
-enum lws_cgi_hdr_state {
+enum aws_lws_cgi_hdr_state {
 	LCHS_HEADER,
 	LCHS_CR1,
 	LCHS_LF1,
@@ -50,17 +50,17 @@ enum lws_cgi_hdr_state {
 	LCHS_SINGLE_0A,
 };
 
-struct lws_cgi_args {
-	struct lws **stdwsi; /**< get fd with lws_get_socket_fd() */
-	enum lws_enum_stdinouterr ch; /**< channel index */
+struct aws_lws_cgi_args {
+	struct lws **stdwsi; /**< get fd with aws_lws_get_socket_fd() */
+	enum aws_lws_enum_stdinouterr ch; /**< channel index */
 	unsigned char *data; /**< for messages with payload */
-	enum lws_cgi_hdr_state hdr_state; /**< track where we are in cgi headers */
+	enum aws_lws_cgi_hdr_state hdr_state; /**< track where we are in cgi headers */
 	int len; /**< length */
 };
 
 #ifdef LWS_WITH_CGI
 /**
- * lws_cgi: spawn network-connected cgi process
+ * aws_lws_cgi: spawn network-connected cgi process
  *
  * \param wsi: connection to own the process
  * \param exec_array: array of "exec-name" "arg1" ... "argn" NULL
@@ -70,34 +70,34 @@ struct lws_cgi_args {
  * \param mp_cgienv: pvo list with per-vhost cgi options to put in env
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cgi(struct lws *wsi, const char * const *exec_array,
+aws_lws_cgi(struct lws *wsi, const char * const *exec_array,
 	int script_uri_path_len, int timeout_secs,
-	const struct lws_protocol_vhost_options *mp_cgienv);
+	const struct aws_lws_protocol_vhost_options *mp_cgienv);
 
 /**
- * lws_cgi_write_split_stdout_headers: write cgi output accounting for header part
+ * aws_lws_cgi_write_split_stdout_headers: write cgi output accounting for header part
  *
  * \param wsi: connection to own the process
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cgi_write_split_stdout_headers(struct lws *wsi);
+aws_lws_cgi_write_split_stdout_headers(struct lws *wsi);
 
 /**
- * lws_cgi_kill: terminate cgi process associated with wsi
+ * aws_lws_cgi_kill: terminate cgi process associated with wsi
  *
  * \param wsi: connection to own the process
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cgi_kill(struct lws *wsi);
+aws_lws_cgi_kill(struct lws *wsi);
 
 /**
- * lws_cgi_get_stdwsi: get wsi for stdin, stdout, or stderr
+ * aws_lws_cgi_get_stdwsi: get wsi for stdin, stdout, or stderr
  *
  * \param wsi: parent wsi that has cgi
  * \param ch: which of LWS_STDIN, LWS_STDOUT or LWS_STDERR
  */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_cgi_get_stdwsi(struct lws *wsi, enum lws_enum_stdinouterr ch);
+aws_lws_cgi_get_stdwsi(struct lws *wsi, enum aws_lws_enum_stdinouterr ch);
 
 #endif
 ///@}

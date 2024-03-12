@@ -5,16 +5,16 @@ echo -e -n "transfer-encoding: chunked\x0d\x0a"
 echo -e -n "\x0d\x0a"
 
 echo "<html><body>"
-echo "<h1>lwstest script stdout</h1>"
->&2 echo "lwstest script stderr: $REQUEST_METHOD"
+echo "<h1>aws_lwstest script stdout</h1>"
+>&2 echo "aws_lwstest script stderr: $REQUEST_METHOD"
 
 echo "<h2>REQUEST_METHOD=$REQUEST_METHOD</h2>"
 
 if [ "$REQUEST_METHOD" = "POST" ] ; then
-	>&2 echo "lwstest script stderr: doing read"
+	>&2 echo "aws_lwstest script stderr: doing read"
 	echo "CONTENT_LENGTH=$CONTENT_LENGTH"
 	read -n $CONTENT_LENGTH line
-	>&2 echo "lwstest script stderr: done read"
+	>&2 echo "aws_lwstest script stderr: done read"
 
 	echo "read=\"$line\""
 else

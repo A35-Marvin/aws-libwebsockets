@@ -71,20 +71,20 @@ typedef enum {
 					   LWS_TOKENIZE_F_AGG_COLON flag) */
 	LWS_TOKZE_QUOTED_STRING,	/* "*", where * may have any char */
 
-} lws_tokenize_elem;
+} aws_lws_tokenize_elem;
 
 /*
  * helper enums to allow caller to enforce legal delimiter sequencing, eg
  * disallow "token,,token", "token,", and ",token"
  */
 
-enum lws_tokenize_delimiter_tracking {
+enum aws_lws_tokenize_delimiter_tracking {
 	LWSTZ_DT_NEED_FIRST_CONTENT,
 	LWSTZ_DT_NEED_DELIM,
 	LWSTZ_DT_NEED_NEXT_CONTENT,
 };
 
-typedef struct lws_tokenize {
+typedef struct aws_lws_tokenize {
 	const char *start; /**< set to the start of the string to tokenize */
 	const char *token; /**< the start of an identified token or delimiter */
 	size_t len;	/**< set to the length of the string to tokenize */
@@ -93,13 +93,13 @@ typedef struct lws_tokenize {
 	uint16_t flags;	/**< optional LWS_TOKENIZE_F_ flags, or 0 */
 	uint8_t delim;
 
-	int8_t e; /**< convenient for storing lws_tokenize return */
-} lws_tokenize_t;
+	int8_t e; /**< convenient for storing aws_lws_tokenize return */
+} aws_lws_tokenize_t;
 
 /**
- * lws_tokenize() - breaks down a string into tokens and delimiters in-place
+ * aws_lws_tokenize() - breaks down a string into tokens and delimiters in-place
  *
- * \param ts: the lws_tokenize struct to init
+ * \param ts: the aws_lws_tokenize struct to init
  * \param start: the string to tokenize
  * \param flags: LWS_TOKENIZE_F_ option flags
  *
@@ -111,34 +111,34 @@ typedef struct lws_tokenize {
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_tokenize_init(struct lws_tokenize *ts, const char *start, int flags);
+aws_lws_tokenize_init(struct aws_lws_tokenize *ts, const char *start, int flags);
 
 /**
- * lws_tokenize() - breaks down a string into tokens and delimiters in-place
+ * aws_lws_tokenize() - breaks down a string into tokens and delimiters in-place
  *
- * \param ts: the lws_tokenize struct with information and state on what to do
+ * \param ts: the aws_lws_tokenize struct with information and state on what to do
  *
  * The \p ts struct should have its start, len and flags members initialized to
  * reflect the string to be tokenized and any options.
  *
- * Then `lws_tokenize()` may be called repeatedly on the struct, returning one
- * of `lws_tokenize_elem` each time, and with the struct's `token` and
+ * Then `aws_lws_tokenize()` may be called repeatedly on the struct, returning one
+ * of `aws_lws_tokenize_elem` each time, and with the struct's `token` and
  * `token_len` members set to describe the content of the delimiter or token
  * payload each time.
  *
  * There are no allocations during the process.
  *
- * returns lws_tokenize_elem that was identified (LWS_TOKZE_ENDED means reached
+ * returns aws_lws_tokenize_elem that was identified (LWS_TOKZE_ENDED means reached
  * the end of the string).
  */
 
-LWS_VISIBLE LWS_EXTERN lws_tokenize_elem
-lws_tokenize(struct lws_tokenize *ts);
+LWS_VISIBLE LWS_EXTERN aws_lws_tokenize_elem
+aws_lws_tokenize(struct aws_lws_tokenize *ts);
 
 /**
- * lws_tokenize_cstr() - copy token string to NUL-terminated buffer
+ * aws_lws_tokenize_cstr() - copy token string to NUL-terminated buffer
  *
- * \param ts: pointer to lws_tokenize struct to operate on
+ * \param ts: pointer to aws_lws_tokenize struct to operate on
  * \param str: destination buffer
  * \pparam max: bytes in destination buffer
  *
@@ -146,11 +146,11 @@ lws_tokenize(struct lws_tokenize *ts);
  */
 
 LWS_VISIBLE LWS_EXTERN int
-lws_tokenize_cstr(struct lws_tokenize *ts, char *str, size_t max);
+aws_lws_tokenize_cstr(struct aws_lws_tokenize *ts, char *str, size_t max);
 
 
 /*
- * lws_strexp: flexible string expansion helper api
+ * aws_lws_strexp: flexible string expansion helper api
  *
  * This stateful helper can handle multiple separate input chunks and multiple
  * output buffer loads with arbitrary boundaries between literals and expanded
@@ -165,12 +165,12 @@ lws_tokenize_cstr(struct lws_tokenize *ts, char *str, size_t max);
  */
 
 
-typedef int (*lws_strexp_expand_cb)(void *priv, const char *name, char *out,
+typedef int (*aws_lws_strexp_expand_cb)(void *priv, const char *name, char *out,
 				    size_t *pos, size_t olen, size_t *exp_ofs);
 
-typedef struct lws_strexp {
+typedef struct aws_lws_strexp {
 	char			name[32];
-	lws_strexp_expand_cb	cb;
+	aws_lws_strexp_expand_cb	cb;
 	void			*priv;
 	char			*out;
 	size_t			olen;
@@ -180,7 +180,7 @@ typedef struct lws_strexp {
 
 	uint8_t			name_pos;
 	char			state;
-} lws_strexp_t;
+} aws_lws_strexp_t;
 
 enum {
 	LSTRX_DONE,			/* it completed OK */
@@ -191,7 +191,7 @@ enum {
 
 
 /**
- * lws_strexp_init() - initialize an lws_strexp_t for use
+ * aws_lws_strexp_init() - initialize an aws_lws_strexp_t for use
  *
  * \p exp: the exp object to init
  * \p priv: the user's object pointer to pass to callback
@@ -199,7 +199,7 @@ enum {
  * \p out: the start of the output buffer, or NULL just to get the length
  * \p olen: the length of the output buffer in bytes
  *
- * Prepares an lws_strexp_t for use and sets the initial output buffer
+ * Prepares an aws_lws_strexp_t for use and sets the initial output buffer
  *
  * If \p out is NULL, substitution proceeds normally, but no output is produced,
  * only the length is returned.  olen should be set to the largest feasible
@@ -207,17 +207,17 @@ enum {
  * for NULL \p out and avoid producing the output.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_strexp_init(lws_strexp_t *exp, void *priv, lws_strexp_expand_cb cb,
+aws_lws_strexp_init(aws_lws_strexp_t *exp, void *priv, aws_lws_strexp_expand_cb cb,
 		char *out, size_t olen);
 
 /**
- * lws_strexp_reset_out() - reset the output buffer on an existing strexp
+ * aws_lws_strexp_reset_out() - reset the output buffer on an existing strexp
  *
  * \p exp: the exp object to init
  * \p out: the start of the output buffer, or NULL to just get length
  * \p olen: the length of the output buffer in bytes
  *
- * Provides a new output buffer for lws_strexp_expand() to continue to write
+ * Provides a new output buffer for aws_lws_strexp_expand() to continue to write
  * into.  It can be the same as the old one if it has been copied out or used.
  * The position of the next write will be reset to the start of the given buf.
  *
@@ -227,10 +227,10 @@ lws_strexp_init(lws_strexp_t *exp, void *priv, lws_strexp_expand_cb cb,
  * for NULL \p out and avoid producing the output.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_strexp_reset_out(lws_strexp_t *exp, char *out, size_t olen);
+aws_lws_strexp_reset_out(aws_lws_strexp_t *exp, char *out, size_t olen);
 
 /**
- * lws_strexp_expand() - copy / expand a string into the output buffer
+ * aws_lws_strexp_expand() - copy / expand a string into the output buffer
  *
  * \p exp: the exp object for the copy / expansion
  * \p in: the start of the next input data
@@ -243,7 +243,7 @@ lws_strexp_reset_out(lws_strexp_t *exp, char *out, size_t olen);
  * \p *pused_out the number of output characters used
  *
  * May return LSTRX_FILLED_OUT early with *pused < len if the output buffer is
- * filled.  Handle the output buffer and reset it with lws_strexp_reset_out()
+ * filled.  Handle the output buffer and reset it with aws_lws_strexp_reset_out()
  * before calling again with adjusted in / len to continue.
  *
  * In the case of large expansions, the expansion itself may fill the output
@@ -252,11 +252,11 @@ lws_strexp_reset_out(lws_strexp_t *exp, char *out, size_t olen);
  * appropriately.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_strexp_expand(lws_strexp_t *exp, const char *in, size_t len,
+aws_lws_strexp_expand(aws_lws_strexp_t *exp, const char *in, size_t len,
 		  size_t *pused_in, size_t *pused_out);
 
 /**
- * lws_strcmp_wildcard() - strcmp but the first arg can have wildcards
+ * aws_lws_strcmp_wildcard() - strcmp but the first arg can have wildcards
  *
  * \p wildcard: a string that may contain zero to three *, and may lack a NUL
  * \p wlen: length of the wildcard string
@@ -268,5 +268,5 @@ lws_strexp_expand(lws_strexp_t *exp, const char *in, size_t len,
  * not be NUL terminated, but are specified by lengths.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_strcmp_wildcard(const char *wildcard, size_t wlen, const char *check,
+aws_lws_strcmp_wildcard(const char *wildcard, size_t wlen, const char *check,
 		    size_t clen);

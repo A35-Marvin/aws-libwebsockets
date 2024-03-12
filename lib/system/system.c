@@ -29,15 +29,15 @@
  * a direct pointer + len (.is_direct = 1)
  */
 
-const lws_system_ops_t *
-lws_system_get_ops(struct lws_context *context)
+const aws_lws_system_ops_t *
+aws_lws_system_get_ops(struct aws_lws_context *context)
 {
 	return context->system_ops;
 }
 
 
 void
-lws_system_blob_direct_set(lws_system_blob_t *b, const uint8_t *ptr, size_t len)
+aws_lws_system_blob_direct_set(aws_lws_system_blob_t *b, const uint8_t *ptr, size_t len)
 {
 	b->is_direct = 1;
 	b->u.direct.ptr = ptr;
@@ -45,36 +45,36 @@ lws_system_blob_direct_set(lws_system_blob_t *b, const uint8_t *ptr, size_t len)
 }
 
 void
-lws_system_blob_heap_empty(lws_system_blob_t *b)
+aws_lws_system_blob_heap_empty(aws_lws_system_blob_t *b)
 {
 	b->is_direct = 0;
-	lws_buflist_destroy_all_segments(&b->u.bl);
+	aws_lws_buflist_destroy_all_segments(&b->u.bl);
 }
 
 int
-lws_system_blob_heap_append(lws_system_blob_t *b, const uint8_t *buf, size_t len)
+aws_lws_system_blob_heap_append(aws_lws_system_blob_t *b, const uint8_t *buf, size_t len)
 {
 	assert(!b->is_direct);
 
-	lwsl_debug("%s: blob %p\n", __func__, b);
+	aws_lwsl_debug("%s: blob %p\n", __func__, b);
 
-	if (lws_buflist_append_segment(&b->u.bl, buf, len) < 0)
+	if (aws_lws_buflist_append_segment(&b->u.bl, buf, len) < 0)
 		return -1;
 
 	return 0;
 }
 
 size_t
-lws_system_blob_get_size(lws_system_blob_t *b)
+aws_lws_system_blob_get_size(aws_lws_system_blob_t *b)
 {
 	if (b->is_direct)
 		return b->u.direct.len;
 
-	return lws_buflist_total_len(&b->u.bl);
+	return aws_lws_buflist_total_len(&b->u.bl);
 }
 
 int
-lws_system_blob_get(lws_system_blob_t *b, uint8_t *buf, size_t *len, size_t ofs)
+aws_lws_system_blob_get(aws_lws_system_blob_t *b, uint8_t *buf, size_t *len, size_t ofs)
 {
 	int n;
 
@@ -95,7 +95,7 @@ lws_system_blob_get(lws_system_blob_t *b, uint8_t *buf, size_t *len, size_t ofs)
 		return 0;
 	}
 
-	n = lws_buflist_linear_copy(&b->u.bl, ofs, buf, *len);
+	n = aws_lws_buflist_linear_copy(&b->u.bl, ofs, buf, *len);
 	if (n < 0)
 		return -2;
 
@@ -105,7 +105,7 @@ lws_system_blob_get(lws_system_blob_t *b, uint8_t *buf, size_t *len, size_t ofs)
 }
 
 int
-lws_system_blob_get_single_ptr(lws_system_blob_t *b, const uint8_t **ptr)
+aws_lws_system_blob_get_single_ptr(aws_lws_system_blob_t *b, const uint8_t **ptr)
 {
 	if (b->is_direct) {
 		*ptr = b->u.direct.ptr;
@@ -124,17 +124,17 @@ lws_system_blob_get_single_ptr(lws_system_blob_t *b, const uint8_t **ptr)
 }
 
 void
-lws_system_blob_destroy(lws_system_blob_t *b)
+aws_lws_system_blob_destroy(aws_lws_system_blob_t *b)
 {
 	if (!b)
 		return;
-	// lwsl_info("%s: blob %p\n", __func__, b);
+	// aws_lwsl_info("%s: blob %p\n", __func__, b);
 	if (!b->is_direct)
-		lws_buflist_destroy_all_segments(&b->u.bl);
+		aws_lws_buflist_destroy_all_segments(&b->u.bl);
 }
 
-lws_system_blob_t *
-lws_system_get_blob(struct lws_context *context, lws_system_blob_item_t type,
+aws_lws_system_blob_t *
+aws_lws_system_get_blob(struct aws_lws_context *context, aws_lws_system_blob_item_t type,
 		    int idx)
 {
 	if (idx < 0 ||
@@ -151,19 +151,19 @@ lws_system_get_blob(struct lws_context *context, lws_system_blob_item_t type,
  */
 
 int
-__lws_system_attach(struct lws_context *context, int tsi, lws_attach_cb_t cb,
-		    lws_system_states_t state, void *opaque,
-		    struct lws_attach_item **get)
+__lws_system_attach(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t cb,
+		    aws_lws_system_states_t state, void *opaque,
+		    struct aws_lws_attach_item **get)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_attach_item *item;
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_attach_item *item;
 
 	if (!get) {
 		/*
 		 * allocate and add to the head of the pt's attach list
 		 */
 
-		item = lws_zalloc(sizeof(*item), __func__);
+		item = aws_lws_zalloc(sizeof(*item), __func__);
 		if (!item)
 			return 1;
 
@@ -171,9 +171,9 @@ __lws_system_attach(struct lws_context *context, int tsi, lws_attach_cb_t cb,
 		item->opaque = opaque;
 		item->state = state;
 
-		lws_dll2_add_head(&item->list, &pt->attach_owner);
+		aws_lws_dll2_add_head(&item->list, &pt->attach_owner);
 
-		lws_cancel_service(context);
+		aws_lws_cancel_service(context);
 
 		return 0;
 	}
@@ -187,22 +187,22 @@ __lws_system_attach(struct lws_context *context, int tsi, lws_attach_cb_t cb,
 	 * If any, return the first guy whose state requirement matches
 	 */
 
-	lws_start_foreach_dll(struct lws_dll2 *, d,
-			      lws_dll2_get_head(&pt->attach_owner)) {
-		item = lws_container_of(d, lws_attach_item_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+			      aws_lws_dll2_get_head(&pt->attach_owner)) {
+		item = aws_lws_container_of(d, aws_lws_attach_item_t, list);
 
 		if (pt->context->mgr_system.state >= (int)item->state) {
 			*get = item;
-			lws_dll2_remove(d);
+			aws_lws_dll2_remove(d);
 
 			/*
 			 * We detached it, but the caller now has the
-			 * responsibility to lws_free() *get.
+			 * responsibility to aws_lws_free() *get.
 			 */
 
 			return 0;
 		}
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 #endif
 
 	/* nobody ready to go... leave *get as NULL and return cleanly */
@@ -211,7 +211,7 @@ __lws_system_attach(struct lws_context *context, int tsi, lws_attach_cb_t cb,
 }
 
 int
-lws_system_do_attach(struct lws_context_per_thread *pt)
+aws_lws_system_do_attach(struct aws_lws_context_per_thread *pt)
 {
 	/*
 	 * If nothing to do, we just return immediately
@@ -219,16 +219,16 @@ lws_system_do_attach(struct lws_context_per_thread *pt)
 
 	while (pt->attach_owner.count) {
 
-		struct lws_attach_item *item;
+		struct aws_lws_attach_item *item;
 
 		/*
 		 * If anybody used the attach apis, there must be an
-		 * implementation of the (*attach) lws_system op function
+		 * implementation of the (*attach) aws_lws_system op function
 		 */
 
 		assert(pt->context->system_ops->attach);
 		if (!pt->context->system_ops->attach) {
-			lwsl_err("%s: define (*attach)\n", __func__);
+			aws_lwsl_err("%s: define (*attach)\n", __func__);
 			return 1;
 		}
 
@@ -240,7 +240,7 @@ lws_system_do_attach(struct lws_context_per_thread *pt)
 
 		if (pt->context->system_ops->attach(pt->context, pt->tid, NULL,
 						    0, NULL, &item)) {
-			lwsl_err("%s: attach problem\n", __func__);
+			aws_lwsl_err("%s: attach problem\n", __func__);
 			return 1;
 		}
 
@@ -256,7 +256,7 @@ lws_system_do_attach(struct lws_context_per_thread *pt)
 
 		/* it's done, destroy the item */
 
-		lws_free(item);
+		aws_lws_free(item);
 	}
 
 	return 0;

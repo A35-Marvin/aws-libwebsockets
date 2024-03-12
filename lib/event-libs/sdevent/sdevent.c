@@ -3,17 +3,17 @@
 #include <private-lib-core.h>
 #include "private-lib-event-libs-sdevent.h"
 
-#define pt_to_priv_sd(_pt) ((struct lws_pt_eventlibs_sdevent *)(_pt)->evlib_pt)
-#define wsi_to_priv_sd(_w) ((struct lws_wsi_watcher_sdevent *)(_w)->evlib_wsi)
+#define pt_to_priv_sd(_pt) ((struct aws_lws_pt_eventlibs_sdevent *)(_pt)->evlib_pt)
+#define wsi_to_priv_sd(_w) ((struct aws_lws_wsi_watcher_sdevent *)(_w)->evlib_wsi)
 
-struct lws_pt_eventlibs_sdevent {
-	struct lws_context_per_thread *pt;
+struct aws_lws_pt_eventlibs_sdevent {
+	struct aws_lws_context_per_thread *pt;
 	struct sd_event *io_loop;
 	struct sd_event_source *sultimer;
 	struct sd_event_source *idletimer;
 };
 
-struct lws_wsi_watcher_sdevent {
+struct aws_lws_wsi_watcher_sdevent {
 	struct sd_event_source *source;
 	uint32_t events;
 };
@@ -21,15 +21,15 @@ struct lws_wsi_watcher_sdevent {
 static int
 sultimer_handler(sd_event_source *s, uint64_t usec, void *userdata)
 {
-	struct lws_context_per_thread *pt = (struct lws_context_per_thread *)userdata;
+	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)userdata;
 
-	lws_usec_t us;
+	aws_lws_usec_t us;
 
-	lws_context_lock(pt->context, __func__);
-	lws_pt_lock(pt, __func__);
+	aws_lws_context_lock(pt->context, __func__);
+	aws_lws_pt_lock(pt, __func__);
 
 	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
-				    lws_now_usecs());
+				    aws_lws_now_usecs());
 	if (us) {
 		uint64_t at;
 
@@ -40,8 +40,8 @@ sultimer_handler(sd_event_source *s, uint64_t usec, void *userdata)
 					    SD_EVENT_ONESHOT);
 	}
 
-	lws_pt_unlock(pt);
-	lws_context_unlock(pt->context);
+	aws_lws_pt_unlock(pt);
+	aws_lws_context_unlock(pt->context);
 
 	return 0;
 }
@@ -49,26 +49,26 @@ sultimer_handler(sd_event_source *s, uint64_t usec, void *userdata)
 static int
 idle_handler(sd_event_source *s, uint64_t usec, void *userdata)
 {
-	struct lws_context_per_thread *pt = (struct lws_context_per_thread *)userdata;
+	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)userdata;
 
-	lws_usec_t us;
+	aws_lws_usec_t us;
 
-	lws_service_do_ripe_rxflow(pt);
+	aws_lws_service_do_ripe_rxflow(pt);
 
-	lws_context_lock(pt->context, __func__);
-	lws_pt_lock(pt, __func__);
+	aws_lws_context_lock(pt->context, __func__);
+	aws_lws_pt_lock(pt, __func__);
 
 	/*
 	 * is there anybody with pending stuff that needs service forcing?
 	 */
-	 if (!lws_service_adjust_timeout(pt->context, 1, pt->tid))
+	 if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid))
 		 /* -1 timeout means just do forced service */
 		 _lws_plat_service_forced_tsi(pt->context, pt->tid);
 
 	 /* account for sultimer */
 
 	 us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
-				     lws_now_usecs());
+				     aws_lws_now_usecs());
 
 	 if (us) {
 		 uint64_t at;
@@ -82,8 +82,8 @@ idle_handler(sd_event_source *s, uint64_t usec, void *userdata)
 
 	 sd_event_source_set_enabled(pt_to_priv_sd(pt)->idletimer, SD_EVENT_OFF);
 
-	 lws_pt_unlock(pt);
-	 lws_context_unlock(pt->context);
+	 aws_lws_pt_unlock(pt);
+	 aws_lws_context_unlock(pt->context);
 
 	 return 0;
 }
@@ -92,13 +92,13 @@ static int
 sock_accept_handler(sd_event_source *s, int fd, uint32_t revents, void *userdata)
 {
 	struct lws *wsi = (struct lws *)userdata;
-	struct lws_context *context = wsi->a.context;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	struct sd_event_source *idletimer, *watcher;
-	struct lws_pollfd eventfd;
+	struct aws_lws_pollfd eventfd;
 
-	lws_context_lock(pt->context, __func__);
-	lws_pt_lock(pt, __func__);
+	aws_lws_context_lock(pt->context, __func__);
+	aws_lws_pt_lock(pt, __func__);
 
 	if (pt->is_destroyed)
 		goto bail;
@@ -117,13 +117,13 @@ sock_accept_handler(sd_event_source *s, int fd, uint32_t revents, void *userdata
 		eventfd.revents |= LWS_POLLOUT;
 	}
 
-	lws_pt_unlock(pt);
-	lws_context_unlock(pt->context);
+	aws_lws_pt_unlock(pt);
+	aws_lws_context_unlock(pt->context);
 
-	lws_service_fd_tsi(context, &eventfd, wsi->tsi);
+	aws_lws_service_fd_tsi(context, &eventfd, wsi->tsi);
 
 	if (pt->destroy_self) {
-		lws_context_destroy(pt->context);
+		aws_lws_context_destroy(pt->context);
 		return -1;
 	}
 
@@ -138,7 +138,7 @@ sock_accept_handler(sd_event_source *s, int fd, uint32_t revents, void *userdata
 	 * allow further events
 	 *
 	 * Note:
-	 * do not move the assignment up, lws_service_fd_tsi may invalidate it!
+	 * do not move the assignment up, aws_lws_service_fd_tsi may invalidate it!
 	 */
 	watcher = wsi_to_priv_sd(wsi)->source;
 	if (watcher)
@@ -147,8 +147,8 @@ sock_accept_handler(sd_event_source *s, int fd, uint32_t revents, void *userdata
 	return 0;
 
 bail:
-	lws_pt_unlock(pt);
-	lws_context_unlock(pt->context);
+	aws_lws_pt_unlock(pt);
+	aws_lws_context_unlock(pt->context);
 
 	return -1;
 }
@@ -156,7 +156,7 @@ bail:
 static void
 io_sd(struct lws *wsi, unsigned int flags)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	/*
 	 * Only manipulate if there is an event source, and if
@@ -170,7 +170,7 @@ io_sd(struct lws *wsi, unsigned int flags)
 	// assert that the requested flags do not contain anything unexpected
 	if (!((flags & (LWS_EV_START | LWS_EV_STOP)) &&
 	    (flags & (LWS_EV_READ | LWS_EV_WRITE)))) {
-		lwsl_wsi_err(wsi, "assert: flags %d", flags);
+		aws_lwsl_wsi_err(wsi, "assert: flags %d", flags);
 		assert(0);
 	}
 
@@ -212,7 +212,7 @@ io_sd(struct lws *wsi, unsigned int flags)
 static int
 init_vhost_listen_wsi_sd(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt;
+	struct aws_lws_context_per_thread *pt;
 
 	if (!wsi)
 		return 0;
@@ -232,9 +232,9 @@ init_vhost_listen_wsi_sd(struct lws *wsi)
 }
 
 static int
-elops_listen_init_sdevent(struct lws_dll2 *d, void *user)
+elops_listen_init_sdevent(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = lws_container_of(d, struct lws, listen_list);
+	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
 
 	if (init_vhost_listen_wsi_sd(wsi) == -1)
 		return -1;
@@ -243,10 +243,10 @@ elops_listen_init_sdevent(struct lws_dll2 *d, void *user)
 }
 
 static int
-init_pt_sd(struct lws_context *context, void *_loop, int tsi)
+init_pt_sd(struct aws_lws_context *context, void *_loop, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_pt_eventlibs_sdevent *ptpriv = pt_to_priv_sd(pt);
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_pt_eventlibs_sdevent *ptpriv = pt_to_priv_sd(pt);
 	struct sd_event *loop = (struct sd_event *)_loop;
 	int first = 1;  /* first to create and initialize the loop */
 
@@ -256,7 +256,7 @@ init_pt_sd(struct lws_context *context, void *_loop, int tsi)
 	if (!ptpriv->io_loop) {
 		if (!loop) {
 			if (sd_event_default(&loop) < 0) {
-				lwsl_cx_err(context, "sd_event_default failed");
+				aws_lwsl_cx_err(context, "sd_event_default failed");
 
 				return -1;
 			}
@@ -274,7 +274,7 @@ init_pt_sd(struct lws_context *context, void *_loop, int tsi)
 		  */
 		first = 0;
 
-	lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_init_sdevent);
+	aws_lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_init_sdevent);
 
 	if (first) {
 
@@ -335,7 +335,7 @@ wsi_logical_close_sd(struct lws *wsi)
 static int
 sock_accept_sd(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	if (wsi->role_ops->file_handle)
 		sd_event_add_io(pt_to_priv_sd(pt)->io_loop,
@@ -356,19 +356,19 @@ sock_accept_sd(struct lws *wsi)
 }
 
 static void
-run_pt_sd(struct lws_context *context, int tsi)
+run_pt_sd(struct aws_lws_context *context, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_pt_eventlibs_sdevent *ptpriv = pt_to_priv_sd(pt);
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_pt_eventlibs_sdevent *ptpriv = pt_to_priv_sd(pt);
 
 	if (ptpriv->io_loop)
 		sd_event_run(ptpriv->io_loop, (uint64_t) -1);
 }
 
 static int
-elops_listen_destroy_sdevent(struct lws_dll2 *d, void *user)
+elops_listen_destroy_sdevent(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = lws_container_of(d, struct lws, listen_list);
+	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
 
 	wsi_logical_close_sd(wsi);
 
@@ -376,12 +376,12 @@ elops_listen_destroy_sdevent(struct lws_dll2 *d, void *user)
 }
 
 static void
-destroy_pt_sd(struct lws_context *context, int tsi)
+destroy_pt_sd(struct aws_lws_context *context, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_pt_eventlibs_sdevent *ptpriv = pt_to_priv_sd(pt);
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_pt_eventlibs_sdevent *ptpriv = pt_to_priv_sd(pt);
 
-	lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_destroy_sdevent);
+	aws_lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_destroy_sdevent);
 
 	if (ptpriv->sultimer) {
 		sd_event_source_set_enabled(ptpriv->sultimer,
@@ -403,7 +403,7 @@ destroy_pt_sd(struct lws_context *context, int tsi)
 	}
 }
 
-const struct lws_event_loop_ops event_loop_ops_sdevent = {
+const struct aws_lws_event_loop_ops event_loop_ops_sdevent = {
 		.name				= "sdevent",
 		.init_context			= NULL,
 		.destroy_context1		= NULL,
@@ -422,18 +422,18 @@ const struct lws_event_loop_ops event_loop_ops_sdevent = {
 		.flags				= 0,
 
 		.evlib_size_ctx			= 0,
-		.evlib_size_pt			= sizeof(struct lws_pt_eventlibs_sdevent),
+		.evlib_size_pt			= sizeof(struct aws_lws_pt_eventlibs_sdevent),
 		.evlib_size_vh			= 0,
-		.evlib_size_wsi			= sizeof(struct lws_wsi_watcher_sdevent),
+		.evlib_size_wsi			= sizeof(struct aws_lws_wsi_watcher_sdevent),
 };
 
 #if defined(LWS_WITH_EVLIB_PLUGINS)
 LWS_VISIBLE
 #endif
-const lws_plugin_evlib_t evlib_sd = {
+const aws_lws_plugin_evlib_t evlib_sd = {
 		.hdr = {
 				"systemd event loop",
-				"lws_evlib_plugin",
+				"aws_lws_evlib_plugin",
 				LWS_BUILD_HASH,
 				LWS_PLUGIN_API_MAGIC
 		},

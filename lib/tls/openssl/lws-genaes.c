@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genaes provides an AES abstraction api in lws that works the
+ *  aws_lws_genaes provides an AES abstraction api in lws that works the
  *  same whether you are using openssl or mbedtls hash functions underneath.
  */
 #include "private-lib-core.h"
@@ -35,8 +35,8 @@
  */
 
 int
-lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
-		  enum enum_aes_modes mode, struct lws_gencrypto_keyelem *el,
+aws_lws_genaes_create(struct aws_lws_genaes_ctx *ctx, enum enum_aes_operation op,
+		  enum enum_aes_modes mode, struct aws_lws_gencrypto_keyelem *el,
 		  enum enum_aes_padding padding, void *engine)
 {
 	int n = 0;
@@ -62,7 +62,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 			ctx->cipher = EVP_aes_128_wrap();
 			break;
 #else
-			lwsl_err("%s: your OpenSSL lacks AES wrap apis, update it\n",
+			aws_lwsl_err("%s: your OpenSSL lacks AES wrap apis, update it\n",
 				 __func__);
 			return -1;
 #endif
@@ -96,7 +96,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 #endif
 #if defined(LWS_HAVE_EVP_aes_128_xts)
 		case LWS_GAESM_XTS:
-			lwsl_err("%s: AES XTS requires double-length key\n",
+			aws_lwsl_err("%s: AES XTS requires double-length key\n",
 				 __func__);
 			break;
 #endif
@@ -117,7 +117,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 			ctx->cipher = EVP_aes_192_wrap();
 			break;
 #else
-                        lwsl_err("%s: your OpenSSL lacks AES wrap apis, update it\n",
+                        aws_lwsl_err("%s: your OpenSSL lacks AES wrap apis, update it\n",
                                  __func__);
                         return -1;
 #endif
@@ -151,7 +151,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 #endif
 #if defined(LWS_HAVE_EVP_aes_128_xts)
 		case LWS_GAESM_XTS:
-			lwsl_err("%s: AES XTS 192 invalid\n", __func__);
+			aws_lwsl_err("%s: AES XTS 192 invalid\n", __func__);
 			goto bail;
 #endif
 		case LWS_GAESM_GCM:
@@ -171,7 +171,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 			ctx->cipher = EVP_aes_256_wrap();
 			break;
 #else
-                        lwsl_err("%s: your OpenSSL lacks AES wrap apis, update it\n",
+                        aws_lwsl_err("%s: your OpenSSL lacks AES wrap apis, update it\n",
                                  __func__);
                         return -1;
 #endif
@@ -229,7 +229,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 	break;
 
 	default:
-		lwsl_err("%s: unsupported AES size %d bits\n", __func__,
+		aws_lwsl_err("%s: unsupported AES size %d bits\n", __func__,
 			 ctx->k->len * 8);
 		goto bail;
 	}
@@ -247,9 +247,9 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 		break;
 	}
 	if (!n) {
-		lwsl_err("%s: cipher init failed (cipher %p)\n", __func__,
+		aws_lwsl_err("%s: cipher init failed (cipher %p)\n", __func__,
 			 ctx->cipher);
-		lws_tls_err_describe_clear();
+		aws_lws_tls_err_describe_clear();
 		goto bail;
 	}
 
@@ -261,7 +261,7 @@ bail:
 }
 
 int
-lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
+aws_lws_genaes_destroy(struct aws_lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 {
 	uint8_t buf[256];
 	int outl = sizeof(buf), n = 0;
@@ -274,7 +274,7 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 		case LWS_GAESO_ENC:
 
 			if (EVP_EncryptFinal_ex(ctx->ctx, buf, &outl) != 1) {
-				lwsl_err("%s: enc final failed\n", __func__);
+				aws_lwsl_err("%s: enc final failed\n", __func__);
 				n = -1;
 			}
 
@@ -282,8 +282,8 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 				if (EVP_CIPHER_CTX_ctrl(ctx->ctx,
 						EVP_CTRL_GCM_GET_TAG,
 						    ctx->taglen, tag) != 1) {
-					lwsl_err("get tag ctrl failed\n");
-					//lws_tls_err_describe_clear();
+					aws_lwsl_err("get tag ctrl failed\n");
+					//aws_lws_tls_err_describe_clear();
 					n = 1;
 				}
 			}
@@ -294,15 +294,15 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 
 		case LWS_GAESO_DEC:
 			if (EVP_DecryptFinal_ex(ctx->ctx, buf, &outl) != 1) {
-				lwsl_err("%s: dec final failed\n", __func__);
-				lws_tls_err_describe_clear();
+				aws_lwsl_err("%s: dec final failed\n", __func__);
+				aws_lws_tls_err_describe_clear();
 				n = -1;
 			}
 
 			break;
 		}
 		if (outl)
-			lwsl_debug("%s: final len %d\n", __func__, outl);
+			aws_lwsl_debug("%s: final len %d\n", __func__, outl);
 	}
 
 	ctx->k = NULL;
@@ -313,7 +313,7 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 }
 
 int
-lws_genaes_crypt(struct lws_genaes_ctx *ctx,
+aws_lws_genaes_crypt(struct aws_lws_genaes_ctx *ctx,
 		 const uint8_t *in, size_t len, uint8_t *out,
 		 uint8_t *iv_or_nonce_ctr_or_data_unit_16,
 		 uint8_t *stream_block_16, size_t *nc_or_iv_off, int taglen)
@@ -328,7 +328,7 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx,
 			n = EVP_CIPHER_CTX_ctrl(ctx->ctx, EVP_CTRL_GCM_SET_IVLEN,
 					   (int)*nc_or_iv_off, NULL);
 			if (n != 1) {
-				lwsl_err("%s: SET_IVLEN failed\n", __func__);
+				aws_lwsl_err("%s: SET_IVLEN failed\n", __func__);
 				return -1;
 			}
 			memcpy(ctx->tag, stream_block_16, (unsigned int)taglen);
@@ -353,8 +353,8 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx,
 		}
 
 		if (!n) {
-			lws_tls_err_describe_clear();
-			lwsl_err("%s: init failed (cipher %p)\n",
+			aws_lws_tls_err_describe_clear();
+			aws_lwsl_err("%s: init failed (cipher %p)\n",
 				 __func__, ctx->cipher);
 
 			return -1;
@@ -379,9 +379,9 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx,
 			return -1;
 		}
 		if (n != 1) {
-			lwsl_err("%s: set AAD failed\n",  __func__);
-			lws_tls_err_describe_clear();
-			lwsl_hexdump_err(in, len);
+			aws_lwsl_err("%s: set AAD failed\n",  __func__);
+			aws_lws_tls_err_describe_clear();
+			aws_lwsl_hexdump_err(in, len);
 			return -1;
 		}
 
@@ -399,11 +399,11 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx,
 		return -1;
 	}
 
-	// lwsl_notice("discarding outl %d\n", (int)outl);
+	// aws_lwsl_notice("discarding outl %d\n", (int)outl);
 
 	if (!n) {
-		lwsl_notice("%s: update failed\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_notice("%s: update failed\n", __func__);
+		aws_lws_tls_err_describe_clear();
 
 		return -1;
 	}

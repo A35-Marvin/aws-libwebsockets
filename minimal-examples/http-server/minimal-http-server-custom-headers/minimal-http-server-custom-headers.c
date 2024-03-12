@@ -33,7 +33,7 @@ struct pss {
  */
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	uint8_t buf[LWS_PRE + 2048], *start = &buf[LWS_PRE], *p = start,
@@ -54,46 +54,46 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		 */
 
 		pss->len = 0;
-		n = lws_hdr_custom_length(wsi, "dnt:", 4);
+		n = aws_lws_hdr_custom_length(wsi, "dnt:", 4);
 		if (n < 0)
-			pss->len = lws_snprintf(pr, e,
+			pss->len = aws_lws_snprintf(pr, e,
 					"%s: DNT header not found\n", __func__);
 		else {
 
-			pss->len = lws_snprintf(pr, e,
+			pss->len = aws_lws_snprintf(pr, e,
 					"%s: DNT length %d<br>", __func__, n);
-			n = lws_hdr_custom_copy(wsi, value, sizeof(value), "dnt:", 4);
+			n = aws_lws_hdr_custom_copy(wsi, value, sizeof(value), "dnt:", 4);
 			if (n < 0)
-				pss->len += lws_snprintf(pr + pss->len, e - (unsigned int)pss->len,
+				pss->len += aws_lws_snprintf(pr + pss->len, e - (unsigned int)pss->len,
 					"%s: unable to get DNT value\n", __func__);
 			else
 
-				pss->len += lws_snprintf(pr + pss->len , e - (unsigned int)pss->len,
+				pss->len += aws_lws_snprintf(pr + pss->len , e - (unsigned int)pss->len,
 					"%s: DNT value '%s'\n", __func__, value);
 		}
 
-		lwsl_user("%s\n", pr);
+		aws_lwsl_user("%s\n", pr);
 
-		if (lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
-				"text/html", (lws_filepos_t)pss->len, &p, end))
+		if (aws_lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
+				"text/html", (aws_lws_filepos_t)pss->len, &p, end))
 			return 1;
 
-		if (lws_finalize_write_http_header(wsi, start, &p, end))
+		if (aws_lws_finalize_write_http_header(wsi, start, &p, end))
 			return 1;
 
 
 		/* write the body separately */
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		return 0;
 
 	case LWS_CALLBACK_HTTP_WRITEABLE:
 
 		strcpy((char *)start, "hello");
 
-		if (lws_write(wsi, (uint8_t *)pr, (unsigned int)pss->len, LWS_WRITE_HTTP_FINAL) != pss->len)
+		if (aws_lws_write(wsi, (uint8_t *)pr, (unsigned int)pss->len, LWS_WRITE_HTTP_FINAL) != pss->len)
 			return 1;
 
-		if (lws_http_transaction_completed(wsi))
+		if (aws_lws_http_transaction_completed(wsi))
 			return -1;
 		return 0;
 
@@ -101,15 +101,15 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	{ "http", callback_http, sizeof(struct pss), 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static const struct lws_http_mount mount_dyn = {
+static const struct aws_lws_http_mount mount_dyn = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/dyn",		/* mountpoint URL */
 	/* .origin */			NULL,	/* protocol */
@@ -131,7 +131,7 @@ static const struct lws_http_mount mount_dyn = {
 
 /* default mount serves the URL space from ./mount-origin */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		&mount_dyn,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */		"./mount-origin",	/* serve from dir */
@@ -158,18 +158,18 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server custom headers | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server custom headers | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
@@ -177,12 +177,12 @@ int main(int argc, const char **argv)
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
 	/* for testing ah queue, not useful in real world */
-	if (lws_cmdline_option(argc, argv, "--ah1"))
+	if (aws_lws_cmdline_option(argc, argv, "--ah1"))
 		info.max_http_header_pool = 1;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -193,8 +193,8 @@ int main(int argc, const char **argv)
 	info.mounts = &mount;
 	info.vhost_name = "http";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create tls vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create tls vhost\n");
 		goto bail;
 	}
 
@@ -208,16 +208,16 @@ int main(int argc, const char **argv)
 #endif
 	info.vhost_name = "https";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create tls vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create tls vhost\n");
 		goto bail;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 bail:
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

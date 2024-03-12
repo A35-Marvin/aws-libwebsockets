@@ -27,18 +27,18 @@
 #include "private-lib-core.h"
 //#include "private-lib-jose.h"
 
-#define lwsl_cose lwsl_notice
-#define lwsl_hexdump_cose lwsl_hexdump_notice
+#define aws_lwsl_cose aws_lwsl_notice
+#define aws_lwsl_hexdump_cose aws_lwsl_hexdump_notice
 
 // #define VERBOSE 1
 
-struct lws_cose_key_parse_state {
-	struct lws_cose_key		*ck;
+struct aws_lws_cose_key_parse_state {
+	struct aws_lws_cose_key		*ck;
 	/**< single key created here if pkey_set is NULL */
 	char				buf[(8192 / 8) + 1];
 	/**< enough for 8Kb key, only needed during parse */
-	lws_cose_key_import_callback	per_key_cb;
-	lws_dll2_owner_t		*pkey_set;
+	aws_lws_cose_key_import_callback	per_key_cb;
+	aws_lws_dll2_owner_t		*pkey_set;
 	/**< if non-NULL, expects a [ key set ], else single key */
 	void				*user;
 	size_t				pos;
@@ -80,7 +80,7 @@ static const char *ec_names[] = {
 };
 
 void
-lws_cose_key_dump(const struct lws_cose_key *ck)
+aws_lws_cose_key_dump(const struct aws_lws_cose_key *ck)
 {
 	const char **enames;
 	char hex[2048];
@@ -106,27 +106,27 @@ lws_cose_key_dump(const struct lws_cose_key *ck)
 		break;
 
 	default:
-		lwsl_err("%s: jwk %p: unknown type\n", __func__, ck);
+		aws_lwsl_err("%s: jwk %p: unknown type\n", __func__, ck);
 
 		return;
 	}
 
-	lwsl_cose("%s: cose_key %p, kty: %lld (gc %d)\n", __func__, ck,
+	aws_lwsl_cose("%s: cose_key %p, kty: %lld (gc %d)\n", __func__, ck,
 			(long long)ck->kty, ck->gencrypto_kty);
 
 	for (n = 0; n < LWS_COUNT_COSE_KEY_ELEMENTS; n++) {
 		if (ck->meta[n].buf) {
-			lws_hex_from_byte_array(ck->meta[n].buf, ck->meta[n].len,
+			aws_lws_hex_from_byte_array(ck->meta[n].buf, ck->meta[n].len,
 						hex, sizeof(hex));
-			lwsl_cose("  meta: %s: %s\n", meta_names[n], hex);
+			aws_lwsl_cose("  meta: %s: %s\n", meta_names[n], hex);
 		}
 	}
 
 	for (n = 0; n < elems; n++) {
 		if (ck->e[n].buf) {
-			lws_hex_from_byte_array(ck->e[n].buf, ck->e[n].len,
+			aws_lws_hex_from_byte_array(ck->e[n].buf, ck->e[n].len,
 						hex, sizeof(hex));
-			lwsl_cose("  e: %s: %s\n", enames[n], hex);
+			aws_lwsl_cose("  e: %s: %s\n", enames[n], hex);
 		}
 	}
 }
@@ -137,10 +137,10 @@ static const char * const kty_strings[] = { NULL,
 };
 
 int
-lws_cose_key_checks(const lws_cose_key_t *key, int64_t kty, cose_param_t alg,
+aws_lws_cose_key_checks(const aws_lws_cose_key_t *key, int64_t kty, cose_param_t alg,
 		    int key_op, const char *crv)
 {
-	const struct lws_gencrypto_keyelem *ke;
+	const struct aws_lws_gencrypto_keyelem *ke;
 
 	/*
 	 * we ourselves have to have a very clear idea what we need, even if
@@ -161,15 +161,15 @@ lws_cose_key_checks(const lws_cose_key_t *key, int64_t kty, cose_param_t alg,
 	 */
 	if (!kty || kty >= (int)LWS_ARRAY_SIZE(kty_strings)) {
 		/* we don't understand it */
-		lwsl_notice("%s: unknown kty %d\n", __func__, (int)kty);
+		aws_lwsl_notice("%s: unknown kty %d\n", __func__, (int)kty);
 		goto bail;
 	}
 
 	ke = &key->meta[COSEKEY_META_KTY];
 	if (ke->buf && (strlen(kty_strings[kty]) != ke->len ||
 			memcmp(kty_strings[kty], ke->buf, ke->len))) {
-		lwsl_notice("%s: key is of wrong kty\n", __func__);
-		lwsl_hexdump_notice(ke->buf, ke->len);
+		aws_lwsl_notice("%s: key is of wrong kty\n", __func__);
+		aws_lwsl_hexdump_notice(ke->buf, ke->len);
 		goto bail;
 	}
 
@@ -183,13 +183,13 @@ lws_cose_key_checks(const lws_cose_key_t *key, int64_t kty, cose_param_t alg,
 	 */
 
 	if (!key->cose_alg && key->meta[COSEKEY_META_ALG].buf) {
-		lwsl_notice("%s: alg fail 1\n", __func__);
+		aws_lwsl_notice("%s: alg fail 1\n", __func__);
 		goto bail;
 	}
 
 	if (key->cose_alg && /* accept it being absent altogether */
 	    key->cose_alg != alg) {
-		lwsl_notice("%s: alg fail 2\n", __func__);
+		aws_lwsl_notice("%s: alg fail 2\n", __func__);
 
 		goto bail;
 	}
@@ -232,16 +232,16 @@ lws_cose_key_checks(const lws_cose_key_t *key, int64_t kty, cose_param_t alg,
 	return 0;
 
 bail:
-	lwsl_notice("%s: key rejected\n", __func__);
+	aws_lwsl_notice("%s: key rejected\n", __func__);
 
 	return 1;
 }
 
 
 static int
-lws_ck_set_el(struct lws_gencrypto_keyelem *e, char *in, size_t len)
+aws_lws_ck_set_el(struct aws_lws_gencrypto_keyelem *e, char *in, size_t len)
 {
-	e->buf = lws_malloc(len + 1, "ck");
+	e->buf = aws_lws_malloc(len + 1, "ck");
 	if (!e->buf)
 		return -1;
 
@@ -269,7 +269,7 @@ static struct {
 /* 0 means failed */
 
 static cose_param_t
-lws_cose_curve_name_to_id(const char *curve)
+aws_lws_cose_curve_name_to_id(const char *curve)
 {
 	int n;
 
@@ -281,7 +281,7 @@ lws_cose_curve_name_to_id(const char *curve)
 }
 
 static const char *
-lws_cose_curve_id_to_name(cose_param_t id)
+aws_lws_cose_curve_id_to_name(cose_param_t id)
 {
 	int n;
 
@@ -304,14 +304,14 @@ static signed char wk_alg_indexes[] = {
 static signed char
 cb_cose_key(struct lecp_ctx *ctx, char reason)
 {
-	struct lws_cose_key_parse_state *cps =
-			(struct lws_cose_key_parse_state *)ctx->user;
-	struct lws_gencrypto_keyelem *ke = NULL;
+	struct aws_lws_cose_key_parse_state *cps =
+			(struct aws_lws_cose_key_parse_state *)ctx->user;
+	struct aws_lws_gencrypto_keyelem *ke = NULL;
 	const char *p;
 	int n;
 
 #if defined(VERBOSE)
-	lwsl_notice("%s: reason %d, path %s, ord %u, ppos %d\n", __func__,
+	aws_lwsl_notice("%s: reason %d, path %s, ord %u, ppos %d\n", __func__,
 			reason & 0x3f,
 			ctx->path, ctx->st[ctx->sp - 1].ordinal,
 			ctx->pst[ctx->pst_sp].ppos);
@@ -325,7 +325,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 	case LECPCB_ARRAY_ITEM_START:
 		if (cps->pkey_set && ctx->pst[ctx->pst_sp].ppos == 2) {
 			ak:
-			cps->ck = lws_zalloc(sizeof(*cps->ck), __func__);
+			cps->ck = aws_lws_zalloc(sizeof(*cps->ck), __func__);
 			if (!cps->ck)
 				goto bail;
 			cps->cose_state = 0;
@@ -334,7 +334,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 			cps->seen_count = 0;
 
 			if (cps->pkey_set)
-				lws_dll2_add_tail(&cps->ck->list, cps->pkey_set);
+				aws_lws_dll2_add_tail(&cps->ck->list, cps->pkey_set);
 		}
 		break;
 	case LECPCB_ARRAY_ITEM_END:
@@ -345,7 +345,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 		break;
 	case LECPCB_TAG_START:
 		if (ctx->item.u.u64 != LWSCOAP_CONTENTFORMAT_COSE_KEY) {
-			lwsl_warn("%s: unexpected tag\n", __func__);
+			aws_lwsl_warn("%s: unexpected tag\n", __func__);
 			goto bail;
 		}
 		break;
@@ -353,7 +353,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 	case LECPCB_VAL_NUM_INT:
 	case LECPCB_VAL_NUM_UINT:
 		if (!ctx->sp) {
-			lwsl_warn("%s: unexpected uint %d, ppos %d\n",
+			aws_lwsl_warn("%s: unexpected uint %d, ppos %d\n",
 				  __func__, ctx->sp, ctx->pst[ctx->sp].ppos);
 			goto bail;
 		}
@@ -393,7 +393,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 				// case LWSCOSE_WKKTV_HSS_LMS:
 				// case LWSCOSE_WKKTV_WALNUTDSA:
 				default:
-					lwsl_warn("%s: unknown kty\n", __func__);
+					aws_lwsl_warn("%s: unknown kty\n", __func__);
 					goto bail;
 				}
 
@@ -401,7 +401,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 
 				ke = &cps->ck->meta[COSEKEY_META_KTY];
 				ke->len = (uint32_t)strlen(kty_str);
-				ke->buf = lws_malloc(ke->len + 1, __func__);
+				ke->buf = aws_lws_malloc(ke->len + 1, __func__);
 				if (!ke->buf)
 					goto bail;
 				memcpy(ke->buf, kty_str, ke->len + 1);
@@ -416,25 +416,25 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 				if (!cps->pkey_set &&
 				    (ctx->pst[ctx->sp].ppos != 3 ||
 				     strcmp(ctx->path, ".[]"))) {
-					lwsl_warn("%s: unexpected kops\n",
+					aws_lwsl_warn("%s: unexpected kops\n",
 								__func__);
 					goto bail;
 				}
 				if (cps->pkey_set &&
 				    (ctx->pst[ctx->sp].ppos != 5 ||
 				     strcmp(ctx->path, "[].[]"))) {
-					lwsl_warn("%s: unexpected kops\n",
+					aws_lwsl_warn("%s: unexpected kops\n",
 								__func__);
 					goto bail;
 				}
 				break;
 			case LWSCOSE_WKOKP_CRV:
 				cps->ck->cose_curve = (int)ctx->item.u.u64;
-				p = lws_cose_curve_id_to_name(cps->ck->cose_curve);
+				p = aws_lws_cose_curve_id_to_name(cps->ck->cose_curve);
 				if (p) {
 					ke = &cps->ck->e[LWS_GENCRYPTO_EC_KEYEL_CRV];
 					ke->len = (uint32_t)strlen(p);
-					ke->buf = lws_malloc(ke->len + 1, __func__);
+					ke->buf = aws_lws_malloc(ke->len + 1, __func__);
 					if (!ke->buf)
 						goto bail;
 					memcpy(ke->buf, p, ke->len);
@@ -442,7 +442,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 				}
 				break;
 			default:
-				lwsl_warn("%s: uint not allowed in state %d\n",
+				aws_lwsl_warn("%s: uint not allowed in state %d\n",
 						__func__, cps->cose_state);
 				/* int not allowed in this state */
 				goto bail;
@@ -461,7 +461,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 		for (n = 0 ; n < cps->seen_count; n++)
 			if (cps->seen[n] == cps->cose_state) {
 				/* dupe */
-				lwsl_warn("%s: duplicate map name %d\n",
+				aws_lwsl_warn("%s: duplicate map name %d\n",
 						__func__, cps->cose_state);
 				goto bail;
 			}
@@ -592,7 +592,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 				cps->gencrypto_eidx = LWS_GENCRYPTO_OCT_KEYEL_K;
 				break;
 			default:
-				lwsl_warn("%s: unknown kty\n", __func__);
+				aws_lwsl_warn("%s: unknown kty\n", __func__);
 				goto bail;
 			}
 			break;
@@ -601,7 +601,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 
 	case LECPCB_VAL_BLOB_START:
 		if (!ctx->sp || !(ctx->st[ctx->sp - 1].ordinal & 1)) {
-			lwsl_warn("%s: unexpected blob\n", __func__);
+			aws_lwsl_warn("%s: unexpected blob\n", __func__);
 			goto bail;
 		}
 
@@ -617,7 +617,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 		cps->pos = 0;
 		if (cps->gencrypto_eidx >= 0) {
 			if (cps->ck->e[cps->gencrypto_eidx].buf) {
-				lwsl_warn("%s: e[%d] set twice %d\n", __func__,
+				aws_lwsl_warn("%s: e[%d] set twice %d\n", __func__,
 						cps->gencrypto_eidx,
 						cps->ck->e[cps->gencrypto_eidx].len);
 				/* key elements must only come at most once */
@@ -633,7 +633,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 	case LECPCB_VAL_BLOB_CHUNK:
 	case LECPCB_VAL_BLOB_END:
 		if (cps->pos + ctx->npos > sizeof(cps->buf)) {
-			lwsl_warn("%s: oversize blob\n", __func__);
+			aws_lwsl_warn("%s: oversize blob\n", __func__);
 			goto bail;
 		}
 		memcpy(cps->buf + cps->pos, ctx->buf, ctx->npos);
@@ -648,7 +648,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 			if (cps->ck->e[cps->gencrypto_eidx].buf)
 				break;
 
-			lws_ck_set_el(&cps->ck->e[cps->gencrypto_eidx],
+			aws_lws_ck_set_el(&cps->ck->e[cps->gencrypto_eidx],
 					(char *)cps->buf, cps->pos);
 			cps->gencrypto_eidx = -1;
 			break;
@@ -656,7 +656,7 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 
 
 		if (cps->meta_idx >= 0) {
-			lws_ck_set_el(&cps->ck->meta[cps->meta_idx],
+			aws_lws_ck_set_el(&cps->ck->meta[cps->meta_idx],
 					(char *)cps->buf, cps->pos);
 			cps->meta_idx = -1;
 		}
@@ -664,10 +664,10 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 		break;
 	case LECPCB_VAL_STR_END:
 		if (cps->cose_state == LWSCOSE_WKOKP_CRV) {
-			cps->ck->cose_curve = lws_cose_curve_name_to_id(ctx->buf);
+			cps->ck->cose_curve = aws_lws_cose_curve_name_to_id(ctx->buf);
 			ke = &cps->ck->e[LWS_GENCRYPTO_EC_KEYEL_CRV];
 			ke->len = ctx->npos;
-			ke->buf = lws_malloc(ctx->npos, __func__);
+			ke->buf = aws_lws_malloc(ctx->npos, __func__);
 			if (!ke->buf)
 				goto bail;
 			memcpy(ke->buf, ctx->buf, ctx->npos);
@@ -686,12 +686,12 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 
 			if (n == LWS_ARRAY_SIZE(wk_algs))
 				/* key is for an alg we don't understand */
-				lwsl_warn("%s: key for unknown alg %.*s\n",
+				aws_lwsl_warn("%s: key for unknown alg %.*s\n",
 					  __func__, (int)ctx->npos, ctx->buf);
 
 			ke = &cps->ck->meta[COSEKEY_META_ALG];
 			ke->len = ctx->npos;
-			ke->buf = lws_malloc(ctx->npos, __func__);
+			ke->buf = aws_lws_malloc(ctx->npos, __func__);
 			if (!ke->buf)
 				goto bail;
 			memcpy(ke->buf, ctx->buf, ctx->npos);
@@ -703,11 +703,11 @@ cb_cose_key(struct lecp_ctx *ctx, char reason)
 	return 0;
 
 bail:
-	lwsl_warn("%s: bail\n", __func__);
-	lws_cose_key_destroy(&cps->ck);
+	aws_lwsl_warn("%s: bail\n", __func__);
+	aws_lws_cose_key_destroy(&cps->ck);
 
 	if (cps->pkey_set) {
-		lws_cose_key_set_destroy(cps->pkey_set);
+		aws_lws_cose_key_set_destroy(cps->pkey_set);
 		cps->pkey_set = NULL;
 	}
 
@@ -715,7 +715,7 @@ bail:
 }
 
 void
-lws_cose_key_destroy_elements(struct lws_gencrypto_keyelem *el, int m)
+aws_lws_cose_key_destroy_elements(struct aws_lws_gencrypto_keyelem *el, int m)
 {
 	int n;
 
@@ -725,51 +725,51 @@ lws_cose_key_destroy_elements(struct lws_gencrypto_keyelem *el, int m)
 	for (n = 0; n < m; n++)
 		if (el[n].buf) {
 			/* wipe all key material when it goes out of scope */
-			lws_explicit_bzero(el[n].buf, el[n].len);
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_explicit_bzero(el[n].buf, el[n].len);
+			aws_lws_free_set_NULL(el[n].buf);
 			el[n].len = 0;
 		}
 }
 
 void
-lws_cose_key_destroy(struct lws_cose_key **pck)
+aws_lws_cose_key_destroy(struct aws_lws_cose_key **pck)
 {
-	struct lws_cose_key *ck = *pck;
+	struct aws_lws_cose_key *ck = *pck;
 
 	if (!ck)
 		return;
 
-	lws_dll2_remove(&ck->list);
+	aws_lws_dll2_remove(&ck->list);
 
-	lws_cose_key_destroy_elements(ck->e, LWS_ARRAY_SIZE(ck->e));
-	lws_cose_key_destroy_elements(ck->meta, LWS_ARRAY_SIZE(ck->meta));
+	aws_lws_cose_key_destroy_elements(ck->e, LWS_ARRAY_SIZE(ck->e));
+	aws_lws_cose_key_destroy_elements(ck->meta, LWS_ARRAY_SIZE(ck->meta));
 
-	lws_free_set_NULL(*pck);
+	aws_lws_free_set_NULL(*pck);
 }
 
 static int
-lws_cose_key_set_memb_remove(struct lws_dll2 *d, void *user)
+aws_lws_cose_key_set_memb_remove(struct aws_lws_dll2 *d, void *user)
 {
-	lws_cose_key_t *ck = lws_container_of(d, lws_cose_key_t, list);
+	aws_lws_cose_key_t *ck = aws_lws_container_of(d, aws_lws_cose_key_t, list);
 
-	lws_dll2_remove(d);
-	lws_cose_key_destroy(&ck);
+	aws_lws_dll2_remove(d);
+	aws_lws_cose_key_destroy(&ck);
 
 	return 0;
 }
 
 void
-lws_cose_key_set_destroy(lws_dll2_owner_t *o)
+aws_lws_cose_key_set_destroy(aws_lws_dll2_owner_t *o)
 {
-	lws_dll2_foreach_safe(o, NULL, lws_cose_key_set_memb_remove);
+	aws_lws_dll2_foreach_safe(o, NULL, aws_lws_cose_key_set_memb_remove);
 }
 
-lws_cose_key_t *
-lws_cose_key_from_set(lws_dll2_owner_t *set, const uint8_t *kid, size_t kl)
+aws_lws_cose_key_t *
+aws_lws_cose_key_from_set(aws_lws_dll2_owner_t *set, const uint8_t *kid, size_t kl)
 {
-	lws_start_foreach_dll(struct lws_dll2 *, p, lws_dll2_get_head(set)) {
-		lws_cose_key_t *ck = lws_container_of(p, lws_cose_key_t, list);
-		struct lws_gencrypto_keyelem *ke = &ck->meta[COSEKEY_META_KID];
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, aws_lws_dll2_get_head(set)) {
+		aws_lws_cose_key_t *ck = aws_lws_container_of(p, aws_lws_cose_key_t, list);
+		struct aws_lws_gencrypto_keyelem *ke = &ck->meta[COSEKEY_META_KID];
 
 		if (!kid) /* always the first then */
 			return ck;
@@ -778,22 +778,22 @@ lws_cose_key_from_set(lws_dll2_owner_t *set, const uint8_t *kid, size_t kl)
 		    !memcmp(ke->buf, kid, ke->len))
 			return ck;
 
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	return NULL;
 }
 
-lws_cose_key_t *
-lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
+aws_lws_cose_key_t *
+aws_lws_cose_key_generate(struct aws_lws_context *context, cose_param_t cose_kty,
 		      int use_mask, int bits, const char *curve,
 		      const uint8_t *kid, size_t kl)
 {
-	struct lws_gencrypto_keyelem *ke;
-	lws_cose_key_t *ck;
+	struct aws_lws_gencrypto_keyelem *ke;
+	aws_lws_cose_key_t *ck;
 	size_t sn;
 	int n;
 
-	ck = lws_zalloc(sizeof(*ck), __func__);
+	ck = aws_lws_zalloc(sizeof(*ck), __func__);
 	if (!ck)
 		return NULL;
 
@@ -807,7 +807,7 @@ lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
 			if (use_mask & (1 << n))
 				count++;
 		ke = &ck->meta[COSEKEY_META_KEY_OPS];
-		ke->buf = lws_malloc((size_t)count, __func__);
+		ke->buf = aws_lws_malloc((size_t)count, __func__);
 		if (!ke->buf)
 			goto fail;
 		ke->len = (uint32_t)count;
@@ -819,7 +819,7 @@ lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
 
 	if (kid) {
 		ke = &ck->meta[COSEKEY_META_KID];
-		ke->buf = lws_malloc(kl, __func__);
+		ke->buf = aws_lws_malloc(kl, __func__);
 		ke->len = (uint32_t)kl;
 		memcpy(ke->buf, kid, ke->len);
 	}
@@ -827,19 +827,19 @@ lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
 	switch (cose_kty) {
 	case LWSCOSE_WKKTV_RSA:
 		{
-			struct lws_genrsa_ctx ctx;
+			struct aws_lws_genrsa_ctx ctx;
 
 			memset(&ctx, 0, sizeof(ctx));
 			ck->gencrypto_kty = LWS_GENCRYPTO_KTY_RSA;
 
-			lwsl_notice("%s: generating %d bit RSA key\n",
+			aws_lwsl_notice("%s: generating %d bit RSA key\n",
 					__func__, bits);
-			n = lws_genrsa_new_keypair(context, &ctx,
+			n = aws_lws_genrsa_new_keypair(context, &ctx,
 						   LGRSAM_PKCS1_1_5,
 						   ck->e, bits);
-			lws_genrsa_destroy(&ctx);
+			aws_lws_genrsa_destroy(&ctx);
 			if (n) {
-				lwsl_err("%s: problem generating RSA key\n",
+				aws_lwsl_err("%s: problem generating RSA key\n",
 						__func__);
 				goto fail;
 			}
@@ -848,14 +848,14 @@ lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
 	case LWSCOSE_WKKTV_SYMMETRIC:
 
 		ck->gencrypto_kty = LWS_GENCRYPTO_KTY_OCT;
-		sn = (unsigned int)lws_gencrypto_bits_to_bytes(bits);
+		sn = (unsigned int)aws_lws_gencrypto_bits_to_bytes(bits);
 		ke = &ck->e[LWS_GENCRYPTO_OCT_KEYEL_K];
-		ke->buf = lws_malloc(sn, "oct");
+		ke->buf = aws_lws_malloc(sn, "oct");
 		if (!ke->buf)
 			goto fail;
 		ke->len = (uint32_t)sn;
-		if (lws_get_random(context, ke->buf, sn) != sn) {
-			lwsl_err("%s: problem getting random\n", __func__);
+		if (aws_lws_get_random(context, ke->buf, sn) != sn) {
+			aws_lwsl_err("%s: problem getting random\n", __func__);
 			goto fail;
 		}
 		break;
@@ -863,27 +863,27 @@ lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
 	case LWSCOSE_WKKTV_OKP:
 	case LWSCOSE_WKKTV_EC2:
 	{
-		struct lws_genec_ctx ctx;
+		struct aws_lws_genec_ctx ctx;
 
 		ck->gencrypto_kty = LWS_GENCRYPTO_KTY_EC;
 
 		if (!curve) {
-			lwsl_err("%s: must have a named curve\n", __func__);
+			aws_lwsl_err("%s: must have a named curve\n", __func__);
 
 			goto fail;
 		}
 
-		if (lws_genecdsa_create(&ctx, context, NULL))
+		if (aws_lws_genecdsa_create(&ctx, context, NULL))
 			goto fail;
 
 		ctx.genec_alg = LEGENEC_ECDSA;
-		lwsl_notice("%s: generating ECDSA key on curve %s\n", __func__,
+		aws_lwsl_notice("%s: generating ECDSA key on curve %s\n", __func__,
 				curve);
 
-		n = lws_genecdsa_new_keypair(&ctx, curve, ck->e);
-		lws_genec_destroy(&ctx);
+		n = aws_lws_genecdsa_new_keypair(&ctx, curve, ck->e);
+		aws_lws_genec_destroy(&ctx);
 		if (n) {
-			lwsl_err("%s: problem generating ECDSA key\n", __func__);
+			aws_lwsl_err("%s: problem generating ECDSA key\n", __func__);
 			goto fail;
 		}
 		/* trim the trailing NUL */
@@ -892,23 +892,23 @@ lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
 		break;
 
 	default:
-		lwsl_err("%s: unknown kty\n", __func__);
+		aws_lwsl_err("%s: unknown kty\n", __func__);
 		goto fail;
 	}
 
 	return ck;
 
 fail:
-	lws_free_set_NULL(ck);
+	aws_lws_free_set_NULL(ck);
 
 	return NULL;
 }
 
-struct lws_cose_key *
-lws_cose_key_import(lws_dll2_owner_t *pkey_set, lws_cose_key_import_callback cb,
+struct aws_lws_cose_key *
+aws_lws_cose_key_import(aws_lws_dll2_owner_t *pkey_set, aws_lws_cose_key_import_callback cb,
 		    void *user, const uint8_t *in, size_t len)
 {
-	struct lws_cose_key_parse_state cps;
+	struct aws_lws_cose_key_parse_state cps;
 	struct lecp_ctx ctx;
 	int m;
 
@@ -924,16 +924,16 @@ lws_cose_key_import(lws_dll2_owner_t *pkey_set, lws_cose_key_import_callback cb,
 	lecp_destruct(&ctx);
 
 	if (m < 0) {
-		lwsl_notice("%s: parse got %d\n", __func__, m);
+		aws_lwsl_notice("%s: parse got %d\n", __func__, m);
 		if (cps.pkey_set)
-			lws_cose_key_set_destroy(cps.pkey_set);
+			aws_lws_cose_key_set_destroy(cps.pkey_set);
 
 		return NULL;
 	}
 
 	switch (cps.ck->gencrypto_kty) {
 	case LWS_GENCRYPTO_KTY_UNKNOWN:
-		lwsl_notice("%s: missing or unknown ktys\n", __func__);
+		aws_lwsl_notice("%s: missing or unknown ktys\n", __func__);
 		goto bail;
 	default:
 		break;
@@ -942,7 +942,7 @@ lws_cose_key_import(lws_dll2_owner_t *pkey_set, lws_cose_key_import_callback cb,
 	return cps.ck;
 
 bail:
-	lws_cose_key_destroy(&cps.ck);
+	aws_lws_cose_key_destroy(&cps.ck);
 	return NULL;
 }
 
@@ -974,8 +974,8 @@ static const signed char ckp[3][12] = {
 	}
 };
 
-enum lws_lec_pctx_ret
-lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
+enum aws_lws_lec_pctx_ret
+aws_lws_cose_key_export(aws_lws_cose_key_t *ck, aws_lws_lec_pctx_t *ctx, int flags)
 {
 	cose_param_t pa = 0;
 	int n;
@@ -1031,26 +1031,26 @@ lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
 		if (ck->meta[COSEKEY_META_BASE_IV].buf)
 			ctx->opaque[0]++;
 
-		lws_lec_int(ctx, LWS_CBOR_MAJTYP_MAP, 0, (uint64_t)ctx->opaque[0]);
-		lws_lec_signed(ctx, LWSCOSE_WKK_KTY);
-		lws_lec_signed(ctx, (int64_t)ck->kty);
+		aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_MAP, 0, (uint64_t)ctx->opaque[0]);
+		aws_lws_lec_signed(ctx, LWSCOSE_WKK_KTY);
+		aws_lws_lec_signed(ctx, (int64_t)ck->kty);
 
 		if (ck->gencrypto_kty == LWS_GENCRYPTO_KTY_EC) {
-			struct lws_gencrypto_keyelem *ke =
+			struct aws_lws_gencrypto_keyelem *ke =
 					&ck->e[LWS_GENCRYPTO_EC_KEYEL_CRV];
 
 			if (!ke->buf ||
 			    ck->e[LWS_GENCRYPTO_EC_KEYEL_CRV].len > 10) {
-				lwsl_err("%s: no curve type\n", __func__);
+				aws_lwsl_err("%s: no curve type\n", __func__);
 				goto fail;
 			}
 
-			pa = lws_cose_curve_name_to_id((const char *)ke->buf);
-			lws_lec_signed(ctx, LWSCOSE_WKECKP_CRV);
+			pa = aws_lws_cose_curve_name_to_id((const char *)ke->buf);
+			aws_lws_lec_signed(ctx, LWSCOSE_WKECKP_CRV);
 			if (pa)
-				lws_lec_signed(ctx, pa);
+				aws_lws_lec_signed(ctx, pa);
 			else
-				lws_lec_printf(ctx, "%.*s",
+				aws_lws_lec_printf(ctx, "%.*s",
 						(int)ke->len, ke->buf);
 		}
 
@@ -1063,10 +1063,10 @@ lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
 	 */
 
 	while (ctx->buf != ctx->end) {
-		struct lws_gencrypto_keyelem *ke = NULL;
+		struct aws_lws_gencrypto_keyelem *ke = NULL;
 		int cose_key_param = 0;
 
-		if (lws_lec_scratch(ctx))
+		if (aws_lws_lec_scratch(ctx))
 			break;
 
 		if (ctx->opaque[1] == LWS_ARRAY_SIZE(ck->e) +
@@ -1094,7 +1094,7 @@ lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
 				if (ck->meta[COSEKEY_META_KID].buf) {
 					ke = &ck->meta[COSEKEY_META_KID];
 					cose_key_param = LWSCOSE_WKK_KID;
-					// lwsl_hexdump_notice(ke->buf, ke->len);
+					// aws_lwsl_hexdump_notice(ke->buf, ke->len);
 				}
 				break;
 
@@ -1119,8 +1119,8 @@ lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
 				 * made sure it will fit, we will never need AGAIN
 				 */
 
-				lws_lec_signed(ctx, LWSCOSE_WKK_KEY_OPS);
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_ARRAY, 0, (uint64_t)n);
+				aws_lws_lec_signed(ctx, LWSCOSE_WKK_KEY_OPS);
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_ARRAY, 0, (uint64_t)n);
 				memcpy(&ctx->scratch[ctx->scratch_len], ke->buf,
 						(size_t)n);
 				ctx->scratch_len = (uint8_t)(ctx->scratch_len + (uint8_t)n);
@@ -1141,16 +1141,16 @@ lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
 		if (ke && ke->buf && ke->len) {
 
 			if (!ctx->opaque[3])
-				lws_lec_signed(ctx, cose_key_param);
+				aws_lws_lec_signed(ctx, cose_key_param);
 
 			/* binary string or text string? */
 			if (ctx->opaque[1] == COSEKEY_META_KID ||
 			    ctx->opaque[1] == COSEKEY_META_BASE_IV ||
 			    ctx->opaque[1] >= LWS_COUNT_COSE_KEY_ELEMENTS)
-				n = (int)lws_lec_printf(ctx, "%.*b",
+				n = (int)aws_lws_lec_printf(ctx, "%.*b",
 							(int)ke->len, ke->buf);
 			else
-				n = (int)lws_lec_printf(ctx, "%.*s",
+				n = (int)aws_lws_lec_printf(ctx, "%.*s",
 							(int)ke->len, ke->buf);
 
 			switch (n) {
@@ -1170,7 +1170,7 @@ lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
 		ctx->opaque[3] = 0;
 	}
 
-	ctx->used = lws_ptr_diff_size_t(ctx->buf, ctx->start);
+	ctx->used = aws_lws_ptr_diff_size_t(ctx->buf, ctx->start);
 
 	if (ctx->buf == ctx->end || ctx->scratch_len)
 		return LWS_LECPCTX_RET_AGAIN;
@@ -1180,7 +1180,7 @@ lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags)
 	return LWS_LECPCTX_RET_FINISHED;
 
 fail:
-	lwsl_notice("%s: failed\n", __func__);
+	aws_lwsl_notice("%s: failed\n", __func__);
 
 	ctx->opaque[0] = 0;
 

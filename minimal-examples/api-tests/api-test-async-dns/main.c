@@ -13,7 +13,7 @@
 #include <signal.h>
 
 static int interrupted, dtest, ok, fail, _exp = 26;
-struct lws_context *context;
+struct aws_lws_context *context;
 
 /*
  * These are used to test the apis to parse and print ipv4 / ipv6 literal
@@ -95,25 +95,25 @@ static const struct async_dns_tests {
 #endif
 };
 
-static lws_sorted_usec_list_t sul;
+static aws_lws_sorted_usec_list_t sul;
 
 struct lws *
 cb1(struct lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
     void *opaque);
 
 static void
-next_test_cb(lws_sorted_usec_list_t *sul)
+next_test_cb(aws_lws_sorted_usec_list_t *sul)
 {
 	int m;
 
-	lwsl_notice("%s: querying %s\n", __func__, adt[dtest].dns_name);
+	aws_lwsl_notice("%s: querying %s\n", __func__, adt[dtest].dns_name);
 
-	m = lws_async_dns_query(context, 0,
+	m = aws_lws_async_dns_query(context, 0,
 				adt[dtest].dns_name,
 				(adns_query_type_t)adt[dtest].recordtype, cb1, NULL,
 				context);
 	if (m != LADNS_RET_CONTINUING && m != LADNS_RET_FOUND && m != LADNS_RET_FAILED_WSI_CLOSED) {
-		lwsl_err("%s: adns 1: %s failed: %d\n", __func__, adt[dtest].dns_name, m);
+		aws_lwsl_err("%s: adns 1: %s failed: %d\n", __func__, adt[dtest].dns_name, m);
 		interrupted = 1;
 	}
 }
@@ -130,7 +130,7 @@ cb1(struct lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
 	dtest++;
 
 	if (!ac)
-		lwsl_warn("%s: no results\n", __func__);
+		aws_lwsl_warn("%s: no results\n", __func__);
 
 	/* dump the results */
 
@@ -145,9 +145,9 @@ cb1(struct lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
 			alen = 16;
 		}
 		strcpy(buf, "unknown");
-		lws_write_numeric_address(addr, alen, buf, sizeof(buf));
+		aws_lws_write_numeric_address(addr, alen, buf, sizeof(buf));
 
-		lwsl_warn("%s: %d: %s %d %s\n", __func__, ctr++, ads, alen, buf);
+		aws_lwsl_warn("%s: %d: %s %d %s\n", __func__, ctr++, ads, alen, buf);
 
 		ac = ac->ai_next;
 	}
@@ -185,70 +185,70 @@ again:
 		goto next;
 	}
 
-	lwsl_err("%s: dns test %d: no match\n", __func__, dtest);
+	aws_lwsl_err("%s: dns test %d: no match\n", __func__, dtest);
 	fail++;
 
 next:
-	lws_async_dns_freeaddrinfo(&a);
+	aws_lws_async_dns_freeaddrinfo(&a);
 	if (dtest == (int)LWS_ARRAY_SIZE(adt))
 		interrupted = 1;
 	else
-		lws_sul_schedule(context, 0, &sul, next_test_cb, 1);
+		aws_lws_sul_schedule(context, 0, &sul, next_test_cb, 1);
 
 	return NULL;
 }
 
-static lws_sorted_usec_list_t sul_l;
+static aws_lws_sorted_usec_list_t sul_l;
 
 struct lws *
 cb_loop(struct lws *wsi_unused, const char *ads, const struct addrinfo *a, int n,
 		void *opaque)
 {
 	if (!a) {
-		lwsl_err("%s: no results\n", __func__);
+		aws_lwsl_err("%s: no results\n", __func__);
 		return NULL;
 	}
 
-	lwsl_notice("%s: addrinfo %p\n", __func__, a);\
-	lws_async_dns_freeaddrinfo(&a);
+	aws_lwsl_notice("%s: addrinfo %p\n", __func__, a);\
+	aws_lws_async_dns_freeaddrinfo(&a);
 
 	return NULL;
 }
 
 
 static void
-sul_retry_l(struct lws_sorted_usec_list *sul)
+sul_retry_l(struct aws_lws_sorted_usec_list *sul)
 {
 	int m;
 
-	lwsl_user("%s: starting new query\n", __func__);
+	aws_lwsl_user("%s: starting new query\n", __func__);
 
-	m = lws_async_dns_query(context, 0, "warmcat.com",
+	m = aws_lws_async_dns_query(context, 0, "warmcat.com",
 				    (adns_query_type_t)LWS_ADNS_RECORD_A,
 				    cb_loop, NULL, context);
 	switch (m) {
 	case LADNS_RET_FAILED_WSI_CLOSED:
-		lwsl_warn("%s: LADNS_RET_FAILED_WSI_CLOSED "
+		aws_lwsl_warn("%s: LADNS_RET_FAILED_WSI_CLOSED "
 			  "(== from cache / success in this test)\n", __func__);
 		break;
 	case LADNS_RET_NXDOMAIN:
-		lwsl_warn("%s: LADNS_RET_NXDOMAIN\n", __func__);
+		aws_lwsl_warn("%s: LADNS_RET_NXDOMAIN\n", __func__);
 		break;
 	case LADNS_RET_TIMEDOUT:
-		lwsl_warn("%s: LADNS_RET_TIMEDOUT\n", __func__);
+		aws_lwsl_warn("%s: LADNS_RET_TIMEDOUT\n", __func__);
 		break;
 	case LADNS_RET_FAILED:
-		lwsl_warn("%s: LADNS_RET_FAILED\n", __func__);
+		aws_lwsl_warn("%s: LADNS_RET_FAILED\n", __func__);
 		break;
 	case LADNS_RET_FOUND:
-		lwsl_warn("%s: LADNS_RET_FOUND\n", __func__);
+		aws_lwsl_warn("%s: LADNS_RET_FOUND\n", __func__);
 		break;
 	case LADNS_RET_CONTINUING:
-		lwsl_warn("%s: LADNS_RET_CONTINUING\n", __func__);
+		aws_lwsl_warn("%s: LADNS_RET_CONTINUING\n", __func__);
 		break;
 	}
 
-	lws_sul_schedule(context, 0, &sul_l, sul_retry_l, 5 * LWS_US_PER_SEC);
+	aws_lws_sul_schedule(context, 0, &sul_l, sul_retry_l, 5 * LWS_US_PER_SEC);
 }
 
 void sigint_handler(int sig)
@@ -260,31 +260,31 @@ int
 main(int argc, const char **argv)
 {
 	int n = 1, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 
 	/* the normal lws init */
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: Async DNS\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: Async DNS\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	if (lws_cmdline_option(argc, argv, "-l")) {
-		lws_sul_schedule(context, 0, &sul_l, sul_retry_l, LWS_US_PER_SEC);
+	if (aws_lws_cmdline_option(argc, argv, "-l")) {
+		aws_lws_sul_schedule(context, 0, &sul_l, sul_retry_l, LWS_US_PER_SEC);
 		goto evloop;
 	}
 
@@ -293,10 +293,10 @@ main(int argc, const char **argv)
 
 	for (n = 0; n < (int)LWS_ARRAY_SIZE(ipt); n++) {
 		uint8_t u[16];
-		int m = lws_parse_numeric_address(ipt[n].test, u, sizeof(u));
+		int m = aws_lws_parse_numeric_address(ipt[n].test, u, sizeof(u));
 
 		if (m != ipt[n].rlen) {
-			lwsl_err("%s: fail %s ret %d\n",
+			aws_lwsl_err("%s: fail %s ret %d\n",
 					__func__, ipt[n].test, m);
 			fail++;
 			continue;
@@ -304,9 +304,9 @@ main(int argc, const char **argv)
 
 		if (m > 0) {
 			if (memcmp(ipt[n].b, u, (unsigned int)m)) {
-				lwsl_err("%s: fail %s compare\n", __func__,
+				aws_lwsl_err("%s: fail %s compare\n", __func__,
 						ipt[n].test);
-				lwsl_hexdump_notice(u, (unsigned int)m);
+				aws_lwsl_hexdump_notice(u, (unsigned int)m);
 				fail++;
 				continue;
 			}
@@ -324,10 +324,10 @@ main(int argc, const char **argv)
 		if (ipt[n].rlen < 0)
 			continue;
 
-		m = lws_write_numeric_address(ipt[n].b, ipt[n].rlen, buf,
+		m = aws_lws_write_numeric_address(ipt[n].b, ipt[n].rlen, buf,
 						sizeof(buf));
 		if (m != ipt[n].emit_len) {
-			lwsl_err("%s: fail %s ret %d\n",
+			aws_lwsl_err("%s: fail %s ret %d\n",
 					__func__, ipt[n].emit_test, m);
 			fail++;
 			continue;
@@ -335,9 +335,9 @@ main(int argc, const char **argv)
 
 		if (m > 0) {
 			if (strcmp(ipt[n].emit_test, buf)) {
-				lwsl_err("%s: fail %s compare\n", __func__,
+				aws_lwsl_err("%s: fail %s compare\n", __func__,
 						ipt[n].test);
-				lwsl_hexdump_notice(buf, (unsigned int)m);
+				aws_lwsl_hexdump_notice(buf, (unsigned int)m);
 				fail++;
 				continue;
 			}
@@ -351,22 +351,22 @@ main(int argc, const char **argv)
 
 	/* kick off the async dns tests */
 
-	lws_sul_schedule(context, 0, &sul, next_test_cb, 1);
+	aws_lws_sul_schedule(context, 0, &sul, next_test_cb, 1);
 
 evloop:
 	/* the usual lws event loop */
 
 	n = 1;
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	if (fail || ok != _exp)
-		lwsl_user("Completed: PASS: %d / %d, FAIL: %d\n", ok, _exp,
+		aws_lwsl_user("Completed: PASS: %d / %d, FAIL: %d\n", ok, _exp,
 				fail);
 	else
-		lwsl_user("Completed: ALL PASS: %d / %d\n", ok, _exp);
+		aws_lwsl_user("Completed: ALL PASS: %d / %d\n", ok, _exp);
 
 	return !(ok == _exp && !fail);
 }

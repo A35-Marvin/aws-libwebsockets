@@ -37,7 +37,7 @@ static const ledc_timer_config_t tc = {
 };
 
 int
-lws_pwm_plat_init(const struct lws_pwm_ops *lo)
+aws_lws_pwm_plat_init(const struct aws_lws_pwm_ops *lo)
 {
 	ledc_channel_config_t lc = {
 		.duty			= 8191,
@@ -61,8 +61,8 @@ lws_pwm_plat_init(const struct lws_pwm_ops *lo)
 }
 
 void
-lws_pwm_plat_intensity(const struct lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
-		       lws_led_intensity_t inten)
+aws_lws_pwm_plat_intensity(const struct aws_lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
+		       aws_lws_led_intensity_t inten)
 {
 	size_t n;
 
@@ -78,5 +78,5 @@ lws_pwm_plat_intensity(const struct lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
 		}
 	}
 
-	lwsl_err("%s: unknown gpio for pwm\n", __func__);
+	aws_lwsl_err("%s: unknown gpio for pwm\n", __func__);
 }

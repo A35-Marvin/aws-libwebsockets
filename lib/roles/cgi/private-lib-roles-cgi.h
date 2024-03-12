@@ -32,9 +32,9 @@
 #endif
 #endif
 
-extern const struct lws_role_ops role_ops_cgi;
+extern const struct aws_lws_role_ops role_ops_cgi;
 
-#define lwsi_role_cgi(wsi) (wsi->role_ops == &role_ops_cgi)
+#define aws_lwsi_role_cgi(wsi) (wsi->role_ops == &role_ops_cgi)
 
 #define LWS_HTTP_CHUNK_HDR_SIZE 16
 
@@ -50,13 +50,13 @@ enum {
 
 struct lws;
 
-/* wsi who is owns the cgi points to an lws_cgi */
+/* wsi who is owns the cgi points to an aws_lws_cgi */
 
-struct lws_cgi {
-	struct lws_cgi *cgi_list;
+struct aws_lws_cgi {
+	struct aws_lws_cgi *cgi_list;
 
-	struct lws_spawn_piped		*lsp;
-	lws_sorted_usec_list_t		sul_grace;
+	struct aws_lws_spawn_piped		*lsp;
+	aws_lws_sorted_usec_list_t		sul_grace;
 
 	struct lws *wsi; /* owner */
 	unsigned char *headers_buf;
@@ -71,9 +71,9 @@ struct lws_cgi {
 	uint8_t inflate_buf[1024];
 #endif
 
-	lws_filepos_t post_in_expected;
-	lws_filepos_t content_length;
-	lws_filepos_t content_length_seen;
+	aws_lws_filepos_t post_in_expected;
+	aws_lws_filepos_t content_length;
+	aws_lws_filepos_t content_length_seen;
 
 	int match[SIGNIFICANT_HDR_COUNT];
 	char l[12];

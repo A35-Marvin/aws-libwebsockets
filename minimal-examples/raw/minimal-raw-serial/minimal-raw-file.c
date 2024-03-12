@@ -25,7 +25,7 @@
 #endif
 
 struct raw_vhd {
-	lws_sorted_usec_list_t sul;
+	aws_lws_sorted_usec_list_t sul;
 	struct lws *wsi;
 	int filefd;
 };
@@ -33,37 +33,37 @@ struct raw_vhd {
 static char filepath[256];
 
 static void
-sul_cb(lws_sorted_usec_list_t *sul)
+sul_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct raw_vhd *v = lws_container_of(sul, struct raw_vhd, sul);
+	struct raw_vhd *v = aws_lws_container_of(sul, struct raw_vhd, sul);
 
-	lws_callback_on_writable(v->wsi);
+	aws_lws_callback_on_writable(v->wsi);
 
-	lws_sul_schedule(lws_get_context(v->wsi), 0, &v->sul, sul_cb,
+	aws_lws_sul_schedule(aws_lws_get_context(v->wsi), 0, &v->sul, sul_cb,
 			 2 * LWS_USEC_PER_SEC);
 }
 
 static int
-callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
+callback_raw_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
-	struct raw_vhd *vhd = (struct raw_vhd *)lws_protocol_vh_priv_get(
-				     lws_get_vhost(wsi), lws_get_protocol(wsi));
+	struct raw_vhd *vhd = (struct raw_vhd *)aws_lws_protocol_vh_priv_get(
+				     aws_lws_get_vhost(wsi), aws_lws_get_protocol(wsi));
 #if defined(__linux__)
 	struct serial_struct s_s;
 #endif
-	lws_sock_file_fd_type u;
+	aws_lws_sock_file_fd_type u;
 	struct termios tio;
 	uint8_t buf[1024];
 	int n;
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi), sizeof(struct raw_vhd));
-		vhd->filefd = lws_open(filepath, O_RDWR);
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi), sizeof(struct raw_vhd));
+		vhd->filefd = aws_lws_open(filepath, O_RDWR);
 		if (vhd->filefd == -1) {
-			lwsl_err("Unable to open %s\n", filepath);
+			aws_lwsl_err("Unable to open %s\n", filepath);
 
 			return 1;
 		}
@@ -114,11 +114,11 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 
 		tcsetattr(vhd->filefd, TCSANOW, &tio);
 
-		u.filefd = (lws_filefd_type)(long long)vhd->filefd;
-		if (!lws_adopt_descriptor_vhost(lws_get_vhost(wsi),
+		u.filefd = (aws_lws_filefd_type)(long long)vhd->filefd;
+		if (!aws_lws_adopt_descriptor_vhost(aws_lws_get_vhost(wsi),
 						LWS_ADOPT_RAW_FILE_DESC, u,
 						"raw-test", NULL)) {
-			lwsl_err("Failed to adopt fifo descriptor\n");
+			aws_lwsl_err("Failed to adopt fifo descriptor\n");
 			close(vhd->filefd);
 			vhd->filefd = -1;
 
@@ -135,30 +135,30 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 	/* callbacks related to raw file descriptor */
 
 	case LWS_CALLBACK_RAW_ADOPT_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_ADOPT_FILE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_ADOPT_FILE\n");
 		vhd->wsi = wsi;
-		lws_sul_schedule(lws_get_context(wsi), 0, &vhd->sul, sul_cb, 1);
+		aws_lws_sul_schedule(aws_lws_get_context(wsi), 0, &vhd->sul, sul_cb, 1);
 		break;
 
 	case LWS_CALLBACK_RAW_RX_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_RX_FILE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_RX_FILE\n");
 		n = (int)read(vhd->filefd, buf, sizeof(buf));
 		if (n < 0) {
-			lwsl_err("Reading from %s failed\n", filepath);
+			aws_lwsl_err("Reading from %s failed\n", filepath);
 
 			return 1;
 		}
-		lwsl_hexdump_level(LLL_NOTICE, buf, (unsigned int)n);
+		aws_lwsl_hexdump_level(LLL_NOTICE, buf, (unsigned int)n);
 		break;
 
 	case LWS_CALLBACK_RAW_CLOSE_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_CLOSE_FILE\n");
-		lws_sul_cancel(&vhd->sul);
+		aws_lwsl_notice("LWS_CALLBACK_RAW_CLOSE_FILE\n");
+		aws_lws_sul_cancel(&vhd->sul);
 		break;
 
 	case LWS_CALLBACK_RAW_WRITEABLE_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE_FILE\n");
-		if (lws_write(wsi, (uint8_t *)"hello-this-is-written-every-couple-of-seconds\r\n", 47, LWS_WRITE_RAW) != 47)
+		aws_lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE_FILE\n");
+		if (aws_lws_write(wsi, (uint8_t *)"hello-this-is-written-every-couple-of-seconds\r\n", 47, LWS_WRITE_RAW) != 47)
 			return -1;
 		break;
 
@@ -169,7 +169,7 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	{ "raw-test", callback_raw_test, 0, 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -183,8 +183,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -196,13 +196,13 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal raw serial\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal raw serial\n");
 	if (argc < 2) {
-		lwsl_user("Usage: %s <serial device>  "
+		aws_lwsl_user("Usage: %s <serial device>  "
 			  " eg, /dev/ttyUSB0\n", argv[0]);
 
 		return 1;
@@ -214,18 +214,18 @@ int main(int argc, const char **argv)
 	info.port = CONTEXT_PORT_NO_LISTEN_SERVER; /* no listen socket for demo */
 	info.protocols = protocols;
 
-	lws_strncpy(filepath, argv[1], sizeof(filepath));
+	aws_lws_strncpy(filepath, argv[1], sizeof(filepath));
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

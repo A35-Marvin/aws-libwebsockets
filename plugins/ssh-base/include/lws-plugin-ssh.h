@@ -29,7 +29,7 @@
 
 #define LWS_SSH_OPS_VERSION 2
 
-struct lws_ssh_pty {
+struct aws_lws_ssh_pty {
 	char term[16];
 	char *modes;
 	uint32_t width_ch;
@@ -116,7 +116,7 @@ struct lws_ssh_pty {
  * ##Plugin lws-ssh-base
  *
  * This is the interface to customize the ssh server per-vhost.  A pointer
- * to your struct lws_ssh_ops with the members initialized is passed in using
+ * to your struct aws_lws_ssh_ops with the members initialized is passed in using
  * pvo when you create the vhost.  The pvo is attached to the protocol name
  *
  *  - "lws-ssh-base" - the ssh serving part
@@ -130,9 +130,9 @@ struct lws_ssh_pty {
  */
 ///@{
 
-typedef void (*lws_ssh_finish_exec)(void *handle, int retcode);
+typedef void (*aws_lws_ssh_finish_exec)(void *handle, int retcode);
 
-struct lws_ssh_ops {
+struct aws_lws_ssh_ops {
 	/**
 	 * channel_create() - Channel created
 	 *
@@ -144,7 +144,7 @@ struct lws_ssh_ops {
 	 * allocation your implementation needs
 	 *
 	 * You probably want to save the wsi inside your priv struct.  Calling
-	 * lws_callback_on_writable() on this wsi causes your ssh server
+	 * aws_lws_callback_on_writable() on this wsi causes your ssh server
 	 * instance to call .tx_waiting() next time you can write something
 	 * to the client.
 	 */
@@ -180,7 +180,7 @@ struct lws_ssh_ops {
 	 * returns a bitmask of LWS_STDOUT and LWS_STDERR, with the bits set
 	 * if they have tx waiting to send, else 0 if nothing to send
 	 *
-	 * You should use one of the lws_callback_on_writable() family to
+	 * You should use one of the aws_lws_callback_on_writable() family to
 	 * trigger the ssh protocol to ask if you have any tx waiting.
 	 *
 	 * Returning -1 from here will close the tcp connection to the client.
@@ -198,7 +198,7 @@ struct lws_ssh_ops {
 	 * copy and consume up to len bytes into *buf,
 	 * return the actual copied count.
 	 *
-	 * You should use one of the lws_callback_on_writable() family to
+	 * You should use one of the aws_lws_callback_on_writable() family to
 	 * trigger the ssh protocol to ask if you have any tx waiting.  If you
 	 * do you will get calls here to fetch it, for each of LWS_STDOUT or
 	 * LWS_STDERR that were reported to be waiting by tx_waiting().
@@ -253,7 +253,7 @@ struct lws_ssh_ops {
 	 *
 	 * Client requested to exec something.  Return nonzero to fail.
 	 */
-	int (*exec)(void *priv, struct lws *wsi, const char *command, lws_ssh_finish_exec finish, void *finish_handle);
+	int (*exec)(void *priv, struct lws *wsi, const char *command, aws_lws_ssh_finish_exec finish, void *finish_handle);
 
 	/**
 	 * shell() - Spawn shell that is appropriate for user
@@ -266,7 +266,7 @@ struct lws_ssh_ops {
 	 * Spawn the appropriate shell for this user.  Return 0 for OK
 	 * or nonzero to fail.
 	 */
-	int (*shell)(void *priv, struct lws *wsi, lws_ssh_finish_exec finish, void *finish_handle);
+	int (*shell)(void *priv, struct lws *wsi, aws_lws_ssh_finish_exec finish, void *finish_handle);
 
 	/**
 	 * pty_req() - Create a Pseudo-TTY as described in pty
@@ -276,7 +276,7 @@ struct lws_ssh_ops {
 	 *
 	 * Client requested a pty.  Return nonzero to fail.
 	 */
-	int (*pty_req)(void *priv, struct lws_ssh_pty *pty);
+	int (*pty_req)(void *priv, struct aws_lws_ssh_pty *pty);
 
 	/**
 	 * child_process_io() - Child process has IO
@@ -288,7 +288,7 @@ struct lws_ssh_ops {
 	 * Child process has IO
 	 */
 	int (*child_process_io)(void *priv, struct lws *wsi,
-				struct lws_cgi_args *args);
+				struct aws_lws_cgi_args *args);
 
 	/**
 	 * child_process_io() - Child process has terminated

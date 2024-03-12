@@ -6,7 +6,7 @@ struct ops {
 	void (*cleanup)(void);
 };
 
-extern struct lws_context *context;
+extern struct aws_lws_context *context;
 extern int lifetime, reported;
 
 void foreign_timer_service(void *foreign_loop);

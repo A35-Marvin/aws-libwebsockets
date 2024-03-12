@@ -25,33 +25,33 @@
 #include <private-lib-core.h>
 #include <private-lib-abstract.h>
 
-extern const lws_abs_transport_t lws_abs_transport_cli_raw_skt,
-				 lws_abs_transport_cli_unit_test;
+extern const aws_lws_abs_transport_t aws_lws_abs_transport_cli_raw_skt,
+				 aws_lws_abs_transport_cli_unit_test;
 #if defined(LWS_WITH_SMTP)
-extern const lws_abs_protocol_t lws_abs_protocol_smtp;
+extern const aws_lws_abs_protocol_t aws_lws_abs_protocol_smtp;
 #endif
 #if defined(LWS_WITH_MQTT)
-extern const lws_abs_protocol_t lws_abs_protocol_mqttc;
+extern const aws_lws_abs_protocol_t aws_lws_abs_protocol_mqttc;
 #endif
 
-static const lws_abs_transport_t * const available_abs_transports[] = {
-	&lws_abs_transport_cli_raw_skt,
-	&lws_abs_transport_cli_unit_test,
+static const aws_lws_abs_transport_t * const available_abs_transports[] = {
+	&aws_lws_abs_transport_cli_raw_skt,
+	&aws_lws_abs_transport_cli_unit_test,
 };
 
 #if defined(LWS_WITH_ABSTRACT)
-static const lws_abs_protocol_t * const available_abs_protocols[] = {
+static const aws_lws_abs_protocol_t * const available_abs_protocols[] = {
 #if defined(LWS_WITH_SMTP)
-	&lws_abs_protocol_smtp,
+	&aws_lws_abs_protocol_smtp,
 #endif
 #if defined(LWS_WITH_MQTT)
-	&lws_abs_protocol_mqttc,
+	&aws_lws_abs_protocol_mqttc,
 #endif
 };
 #endif
 
-const lws_abs_transport_t *
-lws_abs_transport_get_by_name(const char *name)
+const aws_lws_abs_transport_t *
+aws_lws_abs_transport_get_by_name(const char *name)
 {
 	int n;
 
@@ -59,13 +59,13 @@ lws_abs_transport_get_by_name(const char *name)
 		if (!strcmp(name, available_abs_transports[n]->name))
 			return available_abs_transports[n];
 
-	lwsl_err("%s: cannot find '%s'\n", __func__, name);
+	aws_lwsl_err("%s: cannot find '%s'\n", __func__, name);
 
 	return NULL;
 }
 
-const lws_abs_protocol_t *
-lws_abs_protocol_get_by_name(const char *name)
+const aws_lws_abs_protocol_t *
+aws_lws_abs_protocol_get_by_name(const char *name)
 {
 #if defined(LWS_WITH_ABSTRACT)
 	int n;
@@ -74,13 +74,13 @@ lws_abs_protocol_get_by_name(const char *name)
 		if (!strcmp(name, available_abs_protocols[n]->name))
 			return available_abs_protocols[n];
 #endif
-	lwsl_err("%s: cannot find '%s'\n", __func__, name);
+	aws_lwsl_err("%s: cannot find '%s'\n", __func__, name);
 
 	return NULL;
 }
 
-const lws_token_map_t *
-lws_abs_get_token(const lws_token_map_t *token_map, short name_index)
+const aws_lws_token_map_t *
+aws_lws_abs_get_token(const aws_lws_token_map_t *token_map, short name_index)
 {
 	if (!token_map)
 		return NULL;
@@ -95,7 +95,7 @@ lws_abs_get_token(const lws_token_map_t *token_map, short name_index)
 }
 
 static int
-lws_abstract_compare_connection(lws_abs_t *abs1, lws_abs_t *abs2)
+aws_lws_abstract_compare_connection(aws_lws_abs_t *abs1, aws_lws_abs_t *abs2)
 {
 	/* it has to be using the same protocol */
 	if (abs1->ap != abs2->ap)
@@ -134,14 +134,14 @@ lws_abstract_compare_connection(lws_abs_t *abs1, lws_abs_t *abs2)
 }
 
 static int
-find_compatible(struct lws_dll2 *d, void *user)
+find_compatible(struct aws_lws_dll2 *d, void *user)
 {
-	lws_abs_t *ai1 = (lws_abs_t *)user,
-		  *ai2 = lws_container_of(d, lws_abs_t, abstract_instances);
+	aws_lws_abs_t *ai1 = (aws_lws_abs_t *)user,
+		  *ai2 = aws_lws_container_of(d, aws_lws_abs_t, abstract_instances);
 
-	if (!lws_abstract_compare_connection(ai1, ai2)) {
+	if (!aws_lws_abstract_compare_connection(ai1, ai2)) {
 		/* we can bind to it */
-		lws_dll2_add_tail(&ai1->bound, &ai2->children_owner);
+		aws_lws_dll2_add_tail(&ai1->bound, &ai2->children_owner);
 
 		return 1;
 	}
@@ -149,40 +149,40 @@ find_compatible(struct lws_dll2 *d, void *user)
 	return 0;
 }
 
-lws_abs_t *
-lws_abs_bind_and_create_instance(const lws_abs_t *abs)
+aws_lws_abs_t *
+aws_lws_abs_bind_and_create_instance(const aws_lws_abs_t *abs)
 {
-	size_t size = sizeof(lws_abs_t) + abs->ap->alloc + abs->at->alloc;
-	lws_abs_t *ai;
+	size_t size = sizeof(aws_lws_abs_t) + abs->ap->alloc + abs->at->alloc;
+	aws_lws_abs_t *ai;
 	int n;
 
 	/*
-	 * since we know we will allocate the lws_abs_t, the protocol's
+	 * since we know we will allocate the aws_lws_abs_t, the protocol's
 	 * instance allocation, and the transport's instance allocation,
 	 * we merge it into a single heap allocation
 	 */
-	ai = lws_malloc(size, "abs inst");
+	ai = aws_lws_malloc(size, "abs inst");
 	if (!ai)
 		return NULL;
 
 	*ai = *abs;
 	ai->ati = NULL;
 
-	ai->api = (char *)ai + sizeof(lws_abs_t);
+	ai->api = (char *)ai + sizeof(aws_lws_abs_t);
 
 	if (!ai->ap->flags) /* protocol only understands single connections */
 		goto fresh;
 
-	lws_vhost_lock(ai->vh); /* ----------------------------------- vh { */
+	aws_lws_vhost_lock(ai->vh); /* ----------------------------------- vh { */
 
 	/*
 	 * Let's have a look for any already-connected transport we can use
 	 */
 
-	n = lws_dll2_foreach_safe(&ai->vh->abstract_instances_owner, ai,
+	n = aws_lws_dll2_foreach_safe(&ai->vh->abstract_instances_owner, ai,
 				  find_compatible);
 
-	lws_vhost_unlock(ai->vh); /* } vh --------------------------------- */
+	aws_lws_vhost_unlock(ai->vh); /* } vh --------------------------------- */
 
 	if (n)
 		goto vh_list_add;
@@ -200,8 +200,8 @@ fresh:
 vh_list_add:
 	/* add us to the vhost's dll2 of instances */
 
-	lws_dll2_clear(&ai->abstract_instances);
-	lws_dll2_add_head(&ai->abstract_instances,
+	aws_lws_dll2_clear(&ai->abstract_instances);
+	aws_lws_dll2_add_head(&ai->abstract_instances,
 			  &ai->vh->abstract_instances_owner);
 
 	if (ai->ap->create(ai)) {
@@ -210,7 +210,7 @@ vh_list_add:
 	}
 
 	if (ai->bound.owner) { /* we are a piggybacker */
-		lws_abs_t *ai2 = lws_container_of(ai->bound.owner, lws_abs_t,
+		aws_lws_abs_t *ai2 = aws_lws_container_of(ai->bound.owner, aws_lws_abs_t,
 						  children_owner);
 		/*
 		 * Provide an 'event' in the parent context to start handling
@@ -220,8 +220,8 @@ vh_list_add:
 		 * situation in case he was waiting for one to appear.
 		 */
 		if (ai2->ap->child_bind(ai2)) {
-			lwsl_info("%s: anticpated child bind fail\n", __func__);
-			lws_dll2_remove(&ai->bound);
+			aws_lwsl_info("%s: anticpated child bind fail\n", __func__);
+			aws_lws_dll2_remove(&ai->bound);
 
 			goto bail;
 		}
@@ -230,7 +230,7 @@ vh_list_add:
 	return ai;
 
 bail:
-	lws_abs_destroy_instance(&ai);
+	aws_lws_abs_destroy_instance(&ai);
 
 	return NULL;
 }
@@ -241,27 +241,27 @@ bail:
  */
 
 static void
-__lws_abs_destroy_instance2(lws_abs_t **ai)
+__lws_abs_destroy_instance2(aws_lws_abs_t **ai)
 {
-	lws_abs_t *a = *ai;
+	aws_lws_abs_t *a = *ai;
 
 	if (a->api)
 		a->ap->destroy(&a->api);
 	if (a->ati)
 		a->at->destroy(&a->ati);
 
-	lws_dll2_remove(&a->abstract_instances);
+	aws_lws_dll2_remove(&a->abstract_instances);
 
 	*ai = NULL;
 	free(a);
 }
 
 static int
-__reap_children(struct lws_dll2 *d, void *user)
+__reap_children(struct aws_lws_dll2 *d, void *user)
 {
-	lws_abs_t *ac = lws_container_of(d, lws_abs_t, bound);
+	aws_lws_abs_t *ac = aws_lws_container_of(d, aws_lws_abs_t, bound);
 
-	lws_dll2_foreach_safe(&ac->children_owner, NULL, __reap_children);
+	aws_lws_dll2_foreach_safe(&ac->children_owner, NULL, __reap_children);
 
 	/* then destroy ourselves */
 
@@ -271,62 +271,62 @@ __reap_children(struct lws_dll2 *d, void *user)
 }
 
 void
-lws_abs_destroy_instance(lws_abs_t **ai)
+aws_lws_abs_destroy_instance(aws_lws_abs_t **ai)
 {
-	lws_abs_t *a = *ai;
+	aws_lws_abs_t *a = *ai;
 
 	/* destroy child instances that are bound to us first... */
 
-	lws_vhost_lock(a->vh); /* ----------------------------------- vh { */
+	aws_lws_vhost_lock(a->vh); /* ----------------------------------- vh { */
 
-	lws_dll2_foreach_safe(&a->children_owner, NULL, __reap_children);
+	aws_lws_dll2_foreach_safe(&a->children_owner, NULL, __reap_children);
 
 	/* ...then destroy ourselves */
 
 	__lws_abs_destroy_instance2(ai);
 
-	lws_vhost_unlock(a->vh); /* } vh --------------------------------- */
+	aws_lws_vhost_unlock(a->vh); /* } vh --------------------------------- */
 }
 
-lws_abs_t *
-lws_abstract_alloc(struct lws_vhost *vhost, void *user,
-		   const char *abstract_path, const lws_token_map_t *ap_tokens,
-		   const lws_token_map_t *at_tokens, struct lws_sequencer *seq,
+aws_lws_abs_t *
+aws_lws_abstract_alloc(struct aws_lws_vhost *vhost, void *user,
+		   const char *abstract_path, const aws_lws_token_map_t *ap_tokens,
+		   const aws_lws_token_map_t *at_tokens, struct aws_lws_sequencer *seq,
 		   void *opaque_user_data)
 {
-	lws_abs_t *abs = lws_zalloc(sizeof(*abs), __func__);
-	struct lws_tokenize ts;
-	lws_tokenize_elem e;
+	aws_lws_abs_t *abs = aws_lws_zalloc(sizeof(*abs), __func__);
+	struct aws_lws_tokenize ts;
+	aws_lws_tokenize_elem e;
 	char tmp[30];
 
 	if (!abs)
 		return NULL;
 
-	lws_tokenize_init(&ts, abstract_path, LWS_TOKENIZE_F_MINUS_NONTERM);
+	aws_lws_tokenize_init(&ts, abstract_path, LWS_TOKENIZE_F_MINUS_NONTERM);
 
-	e = lws_tokenize(&ts);
+	e = aws_lws_tokenize(&ts);
 	if (e != LWS_TOKZE_TOKEN)
 		goto abs_path_problem;
 
-	if (lws_tokenize_cstr(&ts, tmp, sizeof(tmp)))
+	if (aws_lws_tokenize_cstr(&ts, tmp, sizeof(tmp)))
 		goto abs_path_problem;
 
-	abs->ap = lws_abs_protocol_get_by_name(tmp);
+	abs->ap = aws_lws_abs_protocol_get_by_name(tmp);
 	if (!abs->ap)
 		goto abs_path_problem;
 
-	e = lws_tokenize(&ts);
+	e = aws_lws_tokenize(&ts);
 	if (e != LWS_TOKZE_DELIMITER)
 		goto abs_path_problem;
 
-	e = lws_tokenize(&ts);
+	e = aws_lws_tokenize(&ts);
 	if (e != LWS_TOKZE_TOKEN)
 		goto abs_path_problem;
 
-	if (lws_tokenize_cstr(&ts, tmp, sizeof(tmp)))
+	if (aws_lws_tokenize_cstr(&ts, tmp, sizeof(tmp)))
 		goto abs_path_problem;
 
-	abs->at = lws_abs_transport_get_by_name(tmp);
+	abs->at = aws_lws_abs_transport_get_by_name(tmp);
 	if (!abs->at)
 		goto abs_path_problem;
 
@@ -336,20 +336,20 @@ lws_abstract_alloc(struct lws_vhost *vhost, void *user,
 	abs->seq = seq;
 	abs->opaque_user_data = opaque_user_data;
 
-	lwsl_info("%s: allocated %s\n", __func__, abstract_path);
+	aws_lwsl_info("%s: allocated %s\n", __func__, abstract_path);
 
 	return abs;
 
 abs_path_problem:
-	lwsl_err("%s: bad abs path '%s'\n", __func__, abstract_path);
-	lws_free_set_NULL(abs);
+	aws_lwsl_err("%s: bad abs path '%s'\n", __func__, abstract_path);
+	aws_lws_free_set_NULL(abs);
 
 	return NULL;
 }
 
 void
-lws_abstract_free(lws_abs_t **pabs)
+aws_lws_abstract_free(aws_lws_abs_t **pabs)
 {
 	if (*pabs)
-		lws_free_set_NULL(*pabs);
+		aws_lws_free_set_NULL(*pabs);
 }

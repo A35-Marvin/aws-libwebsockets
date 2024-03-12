@@ -16,7 +16,7 @@ static uint8_t extra[4096];
 static size_t ext_len;
 
 int
-_alloc_file(struct lws_context *context, const char *filename, uint8_t **buf,
+_alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **buf,
 		size_t *amount)
 {
 	FILE *f;
@@ -70,18 +70,18 @@ bail:
 }
 
 static int
-extra_cb(lws_cose_sig_ext_pay_t *x)
+extra_cb(aws_lws_cose_sig_ext_pay_t *x)
 {
 	x->ext = extra;
 	x->xl = ext_len;
 
-	// lwsl_hexdump_notice(extra, ext_len);
+	// aws_lwsl_hexdump_notice(extra, ext_len);
 
 	return 0;
 }
 
 int
-pay_cb(struct lws_cose_validate_context *cps, void *opaque,
+pay_cb(struct aws_lws_cose_validate_context *cps, void *opaque,
        const uint8_t *paychunk, size_t paychunk_len)
 {
 	write(fdout, paychunk, paychunk_len);
@@ -94,52 +94,52 @@ int main(int argc, const char **argv)
 	uint8_t *ks, temp[256], *kid = NULL, ktmp[4096], sbuf[512];
 	int n, m, sign = 0, result = 1,
 	    logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	enum lws_cose_sig_types sigtype = SIGTYPE_UNKNOWN;
-	struct lws_cose_validate_context *cps = NULL;
-	struct lws_cose_sign_context *csc = NULL;
-	const struct lws_gencrypto_keyelem *ke;
-	struct lws_context_creation_info info;
-	lws_cose_validate_create_info_t vi;
-	struct lws_buflist *paybuf = NULL;
-	lws_cose_sign_create_info_t i;
-	struct lws_context *context;
+	enum aws_lws_cose_sig_types sigtype = SIGTYPE_UNKNOWN;
+	struct aws_lws_cose_validate_context *cps = NULL;
+	struct aws_lws_cose_sign_context *csc = NULL;
+	const struct aws_lws_gencrypto_keyelem *ke;
+	struct aws_lws_context_creation_info info;
+	aws_lws_cose_validate_create_info_t vi;
+	struct aws_lws_buflist *paybuf = NULL;
+	aws_lws_cose_sign_create_info_t i;
+	struct aws_lws_context *context;
 	size_t ks_len, kid_len = 0;
-	lws_cose_key_t *ck = NULL;
-	lws_dll2_owner_t *o, set;
-	lws_lec_pctx_t lec;
+	aws_lws_cose_key_t *ck = NULL;
+	aws_lws_dll2_owner_t *o, set;
+	aws_lws_lec_pctx_t lec;
 	cose_param_t alg;
 	const char *p;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
+	aws_lws_set_log_level(logs, NULL);
 
-	lwsl_user("LWS cose-sign example tool -k keyset [-s alg-name kid ]\n");
+	aws_lwsl_user("LWS cose-sign example tool -k keyset [-s alg-name kid ]\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 #if defined(LWS_WITH_NETWORK)
 	info.port = CONTEXT_PORT_NO_LISTEN;
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "--stdin"))) {
+	if ((p = aws_lws_cmdline_option(argc, argv, "--stdin"))) {
 		fdin = open(p, LWS_O_RDONLY, 0);
 		if (fdin < 0) {
-			lwsl_err("%s: unable to open stdin file\n", __func__);
+			aws_lwsl_err("%s: unable to open stdin file\n", __func__);
 			return 1;
 		}
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "--stdout"))) {
+	if ((p = aws_lws_cmdline_option(argc, argv, "--stdout"))) {
 		fdout = open(p, LWS_O_WRONLY | LWS_O_CREAT | LWS_O_TRUNC, 0600);
 		if (fdout < 0) {
-			lwsl_err("%s: unable to open stdout file\n", __func__);
+			aws_lwsl_err("%s: unable to open stdout file\n", __func__);
 			goto bail_early;
 		}
 	}
@@ -149,56 +149,56 @@ int main(int argc, const char **argv)
 	 * use the tag to select the right type without these
 	 */
 
-	if (lws_cmdline_option(argc, argv, "--cose-sign"))
+	if (aws_lws_cmdline_option(argc, argv, "--cose-sign"))
 		sigtype = SIGTYPE_MULTI;
 
-	if (lws_cmdline_option(argc, argv, "--cose-sign1"))
+	if (aws_lws_cmdline_option(argc, argv, "--cose-sign1"))
 		sigtype = SIGTYPE_SINGLE;
 
-	if (lws_cmdline_option(argc, argv, "--cose-mac"))
+	if (aws_lws_cmdline_option(argc, argv, "--cose-mac"))
 		sigtype = SIGTYPE_MAC;
 
-	if (lws_cmdline_option(argc, argv, "--cose-mac0"))
+	if (aws_lws_cmdline_option(argc, argv, "--cose-mac0"))
 		sigtype = SIGTYPE_MAC0;
 
 	/* if signing, set the ciphers */
 
-	if (lws_cmdline_option(argc, argv, "-s"))
+	if (aws_lws_cmdline_option(argc, argv, "-s"))
 		sign = 1;
 
-	if ((p = lws_cmdline_option(argc, argv, "--kid"))) {
+	if ((p = aws_lws_cmdline_option(argc, argv, "--kid"))) {
 		kid = (uint8_t *)p;
 		kid_len = strlen(p);
-		//lwsl_hexdump_notice(kid, kid_len);
+		//aws_lwsl_hexdump_notice(kid, kid_len);
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "--kid-hex"))) {
-		kid_len = (size_t)lws_hex_to_byte_array(p, ktmp, sizeof(ktmp));
+	if ((p = aws_lws_cmdline_option(argc, argv, "--kid-hex"))) {
+		kid_len = (size_t)aws_lws_hex_to_byte_array(p, ktmp, sizeof(ktmp));
 		kid = (uint8_t *)ktmp;
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "--extra"))) {
-		ext_len = (size_t)lws_hex_to_byte_array(p, extra, sizeof(extra));
-		lwsl_notice("%llu\n", (unsigned long long)ext_len);
+	if ((p = aws_lws_cmdline_option(argc, argv, "--extra"))) {
+		ext_len = (size_t)aws_lws_hex_to_byte_array(p, extra, sizeof(extra));
+		aws_lwsl_notice("%llu\n", (unsigned long long)ext_len);
 		if (ext_len == (size_t)-1ll)
 			ext_len = 0;
 	}
 
 	/* grab the key */
 
-	if (!(p = lws_cmdline_option(argc, argv, "-k"))) {
-		lwsl_err("-k <key set file> is required\n");
+	if (!(p = aws_lws_cmdline_option(argc, argv, "-k"))) {
+		aws_lwsl_err("-k <key set file> is required\n");
 		goto bail;
 	}
 
 	if (_alloc_file(context, p, &ks, &ks_len)) {
-		lwsl_err("%s: unable to load %s\n", __func__, p);
+		aws_lwsl_err("%s: unable to load %s\n", __func__, p);
 		goto bail;
 	}
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, ks, ks_len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, ks, ks_len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		free(ks);
 		goto bail2;
 	}
@@ -217,7 +217,7 @@ int main(int argc, const char **argv)
 
 		if (select(fdin + 1, &fds, NULL, NULL, &timeout) < 0 ||
 		    !FD_ISSET(0, &fds)) {
-			lwsl_err("%s: pass cose_sign or plaintext "
+			aws_lwsl_err("%s: pass cose_sign or plaintext "
 				 "on stdin or --stdin\n", __func__);
 			goto bail2;
 		}
@@ -227,15 +227,15 @@ int main(int argc, const char **argv)
 		uint8_t *ppay;
 		size_t s;
 
-		p = lws_cmdline_option(argc, argv, "--alg");
+		p = aws_lws_cmdline_option(argc, argv, "--alg");
 		if (!p) {
-			lwsl_err("%s: need to specify alg (eg, ES256) "
+			aws_lwsl_err("%s: need to specify alg (eg, ES256) "
 				 "when signing\n", __func__);
 			goto bail2;
 		}
-		alg = lws_cose_name_to_alg(p);
+		alg = aws_lws_cose_name_to_alg(p);
 
-		lws_lec_init(&lec, sbuf, sizeof(sbuf));
+		aws_lws_lec_init(&lec, sbuf, sizeof(sbuf));
 		memset(&i, 0, sizeof(i));
 		i.cx		= context;
 		i.keyset	= &set;
@@ -259,37 +259,37 @@ int main(int argc, const char **argv)
 
 			s = (size_t)n;
 
-			if (lws_buflist_append_segment(&paybuf, temp, s) < 0)
+			if (aws_lws_buflist_append_segment(&paybuf, temp, s) < 0)
 				goto bail3;
 			i.inline_payload_len += s;
 
 		} while (1);
 
-	//	lwsl_notice("%s: inline_payload_len %llu\n", __func__,
+	//	aws_lwsl_notice("%s: inline_payload_len %llu\n", __func__,
 	//			(unsigned long long)i.inline_payload_len);
 
-		csc = lws_cose_sign_create(&i);
+		csc = aws_lws_cose_sign_create(&i);
 		if (!csc)
 			goto bail2;
-		ck = lws_cose_key_from_set(&set, kid, kid_len);
+		ck = aws_lws_cose_key_from_set(&set, kid, kid_len);
 		if (!ck)
 			goto bail2;
 
-		if (lws_cose_sign_add(csc, alg, ck))
+		if (aws_lws_cose_sign_add(csc, alg, ck))
 			goto bail2;
 
 		do {
-			s = lws_buflist_next_segment_len(&paybuf, &ppay);
+			s = aws_lws_buflist_next_segment_len(&paybuf, &ppay);
 			if (!s)
 				break;
 
 			do {
-				m = (int)lws_cose_sign_payload_chunk(csc,
+				m = (int)aws_lws_cose_sign_payload_chunk(csc,
 								     ppay, s);
 				if (lec.used) {
-					// lwsl_hexdump_err(sbuf, lec.used);
+					// aws_lwsl_hexdump_err(sbuf, lec.used);
 					write(fdout, sbuf, lec.used);
-					lws_lec_setbuf(&lec, sbuf, sizeof(sbuf));
+					aws_lws_lec_setbuf(&lec, sbuf, sizeof(sbuf));
 				}
 			} while (m == LCOSESIGEXTCB_RET_AGAIN);
 
@@ -298,10 +298,10 @@ int main(int argc, const char **argv)
 
 			if (lec.used) {
 				write(fdout, sbuf, lec.used);
-				lws_lec_setbuf(&lec, sbuf, sizeof(sbuf));
+				aws_lws_lec_setbuf(&lec, sbuf, sizeof(sbuf));
 			}
 
-			lws_buflist_use_segment(&paybuf, s);
+			aws_lws_buflist_use_segment(&paybuf, s);
 		} while(1);
 
 	} else {
@@ -315,9 +315,9 @@ int main(int argc, const char **argv)
 		vi.ext_len	= ext_len;
 		vi.pay_cb	= pay_cb;
 
-		cps = lws_cose_validate_create(&vi);
+		cps = aws_lws_cose_validate_create(&vi);
 		if (!cps) {
-			lwsl_notice("%s: sign_val_create fail\n", __func__);
+			aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 			goto bail;
 		}
 
@@ -328,9 +328,9 @@ int main(int argc, const char **argv)
 			if (!n)
 				break;
 
-			n = lws_cose_validate_chunk(cps, temp, (size_t)n, NULL);
+			n = aws_lws_cose_validate_chunk(cps, temp, (size_t)n, NULL);
 			if (n && n != LECP_CONTINUE) {
-				lwsl_err("%s: chunk validation failed: %d\n",
+				aws_lwsl_err("%s: chunk validation failed: %d\n",
 						__func__, n);
 				goto bail2;
 			}
@@ -345,11 +345,11 @@ bail3:
 		char buf[2048];
 		int os;
 
-		o = lws_cose_validate_results(cps);
+		o = aws_lws_cose_validate_results(cps);
 		if (!o)
 			result = 1;
 		else {
-			os = lws_snprintf(buf, sizeof(buf),
+			os = aws_lws_snprintf(buf, sizeof(buf),
 					  "\nresults count %d\n", o->count);
 			write(fdout, buf, (size_t)os);
 
@@ -357,44 +357,44 @@ bail3:
 				result = 1;
 		}
 
-		lws_start_foreach_dll_safe(struct lws_dll2 *, p, tp,
-					   lws_dll2_get_head(o)) {
-			lws_cose_validate_res_t *res = lws_container_of(p,
-						lws_cose_validate_res_t, list);
+		aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, tp,
+					   aws_lws_dll2_get_head(o)) {
+			aws_lws_cose_validate_res_t *res = aws_lws_container_of(p,
+						aws_lws_cose_validate_res_t, list);
 			char khr[256];
 
 			khr[0] = '\0';
 			if (res->cose_key) {
 				ke = &res->cose_key->meta[COSEKEY_META_KID];
 				if (ke && ke->buf)
-					lws_hex_from_byte_array(ke->buf, ke->len,
+					aws_lws_hex_from_byte_array(ke->buf, ke->len,
 							khr, sizeof(khr));
 			}
-			os = lws_snprintf(buf, sizeof(buf),
+			os = aws_lws_snprintf(buf, sizeof(buf),
 				    " result: %d (alg %s, kid %s)\n",
 				    res->result,
-				    lws_cose_alg_to_name(res->cose_alg), khr);
+				    aws_lws_cose_alg_to_name(res->cose_alg), khr);
 			write(fdout, buf, (size_t)os);
 			result |= res->result;
-		} lws_end_foreach_dll_safe(p, tp);
+		} aws_lws_end_foreach_dll_safe(p, tp);
 	}
 
 bail2:
 	if (!sign)
-		lws_cose_validate_destroy(&cps);
+		aws_lws_cose_validate_destroy(&cps);
 	else {
-		lws_buflist_destroy_all_segments(&paybuf);
-		lws_cose_sign_destroy(&csc);
+		aws_lws_buflist_destroy_all_segments(&paybuf);
+		aws_lws_cose_sign_destroy(&csc);
 	}
 //bail1:
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_key_set_destroy(&set);
 bail:
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	if (result)
-		lwsl_err("%s: FAIL: %d\n", __func__, result);
+		aws_lwsl_err("%s: FAIL: %d\n", __func__, result);
 	else
-		lwsl_notice("%s: PASS\n", __func__);
+		aws_lwsl_notice("%s: PASS\n", __func__);
 
 bail_early:
 	if (fdin > 0)

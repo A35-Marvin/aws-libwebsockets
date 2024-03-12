@@ -30,7 +30,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 lssfile_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	lssFile *lf = (lssFile *)userobj_to_lss(userobj);
@@ -38,8 +38,8 @@ lssfile_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	return lf->write(buf, len, flags);
 }
 
-static lws_ss_state_return_t
-lssfile_tx(void *userobj, lws_ss_tx_ordinal_t ord,uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+lssfile_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord,uint8_t *buf, size_t *len,
    int *flags)
 {
 	/*
@@ -48,13 +48,13 @@ lssfile_tx(void *userobj, lws_ss_tx_ordinal_t ord,uint8_t *buf, size_t *len,
 	return LWSSSSRET_TX_DONT_SEND;
 }
 
-static lws_ss_state_return_t
-lssfile_state(void *userobj, void *h_src, lws_ss_constate_t state,
-      lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+lssfile_state(void *userobj, void *h_src, aws_lws_ss_constate_t state,
+      aws_lws_ss_tx_ordinal_t ack)
 {
 	lssFile *lf = (lssFile *)userobj_to_lss(userobj);
 
-	lwsl_info("%s: state %s\n", __func__, lws_ss_state_name(state));
+	aws_lwsl_info("%s: state %s\n", __func__, aws_lws_ss_state_name(state));
 
 	switch (state) {
 
@@ -87,7 +87,7 @@ lssfile_state(void *userobj, void *h_src, lws_ss_constate_t state,
 	return LWSSSSRET_OK;
 }
 
-lws_ss_state_return_t lssFile::write(const uint8_t *buf, size_t len, int flags)
+aws_lws_ss_state_return_t lssFile::write(const uint8_t *buf, size_t len, int flags)
 {
 	if (fd == LWS_INVALID_FILE) {
 
@@ -113,7 +113,7 @@ lws_ss_state_return_t lssFile::write(const uint8_t *buf, size_t len, int flags)
 	return LWSSSSRET_OK;
 }
 
-lssFile::lssFile(lws_ctx_t ctx, std::string uri, std::string _path,
+lssFile::lssFile(aws_lws_ctx_t ctx, std::string uri, std::string _path,
 		 lsscomp_t comp, bool _psh) :
 	 lss(ctx, uri, comp, _psh, lssfile_rx, lssfile_tx, lssfile_state)
 {

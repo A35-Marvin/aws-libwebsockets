@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  */
 
-typedef uint32_t lws_wsi_state_t;
+typedef uint32_t aws_lws_wsi_state_t;
 
 /*
  * The wsi->role_ops pointer decides almost everything about what role the wsi
@@ -59,22 +59,22 @@ typedef uint32_t lws_wsi_state_t;
 
 #define LWSIFR_P_ENCAP_H2	(0x0100 << _RS) /* we are encapsulated by h2 */
 
-enum lwsi_role {
+enum aws_lwsi_role {
 	LWSI_ROLE_MASK		=			     (0xffff << _RS),
 	LWSI_ROLE_ENCAP_MASK	=			     (0x0f00 << _RS),
 };
 
-#define lwsi_role(wsi) (wsi->wsistate & (unsigned int)LWSI_ROLE_MASK)
+#define aws_lwsi_role(wsi) (wsi->wsistate & (unsigned int)LWSI_ROLE_MASK)
 #if !defined (_DEBUG)
-#define lwsi_set_role(wsi, role) wsi->wsistate = \
+#define aws_lwsi_set_role(wsi, role) wsi->wsistate = \
 				(wsi->wsistate & (~LWSI_ROLE_MASK)) | role
 #else
-void lwsi_set_role(struct lws *wsi, lws_wsi_state_t role);
+void aws_lwsi_set_role(struct lws *wsi, aws_lws_wsi_state_t role);
 #endif
 
-#define lwsi_role_client(wsi) (!!(wsi->wsistate & LWSIFR_CLIENT))
-#define lwsi_role_server(wsi) (!!(wsi->wsistate & LWSIFR_SERVER))
-#define lwsi_role_h2_ENCAPSULATION(wsi) \
+#define aws_lwsi_role_client(wsi) (!!(wsi->wsistate & LWSIFR_CLIENT))
+#define aws_lwsi_role_server(wsi) (!!(wsi->wsistate & LWSIFR_SERVER))
+#define aws_lwsi_role_h2_ENCAPSULATION(wsi) \
 		((wsi->wsistate & LWSI_ROLE_ENCAP_MASK) == LWSIFR_P_ENCAP_H2)
 
 /* Pollout wants a callback in this state */
@@ -82,7 +82,7 @@ void lwsi_set_role(struct lws *wsi, lws_wsi_state_t role);
 /* Before any protocol connection was established */
 #define LWSIFS_NOT_EST		(0x200)
 
-enum lwsi_state {
+enum aws_lwsi_state {
 
 	/* Phase 1: pre-transport */
 
@@ -153,18 +153,18 @@ enum lwsi_state {
 	LRS_MASK				= 0xffff
 };
 
-#define lwsi_state(wsi) ((enum lwsi_state)(wsi->wsistate & LRS_MASK))
-#define lwsi_state_PRE_CLOSE(wsi) \
-		((enum lwsi_state)(wsi->wsistate_pre_close & LRS_MASK))
-#define lwsi_state_est(wsi) (!(wsi->wsistate & LWSIFS_NOT_EST))
-#define lwsi_state_est_PRE_CLOSE(wsi) \
+#define aws_lwsi_state(wsi) ((enum aws_lwsi_state)(wsi->wsistate & LRS_MASK))
+#define aws_lwsi_state_PRE_CLOSE(wsi) \
+		((enum aws_lwsi_state)(wsi->wsistate_pre_close & LRS_MASK))
+#define aws_lwsi_state_est(wsi) (!(wsi->wsistate & LWSIFS_NOT_EST))
+#define aws_lwsi_state_est_PRE_CLOSE(wsi) \
 		(!(wsi->wsistate_pre_close & LWSIFS_NOT_EST))
-#define lwsi_state_can_handle_POLLOUT(wsi) (wsi->wsistate & LWSIFS_POCB)
+#define aws_lwsi_state_can_handle_POLLOUT(wsi) (wsi->wsistate & LWSIFS_POCB)
 #if !defined (_DEBUG)
-#define lwsi_set_state(wsi, lrs) wsi->wsistate = \
-			  (wsi->wsistate & (lws_wsi_state_t)(~LRS_MASK)) | lrs
+#define aws_lwsi_set_state(wsi, lrs) wsi->wsistate = \
+			  (wsi->wsistate & (aws_lws_wsi_state_t)(~LRS_MASK)) | lrs
 #else
-void lwsi_set_state(struct lws *wsi, lws_wsi_state_t lrs);
+void aws_lwsi_set_state(struct lws *wsi, aws_lws_wsi_state_t lrs);
 #endif
 
 #define _LWS_ADOPT_FINISH (1 << 24)
@@ -191,92 +191,92 @@ void lwsi_set_state(struct lws *wsi, lws_wsi_state_t lrs);
  * to upgrade the connection to something else using the headers.
  * ws-over-h2 is upgraded from h2 like this.
  */
-typedef int (*lws_rops_check_upgrades_t)(struct lws *wsi);
+typedef int (*aws_lws_rops_check_upgrades_t)(struct lws *wsi);
 /* role-specific context init during context creation */
-typedef int (*lws_rops_pt_init_destroy_t)(struct lws_context *context,
-				const struct lws_context_creation_info *info,
-				struct lws_context_per_thread *pt, int destroy);
+typedef int (*aws_lws_rops_pt_init_destroy_t)(struct aws_lws_context *context,
+				const struct aws_lws_context_creation_info *info,
+				struct aws_lws_context_per_thread *pt, int destroy);
 /* role-specific per-vhost init during vhost creation */
-typedef int (*lws_rops_init_vhost_t)(struct lws_vhost *vh,
-				  const struct lws_context_creation_info *info);
+typedef int (*aws_lws_rops_init_vhost_t)(struct aws_lws_vhost *vh,
+				  const struct aws_lws_context_creation_info *info);
 /* role-specific per-vhost destructor during vhost destroy */
-typedef int (*lws_rops_destroy_vhost_t)(struct lws_vhost *vh);
+typedef int (*aws_lws_rops_destroy_vhost_t)(struct aws_lws_vhost *vh);
 /* chance for the role to force POLLIN without network activity */
-typedef int (*lws_rops_service_flag_pending_t)(struct lws_context *context,
+typedef int (*aws_lws_rops_service_flag_pending_t)(struct aws_lws_context *context,
 					       int tsi);
 /* an fd using this role has POLLIN signalled */
-typedef int (*lws_rops_handle_POLLIN_t)(struct lws_context_per_thread *pt,
+typedef int (*aws_lws_rops_handle_POLLIN_t)(struct aws_lws_context_per_thread *pt,
 					struct lws *wsi,
-					struct lws_pollfd *pollfd);
+					struct aws_lws_pollfd *pollfd);
 /* an fd using the role wanted a POLLOUT callback and now has it */
-typedef int (*lws_rops_handle_POLLOUT_t)(struct lws *wsi);
+typedef int (*aws_lws_rops_handle_POLLOUT_t)(struct lws *wsi);
 /* perform user pollout */
-typedef int (*lws_rops_perform_user_POLLOUT_t)(struct lws *wsi);
+typedef int (*aws_lws_rops_perform_user_POLLOUT_t)(struct lws *wsi);
 /* do effective callback on writeable */
-typedef int (*lws_rops_callback_on_writable_t)(struct lws *wsi);
+typedef int (*aws_lws_rops_callback_on_writable_t)(struct lws *wsi);
 /* connection-specific tx credit in bytes */
-typedef int (*lws_rops_tx_credit_t)(struct lws *wsi, char peer_to_us, int add);
+typedef int (*aws_lws_rops_tx_credit_t)(struct lws *wsi, char peer_to_us, int add);
 /* role-specific write formatting */
-typedef int (*lws_rops_write_role_protocol_t)(struct lws *wsi,
+typedef int (*aws_lws_rops_write_role_protocol_t)(struct lws *wsi,
 					      unsigned char *buf, size_t len,
-					      enum lws_write_protocol *wp);
+					      enum aws_lws_write_protocol *wp);
 
 /* get encapsulation parent */
-typedef struct lws * (*lws_rops_encapsulation_parent_t)(struct lws *wsi);
+typedef struct lws * (*aws_lws_rops_encapsulation_parent_t)(struct lws *wsi);
 
 /* role-specific destructor */
-typedef int (*lws_rops_alpn_negotiated_t)(struct lws *wsi, const char *alpn);
+typedef int (*aws_lws_rops_alpn_negotiated_t)(struct lws *wsi, const char *alpn);
 
 /* chance for the role to handle close in the protocol */
-typedef int (*lws_rops_close_via_role_protocol_t)(struct lws *wsi,
-						  enum lws_close_status reason);
+typedef int (*aws_lws_rops_close_via_role_protocol_t)(struct lws *wsi,
+						  enum aws_lws_close_status reason);
 /* role-specific close processing */
-typedef int (*lws_rops_close_role_t)(struct lws_context_per_thread *pt,
+typedef int (*aws_lws_rops_close_role_t)(struct aws_lws_context_per_thread *pt,
 				     struct lws *wsi);
 /* role-specific connection close processing */
-typedef int (*lws_rops_close_kill_connection_t)(struct lws *wsi,
-						enum lws_close_status reason);
+typedef int (*aws_lws_rops_close_kill_connection_t)(struct lws *wsi,
+						enum aws_lws_close_status reason);
 /* role-specific destructor */
-typedef int (*lws_rops_destroy_role_t)(struct lws *wsi);
+typedef int (*aws_lws_rops_destroy_role_t)(struct lws *wsi);
 
 /* role-specific socket-adopt */
-typedef int (*lws_rops_adoption_bind_t)(struct lws *wsi, int type,
+typedef int (*aws_lws_rops_adoption_bind_t)(struct lws *wsi, int type,
 					const char *prot);
 /* role-specific client-bind:
  * ret 1 = bound, 0 = not bound, -1 = fail out
  * i may be NULL, indicating client_bind is being called after
  * a successful bind earlier, to finalize the binding.  In that
  * case ret 0 = OK, 1 = fail, wsi needs freeing, -1 = fail, wsi freed */
-typedef int (*lws_rops_client_bind_t)(struct lws *wsi,
-				      const struct lws_client_connect_info *i);
+typedef int (*aws_lws_rops_client_bind_t)(struct lws *wsi,
+				      const struct aws_lws_client_connect_info *i);
 /* isvalid = 0: request a role-specific keepalive (PING etc)
  *         = 1: reset any related validity timer */
-typedef int (*lws_rops_issue_keepalive_t)(struct lws *wsi, int isvalid);
+typedef int (*aws_lws_rops_issue_keepalive_t)(struct lws *wsi, int isvalid);
 
 #define LWS_COUNT_ROLE_OPS			20
 
-typedef union lws_rops {
-	lws_rops_check_upgrades_t		check_upgrades;
-	lws_rops_pt_init_destroy_t		pt_init_destroy;
-	lws_rops_init_vhost_t			init_vhost;
-	lws_rops_destroy_vhost_t		destroy_vhost;
-	lws_rops_service_flag_pending_t		service_flag_pending;
-	lws_rops_handle_POLLIN_t		handle_POLLIN;
-	lws_rops_handle_POLLOUT_t		handle_POLLOUT;
-	lws_rops_perform_user_POLLOUT_t		perform_user_POLLOUT;
-	lws_rops_callback_on_writable_t		callback_on_writable;
-	lws_rops_tx_credit_t			tx_credit;
-	lws_rops_write_role_protocol_t		write_role_protocol;
-	lws_rops_encapsulation_parent_t		encapsulation_parent;
-	lws_rops_alpn_negotiated_t		alpn_negotiated;
-	lws_rops_close_via_role_protocol_t	close_via_role_protocol;
-	lws_rops_close_role_t			close_role;
-	lws_rops_close_kill_connection_t	close_kill_connection;
-	lws_rops_destroy_role_t			destroy_role;
-	lws_rops_adoption_bind_t		adoption_bind;
-	lws_rops_client_bind_t			client_bind;
-	lws_rops_issue_keepalive_t		issue_keepalive;
-} lws_rops_t;
+typedef union aws_lws_rops {
+	aws_lws_rops_check_upgrades_t		check_upgrades;
+	aws_lws_rops_pt_init_destroy_t		pt_init_destroy;
+	aws_lws_rops_init_vhost_t			init_vhost;
+	aws_lws_rops_destroy_vhost_t		destroy_vhost;
+	aws_lws_rops_service_flag_pending_t		service_flag_pending;
+	aws_lws_rops_handle_POLLIN_t		handle_POLLIN;
+	aws_lws_rops_handle_POLLOUT_t		handle_POLLOUT;
+	aws_lws_rops_perform_user_POLLOUT_t		perform_user_POLLOUT;
+	aws_lws_rops_callback_on_writable_t		callback_on_writable;
+	aws_lws_rops_tx_credit_t			tx_credit;
+	aws_lws_rops_write_role_protocol_t		write_role_protocol;
+	aws_lws_rops_encapsulation_parent_t		encapsulation_parent;
+	aws_lws_rops_alpn_negotiated_t		alpn_negotiated;
+	aws_lws_rops_close_via_role_protocol_t	close_via_role_protocol;
+	aws_lws_rops_close_role_t			close_role;
+	aws_lws_rops_close_kill_connection_t	close_kill_connection;
+	aws_lws_rops_destroy_role_t			destroy_role;
+	aws_lws_rops_adoption_bind_t		adoption_bind;
+	aws_lws_rops_client_bind_t			client_bind;
+	aws_lws_rops_issue_keepalive_t		issue_keepalive;
+} aws_lws_rops_t;
 
 typedef enum {
 	LWS_ROPS_check_upgrades,
@@ -299,15 +299,15 @@ typedef enum {
 	LWS_ROPS_adoption_bind,
 	LWS_ROPS_client_bind,
 	LWS_ROPS_issue_keepalive,
-} lws_rops_func_idx_t;
+} aws_lws_rops_func_idx_t;
 
-struct lws_context_per_thread;
+struct aws_lws_context_per_thread;
 
-struct lws_role_ops {
+struct aws_lws_role_ops {
 	const char		*name;
 	const char		*alpn;
 
-	const lws_rops_t	*rops_table;
+	const aws_lws_rops_t	*rops_table;
 	/**< the occupied role ops func ptrs */
 	uint8_t			rops_idx[(LWS_COUNT_ROLE_OPS + 1) / 2];
 	/**< translates role index into .rops[] offset */
@@ -347,15 +347,15 @@ struct lws_role_ops {
 	/* role operates on files not sockets */
 };
 
-#define lws_rops_fidx(_rops, fidx) \
+#define aws_lws_rops_fidx(_rops, fidx) \
 		((fidx & 1) ? (_rops)->rops_idx[fidx / 2] & 0xf : \
 			      (_rops)->rops_idx[fidx / 2] >> 4)
 
-#define lws_rops_func_fidx(_rops, fidx) \
-		((_rops)->rops_table[lws_rops_fidx(_rops, fidx) - 1])
+#define aws_lws_rops_func_fidx(_rops, fidx) \
+		((_rops)->rops_table[aws_lws_rops_fidx(_rops, fidx) - 1])
 
 /* core roles */
-extern const struct lws_role_ops role_ops_raw_skt, role_ops_raw_file,
+extern const struct aws_lws_role_ops role_ops_raw_skt, role_ops_raw_file,
 				 role_ops_listen, role_ops_pipe,
 				 role_ops_netlink;
 
@@ -364,49 +364,49 @@ extern const struct lws_role_ops role_ops_raw_skt, role_ops_raw_file,
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
  #include "private-lib-roles-http.h"
 #else
- #define lwsi_role_http(wsi) (0)
+ #define aws_lwsi_role_http(wsi) (0)
 #endif
 
 #if defined(LWS_ROLE_H1)
  #include "private-lib-roles-h1.h"
 #else
- #define lwsi_role_h1(wsi) (0)
+ #define aws_lwsi_role_h1(wsi) (0)
 #endif
 
 #if defined(LWS_ROLE_H2)
  #include "private-lib-roles-h2.h"
 #else
- #define lwsi_role_h2(wsi) (0)
+ #define aws_lwsi_role_h2(wsi) (0)
 #endif
 
 #if defined(LWS_ROLE_WS)
  #include "private-lib-roles-ws.h"
 #else
- #define lwsi_role_ws(wsi) (0)
+ #define aws_lwsi_role_ws(wsi) (0)
 #endif
 
 #if defined(LWS_ROLE_CGI)
  #include "private-lib-roles-cgi.h"
 #else
- #define lwsi_role_cgi(wsi) (0)
+ #define aws_lwsi_role_cgi(wsi) (0)
 #endif
 
 #if defined(LWS_ROLE_DBUS)
  #include "private-lib-roles-dbus.h"
 #else
- #define lwsi_role_dbus(wsi) (0)
+ #define aws_lwsi_role_dbus(wsi) (0)
 #endif
 
 #if defined(LWS_ROLE_RAW_PROXY)
  #include "private-lib-roles-raw-proxy.h"
 #else
- #define lwsi_role_raw_proxy(wsi) (0)
+ #define aws_lwsi_role_raw_proxy(wsi) (0)
 #endif
 
 #if defined(LWS_ROLE_MQTT)
  #include "mqtt/private-lib-roles-mqtt.h"
 #else
- #define lwsi_role_mqtt(wsi) (0)
+ #define aws_lwsi_role_mqtt(wsi) (0)
 #endif
 
 enum {
@@ -427,12 +427,12 @@ enum {
 #define LWS_CONNECT_COMPLETION_GOOD (-99)
 
 int
-lws_role_call_adoption_bind(struct lws *wsi, int type, const char *prot);
+aws_lws_role_call_adoption_bind(struct lws *wsi, int type, const char *prot);
 
 struct lws *
-lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
+aws_lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 				 ssize_t plen);
 
 struct lws *
-lws_client_connect_3_connect(struct lws *wsi, const char *ads,
+aws_lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 			     const struct addrinfo *result, int n, void *opaque);

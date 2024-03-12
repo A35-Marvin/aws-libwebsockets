@@ -33,7 +33,7 @@ struct client {
 	int state;
 };
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 static struct client clients[200];
 static int interrupted, port = 443, ssl_connection = LCCSCF_USE_SSL;
 static const char *server_address = "libwebsockets.org",
@@ -47,10 +47,10 @@ struct pss {
 static int
 connect_client(int idx)
 {
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 
 	if (tries == limit) {
-		lwsl_user("Reached limit... finishing\n");
+		aws_lwsl_user("Reached limit... finishing\n");
 		return 0;
 	}
 
@@ -70,8 +70,8 @@ connect_client(int idx)
 	clients[idx].state = CLIENT_CONNECTING;
 	tries++;
 
-	lwsl_notice("%s: connection %s:%d\n", __func__, i.address, i.port);
-	if (!lws_client_connect_via_info(&i)) {
+	aws_lwsl_notice("%s: connection %s:%d\n", __func__, i.address, i.port);
+	if (!aws_lws_client_connect_via_info(&i)) {
 		clients[idx].wsi = NULL;
 		clients[idx].state = CLIENT_IDLE;
 
@@ -82,7 +82,7 @@ connect_client(int idx)
 }
 
 static int
-callback_minimal_spam(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal_spam(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;
@@ -100,7 +100,7 @@ callback_minimal_spam(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		errors++;
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s (try %d, est %d, closed %d, err %d)\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s (try %d, est %d, closed %d, err %d)\n",
 			 in ? (char *)in : "(null)", tries, est, closed, errors);
 		for (n = 0; n < concurrent; n++) {
 			if (clients[n].wsi == wsi) {
@@ -112,28 +112,28 @@ callback_minimal_spam(struct lws *wsi, enum lws_callback_reasons reason,
 		}
 		if (tries == closed + errors) {
 			interrupted = 1;
-			lws_cancel_service(lws_get_context(wsi));
+			aws_lws_cancel_service(aws_lws_get_context(wsi));
 		}
 		break;
 
 	/* --- client callbacks --- */
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		lwsl_user("%s: established (try %d, est %d, closed %d, err %d)\n",
+		aws_lwsl_user("%s: established (try %d, est %d, closed %d, err %d)\n",
 				__func__, tries, est, closed, errors);
 		est++;
 		pss->conn = conn++;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		closed++;
 		if (tries == closed + errors) {
 			interrupted = 1;
-			lws_cancel_service(lws_get_context(wsi));
+			aws_lws_cancel_service(aws_lws_get_context(wsi));
 		}
 		if (tries == limit) {
-			lwsl_user("%s: leaving CLOSED (try %d, est %d, sent %d, closed %d, err %d)\n",
+			aws_lwsl_user("%s: leaving CLOSED (try %d, est %d, sent %d, closed %d, err %d)\n",
 					__func__, tries, est, sent, closed, errors);
 			break;
 		}
@@ -141,36 +141,36 @@ callback_minimal_spam(struct lws *wsi, enum lws_callback_reasons reason,
 		for (n = 0; n < concurrent; n++) {
 			if (clients[n].wsi == wsi) {
 				connect_client(n);
-				lwsl_user("%s: reopening (try %d, est %d, closed %d, err %d)\n",
+				aws_lwsl_user("%s: reopening (try %d, est %d, closed %d, err %d)\n",
 						__func__, tries, est, closed, errors);
 				break;
 			}
 		}
 		if (n == concurrent)
-			lwsl_user("CLOSED: can't find client wsi\n");
+			aws_lwsl_user("CLOSED: can't find client wsi\n");
 		break;
 
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
-		n = lws_snprintf((char *)ping + LWS_PRE, sizeof(ping) - LWS_PRE,
+		n = aws_lws_snprintf((char *)ping + LWS_PRE, sizeof(ping) - LWS_PRE,
 					  "hello %d", pss->conn);
 
-		m = lws_write(wsi, ping + LWS_PRE, (unsigned int)n, LWS_WRITE_TEXT);
+		m = aws_lws_write(wsi, ping + LWS_PRE, (unsigned int)n, LWS_WRITE_TEXT);
 		if (m < n) {
-			lwsl_err("sending ping failed: %d\n", m);
+			aws_lwsl_err("sending ping failed: %d\n", m);
 
 			return -1;
 		}
-		lws_set_timeout(wsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_ASYNC);
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_USER_OK, LWS_TO_KILL_ASYNC);
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"lws-spam-test",
 		callback_minimal_spam,
@@ -180,7 +180,7 @@ static const struct lws_protocols protocols[] = {
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static struct lws_protocol_vhost_options pvo = {
+static struct aws_lws_protocol_vhost_options pvo = {
         NULL,                  /* "next" pvo linked-list */
         NULL,                 /* "child" pvo linked-list */
         "lws-spam-test",        /* protocol name we belong to on this vhost */
@@ -195,7 +195,7 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -207,11 +207,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws client SPAM\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws client SPAM\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -226,28 +226,28 @@ int main(int argc, const char **argv)
 	info.client_ssl_ca_filepath = "./libwebsockets.org.cer";
 #endif
 
-	if ((p = lws_cmdline_option(argc, argv, "--server"))) {
+	if ((p = aws_lws_cmdline_option(argc, argv, "--server"))) {
 		server_address = p;
 		ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "--port")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--port")))
 		port = atoi(p);
 
-	if ((p = lws_cmdline_option(argc, argv, "-l")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-l")))
 		limit = atoi(p);
 
-	if ((p = lws_cmdline_option(argc, argv, "-c")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-c")))
 		concurrent = atoi(p);
 
-	if (lws_cmdline_option(argc, argv, "-n")) {
+	if (aws_lws_cmdline_option(argc, argv, "-n")) {
 		ssl_connection = 0;
 		info.options = 0;
 	}
 
 	if (concurrent < 0 ||
 	    concurrent > (int)LWS_ARRAY_SIZE(clients)) {
-		lwsl_err("%s: -c %d larger than max concurrency %d\n", __func__,
+		aws_lwsl_err("%s: -c %d larger than max concurrency %d\n", __func__,
 				concurrent, (int)LWS_ARRAY_SIZE(clients));
 
 		return 1;
@@ -262,25 +262,25 @@ int main(int argc, const char **argv)
 	 */
 	info.fd_limit_per_thread = (unsigned int)(1 + concurrent + 1);
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lwsl_notice("%s: exiting service loop\n", __func__);
+	aws_lwsl_notice("%s: exiting service loop\n", __func__);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	if (tries == limit && closed == tries) {
-		lwsl_user("Completed\n");
+		aws_lwsl_user("Completed\n");
 		return 0;
 	}
 
-	lwsl_err("Failed\n");
+	aws_lwsl_err("Failed\n");
 
 	return 1;
 }

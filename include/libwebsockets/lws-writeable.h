@@ -29,7 +29,7 @@
  * lws can only write data on a connection when it is able to accept more
  * data without blocking.
  *
- * So a basic requirement is we should only use the lws_write() apis when the
+ * So a basic requirement is we should only use the aws_lws_write() apis when the
  * connection we want to write on says that he can accept more data.
  *
  * When lws cannot complete your send at the time, it will buffer the data
@@ -43,7 +43,7 @@
 ///@{
 
 /**
- * lws_callback_on_writable() - Request a callback when this socket
+ * aws_lws_callback_on_writable() - Request a callback when this socket
  *					 becomes able to be written to without
  *					 blocking
  *
@@ -54,15 +54,15 @@
  * - What: LWS_CALLBACK_*_WRITEABLE
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_on_writable(struct lws *wsi);
+aws_lws_callback_on_writable(struct lws *wsi);
 
 /**
- * lws_callback_on_writable_all_protocol() - Request a callback for all
+ * aws_lws_callback_on_writable_all_protocol() - Request a callback for all
  *			connections using the given protocol when it
  *			becomes possible to write to each socket without
  *			blocking in turn.
  *
- * \param context:	lws_context
+ * \param context:	aws_lws_context
  * \param protocol:	Protocol whose connections will get callbacks
  *
  * - Which:  connections using this protocol on ANY VHOST
@@ -70,16 +70,16 @@ lws_callback_on_writable(struct lws *wsi);
  * - What: LWS_CALLBACK_*_WRITEABLE
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_on_writable_all_protocol(const struct lws_context *context,
-				      const struct lws_protocols *protocol);
+aws_lws_callback_on_writable_all_protocol(const struct aws_lws_context *context,
+				      const struct aws_lws_protocols *protocol);
 
 /**
- * lws_callback_on_writable_all_protocol_vhost() - Request a callback for
+ * aws_lws_callback_on_writable_all_protocol_vhost() - Request a callback for
  *			all connections on same vhost using the given protocol
  *			when it becomes possible to write to each socket without
  *			blocking in turn.
  *
- * \param vhost:	Only consider connections on this lws_vhost
+ * \param vhost:	Only consider connections on this aws_lws_vhost
  * \param protocol:	Protocol whose connections will get callbacks
  *
  * - Which:  connections using this protocol on GIVEN VHOST ONLY
@@ -87,14 +87,14 @@ lws_callback_on_writable_all_protocol(const struct lws_context *context,
  * - What: LWS_CALLBACK_*_WRITEABLE
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_on_writable_all_protocol_vhost(const struct lws_vhost *vhost,
-				      const struct lws_protocols *protocol);
+aws_lws_callback_on_writable_all_protocol_vhost(const struct aws_lws_vhost *vhost,
+				      const struct aws_lws_protocols *protocol);
 
 /**
- * lws_callback_all_protocol() - Callback all connections using
+ * aws_lws_callback_all_protocol() - Callback all connections using
  *				the given protocol with the given reason
  *
- * \param context:	lws_context
+ * \param context:	aws_lws_context
  * \param protocol:	Protocol whose connections will get callbacks
  * \param reason:	Callback reason index
  *
@@ -107,13 +107,13 @@ lws_callback_on_writable_all_protocol_vhost(const struct lws_vhost *vhost,
  * writable, or close.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_all_protocol(struct lws_context *context,
-			  const struct lws_protocols *protocol, int reason);
+aws_lws_callback_all_protocol(struct aws_lws_context *context,
+			  const struct aws_lws_protocols *protocol, int reason);
 
 /**
- * lws_callback_all_protocol_vhost() - Callback all connections using
+ * aws_lws_callback_all_protocol_vhost() - Callback all connections using
  *			the given protocol with the given reason.  This is
- *			deprecated since v2.4: use lws_callback_all_protocol_vhost_args
+ *			deprecated since v2.4: use aws_lws_callback_all_protocol_vhost_args
  *
  * \param vh:		Vhost whose connections will get callbacks
  * \param protocol:	Which protocol to match.  NULL means all.
@@ -124,13 +124,13 @@ lws_callback_all_protocol(struct lws_context *context,
  * - What:   reason
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_all_protocol_vhost(struct lws_vhost *vh,
-				const struct lws_protocols *protocol,
+aws_lws_callback_all_protocol_vhost(struct aws_lws_vhost *vh,
+				const struct aws_lws_protocols *protocol,
 				int reason)
 LWS_WARN_DEPRECATED;
 
 /**
- * lws_callback_all_protocol_vhost_args() - Callback all connections using
+ * aws_lws_callback_all_protocol_vhost_args() - Callback all connections using
  *			the given protocol with the given reason and args
  *
  * \param vh:		Vhost whose connections will get callbacks
@@ -144,12 +144,12 @@ LWS_WARN_DEPRECATED;
  * - What:   reason
  */
 LWS_VISIBLE int
-lws_callback_all_protocol_vhost_args(struct lws_vhost *vh,
-				     const struct lws_protocols *protocol,
+aws_lws_callback_all_protocol_vhost_args(struct aws_lws_vhost *vh,
+				     const struct aws_lws_protocols *protocol,
 				     int reason, void *argp, size_t len);
 
 /**
- * lws_callback_vhost_protocols() - Callback all protocols enabled on a vhost
+ * aws_lws_callback_vhost_protocols() - Callback all protocols enabled on a vhost
  *					with the given reason
  *
  * \param wsi:	wsi whose vhost will get callbacks
@@ -161,16 +161,16 @@ lws_callback_all_protocol_vhost_args(struct lws_vhost *vh,
  * - When:   now
  * - What:   reason
  *
- * This is deprecated since v2.5, use lws_callback_vhost_protocols_vhost()
+ * This is deprecated since v2.5, use aws_lws_callback_vhost_protocols_vhost()
  * which takes the pointer to the vhost directly without using or needing the
  * wsi.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_vhost_protocols(struct lws *wsi, int reason, void *in, size_t len)
+aws_lws_callback_vhost_protocols(struct lws *wsi, int reason, void *in, size_t len)
 LWS_WARN_DEPRECATED;
 
 /**
- * lws_callback_vhost_protocols_vhost() - Callback all protocols enabled on a vhost
+ * aws_lws_callback_vhost_protocols_vhost() - Callback all protocols enabled on a vhost
  *					with the given reason
  *
  * \param vh:		vhost that will get callbacks
@@ -183,25 +183,25 @@ LWS_WARN_DEPRECATED;
  * - What:   reason
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_vhost_protocols_vhost(struct lws_vhost *vh, int reason, void *in,
+aws_lws_callback_vhost_protocols_vhost(struct aws_lws_vhost *vh, int reason, void *in,
 				   size_t len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
+aws_lws_callback_http_dummy(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len);
 
 /**
- * lws_get_socket_fd() - returns the socket file descriptor
+ * aws_lws_get_socket_fd() - returns the socket file descriptor
  *
  * This is needed to use sendto() on UDP raw sockets
  *
  * \param wsi:	Websocket connection instance
  */
-LWS_VISIBLE LWS_EXTERN lws_sockfd_type
-lws_get_socket_fd(struct lws *wsi);
+LWS_VISIBLE LWS_EXTERN aws_lws_sockfd_type
+aws_lws_get_socket_fd(struct lws *wsi);
 
 /**
- * lws_get_peer_write_allowance() - get the amount of data writeable to peer
+ * aws_lws_get_peer_write_allowance() - get the amount of data writeable to peer
  * 					if known
  *
  * \param wsi:	Websocket connection instance
@@ -221,11 +221,11 @@ lws_get_socket_fd(struct lws *wsi);
  * automatically, so this number reflects the situation at the peer or
  * intermediary dynamically.
  */
-LWS_VISIBLE LWS_EXTERN lws_fileofs_t
-lws_get_peer_write_allowance(struct lws *wsi);
+LWS_VISIBLE LWS_EXTERN aws_lws_fileofs_t
+aws_lws_get_peer_write_allowance(struct lws *wsi);
 
 /**
- * lws_wsi_tx_credit() - get / set generic tx credit if role supports it
+ * aws_lws_wsi_tx_credit() - get / set generic tx credit if role supports it
  *
  * \param wsi: connection to set / get tx credit on
  * \param peer_to_us: 0 = set / get us-to-peer direction, else peer-to-us
@@ -241,6 +241,6 @@ lws_get_peer_write_allowance(struct lws *wsi);
 #define LWSTXCR_PEER_TO_US 1
 
 LWS_VISIBLE LWS_EXTERN int
-lws_wsi_tx_credit(struct lws *wsi, char peer_to_us, int add);
+aws_lws_wsi_tx_credit(struct lws *wsi, char peer_to_us, int add);
 
 ///@}

@@ -31,17 +31,17 @@
 
 /* this is the transport priv instantiated at abs->ati */
 
-typedef struct lws_abstxp_unit_test_priv {
+typedef struct aws_lws_abstxp_unit_test_priv {
 	char					note[128];
-	struct lws_abs				*abs;
+	struct aws_lws_abs				*abs;
 
-	struct lws_sequencer			*seq;
-	lws_unit_test_t				*current_test;
-	lws_unit_test_packet_t			*expect;
-	lws_unit_test_packet_test_cb		result_cb;
+	struct aws_lws_sequencer			*seq;
+	aws_lws_unit_test_t				*current_test;
+	aws_lws_unit_test_packet_t			*expect;
+	aws_lws_unit_test_packet_test_cb		result_cb;
 	const void				*result_cb_arg;
 
-	lws_unit_test_packet_disposition	disposition;
+	aws_lws_unit_test_packet_disposition	disposition;
 	/* synthesized protocol timeout */
 	time_t					timeout;
 
@@ -50,7 +50,7 @@ typedef struct lws_abstxp_unit_test_priv {
 } abs_unit_test_priv_t;
 
 typedef struct seq_priv {
-	lws_abs_t *ai;
+	aws_lws_abs_t *ai;
 } seq_priv_t;
 
 enum {
@@ -66,21 +66,21 @@ enum {
  * A definitive result has appeared for the current test
  */
 
-static lws_unit_test_packet_disposition
-lws_unit_test_packet_dispose(abs_unit_test_priv_t *priv,
-			    lws_unit_test_packet_disposition disp,
+static aws_lws_unit_test_packet_disposition
+aws_lws_unit_test_packet_dispose(abs_unit_test_priv_t *priv,
+			    aws_lws_unit_test_packet_disposition disp,
 			    const char *note)
 {
 	assert(priv->disposition == LPE_CONTINUE);
 
-	lwsl_info("%s: %d\n", __func__, disp);
+	aws_lwsl_info("%s: %d\n", __func__, disp);
 
 	if (note)
-		lws_strncpy(priv->note, note, sizeof(priv->note));
+		aws_lws_strncpy(priv->note, note, sizeof(priv->note));
 
 	priv->disposition = disp;
 
-	lws_seq_queue_event(priv->seq, UTSEQ_MSG_DISPOSITION_KNOWN,
+	aws_lws_seq_queue_event(priv->seq, UTSEQ_MSG_DISPOSITION_KNOWN,
 				  NULL, NULL);
 
 	return disp;
@@ -90,7 +90,7 @@ lws_unit_test_packet_dispose(abs_unit_test_priv_t *priv,
  * start on the next step of the test
  */
 
-lws_unit_test_packet_disposition
+aws_lws_unit_test_packet_disposition
 process_expect(abs_unit_test_priv_t *priv)
 {
 	assert(priv->disposition == LPE_CONTINUE);
@@ -102,21 +102,21 @@ process_expect(abs_unit_test_priv_t *priv)
 		if (priv->expect->pre)
 			priv->expect->pre(priv->abs);
 
-		lwsl_info("%s: rx()\n", __func__);
-		lwsl_hexdump_debug(priv->expect->buffer, priv->expect->len);
+		aws_lwsl_info("%s: rx()\n", __func__);
+		aws_lwsl_hexdump_debug(priv->expect->buffer, priv->expect->len);
 		s = priv->abs->ap->rx(priv->abs->api, priv->expect->buffer,
 							priv->expect->len);
 
 		if (!!f != !!s) {
-			lwsl_notice("%s: expected rx return %d, got %d\n",
+			aws_lwsl_notice("%s: expected rx return %d, got %d\n",
 					__func__, !!f, s);
 
-			return lws_unit_test_packet_dispose(priv, LPE_FAILED,
+			return aws_lws_unit_test_packet_dispose(priv, LPE_FAILED,
 						  "rx unexpected return");
 		}
 
 		if (priv->expect->flags & LWS_AUT_EXPECT_TEST_END) {
-			lws_unit_test_packet_dispose(priv, LPE_SUCCEEDED, NULL);
+			aws_lws_unit_test_packet_dispose(priv, LPE_SUCCEEDED, NULL);
 			break;
 		}
 
@@ -126,8 +126,8 @@ process_expect(abs_unit_test_priv_t *priv)
 	return LPE_CONTINUE;
 }
 
-static lws_seq_cb_return_t
-unit_test_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
+static aws_lws_seq_cb_return_t
+unit_test_sequencer_cb(struct aws_lws_sequencer *seq, void *user, int event,
 		       void *data, void *aux)
 {
 	seq_priv_t *s = (seq_priv_t *)user;
@@ -136,11 +136,11 @@ unit_test_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 
 	switch ((int)event) {
 	case LWSSEQ_CREATED: /* our sequencer just got started */
-		lwsl_notice("%s: %s: created\n", __func__,
-			    lws_seq_name(seq));
+		aws_lwsl_notice("%s: %s: created\n", __func__,
+			    aws_lws_seq_name(seq));
 		if (s->ai->at->client_conn(s->ai)) {
-			lwsl_notice("%s: %s: abstract client conn failed\n",
-					__func__, lws_seq_name(seq));
+			aws_lwsl_notice("%s: %s: abstract client conn failed\n",
+					__func__, aws_lws_seq_name(seq));
 
 			return LWSSEQ_RET_DESTROY;
 		}
@@ -153,7 +153,7 @@ unit_test_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 		 */
 
 		if (priv->abs)
-			lws_abs_destroy_instance(&priv->abs);
+			aws_lws_abs_destroy_instance(&priv->abs);
 
 		break;
 
@@ -170,14 +170,14 @@ unit_test_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 			goto ph;
 
 		if (priv->expect->flags & LWS_AUT_EXPECT_SHOULD_TIMEOUT) {
-			lwsl_user("%s: test got expected timeout\n",
+			aws_lwsl_user("%s: test got expected timeout\n",
 				  __func__);
-			lws_unit_test_packet_dispose(priv,
+			aws_lws_unit_test_packet_dispose(priv,
 					LPE_FAILED_UNEXPECTED_TIMEOUT, NULL);
 
 			return LWSSEQ_RET_DESTROY;
 		}
-		lwsl_user("%s: seq timed out\n", __func__);
+		aws_lwsl_user("%s: seq timed out\n", __func__);
 
 ph:
 		if (priv->abs->ap->heartbeat)
@@ -186,7 +186,7 @@ ph:
 
 	case UTSEQ_MSG_DISPOSITION_KNOWN:
 
-		lwsl_info("%s: %s: DISPOSITION_KNOWN %s: %s\n", __func__,
+		aws_lwsl_info("%s: %s: DISPOSITION_KNOWN %s: %s\n", __func__,
 			  priv->abs->ap->name,
 			  priv->current_test->name,
 			  priv->disposition == LPE_SUCCEEDED ? "OK" : "FAIL");
@@ -201,7 +201,7 @@ ph:
 		return LWSSEQ_RET_DESTROY;
 
         case UTSEQ_MSG_CONNECTING:
-		lwsl_debug("UTSEQ_MSG_CONNECTING\n");
+		aws_lwsl_debug("UTSEQ_MSG_CONNECTING\n");
 
 		if (priv->abs->ap->accept)
 			priv->abs->ap->accept(priv->abs->api);
@@ -215,7 +215,7 @@ ph:
         		break;
 
 		if (process_expect(priv) != LPE_CONTINUE) {
-			lwsl_notice("%s: UTSEQ_MSG_POST_TX_KICK failed\n",
+			aws_lwsl_notice("%s: UTSEQ_MSG_POST_TX_KICK failed\n",
 				 __func__);
 			return LWSSEQ_RET_DESTROY;
 		}
@@ -231,9 +231,9 @@ ph:
 	case UTSEQ_MSG_CLOSING:
 
 		if (!(priv->expect->flags & LWS_AUT_EXPECT_LOCAL_CLOSE)) {
-			lwsl_user("%s: got unexpected close\n", __func__);
+			aws_lwsl_user("%s: got unexpected close\n", __func__);
 
-			lws_unit_test_packet_dispose(priv,
+			aws_lws_unit_test_packet_dispose(priv,
 					LPE_FAILED_UNEXPECTED_CLOSE, NULL);
 			goto done;
 		}
@@ -250,21 +250,21 @@ ph:
 		s->ai->at->close(s->ai->ati);
 
 		if (!(priv->expect->flags & LWS_AUT_EXPECT_SHOULD_TIMEOUT)) {
-			lwsl_user("%s: got unexpected timeout\n", __func__);
+			aws_lwsl_user("%s: got unexpected timeout\n", __func__);
 
-			lws_unit_test_packet_dispose(priv,
+			aws_lws_unit_test_packet_dispose(priv,
 					LPE_FAILED_UNEXPECTED_TIMEOUT, NULL);
 			return LWSSEQ_RET_DESTROY;
 		}
 		goto done;
 
 done:
-		lws_seq_timeout_us(lws_seq_from_user(s),
+		aws_lws_seq_timeout_us(aws_lws_seq_from_user(s),
 					 LWSSEQTO_NONE);
 		priv->expect++;
 		if (!priv->expect->buffer) {
 			/* the sequence has completed */
-			lwsl_user("%s: sequence completed OK\n", __func__);
+			aws_lwsl_user("%s: sequence completed OK\n", __func__);
 
 			return LWSSEQ_RET_DESTROY;
 		}
@@ -278,101 +278,101 @@ done:
 }
 
 static int
-lws_atcut_close(lws_abs_transport_inst_t *ati)
+aws_lws_atcut_close(aws_lws_abs_transport_inst_t *ati)
 {
 	abs_unit_test_priv_t *priv = (abs_unit_test_priv_t *)ati;
 
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 
-	lws_seq_queue_event(priv->seq, UTSEQ_MSG_CLOSING, NULL, NULL);
+	aws_lws_seq_queue_event(priv->seq, UTSEQ_MSG_CLOSING, NULL, NULL);
 
 	return 0;
 }
 
 static int
-lws_atcut_tx(lws_abs_transport_inst_t *ati, uint8_t *buf, size_t len)
+aws_lws_atcut_tx(aws_lws_abs_transport_inst_t *ati, uint8_t *buf, size_t len)
 {
 	abs_unit_test_priv_t *priv = (abs_unit_test_priv_t *)ati;
 
 	assert(priv->disposition == LPE_CONTINUE);
 
-	lwsl_info("%s: received tx\n", __func__);
+	aws_lwsl_info("%s: received tx\n", __func__);
 
 	if (priv->expect->pre)
 		priv->expect->pre(priv->abs);
 
 	if (!(priv->expect->flags & LWS_AUT_EXPECT_TX)) {
-		lwsl_notice("%s: unexpected tx\n", __func__);
-		lwsl_hexdump_notice(buf, len);
-		lws_unit_test_packet_dispose(priv, LPE_FAILED, "unexpected tx");
+		aws_lwsl_notice("%s: unexpected tx\n", __func__);
+		aws_lwsl_hexdump_notice(buf, len);
+		aws_lws_unit_test_packet_dispose(priv, LPE_FAILED, "unexpected tx");
 
 		return 1;
 	}
 
 	if (len != priv->expect->len) {
-		lwsl_notice("%s: unexpected tx len %zu, expected %zu\n",
+		aws_lwsl_notice("%s: unexpected tx len %zu, expected %zu\n",
 				__func__, len, priv->expect->len);
-		lws_unit_test_packet_dispose(priv, LPE_FAILED,
+		aws_lws_unit_test_packet_dispose(priv, LPE_FAILED,
 					     "tx len mismatch");
 
 		return 1;
 	}
 
 	if (memcmp(buf, priv->expect->buffer, len)) {
-		lwsl_notice("%s: tx mismatch (exp / actual)\n", __func__);
-		lwsl_hexdump_debug(priv->expect->buffer, len);
-		lwsl_hexdump_debug(buf, len);
-		lws_unit_test_packet_dispose(priv, LPE_FAILED,
+		aws_lwsl_notice("%s: tx mismatch (exp / actual)\n", __func__);
+		aws_lwsl_hexdump_debug(priv->expect->buffer, len);
+		aws_lwsl_hexdump_debug(buf, len);
+		aws_lws_unit_test_packet_dispose(priv, LPE_FAILED,
 					     "tx data mismatch");
 
 		return 1;
 	}
 
 	if (priv->expect->flags & LWS_AUT_EXPECT_TEST_END) {
-		lws_unit_test_packet_dispose(priv, LPE_SUCCEEDED, NULL);
+		aws_lws_unit_test_packet_dispose(priv, LPE_SUCCEEDED, NULL);
 
 		return 1;
 	}
 
 	priv->expect++;
 
-	lws_seq_queue_event(priv->seq, UTSEQ_MSG_POST_TX_KICK, NULL, NULL);
+	aws_lws_seq_queue_event(priv->seq, UTSEQ_MSG_POST_TX_KICK, NULL, NULL);
 
 	return 0;
 }
 
 #if defined(LWS_WITH_CLIENT)
 static int
-lws_atcut_client_conn(const lws_abs_t *abs)
+aws_lws_atcut_client_conn(const aws_lws_abs_t *abs)
 {
 	abs_unit_test_priv_t *priv = (abs_unit_test_priv_t *)abs->ati;
-	const lws_token_map_t *tm;
+	const aws_lws_token_map_t *tm;
 
 	if (priv->established) {
-		lwsl_err("%s: already established\n", __func__);
+		aws_lwsl_err("%s: already established\n", __func__);
 		return 1;
 	}
 
 	/* set up the test start pieces... the array of test expects... */
 
-	tm = lws_abs_get_token(abs->at_tokens, LTMI_PEER_V_EXPECT_TEST);
+	tm = aws_lws_abs_get_token(abs->at_tokens, LTMI_PEER_V_EXPECT_TEST);
 	if (!tm) {
-		lwsl_notice("%s: unit_test needs LTMI_PEER_V_EXPECT_TEST\n",
+		aws_lwsl_notice("%s: unit_test needs LTMI_PEER_V_EXPECT_TEST\n",
 			    __func__);
 
 		return 1;
 	}
-	priv->current_test = (lws_unit_test_t *)tm->u.value;
+	priv->current_test = (aws_lws_unit_test_t *)tm->u.value;
 
 	/* ... and the callback to deliver the result to */
-	tm = lws_abs_get_token(abs->at_tokens, LTMI_PEER_V_EXPECT_RESULT_CB);
+	tm = aws_lws_abs_get_token(abs->at_tokens, LTMI_PEER_V_EXPECT_RESULT_CB);
 	if (tm)
-		priv->result_cb = (lws_unit_test_packet_test_cb)tm->u.value;
+		priv->result_cb = (aws_lws_unit_test_packet_test_cb)tm->u.value;
 	else
 		priv->result_cb = NULL;
 
 	/* ... and the arg to deliver it with */
-	tm = lws_abs_get_token(abs->at_tokens,
+	tm = aws_lws_abs_get_token(abs->at_tokens,
 			       LTMI_PEER_V_EXPECT_RESULT_CB_ARG);
 	if (tm)
 		priv->result_cb_arg = tm->u.value;
@@ -381,20 +381,20 @@ lws_atcut_client_conn(const lws_abs_t *abs)
 	priv->disposition = LPE_CONTINUE;
 	priv->note[0] = '\0';
 
-	lws_seq_timeout_us(priv->seq, priv->current_test->max_secs *
+	aws_lws_seq_timeout_us(priv->seq, priv->current_test->max_secs *
 					    LWS_US_PER_SEC);
 
-	lwsl_notice("%s: %s: test '%s': start\n", __func__, abs->ap->name,
+	aws_lwsl_notice("%s: %s: test '%s': start\n", __func__, abs->ap->name,
 		    priv->current_test->name);
 
-	lws_seq_queue_event(priv->seq, UTSEQ_MSG_CONNECTING, NULL, NULL);
+	aws_lws_seq_queue_event(priv->seq, UTSEQ_MSG_CONNECTING, NULL, NULL);
 
 	return 0;
 }
 #endif
 
 static int
-lws_atcut_ask_for_writeable(lws_abs_transport_inst_t *ati)
+aws_lws_atcut_ask_for_writeable(aws_lws_abs_transport_inst_t *ati)
 {
 	abs_unit_test_priv_t *priv = (abs_unit_test_priv_t *)ati;
 
@@ -406,7 +406,7 @@ lws_atcut_ask_for_writeable(lws_abs_transport_inst_t *ati)
 	 * until we have returned to the event loop, just like a real
 	 * callback_on_writable()
 	 */
-	lws_seq_queue_event(priv->seq, UTSEQ_MSG_WRITEABLE, NULL, NULL);
+	aws_lws_seq_queue_event(priv->seq, UTSEQ_MSG_WRITEABLE, NULL, NULL);
 
 	return 0;
 }
@@ -416,11 +416,11 @@ lws_atcut_ask_for_writeable(lws_abs_transport_inst_t *ati)
  */
 
 static int
-lws_atcut_create(lws_abs_t *ai)
+aws_lws_atcut_create(aws_lws_abs_t *ai)
 {
 	abs_unit_test_priv_t *priv;
-	struct lws_sequencer *seq;
-	lws_seq_info_t i;
+	struct aws_lws_sequencer *seq;
+	aws_lws_seq_info_t i;
 	seq_priv_t *s;
 
 	memset(&i, 0, sizeof(i));
@@ -434,9 +434,9 @@ lws_atcut_create(lws_abs_t *ai)
 	 * Create the sequencer for the steps in a single unit test
 	 */
 
-	seq = lws_seq_create(&i);
+	seq = aws_lws_seq_create(&i);
 	if (!seq) {
-		lwsl_err("%s: unable to create sequencer\n", __func__);
+		aws_lwsl_err("%s: unable to create sequencer\n", __func__);
 
 		return 1;
 	}
@@ -445,7 +445,7 @@ lws_atcut_create(lws_abs_t *ai)
 	memset(s, 0, sizeof(*s));
 	memset(priv, 0, sizeof(*priv));
 
-	/* the sequencer priv just points to the lws_abs_t */
+	/* the sequencer priv just points to the aws_lws_abs_t */
 	s->ai = ai;
 	priv->abs = ai;
 	priv->seq = seq;
@@ -454,7 +454,7 @@ lws_atcut_create(lws_abs_t *ai)
 }
 
 static void
-lws_atcut_destroy(lws_abs_transport_inst_t **pati)
+aws_lws_atcut_destroy(aws_lws_abs_transport_inst_t **pati)
 {
 	/*
 	 * We don't free anything because the abstract layer combined our
@@ -465,7 +465,7 @@ lws_atcut_destroy(lws_abs_transport_inst_t **pati)
 }
 
 static int
-lws_atcut_set_timeout(lws_abs_transport_inst_t *ati, int reason, int secs)
+aws_lws_atcut_set_timeout(aws_lws_abs_transport_inst_t *ati, int reason, int secs)
 {
 	abs_unit_test_priv_t *priv = (abs_unit_test_priv_t *)ati;
 	time_t now;
@@ -481,7 +481,7 @@ lws_atcut_set_timeout(lws_abs_transport_inst_t *ati, int reason, int secs)
 }
 
 static int
-lws_atcut_state(lws_abs_transport_inst_t *ati)
+aws_lws_atcut_state(aws_lws_abs_transport_inst_t *ati)
 {
 	abs_unit_test_priv_t *priv = (abs_unit_test_priv_t *)ati;
 
@@ -505,7 +505,7 @@ static const char *dnames[] = {
 
 
 const char *
-lws_unit_test_result_name(int in)
+aws_lws_unit_test_result_name(int in)
 {
 	if (in < 0 || in > (int)LWS_ARRAY_SIZE(dnames))
 		return "unknown";
@@ -514,27 +514,27 @@ lws_unit_test_result_name(int in)
 }
 
 static int
-lws_atcut_compare(lws_abs_t *abs1, lws_abs_t *abs2)
+aws_lws_atcut_compare(aws_lws_abs_t *abs1, aws_lws_abs_t *abs2)
 {
 	return 0;
 }
 
-const lws_abs_transport_t lws_abs_transport_cli_unit_test = {
+const aws_lws_abs_transport_t aws_lws_abs_transport_cli_unit_test = {
 	.name			= "unit_test",
 	.alloc			= sizeof(abs_unit_test_priv_t),
 
-	.create			= lws_atcut_create,
-	.destroy		= lws_atcut_destroy,
-	.compare		= lws_atcut_compare,
+	.create			= aws_lws_atcut_create,
+	.destroy		= aws_lws_atcut_destroy,
+	.compare		= aws_lws_atcut_compare,
 
-	.tx			= lws_atcut_tx,
+	.tx			= aws_lws_atcut_tx,
 #if !defined(LWS_WITH_CLIENT)
 	.client_conn		= NULL,
 #else
-	.client_conn		= lws_atcut_client_conn,
+	.client_conn		= aws_lws_atcut_client_conn,
 #endif
-	.close			= lws_atcut_close,
-	.ask_for_writeable	= lws_atcut_ask_for_writeable,
-	.set_timeout		= lws_atcut_set_timeout,
-	.state			= lws_atcut_state,
+	.close			= aws_lws_atcut_close,
+	.ask_for_writeable	= aws_lws_atcut_ask_for_writeable,
+	.set_timeout		= aws_lws_atcut_set_timeout,
+	.state			= aws_lws_atcut_state,
 };

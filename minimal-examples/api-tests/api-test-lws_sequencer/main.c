@@ -1,15 +1,15 @@
 /*
- * lws-api-test-lws_sequencer
+ * lws-api-test-aws_lws_sequencer
  *
  * Written in 2019 by Andy Green <andy@warmcat.com>
  *
  * This file is made available under the Creative Commons CC0 1.0
  * Universal Public Domain Dedication.
  *
- * This api test uses the lws_sequencer api to make five http client requests
+ * This api test uses the aws_lws_sequencer api to make five http client requests
  * to libwebsockets.org in sequence, from inside the event loop.  The fourth
  * fourth http client request is directed to port 22 where it stalls
- * triggering the lws_sequencer timeout flow.  The fifth is given a nonexistant
+ * triggering the aws_lws_sequencer timeout flow.  The fifth is given a nonexistant
  * dns name and is expected to fail.
  */
 
@@ -35,7 +35,7 @@ enum {
  */
 
 struct myseq {
-	struct lws_vhost	*vhost;
+	struct aws_lws_vhost	*vhost;
 	struct lws		*cwsi;	/* client wsi for current step if any */
 
 	int			state;	/* which test we're on */
@@ -73,7 +73,7 @@ sigint_handler(int sig)
  */
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	struct myseq *s = (struct myseq *)user;
@@ -83,20 +83,20 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_notice("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_notice("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		goto notify;
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
 		if (!s)
 			return 1;
-		s->http_resp = (int)lws_http_client_http_response(wsi);
-		lwsl_info("Connected with server response: %d\n", s->http_resp);
+		s->http_resp = (int)aws_lws_http_client_http_response(wsi);
+		aws_lwsl_info("Connected with server response: %d\n", s->http_resp);
 		break;
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_info("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_info("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
 #if 0  /* enable to dump the html */
 		{
 			const char *p = in;
@@ -117,13 +117,13 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_notice("LWS_CALLBACK_COMPLETED_CLIENT_HTTP: wsi %p\n",
+		aws_lwsl_notice("LWS_CALLBACK_COMPLETED_CLIENT_HTTP: wsi %p\n",
 			    wsi);
 		if (!s)
 			return 1;
@@ -134,11 +134,11 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		goto notify;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
-		lwsl_info("LWS_CALLBACK_CLOSED_CLIENT_HTTP\n");
+		aws_lwsl_info("LWS_CALLBACK_CLOSED_CLIENT_HTTP\n");
 		if (!s)
 			return 1;
 
-		lwsl_user("%s: wsi %p: seq failed at CLOSED_CLIENT_HTTP\n",
+		aws_lwsl_user("%s: wsi %p: seq failed at CLOSED_CLIENT_HTTP\n",
 			  __func__, wsi);
 		goto notify;
 
@@ -146,7 +146,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 
 notify:
 	/*
@@ -160,15 +160,15 @@ notify:
 	if (!s)
 		return 1;
 
-	lws_set_wsi_user(wsi, NULL);
+	aws_lws_set_wsi_user(wsi, NULL);
 	s->cwsi = NULL;
-	lws_seq_queue_event(lws_seq_from_user(s), seq_msg,
+	aws_lws_seq_queue_event(aws_lws_seq_from_user(s), seq_msg,
 				  NULL, NULL);
 
 	return 0;
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{ "seq-test-http", callback_http, 0, 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -177,18 +177,18 @@ static const struct lws_protocols protocols[] = {
 static int
 sequencer_start_client(struct myseq *s)
 {
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 	const char *prot, *path1;
 	char uri[128], path[128];
 	int n;
 
-	lws_strncpy(uri, url_paths[s->state], sizeof(uri));
+	aws_lws_strncpy(uri, url_paths[s->state], sizeof(uri));
 
 	memset(&i, 0, sizeof i);
-	i.context = lws_seq_get_context(lws_seq_from_user(s));
+	i.context = aws_lws_seq_get_context(aws_lws_seq_from_user(s));
 
-	if (lws_parse_uri(uri, &prot, &i.address, &i.port, &path1)) {
-		lwsl_err("%s: uri error %s\n", __func__, uri);
+	if (aws_lws_parse_uri(uri, &prot, &i.address, &i.port, &path1)) {
+		aws_lwsl_err("%s: uri error %s\n", __func__, uri);
 	}
 
 	if (!strcmp(prot, "https"))
@@ -198,7 +198,7 @@ sequencer_start_client(struct myseq *s)
 	n = 1;
 	if (path1[0] == '/')
 		n = 0;
-	lws_strncpy(&path[n], path1, sizeof(path) - 1);
+	aws_lws_strncpy(&path[n], path1, sizeof(path) - 1);
 
 	i.path = path;
 	i.host = i.address;
@@ -211,21 +211,21 @@ sequencer_start_client(struct myseq *s)
 	i.local_protocol_name = protocols[0].name;
 	i.pwsi = &s->cwsi;
 
-	if (!lws_client_connect_via_info(&i)) {
-		lwsl_notice("%s: connecting to %s://%s:%d%s failed\n",
+	if (!aws_lws_client_connect_via_info(&i)) {
+		aws_lwsl_notice("%s: connecting to %s://%s:%d%s failed\n",
 			    __func__, prot, i.address, i.port, path);
 
 		/* we couldn't even get started with the client connection */
 
-		lws_seq_queue_event(lws_seq_from_user(s),
-				    (lws_seq_events_t)SEQ_MSG_CLIENT_FAILED, NULL, NULL);
+		aws_lws_seq_queue_event(aws_lws_seq_from_user(s),
+				    (aws_lws_seq_events_t)SEQ_MSG_CLIENT_FAILED, NULL, NULL);
 
 		return 1;
 	}
 
-	lws_seq_timeout_us(lws_seq_from_user(s), 3 * LWS_US_PER_SEC);
+	aws_lws_seq_timeout_us(aws_lws_seq_from_user(s), 3 * LWS_US_PER_SEC);
 
-	lwsl_notice("%s: wsi %p: connecting to %s://%s:%d%s\n", __func__,
+	aws_lwsl_notice("%s: wsi %p: connecting to %s://%s:%d%s\n", __func__,
 		    s->cwsi, prot, i.address, i.port, path);
 
 	return 0;
@@ -237,8 +237,8 @@ sequencer_start_client(struct myseq *s)
  * even if they were queued from a different thread.
  */
 
-static lws_seq_cb_return_t
-sequencer_cb(struct lws_sequencer *seq, void *user, int event,
+static aws_lws_seq_cb_return_t
+sequencer_cb(struct aws_lws_sequencer *seq, void *user, int event,
 	     void *data, void *aux)
 {
 	struct myseq *s = (struct myseq *)user;
@@ -254,18 +254,18 @@ sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 		 * other assets in play, detach them from us.
 		 */
 		if (s->cwsi)
-			lws_set_wsi_user(s->cwsi, NULL);
+			aws_lws_set_wsi_user(s->cwsi, NULL);
 
 		interrupted = 1;
 		break;
 
 	case LWSSEQ_TIMED_OUT: /* current step timed out */
 		if (s->state == SEQ4_TIMEOUT) {
-			lwsl_user("%s: test %d got expected timeout\n",
+			aws_lwsl_user("%s: test %d got expected timeout\n",
 				  __func__, s->state);
 			goto done;
 		}
-		lwsl_user("%s: seq timed out at step %d\n", __func__, s->state);
+		aws_lwsl_user("%s: seq timed out at step %d\n", __func__, s->state);
 		return LWSSEQ_RET_DESTROY;
 
 	case SEQ_MSG_CLIENT_FAILED:
@@ -273,12 +273,12 @@ sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 			/*
 			 * in this specific case, we expect to fail
 			 */
-			lwsl_user("%s: test %d failed as expected\n",
+			aws_lwsl_user("%s: test %d failed as expected\n",
 				  __func__, s->state);
 			goto done;
 		}
 
-		lwsl_user("%s: seq failed at step %d\n", __func__, s->state);
+		aws_lwsl_user("%s: seq failed at step %d\n", __func__, s->state);
 
 		return LWSSEQ_RET_DESTROY;
 
@@ -288,20 +288,20 @@ sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 			 * In these specific cases, done would be a failure,
 			 * we expected to timeout or fail
 			 */
-			lwsl_user("%s: seq failed at step %d\n", __func__,
+			aws_lwsl_user("%s: seq failed at step %d\n", __func__,
 				  s->state);
 
 			return LWSSEQ_RET_DESTROY;
 		}
-		lwsl_user("%s: seq done step %d (resp %d)\n", __func__,
+		aws_lwsl_user("%s: seq done step %d (resp %d)\n", __func__,
 			  s->state, s->http_resp);
 
 done:
-		lws_seq_timeout_us(lws_seq_from_user(s), LWSSEQTO_NONE);
+		aws_lws_seq_timeout_us(aws_lws_seq_from_user(s), LWSSEQTO_NONE);
 		s->state++;
 		if (s->state == LWS_ARRAY_SIZE(url_paths)) {
 			/* the sequence has completed */
-			lwsl_user("%s: sequence completed OK\n", __func__);
+			aws_lwsl_user("%s: sequence completed OK\n", __func__);
 
 			test_good = 1;
 
@@ -322,11 +322,11 @@ int
 main(int argc, const char **argv)
 {
 	int n = 1, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
-	struct lws_context *context;
-	struct lws_sequencer *seq;
-	struct lws_vhost *vh;
-	lws_seq_info_t i;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
+	struct aws_lws_sequencer *seq;
+	struct aws_lws_vhost *vh;
+	aws_lws_seq_info_t i;
 	struct myseq *s;
 	const char *p;
 
@@ -334,11 +334,11 @@ main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: lws_sequencer\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: lws_sequencer\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = CONTEXT_PORT_NO_LISTEN;
@@ -354,15 +354,15 @@ main(int argc, const char **argv)
 	info.client_ssl_ca_filepath = "./libwebsockets.org.cer";
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	vh = lws_create_vhost(context, &info);
+	vh = aws_lws_create_vhost(context, &info);
 	if (!vh) {
-		lwsl_err("Failed to create first vhost\n");
+		aws_lwsl_err("Failed to create first vhost\n");
 		goto bail1;
 	}
 
@@ -378,9 +378,9 @@ main(int argc, const char **argv)
 	i.cb = sequencer_cb;
 	i.name = "seq";
 
-	seq = lws_seq_create(&i);
+	seq = aws_lws_seq_create(&i);
 	if (!seq) {
-		lwsl_err("%s: unable to create sequencer\n", __func__);
+		aws_lwsl_err("%s: unable to create sequencer\n", __func__);
 		goto bail1;
 	}
 	s->vhost = vh;
@@ -388,12 +388,12 @@ main(int argc, const char **argv)
 	/* the usual lws event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 bail1:
-	lwsl_user("Completed: %s\n", !test_good ? "FAIL" : "PASS");
+	aws_lwsl_user("Completed: %s\n", !test_good ? "FAIL" : "PASS");
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return !test_good;
 }

@@ -33,14 +33,14 @@ int openssl_websocket_private_data_index,
  * lws convention of 0 for success.
  */
 
-int lws_openssl_describe_cipher(struct lws *wsi)
+int aws_lws_openssl_describe_cipher(struct lws *wsi)
 {
 #if !defined(LWS_WITH_NO_LOGS) && !defined(USE_WOLFSSL)
 	int np = -1;
 	SSL *s = wsi->tls.ssl;
 
 	SSL_get_cipher_bits(s, &np);
-	lwsl_info("%s: %s: %s, %s, %d bits, %s\n", __func__, lws_wsi_tag(wsi),
+	aws_lwsl_info("%s: %s: %s, %s, %d bits, %s\n", __func__, aws_lws_wsi_tag(wsi),
 			SSL_get_cipher_name(s), SSL_get_cipher(s), np,
 			SSL_get_cipher_version(s));
 #endif
@@ -48,7 +48,7 @@ int lws_openssl_describe_cipher(struct lws *wsi)
 	return 0;
 }
 
-int lws_ssl_get_error(struct lws *wsi, int n)
+int aws_lws_ssl_get_error(struct lws *wsi, int n)
 {
 	int m;
 
@@ -56,9 +56,9 @@ int lws_ssl_get_error(struct lws *wsi, int n)
 		return 99;
 
 	m = SSL_get_error(wsi->tls.ssl, n);
-       lwsl_debug("%s: %p %d -> %d (errno %d)\n", __func__, wsi->tls.ssl, n, m, LWS_ERRNO);
+       aws_lwsl_debug("%s: %p %d -> %d (errno %d)\n", __func__, wsi->tls.ssl, n, m, LWS_ERRNO);
 	if (m == SSL_ERROR_SSL)
-		lws_tls_err_describe_clear();
+		aws_lws_tls_err_describe_clear();
 
        // assert (LWS_ERRNO != 9);
 
@@ -67,11 +67,11 @@ int lws_ssl_get_error(struct lws *wsi, int n)
 
 #if defined(LWS_WITH_SERVER)
 static int
-lws_context_init_ssl_pem_passwd_cb(char *buf, int size, int rwflag,
+aws_lws_context_init_ssl_pem_passwd_cb(char *buf, int size, int rwflag,
 				   void *userdata)
 {
-	struct lws_context_creation_info * info =
-			(struct lws_context_creation_info *)userdata;
+	struct aws_lws_context_creation_info * info =
+			(struct aws_lws_context_creation_info *)userdata;
 
 	strncpy(buf, info->ssl_private_key_password, (unsigned int)size);
 	buf[size - 1] = '\0';
@@ -82,11 +82,11 @@ lws_context_init_ssl_pem_passwd_cb(char *buf, int size, int rwflag,
 
 #if defined(LWS_WITH_CLIENT)
 static int
-lws_context_init_ssl_pem_passwd_client_cb(char *buf, int size, int rwflag,
+aws_lws_context_init_ssl_pem_passwd_client_cb(char *buf, int size, int rwflag,
 					  void *userdata)
 {
-	struct lws_context_creation_info * info =
-			(struct lws_context_creation_info *)userdata;
+	struct aws_lws_context_creation_info * info =
+			(struct aws_lws_context_creation_info *)userdata;
 	const char *p = info->ssl_private_key_password;
 
 	if (info->client_ssl_private_key_password)
@@ -100,8 +100,8 @@ lws_context_init_ssl_pem_passwd_client_cb(char *buf, int size, int rwflag,
 #endif
 
 void
-lws_ssl_bind_passphrase(SSL_CTX *ssl_ctx, int is_client,
-			const struct lws_context_creation_info *info)
+aws_lws_ssl_bind_passphrase(SSL_CTX *ssl_ctx, int is_client,
+			const struct aws_lws_context_creation_info *info)
 {
 	if (
 #if defined(LWS_WITH_SERVER)
@@ -123,12 +123,12 @@ lws_ssl_bind_passphrase(SSL_CTX *ssl_ctx, int is_client,
 	SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx, (void *)info);
 	SSL_CTX_set_default_passwd_cb(ssl_ctx, is_client ?
 #if defined(LWS_WITH_CLIENT)
-				      lws_context_init_ssl_pem_passwd_client_cb:
+				      aws_lws_context_init_ssl_pem_passwd_client_cb:
 #else
 					NULL:
 #endif
 #if defined(LWS_WITH_SERVER)
-				      lws_context_init_ssl_pem_passwd_cb
+				      aws_lws_context_init_ssl_pem_passwd_cb
 #else
 				      	NULL
 #endif
@@ -137,7 +137,7 @@ lws_ssl_bind_passphrase(SSL_CTX *ssl_ctx, int is_client,
 
 #if defined(LWS_WITH_CLIENT)
 static void
-lws_ssl_destroy_client_ctx(struct lws_vhost *vhost)
+aws_lws_ssl_destroy_client_ctx(struct aws_lws_vhost *vhost)
 {
 	if (vhost->tls.user_supplied_ssl_ctx || !vhost->tls.ssl_client_ctx)
 		return;
@@ -151,23 +151,23 @@ lws_ssl_destroy_client_ctx(struct lws_vhost *vhost)
 	vhost->context->tls.count_client_contexts--;
 
 	if (vhost->tls.tcr) {
-		lws_dll2_remove(&vhost->tls.tcr->cc_list);
-		lws_free(vhost->tls.tcr);
+		aws_lws_dll2_remove(&vhost->tls.tcr->cc_list);
+		aws_lws_free(vhost->tls.tcr);
 		vhost->tls.tcr = NULL;
 	}
 }
 #endif
 void
-lws_ssl_destroy(struct lws_vhost *vhost)
+aws_lws_ssl_destroy(struct aws_lws_vhost *vhost)
 {
-	if (!lws_check_opt(vhost->context->options,
+	if (!aws_lws_check_opt(vhost->context->options,
 			   LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT))
 		return;
 
 	if (vhost->tls.ssl_ctx)
 		SSL_CTX_free(vhost->tls.ssl_ctx);
 #if defined(LWS_WITH_CLIENT)
-	lws_ssl_destroy_client_ctx(vhost);
+	aws_lws_ssl_destroy_client_ctx(vhost);
 #endif
 
 // after 1.1.0 no need
@@ -196,14 +196,14 @@ lws_ssl_destroy(struct lws_vhost *vhost)
 }
 
 int
-lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, size_t len)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	int n = 0, m;
 
 	if (!wsi->tls.ssl)
-		return lws_ssl_capable_read_no_ssl(wsi, buf, len);
+		return aws_lws_ssl_capable_read_no_ssl(wsi, buf, len);
 
 #ifndef WIN32
 	errno = 0;
@@ -214,12 +214,12 @@ lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, size_t len)
 	n = SSL_read(wsi->tls.ssl, buf, (int)(ssize_t)len);
 #if defined(LWS_PLAT_FREERTOS)
 	if (!n && errno == LWS_ENOTCONN) {
-		lwsl_debug("%s: SSL_read ENOTCONN\n", lws_wsi_tag(wsi));
+		aws_lwsl_debug("%s: SSL_read ENOTCONN\n", aws_lws_wsi_tag(wsi));
 		return LWS_SSL_CAPABLE_ERROR;
 	}
 #endif
 
-	lwsl_debug("%s: SSL_read says %d\n", lws_wsi_tag(wsi), n);
+	aws_lwsl_debug("%s: SSL_read says %d\n", aws_lws_wsi_tag(wsi), n);
 	/* manpage: returning 0 means connection shut down
 	 *
 	 * 2018-09-10: https://github.com/openssl/openssl/issues/1903
@@ -245,8 +245,8 @@ lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, size_t len)
 	 *    non-retryable) error has occurred in a system call.
 	 */
 	if (n <= 0) {
-		m = lws_ssl_get_error(wsi, n);
-               lwsl_debug("%s: ssl err %d errno %d\n", lws_wsi_tag(wsi), m, LWS_ERRNO);
+		m = aws_lws_ssl_get_error(wsi, n);
+               aws_lwsl_debug("%s: ssl err %d errno %d\n", aws_lws_wsi_tag(wsi), m, LWS_ERRNO);
 		if (m == SSL_ERROR_ZERO_RETURN) /* cleanly shut down */
 			goto do_err;
 
@@ -261,7 +261,7 @@ lws_ssl_capable_read(struct lws *wsi, unsigned char *buf, size_t len)
 do_err:
 #if defined(LWS_WITH_SYS_METRICS)
 		if (wsi->a.vhost)
-			lws_metric_event(wsi->a.vhost->mt_traffic_rx,
+			aws_lws_metric_event(wsi->a.vhost->mt_traffic_rx,
 					 METRES_NOGO, 0);
 #endif
 			return LWS_SSL_CAPABLE_ERROR;
@@ -270,15 +270,15 @@ do_err:
 		/* retryable? */
 
 		if (SSL_want_read(wsi->tls.ssl)) {
-			lwsl_debug("%s: WANT_READ\n", __func__);
-			lwsl_debug("%s: LWS_SSL_CAPABLE_MORE_SERVICE\n", lws_wsi_tag(wsi));
+			aws_lwsl_debug("%s: WANT_READ\n", __func__);
+			aws_lwsl_debug("%s: LWS_SSL_CAPABLE_MORE_SERVICE\n", aws_lws_wsi_tag(wsi));
 			return LWS_SSL_CAPABLE_MORE_SERVICE;
 		}
 		if (SSL_want_write(wsi->tls.ssl)) {
-			lwsl_info("%s: WANT_WRITE\n", __func__);
-			lwsl_debug("%s: LWS_SSL_CAPABLE_MORE_SERVICE\n", lws_wsi_tag(wsi));
+			aws_lwsl_info("%s: WANT_WRITE\n", __func__);
+			aws_lwsl_debug("%s: LWS_SSL_CAPABLE_MORE_SERVICE\n", aws_lws_wsi_tag(wsi));
 			wsi->tls_read_wanted_write = 1;
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 			return LWS_SSL_CAPABLE_MORE_SERVICE;
 		}
 
@@ -290,13 +290,13 @@ do_err:
 	 * If using openssl type tls library, this is the earliest point for all
 	 * paths to dump what was received as decrypted data from the tls tunnel
 	 */
-	lwsl_notice("%s: len %d\n", __func__, n);
-	lwsl_hexdump_notice(buf, (unsigned int)n);
+	aws_lwsl_notice("%s: len %d\n", __func__, n);
+	aws_lwsl_hexdump_notice(buf, (unsigned int)n);
 #endif
 
 #if defined(LWS_WITH_SYS_METRICS)
 	if (wsi->a.vhost)
-		lws_metric_event(wsi->a.vhost->mt_traffic_rx, METRES_GO, (u_mt_t)n);
+		aws_lws_metric_event(wsi->a.vhost->mt_traffic_rx, METRES_GO, (u_mt_t)n);
 #endif
 
 	/*
@@ -312,21 +312,21 @@ do_err:
 		goto bail;
 
 	if (SSL_pending(wsi->tls.ssl)) {
-		if (lws_dll2_is_detached(&wsi->tls.dll_pending_tls))
-			lws_dll2_add_head(&wsi->tls.dll_pending_tls,
+		if (aws_lws_dll2_is_detached(&wsi->tls.dll_pending_tls))
+			aws_lws_dll2_add_head(&wsi->tls.dll_pending_tls,
 					  &pt->tls.dll_pending_tls_owner);
 	} else
 		__lws_ssl_remove_wsi_from_buffered_list(wsi);
 
 	return n;
 bail:
-	lws_ssl_remove_wsi_from_buffered_list(wsi);
+	aws_lws_ssl_remove_wsi_from_buffered_list(wsi);
 
 	return n;
 }
 
 int
-lws_ssl_pending(struct lws *wsi)
+aws_lws_ssl_pending(struct lws *wsi)
 {
 	if (!wsi->tls.ssl)
 		return 0;
@@ -335,7 +335,7 @@ lws_ssl_pending(struct lws *wsi)
 }
 
 int
-lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len)
 {
 	int n, m;
 
@@ -346,12 +346,12 @@ lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len)
 	 * paths before sending data into the tls tunnel, where you can dump it
 	 * and see what is being sent.
 	 */
-	lwsl_notice("%s: len %u\n", __func__, (unsigned int)len);
-	lwsl_hexdump_notice(buf, len);
+	aws_lwsl_notice("%s: len %u\n", __func__, (unsigned int)len);
+	aws_lwsl_hexdump_notice(buf, len);
 #endif
 
 	if (!wsi->tls.ssl)
-		return lws_ssl_capable_write_no_ssl(wsi, buf, len);
+		return aws_lws_ssl_capable_write_no_ssl(wsi, buf, len);
 
 	errno = 0;
 	ERR_clear_error();
@@ -359,37 +359,37 @@ lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len)
 	if (n > 0) {
 #if defined(LWS_WITH_SYS_METRICS)
 		if (wsi->a.vhost)
-			lws_metric_event(wsi->a.vhost->mt_traffic_tx,
+			aws_lws_metric_event(wsi->a.vhost->mt_traffic_tx,
 					 METRES_GO, (u_mt_t)n);
 #endif
 		return n;
 	}
 
-	m = lws_ssl_get_error(wsi, n);
+	m = aws_lws_ssl_get_error(wsi, n);
 	if (m != SSL_ERROR_SYSCALL) {
 		if (m == SSL_ERROR_WANT_READ || SSL_want_read(wsi->tls.ssl)) {
-			lwsl_notice("%s: want read\n", __func__);
+			aws_lwsl_notice("%s: want read\n", __func__);
 
 			return LWS_SSL_CAPABLE_MORE_SERVICE;
 		}
 
 		if (m == SSL_ERROR_WANT_WRITE || SSL_want_write(wsi->tls.ssl)) {
-			lws_set_blocking_send(wsi);
+			aws_lws_set_blocking_send(wsi);
 
-			lwsl_debug("%s: want write\n", __func__);
+			aws_lwsl_debug("%s: want write\n", __func__);
 
 			return LWS_SSL_CAPABLE_MORE_SERVICE;
 		}
 	}
 
-	lwsl_debug("%s failed: %s\n",__func__, ERR_error_string((unsigned int)m, NULL));
-	lws_tls_err_describe_clear();
+	aws_lwsl_debug("%s failed: %s\n",__func__, ERR_error_string((unsigned int)m, NULL));
+	aws_lws_tls_err_describe_clear();
 
 	wsi->socket_is_permanently_unusable = 1;
 
 #if defined(LWS_WITH_SYS_METRICS)
 		if (wsi->a.vhost)
-			lws_metric_event(wsi->a.vhost->mt_traffic_tx,
+			aws_lws_metric_event(wsi->a.vhost->mt_traffic_tx,
 					 METRES_NOGO, 0);
 #endif
 
@@ -397,19 +397,19 @@ lws_ssl_capable_write(struct lws *wsi, unsigned char *buf, size_t len)
 }
 
 void
-lws_ssl_info_callback(const SSL *ssl, int where, int ret)
+aws_lws_ssl_info_callback(const SSL *ssl, int where, int ret)
 {
 	struct lws *wsi;
-	struct lws_context *context;
-	struct lws_ssl_info si;
+	struct aws_lws_context *context;
+	struct aws_lws_ssl_info si;
 	int fd;
 
 #ifndef USE_WOLFSSL
-	context = (struct lws_context *)SSL_CTX_get_ex_data(
+	context = (struct aws_lws_context *)SSL_CTX_get_ex_data(
 					SSL_get_SSL_CTX(ssl),
 					openssl_SSL_CTX_private_data_index);
 #else
-	context = (struct lws_context *)SSL_CTX_get_ex_data(
+	context = (struct aws_lws_context *)SSL_CTX_get_ex_data(
 					SSL_get_SSL_CTX((SSL*) ssl),
 					openssl_SSL_CTX_private_data_index);
 #endif
@@ -417,7 +417,7 @@ lws_ssl_info_callback(const SSL *ssl, int where, int ret)
 		return;
 
 	fd = SSL_get_fd(ssl);
-	if (fd < 0 || (fd - lws_plat_socket_offset()) < 0)
+	if (fd < 0 || (fd - aws_lws_plat_socket_offset()) < 0)
 		return;
 
 	wsi = wsi_from_fd(context, fd);
@@ -433,14 +433,14 @@ lws_ssl_info_callback(const SSL *ssl, int where, int ret)
 	if (user_callback_handle_rxflow(wsi->a.protocol->callback,
 					wsi, LWS_CALLBACK_SSL_INFO,
 					wsi->user_space, &si, 0))
-		lws_set_timeout(wsi, PENDING_TIMEOUT_KILLED_BY_SSL_INFO, -1);
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_KILLED_BY_SSL_INFO, -1);
 }
 
 
 int
-lws_ssl_close(struct lws *wsi)
+aws_lws_ssl_close(struct lws *wsi)
 {
-	lws_sockfd_type n;
+	aws_lws_sockfd_type n;
 
 	if (!wsi->tls.ssl)
 		return 0; /* not handled */
@@ -454,12 +454,12 @@ lws_ssl_close(struct lws *wsi)
 #endif
 
 #if defined(LWS_TLS_SYNTHESIZE_CB)
-	lws_sul_cancel(&wsi->tls.sul_cb_synth);
+	aws_lws_sul_cancel(&wsi->tls.sul_cb_synth);
 	/*
 	 * ... check the session in case it did not live long enough to get
 	 * the scheduled callback to sample it
 	 */
-	lws_sess_cache_synth_cb(&wsi->tls.sul_cb_synth);
+	aws_lws_sess_cache_synth_cb(&wsi->tls.sul_cb_synth);
 #endif
 
 	n = SSL_get_fd(wsi->tls.ssl);
@@ -469,9 +469,9 @@ lws_ssl_close(struct lws *wsi)
 	SSL_free(wsi->tls.ssl);
 	wsi->tls.ssl = NULL;
 
-	lws_tls_restrict_return(wsi);
+	aws_lws_tls_restrict_return(wsi);
 
-	// lwsl_notice("%s: ssl restr %d, simul %d\n", __func__,
+	// aws_lwsl_notice("%s: ssl restr %d, simul %d\n", __func__,
 	//		wsi->a.context->simultaneous_ssl_restriction,
 	//		wsi->a.context->simultaneous_ssl);
 
@@ -479,22 +479,22 @@ lws_ssl_close(struct lws *wsi)
 }
 
 void
-lws_ssl_SSL_CTX_destroy(struct lws_vhost *vhost)
+aws_lws_ssl_SSL_CTX_destroy(struct aws_lws_vhost *vhost)
 {
 	if (vhost->tls.ssl_ctx)
 		SSL_CTX_free(vhost->tls.ssl_ctx);
 
 #if defined(LWS_WITH_CLIENT)
-	lws_ssl_destroy_client_ctx(vhost);
+	aws_lws_ssl_destroy_client_ctx(vhost);
 #endif
 
 #if defined(LWS_WITH_ACME)
-	lws_tls_acme_sni_cert_destroy(vhost);
+	aws_lws_tls_acme_sni_cert_destroy(vhost);
 #endif
 }
 
 void
-lws_ssl_context_destroy(struct lws_context *context)
+aws_lws_ssl_context_destroy(struct aws_lws_context *context)
 {
 // after 1.1.0 no need
 #if (OPENSSL_VERSION_NUMBER <  0x10100000)
@@ -520,8 +520,8 @@ lws_ssl_context_destroy(struct lws_context *context)
 #endif
 }
 
-lws_tls_ctx *
-lws_tls_ctx_from_wsi(struct lws *wsi)
+aws_lws_tls_ctx *
+aws_lws_tls_ctx_from_wsi(struct lws *wsi)
 {
 	if (!wsi->tls.ssl)
 		return NULL;
@@ -529,7 +529,7 @@ lws_tls_ctx_from_wsi(struct lws *wsi)
 	return SSL_get_SSL_CTX(wsi->tls.ssl);
 }
 
-enum lws_ssl_capable_status
+enum aws_lws_ssl_capable_status
 __lws_tls_shutdown(struct lws *wsi)
 {
 	int n;
@@ -541,7 +541,7 @@ __lws_tls_shutdown(struct lws *wsi)
 #endif
 	ERR_clear_error();
 	n = SSL_shutdown(wsi->tls.ssl);
-	lwsl_debug("SSL_shutdown=%d for fd %d\n", n, wsi->desc.sockfd);
+	aws_lwsl_debug("SSL_shutdown=%d for fd %d\n", n, wsi->desc.sockfd);
 	switch (n) {
 	case 1: /* successful completion */
 		n = shutdown(wsi->desc.sockfd, SHUT_WR);
@@ -555,12 +555,12 @@ __lws_tls_shutdown(struct lws *wsi)
 		n = SSL_get_error(wsi->tls.ssl, n);
 		if (n != SSL_ERROR_SYSCALL && n != SSL_ERROR_SSL) {
 			if (SSL_want_read(wsi->tls.ssl)) {
-				lwsl_debug("(wants read)\n");
+				aws_lwsl_debug("(wants read)\n");
 				__lws_change_pollfd(wsi, 0, LWS_POLLIN);
 				return LWS_SSL_CAPABLE_MORE_SERVICE_READ;
 			}
 			if (SSL_want_write(wsi->tls.ssl)) {
-				lwsl_debug("(wants write)\n");
+				aws_lwsl_debug("(wants write)\n");
 				__lws_change_pollfd(wsi, 0, LWS_POLLOUT);
 				return LWS_SSL_CAPABLE_MORE_SERVICE_WRITE;
 			}
@@ -571,11 +571,11 @@ __lws_tls_shutdown(struct lws *wsi)
 
 
 static int
-tops_fake_POLLIN_for_buffered_openssl(struct lws_context_per_thread *pt)
+tops_fake_POLLIN_for_buffered_openssl(struct aws_lws_context_per_thread *pt)
 {
-	return lws_tls_fake_POLLIN_for_buffered(pt);
+	return aws_lws_tls_fake_POLLIN_for_buffered(pt);
 }
 
-const struct lws_tls_ops tls_ops_openssl = {
+const struct aws_lws_tls_ops tls_ops_openssl = {
 	/* fake_POLLIN_for_buffered */	tops_fake_POLLIN_for_buffered_openssl,
 };

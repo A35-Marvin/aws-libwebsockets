@@ -28,19 +28,19 @@
 #include "private-lib-core.h"
 
 /*
- * Normally you don't want this, use lws_sul instead inside the event loop.
+ * Normally you don't want this, use aws_lws_sul instead inside the event loop.
  * But sometimes for drivers it makes sense, so there's an internal-only
  * crossplatform api for it.
  */
 
 void
-lws_msleep(unsigned int ms)
+aws_lws_msleep(unsigned int ms)
 {
         usleep((unsigned int)(ms * LWS_US_PER_MS));
 }
 
-lws_usec_t
-lws_now_usecs(void)
+aws_lws_usec_t
+aws_lws_now_usecs(void)
 {
 #if defined(LWS_HAVE_CLOCK_GETTIME)
 	struct timespec ts;
@@ -48,19 +48,19 @@ lws_now_usecs(void)
 	if (clock_gettime(CLOCK_MONOTONIC, &ts))
 		return 0;
 
-	return (((lws_usec_t)ts.tv_sec) * LWS_US_PER_SEC) +
-			((lws_usec_t)ts.tv_nsec / LWS_NS_PER_US);
+	return (((aws_lws_usec_t)ts.tv_sec) * LWS_US_PER_SEC) +
+			((aws_lws_usec_t)ts.tv_nsec / LWS_NS_PER_US);
 #else
 	struct timeval now;
 
 	gettimeofday(&now, NULL);
-	return (((lws_usec_t)now.tv_sec) * LWS_US_PER_SEC) +
-			(lws_usec_t)now.tv_usec;
+	return (((aws_lws_usec_t)now.tv_sec) * LWS_US_PER_SEC) +
+			(aws_lws_usec_t)now.tv_usec;
 #endif
 }
 
 size_t
-lws_get_random(struct lws_context *context, void *buf, size_t len)
+aws_lws_get_random(struct aws_lws_context *context, void *buf, size_t len)
 {
 #if defined(__COVERITY__)
 	memset(buf, 0, len);
@@ -71,7 +71,7 @@ lws_get_random(struct lws_context *context, void *buf, size_t len)
 #endif
 }
 
-void lwsl_emit_syslog(int level, const char *line)
+void aws_lwsl_emit_syslog(int level, const char *line)
 {
 	int syslog_level = LOG_DEBUG;
 
@@ -94,7 +94,7 @@ void lwsl_emit_syslog(int level, const char *line)
 
 
 int
-lws_plat_write_cert(struct lws_vhost *vhost, int is_key, int fd, void *buf,
+aws_lws_plat_write_cert(struct aws_lws_vhost *vhost, int is_key, int fd, void *buf,
 			size_t len)
 {
 	ssize_t n;
@@ -111,7 +111,7 @@ lws_plat_write_cert(struct lws_vhost *vhost, int is_key, int fd, void *buf,
 
 
 int
-lws_plat_recommended_rsa_bits(void)
+aws_lws_plat_recommended_rsa_bits(void)
 {
 	return 4096;
 }
@@ -121,18 +121,18 @@ lws_plat_recommended_rsa_bits(void)
  */
 
 int
-lws_plat_ntpclient_config(struct lws_context *context)
+aws_lws_plat_ntpclient_config(struct aws_lws_context *context)
 {
 #if defined(LWS_HAVE_GETENV)
 	char *ntpsrv = getenv("LWS_NTP_SERVER");
 
 	if (ntpsrv && strlen(ntpsrv) < 64) {
-		lws_system_blob_t *blob = lws_system_get_blob(context,
+		aws_lws_system_blob_t *blob = aws_lws_system_get_blob(context,
                                             LWS_SYSBLOB_TYPE_NTP_SERVER, 0);
 		if (!blob)
 			return 0;
 
-		lws_system_blob_direct_set(blob, (const uint8_t *)ntpsrv,
+		aws_lws_system_blob_direct_set(blob, (const uint8_t *)ntpsrv,
 					    strlen(ntpsrv));
 		return 1;
 	}

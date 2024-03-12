@@ -25,8 +25,8 @@
 #include "private-lib-core.h"
 #include <sys/system_properties.h>
 
-lws_async_dns_server_check_t
-lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
+aws_lws_async_dns_server_check_t
+aws_lws_plat_asyncdns_init(struct aws_lws_context *context, aws_lws_sockaddr46 *sa46)
 {
 	char d[PROP_VALUE_MAX], *p;
 	uint32_t ip32;

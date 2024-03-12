@@ -28,7 +28,7 @@
 #include "private-lib-core.h"
 
 struct lws *
-wsi_from_fd(const struct lws_context *context, lws_sockfd_type fd)
+wsi_from_fd(const struct aws_lws_context *context, aws_lws_sockfd_type fd)
 {
 	int h = LWS_FD_HASH(fd);
 	int n = 0;
@@ -41,12 +41,12 @@ wsi_from_fd(const struct lws_context *context, lws_sockfd_type fd)
 }
 
 int
-insert_wsi(struct lws_context *context, struct lws *wsi)
+insert_wsi(struct aws_lws_context *context, struct lws *wsi)
 {
 	int h = LWS_FD_HASH(wsi->desc.sockfd);
 
 	if (context->fd_hashtable[h].length == (getdtablesize() - 1)) {
-		lwsl_err("hash table overflow\n");
+		aws_lwsl_err("hash table overflow\n");
 		return 1;
 	}
 
@@ -56,7 +56,7 @@ insert_wsi(struct lws_context *context, struct lws *wsi)
 }
 
 int
-delete_from_fd(struct lws_context *context, lws_sockfd_type fd)
+delete_from_fd(struct aws_lws_context *context, aws_lws_sockfd_type fd)
 {
 	int h = LWS_FD_HASH(fd);
 	int n = 0;
@@ -73,7 +73,7 @@ delete_from_fd(struct lws_context *context, lws_sockfd_type fd)
 			return 0;
 		}
 
-	lwsl_debug("Failed to find fd %d requested for "
+	aws_lwsl_debug("Failed to find fd %d requested for "
 		 "delete in hashtable\n", fd);
 	return 1;
 }

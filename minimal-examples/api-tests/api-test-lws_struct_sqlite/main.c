@@ -1,23 +1,23 @@
 /*
- * lws-api-test-lws_struct-sqlite
+ * lws-api-test-aws_lws_struct-sqlite
  *
  * Written in 2010-2020 by Andy Green <andy@warmcat.com>
  *
  * This file is made available under the Creative Commons CC0 1.0
  * Universal Public Domain Dedication.
  *
- * lws_struct apis are used to serialize and deserialize your C structs and
+ * aws_lws_struct apis are used to serialize and deserialize your C structs and
  * linked-lists in a standardized way that's very modest on memory but
  * convenient and easy to maintain.
  *
  * The API test shows how to serialize and deserialize a struct with a linked-
- * list of child structs in JSON using lws_struct APIs.
+ * list of child structs in JSON using aws_lws_struct APIs.
  */
 
 #include <libwebsockets.h>
 
 typedef struct teststruct {
-	lws_dll2_t		list; /* not directly serialized */
+	aws_lws_dll2_t		list; /* not directly serialized */
 
 	char 			str1[32];
 	const char		*str2;
@@ -33,7 +33,7 @@ typedef struct teststruct {
  * member in the struct (eg, the dll2 list member)
  */
 
-static const lws_struct_map_t lsm_teststruct[] = {
+static const aws_lws_struct_map_t lsm_teststruct[] = {
 	LSM_CARRAY	(teststruct_t, str1,		"str1"),
 	LSM_STRING_PTR  (teststruct_t, str2,		"str2"),
 	LSM_UNSIGNED	(teststruct_t, u8,		"u8"),
@@ -43,7 +43,7 @@ static const lws_struct_map_t lsm_teststruct[] = {
 	LSM_SIGNED	(teststruct_t, s32,		"s32"),
 };
 
-static const lws_struct_map_t lsm_schema_apitest[] = {
+static const aws_lws_struct_map_t lsm_schema_apitest[] = {
 	LSM_SCHEMA_DLL2	(teststruct_t, list, NULL, lsm_teststruct, "apitest")
 };
 
@@ -72,35 +72,35 @@ static const char *test_string =
 int main(int argc, const char **argv)
 {
 	int e = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
-	struct lws_context *context;
-	struct lwsac *ac = NULL;
-	lws_dll2_owner_t resown;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
+	struct aws_lwsac *ac = NULL;
+	aws_lws_dll2_owner_t resown;
 	teststruct_t ts, *pts;
 	const char *p;
 	sqlite3 *db;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: lws_struct SQLite\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: aws_lws_struct SQLite\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 #if defined(LWS_WITH_NETWORK)
 	info.port = CONTEXT_PORT_NO_LISTEN;
 #endif
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 
 	unlink("_lws_apitest.sq3");
 
-	if (lws_struct_sq3_open(context, "_lws_apitest.sq3", 1, &db)) {
-		lwsl_err("%s: failed to open table\n", __func__);
+	if (aws_lws_struct_sq3_open(context, "_lws_apitest.sq3", 1, &db)) {
+		aws_lwsl_err("%s: failed to open table\n", __func__);
 		goto bail;
 	}
 
@@ -108,7 +108,7 @@ int main(int argc, const char **argv)
 
 	memset(&ts, 0, sizeof(ts));
 
-	lws_strncpy(ts.str1, "hello", sizeof(ts.str1));
+	aws_lws_strncpy(ts.str1, "hello", sizeof(ts.str1));
 	ts.str2 = test_string;
 	ts.u8 = 1;
 	ts.u16 = 512,
@@ -118,32 +118,32 @@ int main(int argc, const char **argv)
 
 	/* add our struct to the dll2 owner list */
 
-	lws_dll2_owner_clear(&resown);
-	lws_dll2_add_head(&ts.list, &resown);
+	aws_lws_dll2_owner_clear(&resown);
+	aws_lws_dll2_add_head(&ts.list, &resown);
 
 	/* gratuitously create the table */
 
-	if (lws_struct_sq3_create_table(db, lsm_schema_apitest)) {
-		lwsl_err("%s: Create table failed\n", __func__);
+	if (aws_lws_struct_sq3_create_table(db, lsm_schema_apitest)) {
+		aws_lwsl_err("%s: Create table failed\n", __func__);
 		e++;
 		goto done;
 	}
 
 	/* serialize the items on the dll2 owner */
 
-	if (lws_struct_sq3_serialize(db, lsm_schema_apitest, &resown, 0)) {
-		lwsl_err("%s: Serialize failed\n", __func__);
+	if (aws_lws_struct_sq3_serialize(db, lsm_schema_apitest, &resown, 0)) {
+		aws_lwsl_err("%s: Serialize failed\n", __func__);
 		e++;
 		goto done;
 	}
 
 	/* resown should be cleared by deserialize, ac is already NULL */
 
-	lws_dll2_owner_clear(&resown); /* make sure old resown data is gone */
+	aws_lws_dll2_owner_clear(&resown); /* make sure old resown data is gone */
 
-	if (lws_struct_sq3_deserialize(db, NULL, NULL, lsm_schema_apitest,
+	if (aws_lws_struct_sq3_deserialize(db, NULL, NULL, lsm_schema_apitest,
 				       &resown, &ac, 0, 1)) {
-		lwsl_err("%s: Deserialize failed\n", __func__);
+		aws_lwsl_err("%s: Deserialize failed\n", __func__);
 		e++;
 		goto done;
 	}
@@ -151,18 +151,18 @@ int main(int argc, const char **argv)
 	/* we should have 1 entry in resown now (created into the ac) */
 
 	if (resown.count != 1) {
-		lwsl_err("%s: Expected 1 result got %d\n", __func__,
+		aws_lwsl_err("%s: Expected 1 result got %d\n", __func__,
 				resown.count);
 		e++;
 		goto done;
 	}
 
 	/*
-	 * Convert the pointer to the embedded lws_dll2 into a pointer
+	 * Convert the pointer to the embedded aws_lws_dll2 into a pointer
 	 * to the actual struct with the correct type
 	 */
 
-	pts = lws_container_of(lws_dll2_get_head(&resown),
+	pts = aws_lws_container_of(aws_lws_dll2_get_head(&resown),
 			       teststruct_t, list);
 
 	if (strcmp(pts->str1, "hello") ||
@@ -172,9 +172,9 @@ int main(int argc, const char **argv)
 	    pts->u32 != 0x55aa1234 ||
 	    pts->u64 != 0x34abcdef01ull ||
 	    pts->s32 != -1) {
-		lwsl_err("%s: unexpected deser values: %s\n", __func__, pts->str1);
-		lwsl_err("%s: %s\n", __func__, pts->str2);
-		lwsl_err("%s: %u %u %u 0x%llx %d\n", __func__, pts->u8, pts->u16,
+		aws_lwsl_err("%s: unexpected deser values: %s\n", __func__, pts->str1);
+		aws_lwsl_err("%s: %s\n", __func__, pts->str2);
+		aws_lwsl_err("%s: %u %u %u 0x%llx %d\n", __func__, pts->u8, pts->u16,
 			 pts->u32, (unsigned long long)pts->u64, pts->s32);
 
 		e++;
@@ -182,23 +182,23 @@ int main(int argc, const char **argv)
 	}
 
 done:
-	lwsac_free(&ac);
-	lws_struct_sq3_close(&db);
+	aws_lwsac_free(&ac);
+	aws_lws_struct_sq3_close(&db);
 
 
 	if (e)
 		goto bail;
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed: PASS\n");
+	aws_lwsl_user("Completed: PASS\n");
 
 	return 0;
 
 bail:
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed: FAIL\n");
+	aws_lwsl_user("Completed: FAIL\n");
 
 	return 1;
 }

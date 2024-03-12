@@ -61,11 +61,11 @@ struct per_session_data__minimal_pmd_bulk {
 };
 
 struct vhd_minimal_pmd_bulk {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
 	struct lws *client_wsi;
 
-	lws_sorted_usec_list_t sul;
+	aws_lws_sorted_usec_list_t sul;
 
 	int *interrupted;
 	int *options;
@@ -81,11 +81,11 @@ static uint64_t rng(uint64_t *r)
 }
 
 static void
-sul_connect_attempt(struct lws_sorted_usec_list *sul)
+sul_connect_attempt(struct aws_lws_sorted_usec_list *sul)
 {
 	struct vhd_minimal_pmd_bulk *vhd =
-		lws_container_of(sul, struct vhd_minimal_pmd_bulk, sul);
-	struct lws_client_connect_info i;
+		aws_lws_container_of(sul, struct vhd_minimal_pmd_bulk, sul);
+	struct aws_lws_client_connect_info i;
 
 	memset(&i, 0, sizeof(i));
 
@@ -100,54 +100,54 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 	i.protocol = "lws-minimal-pmd-bulk";
 	i.pwsi = &vhd->client_wsi;
 
-	if (!lws_client_connect_via_info(&i))
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
+	if (!aws_lws_client_connect_via_info(&i))
+		aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, 10 * LWS_US_PER_SEC);
 }
 
 static int
-callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal_pmd_bulk(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal_pmd_bulk *pss =
 			(struct per_session_data__minimal_pmd_bulk *)user;
 	struct vhd_minimal_pmd_bulk *vhd = (struct vhd_minimal_pmd_bulk *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-				lws_get_protocol(wsi));
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi));
 	uint8_t buf[LWS_PRE + MESSAGE_CHUNK_SIZE], *start = &buf[LWS_PRE], *p;
 	int n, m, flags;
 
 	switch (reason) {
 
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct vhd_minimal_pmd_bulk));
 		if (!vhd)
 			return -1;
 
-		vhd->context = lws_get_context(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 
 		/* get the pointer to "interrupted" we were passed in pvo */
-		vhd->interrupted = (int *)lws_pvo_search(
-			(const struct lws_protocol_vhost_options *)in,
+		vhd->interrupted = (int *)aws_lws_pvo_search(
+			(const struct aws_lws_protocol_vhost_options *)in,
 			"interrupted")->value;
-		vhd->options = (int *)lws_pvo_search(
-			(const struct lws_protocol_vhost_options *)in,
+		vhd->options = (int *)aws_lws_pvo_search(
+			(const struct aws_lws_protocol_vhost_options *)in,
 			"options")->value;
 
 		sul_connect_attempt(&vhd->sul);
 		break;
 
 	case LWS_CALLBACK_PROTOCOL_DESTROY:
-		lws_sul_cancel(&vhd->sul);
+		aws_lws_sul_cancel(&vhd->sul);
 		break;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		pss->rng_tx = 4;
 		pss->rng_rx = 4;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
@@ -166,7 +166,7 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 		if (n > MESSAGE_SIZE - pss->position_tx)
 			n = MESSAGE_SIZE - pss->position_tx;
 
-		flags = lws_write_ws_flags(LWS_WRITE_BINARY, !pss->position_tx,
+		flags = aws_lws_write_ws_flags(LWS_WRITE_BINARY, !pss->position_tx,
 					   pss->position_tx + n == MESSAGE_SIZE);
 
 		/*
@@ -193,14 +193,14 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 				*p++ = (uint8_t)rng(&pss->rng_tx);
 		}
 
-		n = lws_ptr_diff(p, start);
-		m = lws_write(wsi, start, (unsigned int)n, (enum lws_write_protocol)flags);
+		n = aws_lws_ptr_diff(p, start);
+		m = aws_lws_write(wsi, start, (unsigned int)n, (enum aws_lws_write_protocol)flags);
 		if (m < n) {
-			lwsl_err("ERROR %d writing ws\n", m);
+			aws_lwsl_err("ERROR %d writing ws\n", m);
 			return -1;
 		}
 		if (pss->position_tx != MESSAGE_SIZE) /* if more to do... */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		else
 			/* if we sent and received everything */
 			if (pss->position_rx == MESSAGE_SIZE)
@@ -213,9 +213,9 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 		 * When we connect, the server will send us a message too
 		 */
 
-		lwsl_user("LWS_CALLBACK_CLIENT_RECEIVE: %4d (rpp %5d, last %d)\n",
-			(int)len, (int)lws_remaining_packet_payload(wsi),
-			lws_is_final_fragment(wsi));
+		aws_lwsl_user("LWS_CALLBACK_CLIENT_RECEIVE: %4d (rpp %5d, last %d)\n",
+			(int)len, (int)aws_lws_remaining_packet_payload(wsi),
+			aws_lws_is_final_fragment(wsi));
 
 		if (*vhd->options & 1) {
 			while (len) {
@@ -226,7 +226,7 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 				if (s > len)
 					s = len;
 				if (memcmp(in, &redundant_string[m], s)) {
-					lwsl_user("echo'd data doesn't match\n");
+					aws_lwsl_user("echo'd data doesn't match\n");
 					return -1;
 				}
 				pss->position_rx += (int)s;
@@ -238,7 +238,7 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 			pss->position_rx += (int)len;
 			while (len--)
 				if (*p++ != (uint8_t)rng(&pss->rng_rx)) {
-					lwsl_user("echo'd data doesn't match\n");
+					aws_lwsl_user("echo'd data doesn't match\n");
 					return -1;
 				}
 		}
@@ -252,16 +252,16 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		vhd->client_wsi = NULL;
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
+		aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, LWS_US_PER_SEC);
 		break;
 
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		vhd->client_wsi = NULL;
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
+		aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, LWS_US_PER_SEC);
 		break;
 

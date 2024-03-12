@@ -25,31 +25,31 @@
 #if !defined(__PRIVATE_LIB_ABSTRACT_H__)
 #define __PRIVATE_LIB_ABSTRACT_H__
 
-typedef struct lws_token_map lws_token_map_t;
-typedef void lws_abs_transport_inst_t;
-typedef void lws_abs_protocol_inst_t;
+typedef struct aws_lws_token_map aws_lws_token_map_t;
+typedef void aws_lws_abs_transport_inst_t;
+typedef void aws_lws_abs_protocol_inst_t;
 
-typedef struct lws_abs {
+typedef struct aws_lws_abs {
 	void				*user;
-	struct lws_vhost		*vh;
+	struct aws_lws_vhost		*vh;
 
-	const struct lws_abs_protocol	*ap;
-	const lws_token_map_t		*ap_tokens;
-	const struct lws_abs_transport	*at;
-	const lws_token_map_t		*at_tokens;
+	const struct aws_lws_abs_protocol	*ap;
+	const aws_lws_token_map_t		*ap_tokens;
+	const struct aws_lws_abs_transport	*at;
+	const aws_lws_token_map_t		*at_tokens;
 
-	struct lws_sequencer		*seq;
+	struct aws_lws_sequencer		*seq;
 	void				*opaque_user_data;
 
 	/* vh lock */
-	struct lws_dll2_owner		children_owner; /* our children / queue */
+	struct aws_lws_dll2_owner		children_owner; /* our children / queue */
 	/* vh lock */
-	struct lws_dll2			bound; /* parent or encapsulator */
+	struct aws_lws_dll2			bound; /* parent or encapsulator */
 	/* vh lock */
-	struct lws_dll2			abstract_instances;
-	lws_abs_transport_inst_t	*ati;
-	lws_abs_protocol_inst_t		*api;
-} lws_abs_t;
+	struct aws_lws_dll2			abstract_instances;
+	aws_lws_abs_transport_inst_t	*ati;
+	aws_lws_abs_protocol_inst_t		*api;
+} aws_lws_abs_t;
 
 #endif
 

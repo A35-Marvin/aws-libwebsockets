@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genhash provides a hash / hmac abstraction api in lws that works the
+ *  aws_lws_genhash provides a hash / hmac abstraction api in lws that works the
  *  same whether you are using openssl or mbedtls hash functions underneath.
  */
 #include "libwebsockets.h"
@@ -49,7 +49,7 @@
  */
 
 int
-lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
+aws_lws_genhash_init(struct aws_lws_genhash_ctx *ctx, enum aws_lws_genhash_types type)
 {
 	ctx->type = (uint8_t)type;
 
@@ -87,7 +87,7 @@ lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
 }
 
 int
-lws_genhash_update(struct lws_genhash_ctx *ctx, const void *in, size_t len)
+aws_lws_genhash_update(struct aws_lws_genhash_ctx *ctx, const void *in, size_t len)
 {
 	if (!len)
 		return 0;
@@ -119,7 +119,7 @@ lws_genhash_update(struct lws_genhash_ctx *ctx, const void *in, size_t len)
 }
 
 int
-lws_genhash_destroy(struct lws_genhash_ctx *ctx, void *result)
+aws_lws_genhash_destroy(struct aws_lws_genhash_ctx *ctx, void *result)
 {
 	switch (ctx->type) {
 	case LWS_GENHASH_TYPE_MD5:
@@ -159,7 +159,7 @@ lws_genhash_destroy(struct lws_genhash_ctx *ctx, void *result)
  */
 
 int
-lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
+aws_lws_genhash_init(struct aws_lws_genhash_ctx *ctx, enum aws_lws_genhash_types type)
 {
 	ctx->type = type;
 
@@ -192,7 +192,7 @@ lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
 }
 
 int
-lws_genhash_update(struct lws_genhash_ctx *ctx, const void *in, size_t len)
+aws_lws_genhash_update(struct aws_lws_genhash_ctx *ctx, const void *in, size_t len)
 {
 	if (!len)
 		return 0;
@@ -219,7 +219,7 @@ lws_genhash_update(struct lws_genhash_ctx *ctx, const void *in, size_t len)
 }
 
 int
-lws_genhash_destroy(struct lws_genhash_ctx *ctx, void *result)
+aws_lws_genhash_destroy(struct aws_lws_genhash_ctx *ctx, void *result)
 {
 	switch (ctx->type) {
 	case LWS_GENHASH_TYPE_MD5:
@@ -250,7 +250,7 @@ lws_genhash_destroy(struct lws_genhash_ctx *ctx, void *result)
 #endif
 
 int
-lws_genhmac_init(struct lws_genhmac_ctx *ctx, enum lws_genhmac_types type,
+aws_lws_genhmac_init(struct aws_lws_genhmac_ctx *ctx, enum aws_lws_genhmac_types type,
 		 const uint8_t *key, size_t key_len)
 {
 	int t;
@@ -294,7 +294,7 @@ lws_genhmac_init(struct lws_genhmac_ctx *ctx, enum lws_genhmac_types type,
 }
 
 int
-lws_genhmac_update(struct lws_genhmac_ctx *ctx, const void *in, size_t len)
+aws_lws_genhmac_update(struct aws_lws_genhmac_ctx *ctx, const void *in, size_t len)
 {
 	if (!len)
 		return 0;
@@ -306,7 +306,7 @@ lws_genhmac_update(struct lws_genhmac_ctx *ctx, const void *in, size_t len)
 }
 
 int
-lws_genhmac_destroy(struct lws_genhmac_ctx *ctx, void *result)
+aws_lws_genhmac_destroy(struct aws_lws_genhmac_ctx *ctx, void *result)
 {
 	int n = 0;
 

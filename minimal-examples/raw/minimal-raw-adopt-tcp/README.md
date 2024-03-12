@@ -5,7 +5,7 @@ app which generates its own connected sockets.  In some cases you may
 want lws to "adopt" the socket.
 
 (If you simply want a connected client raw socket using lws alone, you
-can just use lws_client_connect_via_info() with info.method = "RAW".
+can just use aws_lws_client_connect_via_info() with info.method = "RAW".
 http-client/minimal-http-client shows how to do that, just set
 info.method to "RAW".)
 

@@ -24,12 +24,12 @@
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
 
-typedef struct lws_fi_priv {
-	lws_dll2_t		list;
-	lws_fi_t		fi;
-} lws_fi_priv_t;
+typedef struct aws_lws_fi_priv {
+	aws_lws_dll2_t		list;
+	aws_lws_fi_t		fi;
+} aws_lws_fi_priv_t;
 
 void
-lws_fi_import(lws_fi_ctx_t *fic_dest, const lws_fi_ctx_t *fic_src);
+aws_lws_fi_import(aws_lws_fi_ctx_t *fic_dest, const aws_lws_fi_ctx_t *fic_src);
 
 #endif

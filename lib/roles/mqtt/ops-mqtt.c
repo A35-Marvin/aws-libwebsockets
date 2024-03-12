@@ -25,15 +25,15 @@
 #include "private-lib-core.h"
 
 static int
-rops_handle_POLLIN_mqtt(struct lws_context_per_thread *pt, struct lws *wsi,
-			   struct lws_pollfd *pollfd)
+rops_handle_POLLIN_mqtt(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+			   struct aws_lws_pollfd *pollfd)
 {
 	unsigned int pending = 0;
-	struct lws_tokens ebuf;
+	struct aws_lws_tokens ebuf;
 	int n = 0;
 	char buffered = 0;
 
-	lwsl_debug("%s: wsistate 0x%x, %s pollout %d\n", __func__,
+	aws_lwsl_debug("%s: wsistate 0x%x, %s pollout %d\n", __func__,
 		   (unsigned int)wsi->wsistate,  wsi->a.protocol->name,
 		   pollfd->revents);
 
@@ -52,23 +52,23 @@ rops_handle_POLLIN_mqtt(struct lws_context_per_thread *pt, struct lws *wsi,
 	ebuf.token = NULL;
 	ebuf.len = 0;
 
-	if (lwsi_state(wsi) != LRS_ESTABLISHED) {
+	if (aws_lwsi_state(wsi) != LRS_ESTABLISHED) {
 #if defined(LWS_WITH_CLIENT)
 
-		if (lwsi_state(wsi) == LRS_WAITING_SSL &&
+		if (aws_lwsi_state(wsi) == LRS_WAITING_SSL &&
 		    ((pollfd->revents & LWS_POLLOUT)) &&
-		    lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
-			lwsl_info("failed at set pollfd\n");
+		    aws_lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
+			aws_lwsl_info("failed at set pollfd\n");
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
 
 		if ((pollfd->revents & LWS_POLLOUT) &&
-		    lws_handle_POLLOUT_event(wsi, pollfd)) {
-			lwsl_debug("POLLOUT event closed it\n");
+		    aws_lws_handle_POLLOUT_event(wsi, pollfd)) {
+			aws_lwsl_debug("POLLOUT event closed it\n");
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
 
-		n = lws_mqtt_client_socket_service(wsi, pollfd, NULL);
+		n = aws_lws_mqtt_client_socket_service(wsi, pollfd, NULL);
 		if (n)
 			return LWS_HPI_RET_WSI_ALREADY_DIED;
 #endif
@@ -78,10 +78,10 @@ rops_handle_POLLIN_mqtt(struct lws_context_per_thread *pt, struct lws *wsi,
 	/* 1: something requested a callback when it was OK to write */
 
 	if ((pollfd->revents & LWS_POLLOUT) &&
-	    lwsi_state_can_handle_POLLOUT(wsi) &&
-	    lws_handle_POLLOUT_event(wsi, pollfd)) {
-		if (lwsi_state(wsi) == LRS_RETURNED_CLOSE)
-			lwsi_set_state(wsi, LRS_FLUSHING_BEFORE_CLOSE);
+	    aws_lwsi_state_can_handle_POLLOUT(wsi) &&
+	    aws_lws_handle_POLLOUT_event(wsi, pollfd)) {
+		if (aws_lwsi_state(wsi) == LRS_RETURNED_CLOSE)
+			aws_lwsi_set_state(wsi, LRS_FLUSHING_BEFORE_CLOSE);
 
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
@@ -89,10 +89,10 @@ rops_handle_POLLIN_mqtt(struct lws_context_per_thread *pt, struct lws *wsi,
 	/* 3: buflist needs to be drained
 	 */
 read:
-	// lws_buflist_describe(&wsi->buflist, wsi, __func__);
-	ebuf.len = (int)lws_buflist_next_segment_len(&wsi->buflist, &ebuf.token);
+	// aws_lws_buflist_describe(&wsi->buflist, wsi, __func__);
+	ebuf.len = (int)aws_lws_buflist_next_segment_len(&wsi->buflist, &ebuf.token);
 	if (ebuf.len) {
-		lwsl_info("draining buflist (len %d)\n", ebuf.len);
+		aws_lwsl_info("draining buflist (len %d)\n", ebuf.len);
 		buffered = 1;
 		goto drain;
 	}
@@ -100,13 +100,13 @@ read:
 	if (!(pollfd->revents & pollfd->events & LWS_POLLIN))
 		return LWS_HPI_RET_HANDLED;
 
-	/* if (lws_is_flowcontrolled(wsi)) { */
-	/*	lwsl_info("%s: %p should be rxflow (bm 0x%x)..\n", */
+	/* if (aws_lws_is_flowcontrolled(wsi)) { */
+	/*	aws_lwsl_info("%s: %p should be rxflow (bm 0x%x)..\n", */
 	/*		    __func__, wsi, wsi->rxflow_bitmap); */
 	/*	return LWS_HPI_RET_HANDLED; */
 	/* } */
 
-	if (!(lwsi_role_client(wsi) && lwsi_state(wsi) != LRS_ESTABLISHED)) {
+	if (!(aws_lwsi_role_client(wsi) && aws_lwsi_state(wsi) != LRS_ESTABLISHED)) {
 		/*
 		 * In case we are going to react to this rx by scheduling
 		 * writes, we need to restrict the amount of rx to the size
@@ -127,19 +127,19 @@ read:
 		if ((int)pending > ebuf.len)
 			pending = (unsigned int)ebuf.len;
 
-		ebuf.len = lws_ssl_capable_read(wsi, ebuf.token,
+		ebuf.len = aws_lws_ssl_capable_read(wsi, ebuf.token,
 						pending ? pending :
 						(unsigned int)ebuf.len);
 		switch (ebuf.len) {
 		case 0:
-			lwsl_info("%s: zero length read\n",
+			aws_lwsl_info("%s: zero length read\n",
 				  __func__);
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		case LWS_SSL_CAPABLE_MORE_SERVICE:
-			lwsl_info("SSL Capable more service\n");
+			aws_lwsl_info("SSL Capable more service\n");
 			return LWS_HPI_RET_HANDLED;
 		case LWS_SSL_CAPABLE_ERROR:
-			lwsl_info("%s: LWS_SSL_CAPABLE_ERROR\n",
+			aws_lwsl_info("%s: LWS_SSL_CAPABLE_ERROR\n",
 					__func__);
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
@@ -153,18 +153,18 @@ read:
 
 drain:
 	/* service incoming data */
-	//lws_buflist_describe(&wsi->buflist, wsi, __func__);
+	//aws_lws_buflist_describe(&wsi->buflist, wsi, __func__);
 	if (ebuf.len) {
-		n = lws_read_mqtt(wsi, ebuf.token, (unsigned int)ebuf.len);
+		n = aws_lws_read_mqtt(wsi, ebuf.token, (unsigned int)ebuf.len);
 		if (n < 0) {
-			lwsl_notice("%s: lws_read_mqtt returned %d\n",
+			aws_lwsl_notice("%s: aws_lws_read_mqtt returned %d\n",
 					__func__, n);
 			/* we closed wsi */
 			goto fail;
                 }
-		// lws_buflist_describe(&wsi->buflist, wsi, __func__);
-		lwsl_debug("%s: consuming %d / %d\n", __func__, n, ebuf.len);
-		if (lws_buflist_aware_finished_consuming(wsi, &ebuf, ebuf.len,
+		// aws_lws_buflist_describe(&wsi->buflist, wsi, __func__);
+		aws_lwsl_debug("%s: consuming %d / %d\n", __func__, n, ebuf.len);
+		if (aws_lws_buflist_aware_finished_consuming(wsi, &ebuf, ebuf.len,
 							 buffered, __func__))
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
@@ -172,7 +172,7 @@ drain:
 	ebuf.token = NULL;
 	ebuf.len = 0;
 
-	pending = (unsigned int)lws_ssl_pending(wsi);
+	pending = (unsigned int)aws_lws_ssl_pending(wsi);
 	if (pending) {
 		pending = pending > wsi->a.context->pt_serv_buf_size ?
 			wsi->a.context->pt_serv_buf_size : pending;
@@ -180,8 +180,8 @@ drain:
 	}
 
 	if (buffered && /* were draining, now nothing left */
-	    !lws_buflist_next_segment_len(&wsi->buflist, NULL)) {
-		lwsl_info("%s: %s flow buf: drained\n", __func__, lws_wsi_tag(wsi));
+	    !aws_lws_buflist_next_segment_len(&wsi->buflist, NULL)) {
+		aws_lwsl_info("%s: %s flow buf: drained\n", __func__, aws_lws_wsi_tag(wsi));
 		/* having drained the rxflow buffer, can rearm POLLIN */
 #if !defined(LWS_WITH_SERVER)
 		n =
@@ -194,8 +194,8 @@ drain:
 	return LWS_HPI_RET_HANDLED;
 
 fail:
-	lwsl_err("%s: Failed, bailing\n", __func__);
-	lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "mqtt svc fail");
+	aws_lwsl_err("%s: Failed, bailing\n", __func__);
+	aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "mqtt svc fail");
 
 	return LWS_HPI_RET_WSI_ALREADY_DIED;
 }
@@ -210,14 +210,14 @@ rops_adoption_bind_mqtt(struct lws *wsi, int type, const char *vh_prot_name)
 	    (type & _LWS_ADOPT_FINISH))
 		return 0; /* no match */
 
-	lws_role_transition(wsi, 0, (type & LWS_ADOPT_ALLOW_SSL) ? LRS_SSL_INIT :
+	aws_lws_role_transition(wsi, 0, (type & LWS_ADOPT_ALLOW_SSL) ? LRS_SSL_INIT :
 				LRS_ESTABLISHED, &role_ops_mqtt);
 
 	if (vh_prot_name)
-		lws_bind_protocol(wsi, wsi->a.protocol, __func__);
+		aws_lws_bind_protocol(wsi, wsi->a.protocol, __func__);
 	else
 		/* this is the only time he will transition */
-		lws_bind_protocol(wsi,
+		aws_lws_bind_protocol(wsi,
 			&wsi->a.vhost->protocols[wsi->a.vhost->mqtt_protocol_index],
 			__func__);
 
@@ -226,15 +226,15 @@ rops_adoption_bind_mqtt(struct lws *wsi, int type, const char *vh_prot_name)
 #endif
 
 static int
-rops_client_bind_mqtt(struct lws *wsi, const struct lws_client_connect_info *i)
+rops_client_bind_mqtt(struct lws *wsi, const struct aws_lws_client_connect_info *i)
 {
-	lwsl_debug("%s: i = %p\n", __func__, i);
+	aws_lwsl_debug("%s: i = %p\n", __func__, i);
 	if (!i) {
 
 		/* finalize */
 
 		if (!wsi->user_space && wsi->stash->cis[CIS_METHOD])
-			if (lws_ensure_user_space(wsi))
+			if (aws_lws_ensure_user_space(wsi))
 				return 1;
 
 		if (!wsi->stash->cis[CIS_METHOD] && !wsi->stash->cis[CIS_ALPN])
@@ -244,17 +244,17 @@ rops_client_bind_mqtt(struct lws *wsi, const struct lws_client_connect_info *i)
 		 * wait.
 		 *
 		 * When we do get the ah, now or later, he will end up
-		 * at lws_http_client_connect_via_info2().
+		 * at aws_lws_http_client_connect_via_info2().
 		 */
 #if defined(LWS_WITH_CLIENT)
-		if (lws_header_table_attach(wsi, 0) < 0)
+		if (aws_lws_header_table_attach(wsi, 0) < 0)
 			/*
 			 * if we failed here, the connection is already closed
 			 * and freed.
 			 */
 			return -1;
 #else
-		if (lws_header_table_attach(wsi, 0))
+		if (aws_lws_header_table_attach(wsi, 0))
 			return 0;
 #endif
 		return 0;
@@ -264,10 +264,10 @@ rops_client_bind_mqtt(struct lws *wsi, const struct lws_client_connect_info *i)
 	if (strcmp(i->method, "MQTT"))
 		return 0; /* no match */
 
-	if (lws_create_client_mqtt_object(i, wsi))
+	if (aws_lws_create_client_mqtt_object(i, wsi))
 		return 1;
 
-	lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED,
+	aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED,
 				&role_ops_mqtt);
 	return 1; /* matched */
 }
@@ -277,7 +277,7 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 {
 	struct lws **wsi2;
 
-	lwsl_debug("%s\n", __func__);
+	aws_lwsl_debug("%s\n", __func__);
 
 #if defined(LWS_WITH_CLIENT)
 	if (wsi->mqtt && wsi->mqtt->send_pingreq && !wsi->mqtt->inside_payload) {
@@ -290,12 +290,12 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 
 		wsi->mqtt->send_pingreq = 0;
 
-		lwsl_notice("%s: issuing PINGREQ\n", __func__);
+		aws_lwsl_notice("%s: issuing PINGREQ\n", __func__);
 
 		buf[LWS_PRE] = LMQCP_CTOS_PINGREQ << 4;
 		buf[LWS_PRE + 1] = 0;
 
-		if (lws_write(wsi, (uint8_t *)&buf[LWS_PRE], 2,
+		if (aws_lws_write(wsi, (uint8_t *)&buf[LWS_PRE], 2,
 			      LWS_WRITE_BINARY) != 2)
 			return LWS_HP_RET_BAIL_DIE;
 
@@ -309,48 +309,48 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 		/* Remaining len = 2 */
 		buf[LWS_PRE + 1] = 2;
 		if (wsi->mqtt->send_pubrec) {
-			lwsl_notice("%s: issuing PUBREC for pkt id: %d\n",
+			aws_lwsl_notice("%s: issuing PUBREC for pkt id: %d\n",
 				    __func__, wsi->mqtt->peer_ack_pkt_id);
 			buf[LWS_PRE] = LMQCP_PUBREC << 4 | 0x2;
 			/* Packet ID */
-			lws_ser_wu16be(&buf[LWS_PRE + 2],
+			aws_lws_ser_wu16be(&buf[LWS_PRE + 2],
 				       wsi->mqtt->peer_ack_pkt_id);
 			wsi->mqtt->send_pubrec = 0;
 		} else if (wsi->mqtt->send_pubrel) {
-			lwsl_notice("%s: issuing PUBREL for pkt id: %d\n",
+			aws_lwsl_notice("%s: issuing PUBREL for pkt id: %d\n",
 				    __func__, wsi->mqtt->ack_pkt_id);
 			buf[LWS_PRE] = LMQCP_PUBREL << 4 | 0x2;
-			lws_ser_wu16be(&buf[LWS_PRE + 2],
+			aws_lws_ser_wu16be(&buf[LWS_PRE + 2],
 				       wsi->mqtt->ack_pkt_id);
 			wsi->mqtt->send_pubrel = 0;
 		} else {
-			lwsl_notice("%s: issuing PUBCOMP for pkt id: %d\n",
+			aws_lwsl_notice("%s: issuing PUBCOMP for pkt id: %d\n",
 				    __func__, wsi->mqtt->peer_ack_pkt_id);
 			buf[LWS_PRE] = LMQCP_PUBCOMP << 4 | 0x2;
-			lws_ser_wu16be(&buf[LWS_PRE + 2],
+			aws_lws_ser_wu16be(&buf[LWS_PRE + 2],
 				       wsi->mqtt->peer_ack_pkt_id);
 			wsi->mqtt->send_pubcomp = 0;
 		}
-		if (lws_write(wsi, (uint8_t *)&buf[LWS_PRE], 4,
+		if (aws_lws_write(wsi, (uint8_t *)&buf[LWS_PRE], 4,
 			      LWS_WRITE_BINARY) != 4)
 			return LWS_HP_RET_BAIL_DIE;
 		return LWS_HP_RET_BAIL_OK;
 	}
 
-	wsi = lws_get_network_wsi(wsi);
+	wsi = aws_lws_get_network_wsi(wsi);
 
 	wsi->mux.requested_POLLOUT = 0;
 
 	wsi2 = &wsi->mux.child_list;
 	if (!*wsi2) {
-		lwsl_debug("%s: no children\n", __func__);
+		aws_lwsl_debug("%s: no children\n", __func__);
 		return LWS_HP_RET_DROP_POLLOUT;
 	}
 
 	if (!wsi->mqtt)
 		return LWS_HP_RET_BAIL_DIE;
 
-	lws_wsi_mux_dump_waiting_children(wsi);
+	aws_lws_wsi_mux_dump_waiting_children(wsi);
 
 	do {
 		struct lws *w, **wa;
@@ -359,7 +359,7 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 		if (!(*wsi2)->mux.requested_POLLOUT)
 			goto next_child;
 
-		if (!lwsi_state_can_handle_POLLOUT(wsi))
+		if (!aws_lwsi_state_can_handle_POLLOUT(wsi))
 			goto next_child;
 
 		/*
@@ -374,20 +374,20 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 		 * we're going to do writable callback for this child.
 		 * move him to be the last child
 		 */
-		w = lws_wsi_mux_move_child_to_tail(wsi2);
+		w = aws_lws_wsi_mux_move_child_to_tail(wsi2);
 		if (!w) {
 			wa = &wsi->mux.child_list;
 			goto next_child;
 		}
 
-		lwsl_debug("%s: child %s (wsistate 0x%x)\n", __func__,
-			   lws_wsi_tag(w), (unsigned int)w->wsistate);
+		aws_lwsl_debug("%s: child %s (wsistate 0x%x)\n", __func__,
+			   aws_lws_wsi_tag(w), (unsigned int)w->wsistate);
 
-		if (lwsi_state(wsi) == LRS_ESTABLISHED &&
+		if (aws_lwsi_state(wsi) == LRS_ESTABLISHED &&
 		    !wsi->mqtt->inside_payload &&
 		    wsi->mqtt->send_puback) {
 			uint8_t buf[LWS_PRE + 4];
-			lwsl_notice("%s: issuing PUBACK for pkt id: %d\n",
+			aws_lwsl_notice("%s: issuing PUBACK for pkt id: %d\n",
 				    __func__, wsi->mqtt->ack_pkt_id);
 
 			/* Fixed header */
@@ -395,9 +395,9 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 			/* Remaining len = 2 */
 			buf[LWS_PRE + 1] = 2;
 			/* Packet ID */
-			lws_ser_wu16be(&buf[LWS_PRE + 2], wsi->mqtt->peer_ack_pkt_id);
+			aws_lws_ser_wu16be(&buf[LWS_PRE + 2], wsi->mqtt->peer_ack_pkt_id);
 
-			if (lws_write(wsi, (uint8_t *)&buf[LWS_PRE], 4,
+			if (aws_lws_write(wsi, (uint8_t *)&buf[LWS_PRE], 4,
 				      LWS_WRITE_BINARY) != 4)
 				return LWS_HP_RET_BAIL_DIE;
 
@@ -408,20 +408,20 @@ rops_handle_POLLOUT_mqtt(struct lws *wsi)
 			goto next_child;
 		}
 
-		if (lws_callback_as_writeable(w)) {
-			lwsl_notice("%s: Closing child %s\n", __func__, lws_wsi_tag(w));
-			lws_close_free_wsi(w, LWS_CLOSE_STATUS_NOSTATUS,
+		if (aws_lws_callback_as_writeable(w)) {
+			aws_lwsl_notice("%s: Closing child %s\n", __func__, aws_lws_wsi_tag(w));
+			aws_lws_close_free_wsi(w, LWS_CLOSE_STATUS_NOSTATUS,
 					   "mqtt pollout handle");
 			wa = &wsi->mux.child_list;
 		}
 
 next_child:
 		wsi2 = wa;
-	} while (wsi2 && *wsi2 && !lws_send_pipe_choked(wsi));
+	} while (wsi2 && *wsi2 && !aws_lws_send_pipe_choked(wsi));
 
-	// lws_wsi_mux_dump_waiting_children(wsi);
+	// aws_lws_wsi_mux_dump_waiting_children(wsi);
 
-	if (lws_wsi_mux_action_pending_writeable_reqs(wsi))
+	if (aws_lws_wsi_mux_action_pending_writeable_reqs(wsi))
 		return LWS_HP_RET_BAIL_DIE;
 
 	return LWS_HP_RET_BAIL_OK;
@@ -431,7 +431,7 @@ next_child:
 static int
 rops_issue_keepalive_mqtt(struct lws *wsi, int isvalid)
 {
-	struct lws *nwsi = lws_get_network_wsi(wsi);
+	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (isvalid) {
 		_lws_validity_confirmed_role(nwsi);
@@ -440,31 +440,31 @@ rops_issue_keepalive_mqtt(struct lws *wsi, int isvalid)
 	}
 
 	nwsi->mqtt->send_pingreq = 1;
-	lws_callback_on_writable(nwsi);
+	aws_lws_callback_on_writable(nwsi);
 
 	return 0;
 }
 #endif
 
 static int
-rops_close_role_mqtt(struct lws_context_per_thread *pt, struct lws *wsi)
+rops_close_role_mqtt(struct aws_lws_context_per_thread *pt, struct lws *wsi)
 {
-	struct lws *nwsi = lws_get_network_wsi(wsi);
-	lws_mqtt_subs_t	*s, *s1, *mysub;
-	lws_mqttc_t *c;
+	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
+	aws_lws_mqtt_subs_t	*s, *s1, *mysub;
+	aws_lws_mqttc_t *c;
 
 	if (!wsi->mqtt)
 		return 0;
 
 	c = &wsi->mqtt->client;
 
-	lws_sul_cancel(&wsi->mqtt->sul_qos_puback_pubrec_wait);
+	aws_lws_sul_cancel(&wsi->mqtt->sul_qos_puback_pubrec_wait);
 
-	lws_mqtt_str_free(&c->username);
-	lws_mqtt_str_free(&c->password);
-	lws_mqtt_str_free(&c->will.message);
-	lws_mqtt_str_free(&c->will.topic);
-	lws_mqtt_str_free(&c->id);
+	aws_lws_mqtt_str_free(&c->username);
+	aws_lws_mqtt_str_free(&c->password);
+	aws_lws_mqtt_str_free(&c->will.message);
+	aws_lws_mqtt_str_free(&c->will.topic);
+	aws_lws_mqtt_str_free(&c->id);
 
 	/* clean up any subscription allocations */
 
@@ -475,26 +475,26 @@ rops_close_role_mqtt(struct lws_context_per_thread *pt, struct lws *wsi)
 		/*
 		 * Account for children no longer using nwsi subscription
 		 */
-		mysub = lws_mqtt_find_sub(nwsi->mqtt, (const char *)&s[1]);
+		mysub = aws_lws_mqtt_find_sub(nwsi->mqtt, (const char *)&s[1]);
 //		assert(mysub); /* if child subscribed, nwsi must feel the same */
 		if (mysub) {
 			assert(mysub->ref_count);
 			mysub->ref_count--;
 		}
-		lws_free(s);
+		aws_lws_free(s);
 		s = s1;
 	}
 
-	lws_mqtt_publish_param_t *pub =
-			(lws_mqtt_publish_param_t *)
+	aws_lws_mqtt_publish_param_t *pub =
+			(aws_lws_mqtt_publish_param_t *)
 				wsi->mqtt->rx_cpkt_param;
 
 	if (pub)
-		lws_free_set_NULL(pub->topic);
+		aws_lws_free_set_NULL(pub->topic);
 
-	lws_free_set_NULL(wsi->mqtt->rx_cpkt_param);
+	aws_lws_free_set_NULL(wsi->mqtt->rx_cpkt_param);
 
-	lws_free_set_NULL(wsi->mqtt);
+	aws_lws_free_set_NULL(wsi->mqtt);
 
 	return 0;
 }
@@ -507,7 +507,7 @@ rops_callback_on_writable_mqtt(struct lws *wsi)
 #endif
 	int already;
 
-	lwsl_debug("%s: %s (wsistate 0x%x)\n", __func__, lws_wsi_tag(wsi),
+	aws_lwsl_debug("%s: %s (wsistate 0x%x)\n", __func__, aws_lws_wsi_tag(wsi),
 			(unsigned int)wsi->wsistate);
 
 	if (wsi->mux.requested_POLLOUT
@@ -515,13 +515,13 @@ rops_callback_on_writable_mqtt(struct lws *wsi)
 			&& !wsi->client_h2_alpn
 #endif
 	) {
-		lwsl_debug("already pending writable\n");
+		aws_lwsl_debug("already pending writable\n");
 		return 1;
 	}
 #if 0
 	/* is this for DATA or for control messages? */
 	if (wsi->upgraded_to_http2 && !wsi->h2.h2n->pps &&
-	    !lws_h2_tx_cr_get(wsi)) {
+	    !aws_lws_h2_tx_cr_get(wsi)) {
 		/*
 		 * other side is not able to cope with us sending DATA
 		 * anything so no matter if we have POLLOUT on our side if it's
@@ -530,7 +530,7 @@ rops_callback_on_writable_mqtt(struct lws *wsi)
 		 * Delay waiting for our POLLOUT until peer indicates he has
 		 * space for more using tx window command in http2 layer
 		 */
-		lwsl_notice("%s: %p: skint (%d)\n", __func__, wsi,
+		aws_lwsl_notice("%s: %p: skint (%d)\n", __func__, wsi,
 			    wsi->h2.tx_cr);
 		wsi->h2.skint = 1;
 		return 0;
@@ -539,9 +539,9 @@ rops_callback_on_writable_mqtt(struct lws *wsi)
 	wsi->h2.skint = 0;
 #endif
 #if defined(LWS_WITH_CLIENT)
-	network_wsi = lws_get_network_wsi(wsi);
+	network_wsi = aws_lws_get_network_wsi(wsi);
 #endif
-	already = lws_wsi_mux_mark_parents_needing_writeable(wsi);
+	already = aws_lws_wsi_mux_mark_parents_needing_writeable(wsi);
 
 	/* for network action, act only on the network wsi */
 
@@ -556,29 +556,29 @@ rops_callback_on_writable_mqtt(struct lws *wsi)
 }
 
 static int
-rops_close_kill_connection_mqtt(struct lws *wsi, enum lws_close_status reason)
+rops_close_kill_connection_mqtt(struct lws *wsi, enum aws_lws_close_status reason)
 {
-	lwsl_info(" %s, his parent %s: child list %p, siblings:\n",
-			lws_wsi_tag(wsi),
-			lws_wsi_tag(wsi->mux.parent_wsi), wsi->mux.child_list);
-	//lws_wsi_mux_dump_children(wsi);
+	aws_lwsl_info(" %s, his parent %s: child list %p, siblings:\n",
+			aws_lws_wsi_tag(wsi),
+			aws_lws_wsi_tag(wsi->mux.parent_wsi), wsi->mux.child_list);
+	//aws_lws_wsi_mux_dump_children(wsi);
 
 	if (wsi->mux_substream
 #if defined(LWS_WITH_CLIENT)
 			|| wsi->client_mux_substream
 #endif
 	) {
-		lwsl_info("closing %s: parent %s: first child %p\n",
-				lws_wsi_tag(wsi),
-				lws_wsi_tag(wsi->mux.parent_wsi),
+		aws_lwsl_info("closing %s: parent %s: first child %p\n",
+				aws_lws_wsi_tag(wsi),
+				aws_lws_wsi_tag(wsi->mux.parent_wsi),
 				wsi->mux.child_list);
 
-		if (wsi->mux.child_list && lwsl_visible(LLL_INFO)) {
-			lwsl_info(" parent %s: closing children: list:\n", lws_wsi_tag(wsi));
-			lws_wsi_mux_dump_children(wsi);
+		if (wsi->mux.child_list && aws_lwsl_visible(LLL_INFO)) {
+			aws_lwsl_info(" parent %s: closing children: list:\n", aws_lws_wsi_tag(wsi));
+			aws_lws_wsi_mux_dump_children(wsi);
 		}
 
-		lws_wsi_mux_close_children(wsi, (int)reason);
+		aws_lws_wsi_mux_close_children(wsi, (int)reason);
 	}
 
 	if ((
@@ -587,13 +587,13 @@ rops_close_kill_connection_mqtt(struct lws *wsi, enum lws_close_status reason)
 #endif
 			wsi->mux_substream) &&
 	     wsi->mux.parent_wsi) {
-		lws_wsi_mux_sibling_disconnect(wsi);
+		aws_lws_wsi_mux_sibling_disconnect(wsi);
 	}
 
 	return 0;
 }
 
-static const lws_rops_t rops_table_mqtt[] = {
+static const aws_lws_rops_t rops_table_mqtt[] = {
 	/*  1 */ { .handle_POLLIN	  = rops_handle_POLLIN_mqtt },
 	/*  2 */ { .handle_POLLOUT	  = rops_handle_POLLOUT_mqtt },
 	/*  3 */ { .callback_on_writable  = rops_callback_on_writable_mqtt },
@@ -605,7 +605,7 @@ static const lws_rops_t rops_table_mqtt[] = {
 #endif
 };
 
-struct lws_role_ops role_ops_mqtt = {
+struct aws_lws_role_ops role_ops_mqtt = {
 	/* role name */			"mqtt",
 	/* alpn id */			"x-amzn-mqtt-ca", /* "mqtt/3.1.1" */
 

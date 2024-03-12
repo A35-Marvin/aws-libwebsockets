@@ -32,7 +32,7 @@
 ///@{
 
 /* enough for 4191s, or just over an hour */
-typedef uint32_t lws_conmon_interval_us_t;
+typedef uint32_t aws_lws_conmon_interval_us_t;
 
 /*
  * Connection latency information... note that not all wsi actually make
@@ -55,19 +55,19 @@ typedef uint32_t lws_conmon_interval_us_t;
  *        }
  *      }
  *
- * The indexes in "dns_disp" are declared in lws_conmon_dns_disposition_t
+ * The indexes in "dns_disp" are declared in aws_lws_conmon_dns_disposition_t
  * below.
  *
  * "prot_specific" may not be present if the protocol doesn't have anything
  * to report or is not supported.
  */
 
-typedef enum lws_conmon_pcol {
+typedef enum aws_lws_conmon_pcol {
 	LWSCONMON_PCOL_NONE,
 	LWSCONMON_PCOL_HTTP, /* .protocol_specific.http is valid */
-} lws_conmon_pcol_t;
+} aws_lws_conmon_pcol_t;
 
-typedef enum lws_conmon_dns_disposition {
+typedef enum aws_lws_conmon_dns_disposition {
 	LWSCONMON_DNS_NONE,
 	/**< did not attempt DNS */
 	LWSCONMON_DNS_OK				= 1,
@@ -76,10 +76,10 @@ typedef enum lws_conmon_dns_disposition {
 	/**< DNS server was not reachable */
 	LWSCONMON_DNS_NO_RESULT				= 3
 	/**< DNS server replied but nothing usable */
-} lws_conmon_dns_disposition_t;
+} aws_lws_conmon_dns_disposition_t;
 
-struct lws_conmon {
-	lws_sockaddr46				peer46;
+struct aws_lws_conmon {
+	aws_lws_sockaddr46				peer46;
 	/**< The peer we actually connected to, if any.  .peer46.sa4.sa_family
 	 * is either 0 if invalid, or the AF_ */
 
@@ -99,30 +99,30 @@ struct lws_conmon {
 	 * freed when object destroyed.
 	 * Only set if client flag LCCSCF_CONMON applied  */
 
-	lws_conmon_interval_us_t		ciu_dns;
+	aws_lws_conmon_interval_us_t		ciu_dns;
 	/**< 0, or if a socket connection, us taken to acquire this DNS response
 	 *
 	 */
-	lws_conmon_interval_us_t		ciu_sockconn;
+	aws_lws_conmon_interval_us_t		ciu_sockconn;
 	/**< 0, or if connection-based, the us interval between the socket
 	 * connect() attempt that succeeded, and the connection setup */
-	lws_conmon_interval_us_t		ciu_tls;
+	aws_lws_conmon_interval_us_t		ciu_tls;
 	/**< 0 if no tls, or us taken to establish the tls tunnel */
-	lws_conmon_interval_us_t		ciu_txn_resp;
+	aws_lws_conmon_interval_us_t		ciu_txn_resp;
 	/**< 0, or if the protocol supports transactions, the interval between
 	 * sending the initial transaction request and starting to receive the
 	 * response */
 
-	lws_conmon_pcol_t			pcol;
+	aws_lws_conmon_pcol_t			pcol;
 	/**< indicates which extra protocol_specific info member is valid,
 	 *   if any */
 
-	lws_conmon_dns_disposition_t		dns_disposition;
+	aws_lws_conmon_dns_disposition_t		dns_disposition;
 	/**< indicates general disposition of DNS request */
 };
 
 /**
- * lws_conmon_wsi_take() - create a connection latency object from client wsi
+ * aws_lws_conmon_wsi_take() - create a connection latency object from client wsi
  *
  * \param context: lws wsi
  * \param dest: conmon struct to fill
@@ -130,7 +130,7 @@ struct lws_conmon {
  * Copies wsi conmon data into the caller's struct.  Passes ownership of
  * any allocations in the addrinfo list to the caller, lws will not delete that
  * any more on wsi close after this call.  The caller must call
- * lws_conmon_release() on the struct to destroy any addrinfo in the struct
+ * aws_lws_conmon_release() on the struct to destroy any addrinfo in the struct
  * that is prepared by this eventually but it can defer it as long as it wants.
  *
  * Other than the addrinfo list, the contents of the returned object are
@@ -138,10 +138,10 @@ struct lws_conmon {
  * everything else in there remains in scope while the object itself does.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_conmon_wsi_take(struct lws *wsi, struct lws_conmon *dest);
+aws_lws_conmon_wsi_take(struct lws *wsi, struct aws_lws_conmon *dest);
 
 /**
- * lws_conmon_release() - free any allocations in the conmon struct
+ * aws_lws_conmon_release() - free any allocations in the conmon struct
  *
  * \param conmon: pointer to conmon struct
  *
@@ -150,6 +150,6 @@ lws_conmon_wsi_take(struct lws *wsi, struct lws_conmon *dest);
  * is on the stack or embedded in another object.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_conmon_release(struct lws_conmon *conmon);
+aws_lws_conmon_release(struct aws_lws_conmon *conmon);
 
 ///@}

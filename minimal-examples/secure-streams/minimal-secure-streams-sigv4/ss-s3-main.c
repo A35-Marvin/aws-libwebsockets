@@ -20,8 +20,8 @@
 #endif
 
 int interrupted, bad = 1;
-static lws_state_notify_link_t nl;
-extern const lws_ss_info_t s3_ssi;
+static aws_lws_state_notify_link_t nl;
+extern const aws_lws_ss_info_t s3_ssi;
 
 #if !defined(LWS_SS_USE_SSPC)
 
@@ -166,11 +166,11 @@ static char *aws_keyid, *aws_key;
 #endif
 
 static int
-app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+app_system_state_nf(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		    int current, int target)
 {
-	struct lws_context *context = lws_system_context_from_system_mgr(mgr);
-	struct lws_ss_handle *h;
+	struct aws_lws_context *context = aws_lws_system_context_from_system_mgr(mgr);
+	struct aws_lws_ss_handle *h;
 
 	switch (target) {
 	case LWS_SYSTATE_REGISTERED:
@@ -181,18 +181,18 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 			break;
 
 #if !defined(LWS_SS_USE_SSPC)
-		if (lws_aws_filesystem_credentials_helper(
+		if (aws_lws_aws_filesystem_credentials_helper(
 					  "~/.aws/credentials",
 					  "aws_access_key_id",
 					  "aws_secret_access_key",
 					  &aws_keyid, &aws_key))
 			return -1;
-		lws_ss_sigv4_set_aws_key(context, 0, aws_keyid, aws_key);
+		aws_lws_ss_sigv4_set_aws_key(context, 0, aws_keyid, aws_key);
 #endif
 
-		if (lws_ss_create(context, 0, &s3_ssi, NULL, &h,
+		if (aws_lws_ss_create(context, 0, &s3_ssi, NULL, &h,
 				  NULL, NULL)) {
-			lwsl_err("%s: failed to create secure stream\n",
+			aws_lwsl_err("%s: failed to create secure stream\n",
 				 __func__);
 
 			return -1;
@@ -203,7 +203,7 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	return 0;
 }
 
-static lws_state_notify_link_t * const app_notifier_list[] = {
+static aws_lws_state_notify_link_t * const app_notifier_list[] = {
 	&nl, NULL
 };
 
@@ -216,39 +216,39 @@ sigint_handler(int sig)
 int main(int argc, const char **argv)
 {
 	int logs = LLL_USER | LLL_ERR | LLL_WARN /* | LLL_NOTICE */ ;
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
-	lws_set_log_level(logs, NULL);
+	aws_lws_set_log_level(logs, NULL);
 
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS minimal secure streams sigv4 \n");
+	aws_lwsl_user("LWS minimal secure streams sigv4 \n");
 
 	info.fd_limit_per_thread = 1 + 6 + 1;
 	info.port = CONTEXT_PORT_NO_LISTEN;
 
 #if defined(LWS_SS_USE_SSPC)
-	info.protocols = lws_sspc_protocols;
+	info.protocols = aws_lws_sspc_protocols;
 	{
 		const char *p;
 
 		/* connect to ssproxy via UDS by default, else via
 		 * tcp connection to this port */
-		if ((p = lws_cmdline_option(argc, argv, "-p")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-p")))
 			info.ss_proxy_port = (uint16_t)atoi(p);
 
 		/* UDS "proxy.ss.lws" in abstract namespace, else this socket
 		 * path; when -p given this can specify the network interface
 		 * to bind to */
-		if ((p = lws_cmdline_option(argc, argv, "-i")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-i")))
 			info.ss_proxy_bind = p;
 
 		/* if -p given, -a specifies the proxy address to connect to */
-		if ((p = lws_cmdline_option(argc, argv, "-a")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-a")))
 			info.ss_proxy_address = p;
 	}
 #else
@@ -270,22 +270,22 @@ int main(int argc, const char **argv)
 
 	/* create the context */
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	lws_system_blob_heap_append(lws_system_get_blob(context,
+	aws_lws_system_blob_heap_append(aws_lws_system_get_blob(context,
 				    LWS_SYSBLOB_TYPE_DEVICE_TYPE, 0),
 				    (const uint8_t *)"beerfountain", 12);
 
 	/* the event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 #if !defined(LWS_SS_USE_SSPC)
 	if (aws_key)
@@ -294,7 +294,7 @@ int main(int argc, const char **argv)
 		free(aws_keyid);
 #endif
 
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

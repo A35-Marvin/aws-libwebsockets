@@ -47,18 +47,18 @@ extern "C" {
 
 /* place for one-shot opaque forward references */
 
-typedef struct lws_context * lws_ctx_t;
-struct lws_sequencer;
-struct lws_dsh;
+typedef struct aws_lws_context * aws_lws_ctx_t;
+struct aws_lws_sequencer;
+struct aws_lws_dsh;
 
 /*
  * CARE: everything using cmake defines needs to be below here
  */
 
-#define LWS_US_PER_SEC ((lws_usec_t)1000000)
-#define LWS_MS_PER_SEC ((lws_usec_t)1000)
-#define LWS_US_PER_MS ((lws_usec_t)1000)
-#define LWS_NS_PER_US ((lws_usec_t)1000)
+#define LWS_US_PER_SEC ((aws_lws_usec_t)1000000)
+#define LWS_MS_PER_SEC ((aws_lws_usec_t)1000)
+#define LWS_US_PER_MS ((aws_lws_usec_t)1000)
+#define LWS_NS_PER_US ((aws_lws_usec_t)1000)
 
 #define LWS_KI (1024)
 #define LWS_MI (LWS_KI * 1024)
@@ -70,9 +70,9 @@ struct lws_dsh;
 
 #if defined(LWS_HAS_INTPTR_T)
 #include <stdint.h>
-#define lws_intptr_t intptr_t
+#define aws_lws_intptr_t intptr_t
 #else
-typedef unsigned long long lws_intptr_t;
+typedef unsigned long long aws_lws_intptr_t;
 #endif
 
 #if defined(WIN32) || defined(_WIN32)
@@ -317,38 +317,38 @@ typedef int suseconds_t;
 
 #include <pthread.h>
 
-#define lws_pthread_mutex(name) pthread_mutex_t name;
+#define aws_lws_pthread_mutex(name) pthread_mutex_t name;
 
 static LWS_INLINE void
-lws_pthread_mutex_init(pthread_mutex_t *lock)
+aws_lws_pthread_mutex_init(pthread_mutex_t *lock)
 {
 	pthread_mutex_init(lock, NULL);
 }
 
 static LWS_INLINE void
-lws_pthread_mutex_destroy(pthread_mutex_t *lock)
+aws_lws_pthread_mutex_destroy(pthread_mutex_t *lock)
 {
 	pthread_mutex_destroy(lock);
 }
 
 static LWS_INLINE void
-lws_pthread_mutex_lock(pthread_mutex_t *lock)
+aws_lws_pthread_mutex_lock(pthread_mutex_t *lock)
 {
 	pthread_mutex_lock(lock);
 }
 
 static LWS_INLINE void
-lws_pthread_mutex_unlock(pthread_mutex_t *lock)
+aws_lws_pthread_mutex_unlock(pthread_mutex_t *lock)
 {
 	pthread_mutex_unlock(lock);
 }
 
 #else
-#define lws_pthread_mutex(name)
-#define lws_pthread_mutex_init(_a)
-#define lws_pthread_mutex_destroy(_a)
-#define lws_pthread_mutex_lock(_a)
-#define lws_pthread_mutex_unlock(_a)
+#define aws_lws_pthread_mutex(name)
+#define aws_lws_pthread_mutex_init(_a)
+#define aws_lws_pthread_mutex_destroy(_a)
+#define aws_lws_pthread_mutex_lock(_a)
+#define aws_lws_pthread_mutex_unlock(_a)
 #endif
 
 
@@ -360,8 +360,8 @@ lws_pthread_mutex_unlock(pthread_mutex_t *lock)
 
 #include <stddef.h>
 
-#ifndef lws_container_of
-#define lws_container_of(P,T,M)	((T *)((char *)(P) - offsetof(T, M)))
+#ifndef aws_lws_container_of
+#define aws_lws_container_of(P,T,M)	((T *)((char *)(P) - offsetof(T, M)))
 #endif
 #define LWS_ALIGN_TO(x, bou) x += ((bou) - ((x) % (bou))) % (bou)
 
@@ -371,10 +371,10 @@ struct lws;
 
 #define LWS_FEATURE_SERVE_HTTP_FILE_HAS_OTHER_HEADERS_ARG
 
-/* the struct lws_protocols has the id field present */
+/* the struct aws_lws_protocols has the id field present */
 #define LWS_FEATURE_PROTOCOLS_HAS_ID_FIELD
 
-/* you can call lws_get_peer_write_allowance */
+/* you can call aws_lws_get_peer_write_allowance */
 #define LWS_FEATURE_PROTOCOLS_HAS_PEER_WRITE_ALLOWANCE
 
 /* extra parameter introduced in 917f43ab821 */
@@ -386,16 +386,16 @@ struct lws;
 
 #if defined(_WIN32)
 #if !defined(LWS_WIN32_HANDLE_TYPES)
-typedef SOCKET lws_sockfd_type;
+typedef SOCKET aws_lws_sockfd_type;
 #if defined(__MINGW32__)
-typedef int lws_filefd_type;
+typedef int aws_lws_filefd_type;
 #else
-typedef HANDLE lws_filefd_type;
+typedef HANDLE aws_lws_filefd_type;
 #endif
 #endif
 
 
-#define lws_pollfd pollfd
+#define aws_lws_pollfd pollfd
 #define LWS_POLLHUP	(POLLHUP)
 #define LWS_POLLIN	(POLLRDNORM | POLLRDBAND)
 #define LWS_POLLOUT	(POLLWRNORM)
@@ -406,8 +406,8 @@ typedef HANDLE lws_filefd_type;
 #if defined(LWS_PLAT_FREERTOS)
 #include <libwebsockets/lws-freertos.h>
 #else
-typedef int lws_sockfd_type;
-typedef int lws_filefd_type;
+typedef int aws_lws_sockfd_type;
+typedef int aws_lws_filefd_type;
 #endif
 
 #if defined(LWS_PLAT_OPTEE)
@@ -418,7 +418,7 @@ struct timeval {
 };
 #if defined(LWS_WITH_NETWORK)
 // #include <poll.h>
-#define lws_pollfd pollfd
+#define aws_lws_pollfd pollfd
 
 struct timezone;
 
@@ -499,7 +499,7 @@ int socket(int domain, int type, int protocol);
        void freeaddrinfo(struct addrinfo *res);
 
 #if !defined(TEE_SE_READER_NAME_MAX)
-struct lws_pollfd
+struct aws_lws_pollfd
 {
         int fd;                     /* File descriptor to poll.  */
         short int events;           /* Types of events poller cares about.  */
@@ -513,11 +513,11 @@ int poll(struct pollfd *fds, int nfds, int timeout);
 #define LWS_POLLIN (1)
 #define LWS_POLLOUT (4)
 #else
-struct lws_pollfd;
+struct aws_lws_pollfd;
 struct sockaddr_in;
 #endif
 #else
-#define lws_pollfd pollfd
+#define aws_lws_pollfd pollfd
 #define LWS_POLLHUP (POLLHUP | POLLERR)
 #define LWS_POLLIN (POLLIN)
 #define LWS_POLLOUT (POLLOUT)
@@ -554,28 +554,28 @@ typedef unsigned char uint8_t;
 #endif
 #endif
 
-typedef int64_t lws_usec_t;
-typedef unsigned long long lws_filepos_t;
-typedef long long lws_fileofs_t;
-typedef uint32_t lws_fop_flags_t;
+typedef int64_t aws_lws_usec_t;
+typedef unsigned long long aws_lws_filepos_t;
+typedef long long aws_lws_fileofs_t;
+typedef uint32_t aws_lws_fop_flags_t;
 
-#define lws_concat_temp(_t, _l) (_t + sizeof(_t) - _l)
-#define lws_concat_used(_t, _l) (sizeof(_t) - _l)
+#define aws_lws_concat_temp(_t, _l) (_t + sizeof(_t) - _l)
+#define aws_lws_concat_used(_t, _l) (sizeof(_t) - _l)
 
-/** struct lws_pollargs - argument structure for all external poll related calls
+/** struct aws_lws_pollargs - argument structure for all external poll related calls
  * passed in via 'in' */
-struct lws_pollargs {
-	lws_sockfd_type fd;	/**< applicable socket descriptor */
+struct aws_lws_pollargs {
+	aws_lws_sockfd_type fd;	/**< applicable socket descriptor */
 	int events;		/**< the new event mask */
 	int prev_events;	/**< the previous event mask */
 };
 
-struct lws_extension; /* needed even with ws exts disabled for create context */
-struct lws_token_limits;
-struct lws_protocols;
-struct lws_context;
-struct lws_tokens;
-struct lws_vhost;
+struct aws_lws_extension; /* needed even with ws exts disabled for create context */
+struct aws_lws_token_limits;
+struct aws_lws_protocols;
+struct aws_lws_context;
+struct aws_lws_tokens;
+struct aws_lws_vhost;
 struct lws;
 
 #include <libwebsockets/lws-dll2.h>

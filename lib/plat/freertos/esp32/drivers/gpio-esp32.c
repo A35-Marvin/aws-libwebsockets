@@ -25,13 +25,13 @@
 #include <libwebsockets.h>
 	
 static void
-lws_gpio_esp32_mode(_lws_plat_gpio_t gpio, int flags)
+aws_lws_gpio_esp32_mode(_lws_plat_gpio_t gpio, int flags)
 {
 	int mode, pup = GPIO_FLOATING;
 
 	switch (flags & (LWSGGPIO_FL_READ | LWSGGPIO_FL_WRITE)) {
 	default:
-		lwsl_err("%s: neither read nor write\n", __func__);
+		aws_lwsl_err("%s: neither read nor write\n", __func__);
 		return;
 	case LWSGGPIO_FL_READ:
 		mode = GPIO_MODE_INPUT;
@@ -65,19 +65,19 @@ lws_gpio_esp32_mode(_lws_plat_gpio_t gpio, int flags)
 }
 
 static int
-lws_gpio_esp32_read(_lws_plat_gpio_t gpio)
+aws_lws_gpio_esp32_read(_lws_plat_gpio_t gpio)
 {
 	return gpio_get_level(gpio);
 }
 static void
-lws_gpio_esp32_set(_lws_plat_gpio_t gpio, int val)
+aws_lws_gpio_esp32_set(_lws_plat_gpio_t gpio, int val)
 {
 	gpio_set_level(gpio, val);
 }
 
 static int
-lws_gpio_esp32_irq_mode(_lws_plat_gpio_t gpio, lws_gpio_irq_t irq_type,
-			lws_gpio_irq_cb_t cb, void *arg)
+aws_lws_gpio_esp32_irq_mode(_lws_plat_gpio_t gpio, aws_lws_gpio_irq_t irq_type,
+			aws_lws_gpio_irq_cb_t cb, void *arg)
 {
 	if (gpio_set_intr_type(gpio, irq_type))
 		return 1;
@@ -88,9 +88,9 @@ lws_gpio_esp32_irq_mode(_lws_plat_gpio_t gpio, lws_gpio_irq_t irq_type,
 	return gpio_isr_handler_remove(gpio);
 }
 
-const lws_gpio_ops_t lws_gpio_plat = {
-	.mode			= lws_gpio_esp32_mode,
-	.read			= lws_gpio_esp32_read,
-	.set			= lws_gpio_esp32_set,
-	.irq_mode		= lws_gpio_esp32_irq_mode,
+const aws_lws_gpio_ops_t aws_lws_gpio_plat = {
+	.mode			= aws_lws_gpio_esp32_mode,
+	.read			= aws_lws_gpio_esp32_read,
+	.set			= aws_lws_gpio_esp32_set,
+	.irq_mode		= aws_lws_gpio_esp32_irq_mode,
 };

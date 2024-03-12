@@ -26,7 +26,7 @@
  * proxy is used to asynchronusly transfer buffers in each direction via the
  * network stack, without explicit IPC
  *
- *     user_process{ [user code] | shim | socket-}------ lws_process{ lws }
+ *     user_process{ [user code] | shim | socket-}------ aws_lws_process{ lws }
  *
  * Lws exposes a listening unix domain socket in this case, the user processes
  * connect to it and pass just info.streamtype in an initial tx packet.  All
@@ -60,15 +60,15 @@ struct raw_pss {
  */
 
 typedef struct ss_proxy_onward {
-	lws_ss_handle_t 	*ss;
+	aws_lws_ss_handle_t 	*ss;
 	struct conn		*conn;
 } ss_proxy_t;
 
 void
-lws_proxy_clean_conn_ss(struct lws *wsi)
+aws_lws_proxy_clean_conn_ss(struct lws *wsi)
 {
 #if 0
-	lws_ss_handle_t *h = (lws_ss_handle_t *)wsi->a.opaque_user_data;
+	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)wsi->a.opaque_user_data;
 	struct conn *conn = h->conn_if_sspc_onw;
 
 	if (!wsi)
@@ -81,46 +81,46 @@ lws_proxy_clean_conn_ss(struct lws *wsi)
 
 
 void
-ss_proxy_onward_link_req_writeable(lws_ss_handle_t *h_onward)
+ss_proxy_onward_link_req_writeable(aws_lws_ss_handle_t *h_onward)
 {
 	ss_proxy_t *m = (ss_proxy_t *)&h_onward[1];
 
 	if (m->conn->wsi) /* if possible, request client conn write */
-		lws_callback_on_writable(m->conn->wsi);
+		aws_lws_callback_on_writable(m->conn->wsi);
 }
 
 int
 __lws_ss_proxy_bind_ss_to_conn_wsi(void *parconn, size_t dsh_size)
 {
 	struct conn *conn = (struct conn *)parconn;
-	struct lws_context_per_thread *pt;
+	struct aws_lws_context_per_thread *pt;
 
 	if (!conn || !conn->wsi || !conn->ss)
 		return -1;
 
 	pt = &conn->wsi->a.context->pt[(int)conn->wsi->tsi];
 
-	if (lws_fi(&conn->ss->fic, "ssproxy_dsh_create_oom"))
+	if (aws_lws_fi(&conn->ss->fic, "ssproxy_dsh_create_oom"))
 		return -1;
-	conn->dsh = lws_dsh_create(&pt->ss_dsh_owner, dsh_size, 2);
+	conn->dsh = aws_lws_dsh_create(&pt->ss_dsh_owner, dsh_size, 2);
 	if (!conn->dsh)
 		return -1;
 
-	__lws_lc_tag_append(&conn->wsi->lc, lws_ss_tag(conn->ss));
+	__lws_lc_tag_append(&conn->wsi->lc, aws_lws_ss_tag(conn->ss));
 
 	return 0;
 }
 
 /* Onward secure streams payload interface */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_proxy_onward_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	ss_proxy_t *m = (ss_proxy_t *)userobj;
 	const char *rsp = NULL;
 	int n;
 
-	// lwsl_notice("%s: len %d\n", __func__, (int)len);
+	// aws_lwsl_notice("%s: len %d\n", __func__, (int)len);
 
 	/*
 	 * The onward secure stream connection has received something.
@@ -136,10 +136,10 @@ ss_proxy_onward_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	 * in ss -> proxy [ -> client] direction.  This can fail...
 	 */
 
-	if (lws_fi(&m->ss->fic, "ssproxy_dsh_rx_queue_oom"))
+	if (aws_lws_fi(&m->ss->fic, "ssproxy_dsh_rx_queue_oom"))
 		n = 1;
 	else
-		n = lws_ss_serialize_rx_payload(m->conn->dsh, buf, len,
+		n = aws_lws_ss_serialize_rx_payload(m->conn->dsh, buf, len,
 						flags, rsp);
 	if (n)
 		/*
@@ -155,23 +155,23 @@ ss_proxy_onward_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 
 	if (!m->conn->onward_in_flow_control && m->ss->wsi &&
 	    m->ss->policy->proxy_buflen_rxflow_on_above &&
-	    lws_dsh_get_size(m->conn->dsh, KIND_SS_TO_P) >=
+	    aws_lws_dsh_get_size(m->conn->dsh, KIND_SS_TO_P) >=
 				m->ss->policy->proxy_buflen_rxflow_on_above) {
-		lwsl_info("%s: %s: rxflow disabling rx (%lu / %lu, hwm %lu)\n", __func__,
-				lws_wsi_tag(m->ss->wsi),
-				(unsigned long)lws_dsh_get_size(m->conn->dsh, KIND_SS_TO_P),
+		aws_lwsl_info("%s: %s: rxflow disabling rx (%lu / %lu, hwm %lu)\n", __func__,
+				aws_lws_wsi_tag(m->ss->wsi),
+				(unsigned long)aws_lws_dsh_get_size(m->conn->dsh, KIND_SS_TO_P),
 				(unsigned long)m->ss->policy->proxy_buflen,
 				(unsigned long)m->ss->policy->proxy_buflen_rxflow_on_above);
 		/*
 		 * stop taking in rx once the onward wsi rx is above the
 		 * high water mark
 		 */
-		lws_rx_flow_control(m->ss->wsi, 0);
+		aws_lws_rx_flow_control(m->ss->wsi, 0);
 		m->conn->onward_in_flow_control = 1;
 	}
 
 	if (m->conn->wsi) /* if possible, request client conn write */
-		lws_callback_on_writable(m->conn->wsi);
+		aws_lws_callback_on_writable(m->conn->wsi);
 
 	return LWSSSSRET_OK;
 }
@@ -180,8 +180,8 @@ ss_proxy_onward_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
  * we are transmitting buffered payload originally from the client on to the ss
  */
 
-static lws_ss_state_return_t
-ss_proxy_onward_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
+static aws_lws_ss_state_return_t
+ss_proxy_onward_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 		   size_t *len, int *flags)
 {
 	ss_proxy_t *m = (ss_proxy_t *)userobj;
@@ -189,7 +189,7 @@ ss_proxy_onward_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
 	size_t si;
 
 	if (!m->conn->ss || m->conn->state != LPCSPROX_OPERATIONAL) {
-		lwsl_notice("%s: ss not ready\n", __func__);
+		aws_lwsl_notice("%s: ss not ready\n", __func__);
 		*len = 0;
 
 		return LWSSSSRET_TX_DONT_SEND;
@@ -201,25 +201,25 @@ ss_proxy_onward_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
 	 * next thing out of the dsh
 	 */
 
-	if (lws_ss_deserialize_tx_payload(m->conn->dsh, m->ss->wsi,
+	if (aws_lws_ss_deserialize_tx_payload(m->conn->dsh, m->ss->wsi,
 					  ord, buf, len, flags))
 		return LWSSSSRET_TX_DONT_SEND;
 
 	/* ... there's more we want to send? */
-	if (!lws_dsh_get_head(m->conn->dsh, KIND_C_TO_P, (void **)&p, &si))
+	if (!aws_lws_dsh_get_head(m->conn->dsh, KIND_C_TO_P, (void **)&p, &si))
 		_lws_ss_request_tx(m->conn->ss);
 
 	if (!*len && !*flags)
 		/* we don't actually want to send anything */
 		return LWSSSSRET_TX_DONT_SEND;
 
-	lwsl_info("%s: onward tx %d fl 0x%x\n", __func__, (int)*len, *flags);
+	aws_lwsl_info("%s: onward tx %d fl 0x%x\n", __func__, (int)*len, *flags);
 
 #if 0
 	{
 		int ff = open("/tmp/z", O_RDWR | O_CREAT | O_APPEND, 0666);
 		if (ff == -1)
-			lwsl_err("%s: errno %d\n", __func__, errno);
+			aws_lwsl_err("%s: errno %d\n", __func__, errno);
 		write(ff, buf, *len);
 		close(ff);
 	}
@@ -228,9 +228,9 @@ ss_proxy_onward_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
 	return LWSSSSRET_OK;
 }
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_proxy_onward_state(void *userobj, void *sh,
-		      lws_ss_constate_t state, lws_ss_tx_ordinal_t ack)
+		      aws_lws_ss_constate_t state, aws_lws_ss_tx_ordinal_t ack)
 {
 	ss_proxy_t *m = (ss_proxy_t *)userobj;
 	size_t dsh_size;
@@ -249,8 +249,8 @@ ss_proxy_onward_state(void *userobj, void *sh,
 		dsh_size = m->ss->policy->proxy_buflen ?
 				m->ss->policy->proxy_buflen : 32768;
 
-		lwsl_notice("%s: %s: initializing dsh max len %lu\n",
-				__func__, lws_ss_tag(m->ss),
+		aws_lwsl_notice("%s: %s: initializing dsh max len %lu\n",
+				__func__, aws_lws_ss_tag(m->ss),
 				(unsigned long)dsh_size);
 
 		/* this includes ssproxy_dsh_create_oom fault generation */
@@ -259,7 +259,7 @@ ss_proxy_onward_state(void *userobj, void *sh,
 
 			/* failed to allocate the dsh */
 
-			lwsl_notice("%s: dsh init failed\n", __func__);
+			aws_lwsl_notice("%s: dsh init failed\n", __func__);
 
 			return LWSSSSRET_DESTROY_ME;
 		}
@@ -273,25 +273,25 @@ ss_proxy_onward_state(void *userobj, void *sh,
 			 * Our onward secure stream is closing and our client
 			 * connection has already gone away... destroy the conn.
 			 */
-			lwsl_info("%s: Destroying conn\n", __func__);
-			lws_dsh_destroy(&m->conn->dsh);
+			aws_lwsl_info("%s: Destroying conn\n", __func__);
+			aws_lws_dsh_destroy(&m->conn->dsh);
 			free(m->conn);
 			m->conn = NULL;
 			return 0;
 		} else
-			lwsl_info("%s: ss DESTROYING, wsi up\n", __func__);
+			aws_lwsl_info("%s: ss DESTROYING, wsi up\n", __func__);
 		break;
 
 	default:
 		break;
 	}
 	if (!m->conn) {
-		lwsl_warn("%s: dropping state due to conn not up\n", __func__);
+		aws_lwsl_warn("%s: dropping state due to conn not up\n", __func__);
 
 		return LWSSSSRET_OK;
 	}
 
-	if (lws_ss_serialize_state(m->conn->wsi, m->conn->dsh, state, ack))
+	if (aws_lws_ss_serialize_state(m->conn->wsi, m->conn->dsh, state, ack))
 		/*
 		 * Failed to alloc state packet that we want to send in dsh,
 		 * we will lose coherence and have to disconnect the link
@@ -299,7 +299,7 @@ ss_proxy_onward_state(void *userobj, void *sh,
 		return LWSSSSRET_DISCONNECT_ME;
 
 	if (m->conn->wsi) /* if possible, request client conn write */
-		lws_callback_on_writable(m->conn->wsi);
+		aws_lws_callback_on_writable(m->conn->wsi);
 
 	return LWSSSSRET_OK;
 }
@@ -312,10 +312,10 @@ ss_proxy_onward_txcr(void *userobj, int bump)
 	if (!m->conn)
 		return;
 
-	lws_ss_serialize_txcr(m->conn->dsh, bump);
+	aws_lws_ss_serialize_txcr(m->conn->dsh, bump);
 
 	if (m->conn->wsi) /* if possible, request client conn write */
-		lws_callback_on_writable(m->conn->wsi);
+		aws_lws_callback_on_writable(m->conn->wsi);
 }
 
 /*
@@ -323,14 +323,14 @@ ss_proxy_onward_txcr(void *userobj, int bump)
  */
 
 static int
-callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
+callback_ss_proxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		  void *user, void *in, size_t len)
 {
 	struct raw_pss *pss = (struct raw_pss *)user;
-	const lws_ss_policy_t *rsp;
+	const aws_lws_ss_policy_t *rsp;
 	struct conn *conn = NULL;
-	lws_ss_metadata_t *md;
-	lws_ss_info_t ssi;
+	aws_lws_ss_metadata_t *md;
+	aws_lws_ss_info_t ssi;
 	const uint8_t *cp;
 	char s[512];
 	uint8_t *p;
@@ -351,11 +351,11 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 	/* callbacks related to raw socket descriptor "accepted side" */
 
         case LWS_CALLBACK_RAW_ADOPT:
-		lwsl_info("LWS_CALLBACK_RAW_ADOPT\n");
+		aws_lwsl_info("LWS_CALLBACK_RAW_ADOPT\n");
 		if (!pss)
 			return -1;
 
-		if (lws_fi(&wsi->fic, "ssproxy_client_adopt_oom"))
+		if (aws_lws_fi(&wsi->fic, "ssproxy_client_adopt_oom"))
 			pss->conn = NULL;
 		else
 			pss->conn = malloc(sizeof(struct conn));
@@ -376,11 +376,11 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 		 * acceptance up rapidly with an initial tx containing the
 		 * streamtype name.  We can't create the stream until then.
 		 */
-		lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_CLIENT_HS_SEND, 3);
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_CLIENT_HS_SEND, 3);
                 break;
 
 	case LWS_CALLBACK_RAW_CLOSE:
-		lwsl_info("LWS_CALLBACK_RAW_CLOSE:\n");
+		aws_lwsl_info("LWS_CALLBACK_RAW_CLOSE:\n");
 
 		if (!conn)
 			break;
@@ -397,11 +397,11 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 		assert(conn->wsi == wsi);
 		conn->wsi = NULL;
 
-		lwsl_notice("%s: cli->prox link %s closing\n", __func__,
-				lws_wsi_tag(wsi));
+		aws_lwsl_notice("%s: cli->prox link %s closing\n", __func__,
+				aws_lws_wsi_tag(wsi));
 
 		/* sever relationship with conn */
-		lws_set_opaque_user_data(wsi, NULL);
+		aws_lws_set_opaque_user_data(wsi, NULL);
 
 		/*
 		 * The current wsi is decoupled from the pss / conn and
@@ -417,9 +417,9 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 			 * conn->ss is the onward connection SS
 			 */
 
-			lwsl_info("%s: destroying %s, wsi %s\n",
-					__func__, lws_ss_tag(conn->ss),
-					lws_wsi_tag(conn->ss->wsi));
+			aws_lwsl_info("%s: destroying %s, wsi %s\n",
+					__func__, aws_lws_ss_tag(conn->ss),
+					aws_lws_wsi_tag(conn->ss->wsi));
 
 			/* sever conn relationship with ss about to be deleted */
 
@@ -429,7 +429,7 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 
 				/* disconnect onward SS from its wsi */
 
-				lws_set_opaque_user_data(cw, NULL);
+				aws_lws_set_opaque_user_data(cw, NULL);
 
 				/*
 				 * The wsi doing the onward connection can no
@@ -437,10 +437,10 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 				 * he gets callbacks he wants to bind to
 				 * the ss we are about to delete
 				 */
-				lws_wsi_close(cw, LWS_TO_KILL_ASYNC);
+				aws_lws_wsi_close(cw, LWS_TO_KILL_ASYNC);
 			}
 
-			lws_ss_destroy(&conn->ss);
+			aws_lws_ss_destroy(&conn->ss);
 			/*
 			 * Conn may have gone, at ss destroy handler in
 			 * ssi.state for proxied ss
@@ -453,11 +453,11 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 			 * There's no onward secure stream and our client
 			 * connection is closing.  Destroy the conn.
 			 */
-			lws_dsh_destroy(&conn->dsh);
+			aws_lws_dsh_destroy(&conn->dsh);
 			free(conn);
 			pss->conn = NULL;
 		} else
-			lwsl_debug("%s: CLOSE; %s\n", __func__, lws_ss_tag(conn->ss));
+			aws_lwsl_debug("%s: CLOSE; %s\n", __func__, aws_lws_ss_tag(conn->ss));
 
 		break;
 
@@ -465,15 +465,15 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 		/*
 		 * ie, the proxy is receiving something from a client
 		 */
-		lwsl_info("%s: RX: rx %d\n", __func__, (int)len);
+		aws_lwsl_info("%s: RX: rx %d\n", __func__, (int)len);
 
 		if (!conn || !conn->wsi) {
-			lwsl_err("%s: rx with bad conn state\n", __func__);
+			aws_lwsl_err("%s: rx with bad conn state\n", __func__);
 
 			return -1;
 		}
 
-		// lwsl_hexdump_info(in, len);
+		// aws_lwsl_hexdump_info(in, len);
 
 		if (conn->state == LPCSPROX_WAIT_INITIAL_TX) {
 			memset(&ssi, 0, sizeof(ssi));
@@ -487,8 +487,8 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 		ssi.state = ss_proxy_onward_state;
 		ssi.flags = 0;
 
-		n = lws_ss_deserialize_parse(&conn->parser,
-				lws_get_context(wsi), conn->dsh, in, len,
+		n = aws_lws_ss_deserialize_parse(&conn->parser,
+				aws_lws_get_context(wsi), conn->dsh, in, len,
 				&conn->state, conn, &conn->ss, &ssi, 0);
 		switch (n) {
 		case LWSSSSRET_OK:
@@ -497,20 +497,20 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 			return -1;
 		case LWSSSSRET_DESTROY_ME:
 			if (conn->ss)
-				lws_ss_destroy(&conn->ss);
+				aws_lws_ss_destroy(&conn->ss);
 			return -1;
 		}
 
 		if (conn->state == LPCSPROX_REPORTING_FAIL ||
 		    conn->state == LPCSPROX_REPORTING_OK)
-			lws_callback_on_writable(conn->wsi);
+			aws_lws_callback_on_writable(conn->wsi);
 
 		break;
 
 	case LWS_CALLBACK_RAW_WRITEABLE:
 
-		lwsl_debug("%s: %s: LWS_CALLBACK_RAW_WRITEABLE, state 0x%x\n",
-				__func__, lws_wsi_tag(wsi), lwsi_state(wsi));
+		aws_lwsl_debug("%s: %s: LWS_CALLBACK_RAW_WRITEABLE, state 0x%x\n",
+				__func__, aws_lws_wsi_tag(wsi), aws_lwsi_state(wsi));
 
 		/*
 		 * We can transmit something back to the client from the dsh
@@ -536,7 +536,7 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 
 			n = 8;
 
-			lws_ser_wu32be((uint8_t *)&s[4], conn->ss &&
+			aws_lws_ser_wu32be((uint8_t *)&s[4], conn->ss &&
 							 conn->ss->policy ?
 					conn->ss->policy->client_buflen : 0);
 
@@ -551,15 +551,15 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 				while (rsp) {
 					if (n != 4 && n < (int)sizeof(s) - 2)
 						s[n++] = ',';
-					n += lws_snprintf(&s[n], sizeof(s) - (unsigned int)n,
+					n += aws_lws_snprintf(&s[n], sizeof(s) - (unsigned int)n,
 							"%s", rsp->streamtype);
-					rsp = lws_ss_policy_lookup(wsi->a.context,
+					rsp = aws_lws_ss_policy_lookup(wsi->a.context,
 						rsp->rideshare_streamtype);
 				}
 			}
 			s[2] = (char)(n - 3);
 			conn->state = LPCSPROX_OPERATIONAL;
-			lws_set_timeout(wsi, 0, 0);
+			aws_lws_set_timeout(wsi, 0, 0);
 			break;
 
 		case LPCSPROX_OPERATIONAL:
@@ -571,22 +571,22 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 
 			md = conn->ss->metadata;
 			while (md) {
-				// lwsl_notice("%s: check %s: %d\n", __func__,
+				// aws_lwsl_notice("%s: check %s: %d\n", __func__,
 				// md->name, md->pending_onward);
 				if (md->pending_onward) {
 					size_t naml = strlen(md->name);
 
-					// lwsl_notice("%s: proxy issuing rxmd\n", __func__);
+					// aws_lwsl_notice("%s: proxy issuing rxmd\n", __func__);
 
 					if (4 + naml + md->length > sizeof(s)) {
-						lwsl_err("%s: rxmdata too big\n",
+						aws_lwsl_err("%s: rxmdata too big\n",
 								__func__);
 						goto hangup;
 					}
 					md->pending_onward = 0;
 					p = (uint8_t *)s;
 					p[0] = LWSSS_SER_RXPRE_METADATA;
-					lws_ser_wu16be(&p[1], (uint16_t)(1 + naml +
+					aws_lws_ser_wu16be(&p[1], (uint16_t)(1 + naml +
 							      md->length));
 					p[3] = (uint8_t)naml;
 					memcpy(&p[4], md->name, naml);
@@ -595,7 +595,7 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 					       md->length);
 					p += md->length;
 
-					n = lws_ptr_diff(p, cp);
+					n = aws_lws_ptr_diff(p, cp);
 					goto again;
 				}
 
@@ -617,10 +617,10 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 				cp = (uint8_t *)s;
 				p = (uint8_t *)s;
 				p[0] = LWSSS_SER_RXPRE_PERF;
-				lws_ser_wu16be(&p[1], (uint16_t)xlen);
+				aws_lws_ser_wu16be(&p[1], (uint16_t)xlen);
 				memcpy(&p[3], conn->ss->conmon_json, xlen);
 
-				lws_free_set_NULL(conn->ss->conmon_json);
+				aws_lws_free_set_NULL(conn->ss->conmon_json);
 				n = (int)(xlen + 3);
 
 				pay = 0;
@@ -632,7 +632,7 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 			 * dsh
 			 */
 
-			if (lws_dsh_get_head(conn->dsh, KIND_SS_TO_P,
+			if (aws_lws_dsh_get_head(conn->dsh, KIND_SS_TO_P,
 					     (void **)&p, &si))
 				break;
 
@@ -650,21 +650,21 @@ callback_ss_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 				 * +  7  u32  write will compute latency here...
 				 * + 11  u32  ust we received from ss
 				 *
-				 * lws_write will report it and fill in
+				 * aws_lws_write will report it and fill in
 				 * LAT_DUR_PROXY_CLIENT_REQ_TO_WRITE
 				 */
 
-				us = lws_now_usecs();
-				lws_ser_wu32be(&p[7], us -
-						      lws_ser_ru64be(&p[11]));
-				lws_ser_wu64be(&p[11], us);
+				us = aws_lws_now_usecs();
+				aws_lws_ser_wu32be(&p[7], us -
+						      aws_lws_ser_ru64be(&p[11]));
+				aws_lws_ser_wu64be(&p[11], us);
 
 				wsi->detlat.acc_size =
 					wsi->detlat.req_size = si - 19;
 				/* time proxy held it */
 				wsi->detlat.latencies[
 				            LAT_DUR_PROXY_RX_TO_ONWARD_TX] =
-							lws_ser_ru32be(&p[7]);
+							aws_lws_ser_ru32be(&p[7]);
 			}
 #endif
 			pay = 1;
@@ -677,12 +677,12 @@ again:
 		if (!n)
 			break;
 
-		if (lws_fi(&wsi->fic, "ssproxy_client_write_fail"))
+		if (aws_lws_fi(&wsi->fic, "ssproxy_client_write_fail"))
 			n = -1;
 		else
-			n = lws_write(wsi, (uint8_t *)cp, (unsigned int)n, LWS_WRITE_RAW);
+			n = aws_lws_write(wsi, (uint8_t *)cp, (unsigned int)n, LWS_WRITE_RAW);
 		if (n < 0) {
-			lwsl_info("%s: WRITEABLE: %d\n", __func__, n);
+			aws_lwsl_info("%s: WRITEABLE: %d\n", __func__, n);
 
 			goto hangup;
 		}
@@ -694,7 +694,7 @@ again:
 			if (!conn)
 				break;
 			if (pay) {
-				lws_dsh_free((void **)&p);
+				aws_lws_dsh_free((void **)&p);
 
 				/*
 				 * Did we go below the rx flow threshold for
@@ -704,31 +704,31 @@ again:
 				if (conn->onward_in_flow_control &&
 				    conn->ss->policy->proxy_buflen_rxflow_on_above &&
 				    conn->ss->wsi &&
-				    lws_dsh_get_size(conn->dsh, KIND_SS_TO_P) <
+				    aws_lws_dsh_get_size(conn->dsh, KIND_SS_TO_P) <
 				      conn->ss->policy->proxy_buflen_rxflow_off_below) {
-					lwsl_info("%s: %s: rxflow enabling rx (%lu / %lu, lwm %lu)\n", __func__,
-							lws_wsi_tag(conn->ss->wsi),
-							(unsigned long)lws_dsh_get_size(conn->dsh, KIND_SS_TO_P),
+					aws_lwsl_info("%s: %s: rxflow enabling rx (%lu / %lu, lwm %lu)\n", __func__,
+							aws_lws_wsi_tag(conn->ss->wsi),
+							(unsigned long)aws_lws_dsh_get_size(conn->dsh, KIND_SS_TO_P),
 							(unsigned long)conn->ss->policy->proxy_buflen,
 							(unsigned long)conn->ss->policy->proxy_buflen_rxflow_off_below);
 					/*
 					 * Resume receiving taking in rx once
 					 * below the low threshold
 					 */
-					lws_rx_flow_control(conn->ss->wsi,
+					aws_lws_rx_flow_control(conn->ss->wsi,
 							    LWS_RXFLOW_ALLOW);
 					conn->onward_in_flow_control = 0;
 				}
 			}
-			if (!lws_dsh_get_head(conn->dsh, KIND_SS_TO_P,
+			if (!aws_lws_dsh_get_head(conn->dsh, KIND_SS_TO_P,
 					     (void **)&p, &si)) {
-				if (!lws_send_pipe_choked(wsi)) {
+				if (!aws_lws_send_pipe_choked(wsi)) {
 					cp = p;
 					pay = 1;
 					n = (int)si;
 					goto again;
 				}
-				lws_callback_on_writable(wsi);
+				aws_lws_callback_on_writable(wsi);
 			}
 			break;
 		default:
@@ -740,7 +740,7 @@ again:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 
 hangup:
 	/* hang up on him */
@@ -748,7 +748,7 @@ hangup:
 	return -1;
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"ssproxy-protocol",
 		callback_ss_proxy,
@@ -763,9 +763,9 @@ static const struct lws_protocols protocols[] = {
  */
 
 int
-lws_ss_proxy_create(struct lws_context *context, const char *bind, int port)
+aws_lws_ss_proxy_create(struct aws_lws_context *context, const char *bind, int port)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 
 	memset(&info, 0, sizeof(info));
 
@@ -791,8 +791,8 @@ lws_ss_proxy_create(struct lws_context *context, const char *bind, int port)
 	info.listen_accept_protocol	= "ssproxy-protocol";
 	info.protocols			= protocols;
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("%s: Failed to create ss proxy vhost\n", __func__);
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("%s: Failed to create ss proxy vhost\n", __func__);
 
 		return 1;
 	}

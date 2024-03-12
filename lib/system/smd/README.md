@@ -23,15 +23,15 @@ ability to handle multiple event queuing in one event loop trip while
 guaranteeing message handling is nonrecursive and so with modest stack usage.
 Messages are passed to all other registered participants before being destroyed.
 
-Messages are delivered to all particpants on the same lws_context by default.
+Messages are delivered to all particpants on the same aws_lws_context by default.
 
 ![SMD message](/doc-assets/smd-single-process.png)
 
-`lws_smd` apis allow publication and subscription of message objects between
+`aws_lws_smd` apis allow publication and subscription of message objects between
 participants that are in a single process and are informed by callback from lws
 service thread context.
 
-SMD messages can also broadcast between particpants in different lws_contexts in
+SMD messages can also broadcast between particpants in different aws_lws_contexts in
 different processes, using existing Secure Streams proxying.  In this way
 different application processes can intercommunicate and all observe any system
 smd messages they are interested in.
@@ -50,12 +50,12 @@ single class, but it's possible to set multiple class bits and match on any.  If
 so, care must be taken the payload can be parsed by readers expecting any of the
 indicated classes, eg, by using JSON.
 
-`lws_smd` tracks a global union mask for all participants' class mask.  Requests
+`aws_lws_smd` tracks a global union mask for all participants' class mask.  Requests
 to allocate a message of a class that no participant listens for are rejected,
 not at distribution-time but at message allocation-time, so no heap or cpu is
 wasted on things that are not currently interesting; but such messages start to
 appear as soon as a participant appears that wants them.  The message generation
-action should be bypassed without error in the case lws_smd_msg_alloc()
+action should be bypassed without error in the case aws_lws_smd_msg_alloc()
 returns NULL.
 
 Various well-known high level classes are defined but also a bit index
@@ -99,7 +99,7 @@ for message refcounts before being destroyed.
 ## Message creation
 
 Messages may contain arbitrary text or binary data depending on the class.  JSON
-is recommended since lws_smd messages are small and low duty cycle but have
+is recommended since aws_lws_smd messages are small and low duty cycle but have
 open-ended content: JSON is maintainable, extensible, debuggable and self-
 documenting and avoids, eg, fragile dependencies on header versions shared
 between teams.  To simplify issuing JSON, a threadsafe api to create and send
@@ -107,14 +107,14 @@ messages in one step using format strings is provided:
 
 ```
 int
-lws_smd_msg_printf(struct lws_context *ctx, lws_smd_class_t _class,
+aws_lws_smd_msg_printf(struct aws_lws_context *ctx, aws_lws_smd_class_t _class,
 		   const char *format, ...);
 ```
 
-## Secure Streams `lws_smd` streamtype
+## Secure Streams `aws_lws_smd` streamtype
 
-When built with LWS_WITH_SECURE_STREAMS, lws_smd exposes a built-in streamtype
-`_lws_smd` which user Secure Streams may use to interoperate with lws_smd using
+When built with LWS_WITH_SECURE_STREAMS, aws_lws_smd exposes a built-in streamtype
+`_lws_smd` which user Secure Streams may use to interoperate with aws_lws_smd using
 SS payload semantics.
 
 When using `_lws_smd`, the SS info struct member `manual_initial_tx_credit`
@@ -128,29 +128,29 @@ needs setting, the timestamp is fetched and added by lws.
  - MSB-first 64-bit class bitfield (currently only 32 least-sig in use) 
  - MSB-First Order 64-bit us-resolution timestamp
  
-A helper `lws_smd_ss_msg_printf()` is provided to format and create and smd
+A helper `aws_lws_smd_ss_msg_printf()` is provided to format and create and smd
 message from the SS tx() callback in one step, using the same api layout as
-for direct messages via `lws_smd_msg_printf()`
+for direct messages via `aws_lws_smd_msg_printf()`
 
 ```
 int
-lws_smd_ss_msg_printf(const char *tag, uint8_t *buf, size_t *len,
-		      lws_smd_class_t _class, const char *format, ...);
+aws_lws_smd_ss_msg_printf(const char *tag, uint8_t *buf, size_t *len,
+		      aws_lws_smd_class_t _class, const char *format, ...);
 ```
 
 ## Well-known message schema
 
 Class|Schema
 ---|---
-LWSSMDCL_INTERACTION|lws_button events
+LWSSMDCL_INTERACTION|aws_lws_button events
 LWSSMDCL_NETWORK|captive portal detection requests and results
-LWSSMDCL_SYSTEM_STATE|lws_system state progression
+LWSSMDCL_SYSTEM_STATE|aws_lws_system state progression
 
 ### User interaction Button events
 
 Class: `LWSSMDCL_INTERACTION`
 
-Produced by lws_button when a user interacts with a defined button.
+Produced by aws_lws_button when a user interacts with a defined button.
 
 Click-related events are produced alongside up and down related events, the
 participant can choose which to attend to according to the meaning of the
@@ -245,14 +245,14 @@ No internet|There is no connectivity
 
 Schema: `{"trigger": "cpdcheck"}`
 
-### lws_system state progression
+### aws_lws_system state progression
 
 Class: `LWSSMDCL_SYSTEM_STATE`
 
-Lws system state changes are forwarded to lws_smd messages so participants not
+Lws system state changes are forwarded to aws_lws_smd messages so participants not
 on the lws event loop directly can be aware of progress.  Code registering a
-lws_system notifier callback, on the main lws loop, can synchronously veto state
-changes and hook proposed state changes, lws_smd events are asynchronous
+aws_lws_system notifier callback, on the main lws loop, can synchronously veto state
+changes and hook proposed state changes, aws_lws_smd events are asynchronous
 notifications of state changes after they were decided only... however they are
 available over the whole system.
 
@@ -267,7 +267,7 @@ Schema: `{"state":"<state>"}"`
 
 State|Meaning
 ---|---
-CONTEXT_CREATED|We're creating the lws_context
+CONTEXT_CREATED|We're creating the aws_lws_context
 INITIALIZED|Initial vhosts and protocols initialized
 IFACE_COLDPLUG|Network interfaces discovered
 DHCP|DHCP acquired

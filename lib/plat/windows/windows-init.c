@@ -28,13 +28,13 @@
 #include "private-lib-core.h"
 
 int
-lws_plat_drop_app_privileges(struct lws_context *context, int actually_set)
+aws_lws_plat_drop_app_privileges(struct aws_lws_context *context, int actually_set)
 {
 	return 0;
 }
 
 int
-lws_plat_context_early_init(void)
+aws_lws_plat_context_early_init(void)
 {
 	WORD wVersionRequested;
 	WSADATA wsaData;
@@ -50,18 +50,18 @@ lws_plat_context_early_init(void)
 	 * Tell the user that we could not find a usable
 	 * Winsock DLL
 	 */
-	lwsl_err("WSAStartup failed with error: %d\n", err);
+	aws_lwsl_err("WSAStartup failed with error: %d\n", err);
 
 	return 1;
 }
 
 #if defined(LWS_WITH_PLUGINS)
 static int
-protocol_plugin_cb(struct lws_plugin *pin, void *each_user)
+protocol_plugin_cb(struct aws_lws_plugin *pin, void *each_user)
 {
-	struct lws_context *context = (struct lws_context *)each_user;
-	const lws_plugin_protocol_t *plpr =
-			(const lws_plugin_protocol_t *)pin->hdr;
+	struct aws_lws_context *context = (struct aws_lws_context *)each_user;
+	const aws_lws_plugin_protocol_t *plpr =
+			(const aws_lws_plugin_protocol_t *)pin->hdr;
 
 	context->plugin_protocol_count += plpr->count_protocols;
 	context->plugin_extension_count += plpr->count_extensions;
@@ -71,10 +71,10 @@ protocol_plugin_cb(struct lws_plugin *pin, void *each_user)
 #endif
 
 int
-lws_plat_init(struct lws_context *context,
-	      const struct lws_context_creation_info *info)
+aws_lws_plat_init(struct aws_lws_context *context,
+	      const struct aws_lws_context_creation_info *info)
 {
-	struct lws_context_per_thread *pt = &context->pt[0];
+	struct aws_lws_context_per_thread *pt = &context->pt[0];
 	int i, n = context->count_threads;
 
 #if defined(LWS_WITH_MBEDTLS)
@@ -88,17 +88,17 @@ lws_plat_init(struct lws_context *context,
 		n = mbedtls_ctr_drbg_seed(&context->mcdc, mbedtls_entropy_func,
 					  &context->mec, NULL, 0);
 		if (n)
-			lwsl_err("%s: mbedtls_ctr_drbg_seed() returned 0x%x\n",
+			aws_lwsl_err("%s: mbedtls_ctr_drbg_seed() returned 0x%x\n",
 				 __func__, n);
 #if 0
 		else {
 			uint8_t rtest[16];
-			lwsl_notice("%s: started drbg\n", __func__);
+			aws_lwsl_notice("%s: started drbg\n", __func__);
 			if (mbedtls_ctr_drbg_random(&context->mcdc, rtest,
 							sizeof(rtest)))
-				lwsl_err("%s: get random failed\n", __func__);
+				aws_lwsl_err("%s: get random failed\n", __func__);
 			else
-				lwsl_hexdump_notice(rtest, sizeof(rtest));
+				aws_lwsl_hexdump_notice(rtest, sizeof(rtest));
 		}
 #endif
 	}
@@ -106,7 +106,7 @@ lws_plat_init(struct lws_context *context,
 
 	for (i = 0; i < FD_HASHTABLE_MODULUS; i++) {
 		context->fd_hashtable[i].wsi =
-			lws_zalloc(sizeof(struct lws*) * context->max_fds,
+			aws_lws_zalloc(sizeof(struct lws*) * context->max_fds,
 				   "win hashtable");
 
 		if (!context->fd_hashtable[i].wsi)
@@ -123,8 +123,8 @@ lws_plat_init(struct lws_context *context,
 
 #if defined(LWS_WITH_PLUGINS)
 	if (info->plugin_dirs)
-		lws_plat_plugins_init(&context->plugin_list, info->plugin_dirs,
-				      "lws_protocol_plugin",
+		aws_lws_plat_plugins_init(&context->plugin_list, info->plugin_dirs,
+				      "aws_lws_protocol_plugin",
 				      protocol_plugin_cb, context);
 #endif
 
@@ -132,24 +132,24 @@ lws_plat_init(struct lws_context *context,
 }
 
 void
-lws_plat_context_early_destroy(struct lws_context *context)
+aws_lws_plat_context_early_destroy(struct aws_lws_context *context)
 {
 
 }
 
 void
-lws_plat_context_late_destroy(struct lws_context *context)
+aws_lws_plat_context_late_destroy(struct aws_lws_context *context)
 {
 	int n;
 
 #ifdef LWS_WITH_PLUGINS
 	if (context->plugin_list)
-		lws_plugins_destroy(&context->plugin_list, NULL, NULL);
+		aws_lws_plugins_destroy(&context->plugin_list, NULL, NULL);
 #endif
 
 	for (n = 0; n < FD_HASHTABLE_MODULUS; n++) {
 		if (context->fd_hashtable[n].wsi)
-			lws_free(context->fd_hashtable[n].wsi);
+			aws_lws_free(context->fd_hashtable[n].wsi);
 	}
 
 	WSACleanup();

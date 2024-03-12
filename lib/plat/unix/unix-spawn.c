@@ -35,58 +35,58 @@
 #endif
 
 void
-lws_spawn_timeout(struct lws_sorted_usec_list *sul)
+aws_lws_spawn_timeout(struct aws_lws_sorted_usec_list *sul)
 {
-	struct lws_spawn_piped *lsp = lws_container_of(sul,
-					struct lws_spawn_piped, sul);
+	struct aws_lws_spawn_piped *lsp = aws_lws_container_of(sul,
+					struct aws_lws_spawn_piped, sul);
 
-	lwsl_warn("%s: spawn exceeded timeout, killing\n", __func__);
+	aws_lwsl_warn("%s: spawn exceeded timeout, killing\n", __func__);
 
-	lws_spawn_piped_kill_child_process(lsp);
+	aws_lws_spawn_piped_kill_child_process(lsp);
 }
 
 void
-lws_spawn_sul_reap(struct lws_sorted_usec_list *sul)
+aws_lws_spawn_sul_reap(struct aws_lws_sorted_usec_list *sul)
 {
-	struct lws_spawn_piped *lsp = lws_container_of(sul,
-					struct lws_spawn_piped, sul_reap);
+	struct aws_lws_spawn_piped *lsp = aws_lws_container_of(sul,
+					struct aws_lws_spawn_piped, sul_reap);
 
-	lwsl_notice("%s: reaping spawn after last stdpipe, tries left %d\n",
+	aws_lwsl_notice("%s: reaping spawn after last stdpipe, tries left %d\n",
 		    __func__, lsp->reap_retry_budget);
-	if (!lws_spawn_reap(lsp) && !lsp->pipes_alive) {
+	if (!aws_lws_spawn_reap(lsp) && !lsp->pipes_alive) {
 		if (--lsp->reap_retry_budget) {
-			lws_sul_schedule(lsp->info.vh->context, lsp->info.tsi,
-					 &lsp->sul_reap, lws_spawn_sul_reap,
+			aws_lws_sul_schedule(lsp->info.vh->context, lsp->info.tsi,
+					 &lsp->sul_reap, aws_lws_spawn_sul_reap,
 					 250 * LWS_US_PER_MS);
 		} else {
-			lwsl_err("%s: Unable to reap lsp %p, killing\n",
+			aws_lwsl_err("%s: Unable to reap lsp %p, killing\n",
 				 __func__, lsp);
 			lsp->reap_retry_budget = 20;
-			lws_spawn_piped_kill_child_process(lsp);
+			aws_lws_spawn_piped_kill_child_process(lsp);
 		}
 	}
 }
 
 static struct lws *
-lws_create_stdwsi(struct lws_context *context, int tsi,
-		     const struct lws_role_ops *ops)
+aws_lws_create_stdwsi(struct aws_lws_context *context, int tsi,
+		     const struct aws_lws_role_ops *ops)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
 	struct lws *new_wsi;
 
 	if (!context->vhost_list)
 		return NULL;
 
 	if ((unsigned int)pt->fds_count == context->fd_limit_per_thread - 1) {
-		lwsl_err("no space for new conn\n");
+		aws_lwsl_err("no space for new conn\n");
 		return NULL;
 	}
 
-	lws_context_lock(context, __func__);
+	aws_lws_context_lock(context, __func__);
 	new_wsi = __lws_wsi_create_with_role(context, tsi, ops, NULL);
-	lws_context_unlock(context);
+	aws_lws_context_unlock(context);
 	if (new_wsi == NULL) {
-		lwsl_err("Out of memory for new connection\n");
+		aws_lwsl_err("Out of memory for new connection\n");
 		return NULL;
 	}
 
@@ -94,7 +94,7 @@ lws_create_stdwsi(struct lws_context *context, int tsi,
 
 	/* initialize the instance struct */
 
-	lws_role_transition(new_wsi, 0, LRS_ESTABLISHED, ops);
+	aws_lws_role_transition(new_wsi, 0, LRS_ESTABLISHED, ops);
 
 	new_wsi->hdr_parsing_completed = 0;
 
@@ -111,23 +111,23 @@ lws_create_stdwsi(struct lws_context *context, int tsi,
 }
 
 void
-lws_spawn_piped_destroy(struct lws_spawn_piped **_lsp)
+aws_lws_spawn_piped_destroy(struct aws_lws_spawn_piped **_lsp)
 {
-	struct lws_spawn_piped *lsp = *_lsp;
+	struct aws_lws_spawn_piped *lsp = *_lsp;
 	int n;
 
 	if (!lsp)
 		return;
 
-	lws_dll2_remove(&lsp->dll);
+	aws_lws_dll2_remove(&lsp->dll);
 
-	lws_sul_cancel(&lsp->sul);
-	lws_sul_cancel(&lsp->sul_reap);
+	aws_lws_sul_cancel(&lsp->sul);
+	aws_lws_sul_cancel(&lsp->sul_reap);
 
 	for (n = 0; n < 3; n++) {
 #if 0
 		if (lsp->pipe_fds[n][!!(n == 0)] == 0)
-			lwsl_err("ZERO FD IN CGI CLOSE");
+			aws_lwsl_err("ZERO FD IN CGI CLOSE");
 
 		if (lsp->pipe_fds[n][!!(n == 0)] >= 0) {
 			close(lsp->pipe_fds[n][!!(n == 0)]);
@@ -135,21 +135,21 @@ lws_spawn_piped_destroy(struct lws_spawn_piped **_lsp)
 		}
 #endif
 		if (lsp->stdwsi[n]) {
-			lws_set_timeout(lsp->stdwsi[n], 1, LWS_TO_KILL_ASYNC);
+			aws_lws_set_timeout(lsp->stdwsi[n], 1, LWS_TO_KILL_ASYNC);
 			lsp->stdwsi[n] = NULL;
 		}
 	}
 
-	lws_free_set_NULL((*_lsp));
+	aws_lws_free_set_NULL((*_lsp));
 }
 
 int
-lws_spawn_reap(struct lws_spawn_piped *lsp)
+aws_lws_spawn_reap(struct aws_lws_spawn_piped *lsp)
 {
 	long hz = sysconf(_SC_CLK_TCK); /* accounting Hz */
 	void *opaque = lsp->info.opaque;
 	lsp_cb_t cb = lsp->info.reap_cb;
-	struct lws_spawn_piped temp;
+	struct aws_lws_spawn_piped temp;
 	struct tms tms;
 #if defined(__OpenBSD__) || defined(__NetBSD__)
 	struct rusage rusa;
@@ -172,7 +172,7 @@ lws_spawn_reap(struct lws_spawn_piped *lsp)
 	n = waitid(P_PID, (id_t)lsp->child_pid, &lsp->si, WEXITED | WNOHANG | WNOWAIT);
 #endif
 	if (n < 0) {
-		lwsl_info("%s: child %d still running\n", __func__, lsp->child_pid);
+		aws_lwsl_info("%s: child %d still running\n", __func__, lsp->child_pid);
 		return 0;
 	}
 
@@ -183,34 +183,34 @@ lws_spawn_reap(struct lws_spawn_piped *lsp)
 
 	if (!lsp->reaped) {
 		/* mark the earliest time we knew he had gone */
-		lsp->reaped = lws_now_usecs();
+		lsp->reaped = aws_lws_now_usecs();
 
 		/*
 		 * Switch the timeout to restrict the amount of grace time
 		 * to drain stdwsi
 		 */
 
-		lws_sul_schedule(lsp->info.vh->context, lsp->info.tsi,
-				 &lsp->sul, lws_spawn_timeout,
+		aws_lws_sul_schedule(lsp->info.vh->context, lsp->info.tsi,
+				 &lsp->sul, aws_lws_spawn_timeout,
 				 5 * LWS_US_PER_SEC);
 	}
 
 	/*
 	 * Stage finalizing our reaction to the process going down until the
 	 * stdwsi flushed whatever is in flight and all noticed they were
-	 * closed.  For that reason, each stdwsi close must call lws_spawn_reap
+	 * closed.  For that reason, each stdwsi close must call aws_lws_spawn_reap
 	 * to check if that was the last one and we can proceed with the reap.
 	 */
 
 	if (!lsp->ungraceful && lsp->pipes_alive) {
-		lwsl_info("%s: %d stdwsi alive, not reaping\n", __func__,
+		aws_lwsl_info("%s: %d stdwsi alive, not reaping\n", __func__,
 				lsp->pipes_alive);
 		return 0;
 	}
 
 	/* we reached the reap point, no need for timeout wait */
 
-	lws_sul_cancel(&lsp->sul);
+	aws_lws_sul_cancel(&lsp->sul);
 
 	/*
 	 * All the stdwsi went down, nothing more is coming... it's over
@@ -221,10 +221,10 @@ lws_spawn_reap(struct lws_spawn_piped *lsp)
 		/*
 		 * Cpu accounting in us
 		 */
-		lsp->accounting[0] = (lws_usec_t)((uint64_t)tms.tms_cstime * 1000000) / hz;
-		lsp->accounting[1] = (lws_usec_t)((uint64_t)tms.tms_cutime * 1000000) / hz;
-		lsp->accounting[2] = (lws_usec_t)((uint64_t)tms.tms_stime * 1000000) / hz;
-		lsp->accounting[3] = (lws_usec_t)((uint64_t)tms.tms_utime * 1000000) / hz;
+		lsp->accounting[0] = (aws_lws_usec_t)((uint64_t)tms.tms_cstime * 1000000) / hz;
+		lsp->accounting[1] = (aws_lws_usec_t)((uint64_t)tms.tms_cutime * 1000000) / hz;
+		lsp->accounting[2] = (aws_lws_usec_t)((uint64_t)tms.tms_stime * 1000000) / hz;
+		lsp->accounting[3] = (aws_lws_usec_t)((uint64_t)tms.tms_utime * 1000000) / hz;
 	}
 
 	temp = *lsp;
@@ -240,7 +240,7 @@ lws_spawn_reap(struct lws_spawn_piped *lsp)
 	n = waitid(P_PID, (id_t)lsp->child_pid, &temp.si, WEXITED | WNOHANG);
 #endif
 	temp.si.si_status &= 0xff; /* we use b8 + for flags */
-	lwsl_info("%s: waitd says %d, process exit %d\n",
+	aws_lwsl_info("%s: waitd says %d, process exit %d\n",
 		    __func__, n, temp.si.si_status);
 
 	lsp->child_pid = -1;
@@ -248,7 +248,7 @@ lws_spawn_reap(struct lws_spawn_piped *lsp)
 	/* destroy the lsp itself first (it's freed and plsp set NULL */
 
 	if (lsp->info.plsp)
-		lws_spawn_piped_destroy(lsp->info.plsp);
+		aws_lws_spawn_piped_destroy(lsp->info.plsp);
 
 	/* then do the parent callback informing it's destroyed */
 
@@ -261,7 +261,7 @@ lws_spawn_reap(struct lws_spawn_piped *lsp)
 }
 
 int
-lws_spawn_piped_kill_child_process(struct lws_spawn_piped *lsp)
+aws_lws_spawn_piped_kill_child_process(struct aws_lws_spawn_piped *lsp)
 {
 	int status, n;
 
@@ -270,13 +270,13 @@ lws_spawn_piped_kill_child_process(struct lws_spawn_piped *lsp)
 
 	lsp->ungraceful = 1; /* don't wait for flushing, just kill it */
 
-	if (lws_spawn_reap(lsp))
+	if (aws_lws_spawn_reap(lsp))
 		/* that may have invalidated lsp */
 		return 0;
 
 	/* kill the process group */
 	n = kill(-lsp->child_pid, SIGTERM);
-	lwsl_debug("%s: SIGTERM child PID %d says %d (errno %d)\n", __func__,
+	aws_lwsl_debug("%s: SIGTERM child PID %d says %d (errno %d)\n", __func__,
 		   lsp->child_pid, n, errno);
 	if (n < 0) {
 		/*
@@ -291,7 +291,7 @@ lws_spawn_piped_kill_child_process(struct lws_spawn_piped *lsp)
 			if (n < 0) {
 				n = kill(lsp->child_pid, SIGKILL);
 				if (n < 0)
-					lwsl_info("%s: SIGKILL PID %d "
+					aws_lwsl_info("%s: SIGKILL PID %d "
 						 "failed errno %d "
 						 "(maybe zombie)\n", __func__,
 						 lsp->child_pid, errno);
@@ -305,15 +305,15 @@ lws_spawn_piped_kill_child_process(struct lws_spawn_piped *lsp)
 	while (n > 0) {
 		n = waitpid(-lsp->child_pid, &status, WNOHANG);
 		if (n > 0)
-			lwsl_debug("%s: reaped PID %d\n", __func__, n);
+			aws_lwsl_debug("%s: reaped PID %d\n", __func__, n);
 		if (n <= 0) {
 			n = waitpid(lsp->child_pid, &status, WNOHANG);
 			if (n > 0)
-				lwsl_debug("%s: reaped PID %d\n", __func__, n);
+				aws_lwsl_debug("%s: reaped PID %d\n", __func__, n);
 		}
 	}
 
-	lws_spawn_reap(lsp);
+	aws_lws_spawn_reap(lsp);
 	/* that may have invalidated lsp */
 
 	return 0;
@@ -324,25 +324,25 @@ lws_spawn_piped_kill_child_process(struct lws_spawn_piped *lsp)
  * diverted into pipes
  */
 
-struct lws_spawn_piped *
-lws_spawn_piped(const struct lws_spawn_piped_info *i)
+struct aws_lws_spawn_piped *
+aws_lws_spawn_piped(const struct aws_lws_spawn_piped_info *i)
 {
-	const struct lws_protocols *pcol = i->vh->context->vhost_list->protocols;
-	struct lws_context *context = i->vh->context;
-	struct lws_spawn_piped *lsp;
+	const struct aws_lws_protocols *pcol = i->vh->context->vhost_list->protocols;
+	struct aws_lws_context *context = i->vh->context;
+	struct aws_lws_spawn_piped *lsp;
 	const char *wd;
 	int n, m;
 
 	if (i->protocol_name)
-		pcol = lws_vhost_name_to_protocol(i->vh, i->protocol_name);
+		pcol = aws_lws_vhost_name_to_protocol(i->vh, i->protocol_name);
 	if (!pcol) {
-		lwsl_err("%s: unknown protocol %s\n", __func__,
+		aws_lwsl_err("%s: unknown protocol %s\n", __func__,
 			 i->protocol_name ? i->protocol_name : "default");
 
 		return NULL;
 	}
 
-	lsp = lws_zalloc(sizeof(*lsp), __func__);
+	lsp = aws_lws_zalloc(sizeof(*lsp), __func__);
 	if (!lsp)
 		return NULL;
 
@@ -364,7 +364,7 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 	for (n = 0; n < 3; n++) {
 		if (pipe(lsp->pipe_fds[n]) == -1)
 			goto bail1;
-		lws_plat_apply_FD_CLOEXEC(lsp->pipe_fds[n][n == 0]);
+		aws_lws_plat_apply_FD_CLOEXEC(lsp->pipe_fds[n][n == 0]);
 	}
 
 	/*
@@ -375,10 +375,10 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 	/* create wsis for each stdin/out/err fd */
 
 	for (n = 0; n < 3; n++) {
-		lsp->stdwsi[n] = lws_create_stdwsi(i->vh->context, i->tsi,
+		lsp->stdwsi[n] = aws_lws_create_stdwsi(i->vh->context, i->tsi,
 					  i->ops ? i->ops : &role_ops_raw_file);
 		if (!lsp->stdwsi[n]) {
-			lwsl_err("%s: unable to create lsp stdwsi\n", __func__);
+			aws_lwsl_err("%s: unable to create lsp stdwsi\n", __func__);
 			goto bail2;
 		}
 
@@ -386,11 +386,11 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
                 	     &lsp->stdwsi[n]->lc, "nspawn-stdwsi-%d", n);
 
 		lsp->stdwsi[n]->lsp_channel = (uint8_t)n;
-		lws_vhost_bind_wsi(i->vh, lsp->stdwsi[n]);
+		aws_lws_vhost_bind_wsi(i->vh, lsp->stdwsi[n]);
 		lsp->stdwsi[n]->a.protocol = pcol;
 		lsp->stdwsi[n]->a.opaque_user_data = i->opaque;
 
-		lwsl_debug("%s: lsp stdwsi %p: pipe idx %d -> fd %d / %d\n", __func__,
+		aws_lwsl_debug("%s: lsp stdwsi %p: pipe idx %d -> fd %d / %d\n", __func__,
 			   lsp->stdwsi[n], n, lsp->pipe_fds[n][n == 0],
 			   lsp->pipe_fds[n][n != 0]);
 
@@ -398,7 +398,7 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 
 		lsp->stdwsi[n]->desc.sockfd = lsp->pipe_fds[n][n == 0];
 		if (fcntl(lsp->pipe_fds[n][n == 0], F_SETFL, O_NONBLOCK) < 0) {
-			lwsl_err("%s: setting NONBLOCK failed\n", __func__);
+			aws_lwsl_err("%s: setting NONBLOCK failed\n", __func__);
 			goto bail2;
 		}
 
@@ -430,14 +430,14 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 		}
 	}
 
-	if (lws_change_pollfd(lsp->stdwsi[LWS_STDIN], LWS_POLLIN, LWS_POLLOUT))
+	if (aws_lws_change_pollfd(lsp->stdwsi[LWS_STDIN], LWS_POLLIN, LWS_POLLOUT))
 		goto bail3;
-	if (lws_change_pollfd(lsp->stdwsi[LWS_STDOUT], LWS_POLLOUT, LWS_POLLIN))
+	if (aws_lws_change_pollfd(lsp->stdwsi[LWS_STDOUT], LWS_POLLOUT, LWS_POLLIN))
 		goto bail3;
-	if (lws_change_pollfd(lsp->stdwsi[LWS_STDERR], LWS_POLLOUT, LWS_POLLIN))
+	if (aws_lws_change_pollfd(lsp->stdwsi[LWS_STDERR], LWS_POLLOUT, LWS_POLLIN))
 		goto bail3;
 
-	lwsl_info("%s: fds in %d, out %d, err %d\n", __func__,
+	aws_lwsl_info("%s: fds in %d, out %d, err %d\n", __func__,
 		   lsp->stdwsi[LWS_STDIN]->desc.sockfd,
 		   lsp->stdwsi[LWS_STDOUT]->desc.sockfd,
 		   lsp->stdwsi[LWS_STDERR]->desc.sockfd);
@@ -449,7 +449,7 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 	lsp->child_pid = vfork();
 #endif
 	if (lsp->child_pid < 0) {
-		lwsl_err("%s: fork failed, errno %d", __func__, errno);
+		aws_lwsl_err("%s: fork failed, errno %d", __func__, errno);
 		goto bail3;
 	}
 
@@ -479,21 +479,21 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 			close(lsp->pipe_fds[n][n != 0]);
 
 		lsp->pipes_alive = 3;
-		lsp->created = lws_now_usecs();
+		lsp->created = aws_lws_now_usecs();
 
-		lwsl_info("%s: lsp %p spawned PID %d\n", __func__, lsp,
+		aws_lwsl_info("%s: lsp %p spawned PID %d\n", __func__, lsp,
 			  lsp->child_pid);
 
-		lws_sul_schedule(context, i->tsi, &lsp->sul, lws_spawn_timeout,
+		aws_lws_sul_schedule(context, i->tsi, &lsp->sul, aws_lws_spawn_timeout,
 				 i->timeout_us ? i->timeout_us :
 						   300 * LWS_US_PER_SEC);
 
 		if (i->owner)
-			lws_dll2_add_head(&lsp->dll, i->owner);
+			aws_lws_dll2_add_head(&lsp->dll, i->owner);
 
 		if (i->timeout_us)
-			lws_sul_schedule(context, i->tsi, &lsp->sul,
-					 lws_spawn_timeout, i->timeout_us);
+			aws_lws_sul_schedule(context, i->tsi, &lsp->sul,
+					 aws_lws_spawn_timeout, i->timeout_us);
 
 		return lsp;
 	}
@@ -507,7 +507,7 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 	 */
 
 	if (i->chroot_path && chroot(i->chroot_path)) {
-		lwsl_err("%s: child chroot %s failed, errno %d\n",
+		aws_lwsl_err("%s: child chroot %s failed, errno %d\n",
 			 __func__, i->chroot_path, errno);
 
 		exit(2);
@@ -519,7 +519,7 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 	if (!wd)
 		wd = "/tmp";
 	if (chdir(wd))
-		lwsl_notice("%s: Failed to cd to %s\n", __func__, wd);
+		aws_lwsl_notice("%s: Failed to cd to %s\n", __func__, wd);
 
 	/*
 	 * Bind the child's stdin / out / err to its side of our pipes
@@ -527,7 +527,7 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 
 	for (m = 0; m < 3; m++) {
 		if (dup2(lsp->pipe_fds[m][m != 0], m) < 0) {
-			lwsl_err("%s: stdin dup2 failed\n", __func__);
+			aws_lwsl_err("%s: stdin dup2 failed\n", __func__);
 			goto bail3;
 		}
 		/*
@@ -546,10 +546,10 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 	m = 0;
 	while (i->env_array[m]){
 		const char *p = strchr(i->env_array[m], '=');
-		int naml = lws_ptr_diff(p, i->env_array[m]);
+		int naml = aws_lws_ptr_diff(p, i->env_array[m]);
 		char enam[32];
 
-		lws_strnncpy(enam, i->env_array[m], naml, sizeof(enam));
+		aws_lws_strnncpy(enam, i->env_array[m], naml, sizeof(enam));
 		setenv(enam, p, 1);
 		m++;
 	}
@@ -560,7 +560,7 @@ lws_spawn_piped(const struct lws_spawn_piped_info *i)
 		(char **)&i->env_array[0]);
 #endif
 
-	lwsl_err("%s: child exec of %s failed %d\n", __func__, i->exec_array[0],
+	aws_lwsl_err("%s: child exec of %s failed %d\n", __func__, i->exec_array[0],
 		 LWS_ERRNO);
 
 	_exit(1);
@@ -582,24 +582,24 @@ bail1:
 			close(lsp->pipe_fds[n][1]);
 	}
 
-	lws_free(lsp);
+	aws_lws_free(lsp);
 
-	lwsl_err("%s: failed\n", __func__);
+	aws_lwsl_err("%s: failed\n", __func__);
 
 	return NULL;
 }
 
 void
-lws_spawn_stdwsi_closed(struct lws_spawn_piped *lsp, struct lws *wsi)
+aws_lws_spawn_stdwsi_closed(struct aws_lws_spawn_piped *lsp, struct lws *wsi)
 {
 	int n;
 
 	assert(lsp);
 	lsp->pipes_alive--;
-	lwsl_debug("%s: pipes alive %d\n", __func__, lsp->pipes_alive);
+	aws_lwsl_debug("%s: pipes alive %d\n", __func__, lsp->pipes_alive);
 	if (!lsp->pipes_alive)
-		lws_sul_schedule(lsp->info.vh->context, lsp->info.tsi,
-				 &lsp->sul_reap, lws_spawn_sul_reap, 1);
+		aws_lws_sul_schedule(lsp->info.vh->context, lsp->info.tsi,
+				 &lsp->sul_reap, aws_lws_spawn_sul_reap, 1);
 
 	for (n = 0; n < 3; n++)
 		if (lsp->stdwsi[n] == wsi)
@@ -607,7 +607,7 @@ lws_spawn_stdwsi_closed(struct lws_spawn_piped *lsp, struct lws *wsi)
 }
 
 int
-lws_spawn_get_stdfd(struct lws *wsi)
+aws_lws_spawn_get_stdfd(struct lws *wsi)
 {
 	return wsi->lsp_channel;
 }

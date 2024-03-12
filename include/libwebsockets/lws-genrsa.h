@@ -42,7 +42,7 @@ enum enum_genrsa_mode {
 	LGRSAM_COUNT
 };
 
-struct lws_genrsa_ctx {
+struct aws_lws_genrsa_ctx {
 #if defined(LWS_WITH_MBEDTLS)
 	mbedtls_rsa_context *ctx;
 #else
@@ -50,15 +50,15 @@ struct lws_genrsa_ctx {
 	EVP_PKEY_CTX *ctx;
 	RSA *rsa;
 #endif
-	struct lws_context *context;
+	struct aws_lws_context *context;
 	enum enum_genrsa_mode mode;
 };
 
-/** lws_genrsa_public_decrypt_create() - Create RSA public decrypt context
+/** aws_lws_genrsa_public_decrypt_create() - Create RSA public decrypt context
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param el: struct prepared with key element data
- * \param context: lws_context for RNG
+ * \param context: aws_lws_context for RNG
  * \param mode: RSA mode, one of LGRSAM_ constants
  * \param oaep_hashid: the lws genhash id for the hash used in MFG1 hash
  *			used in OAEP mode - normally, SHA1
@@ -74,29 +74,29 @@ struct lws_genrsa_ctx {
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_create(struct lws_genrsa_ctx *ctx,
-		  const struct lws_gencrypto_keyelem *el,
-		  struct lws_context *context, enum enum_genrsa_mode mode,
-		  enum lws_genhash_types oaep_hashid);
+aws_lws_genrsa_create(struct aws_lws_genrsa_ctx *ctx,
+		  const struct aws_lws_gencrypto_keyelem *el,
+		  struct aws_lws_context *context, enum enum_genrsa_mode mode,
+		  enum aws_lws_genhash_types oaep_hashid);
 
-/** lws_genrsa_destroy_elements() - Free allocations in genrsa_elements
+/** aws_lws_genrsa_destroy_elements() - Free allocations in genrsa_elements
  *
- * \param el: your struct lws_gencrypto_keyelem
+ * \param el: your struct aws_lws_gencrypto_keyelem
  *
- * This is a helper for user code making use of struct lws_gencrypto_keyelem
+ * This is a helper for user code making use of struct aws_lws_gencrypto_keyelem
  * where the elements are allocated on the heap, it frees any non-NULL
  * buf element and sets the buf to NULL.
  *
- * NB: lws_genrsa_public_... apis do not need this as they take care of the key
+ * NB: aws_lws_genrsa_public_... apis do not need this as they take care of the key
  * creation and destruction themselves.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_genrsa_destroy_elements(struct lws_gencrypto_keyelem *el);
+aws_lws_genrsa_destroy_elements(struct aws_lws_gencrypto_keyelem *el);
 
-/** lws_genrsa_new_keypair() - Create new RSA keypair
+/** aws_lws_genrsa_new_keypair() - Create new RSA keypair
  *
- * \param context: your struct lws_context (may be used for RNG)
- * \param ctx: your struct lws_genrsa_ctx
+ * \param context: your struct aws_lws_context (may be used for RNG)
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param mode: RSA mode, one of LGRSAM_ constants
  * \param el: struct to get the new key element data allocated into it
  * \param bits: key size, eg, 4096
@@ -112,13 +112,13 @@ lws_genrsa_destroy_elements(struct lws_gencrypto_keyelem *el);
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
-		       enum enum_genrsa_mode mode, struct lws_gencrypto_keyelem *el,
+aws_lws_genrsa_new_keypair(struct aws_lws_context *context, struct aws_lws_genrsa_ctx *ctx,
+		       enum enum_genrsa_mode mode, struct aws_lws_gencrypto_keyelem *el,
 		       int bits);
 
-/** lws_genrsa_public_encrypt() - Perform RSA public key encryption
+/** aws_lws_genrsa_public_encrypt() - Perform RSA public key encryption
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: plaintext input
  * \param in_len: length of plaintext input
  * \param out: encrypted output
@@ -130,12 +130,12 @@ lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_public_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_public_encrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			  size_t in_len, uint8_t *out);
 
-/** lws_genrsa_private_encrypt() - Perform RSA private key encryption
+/** aws_lws_genrsa_private_encrypt() - Perform RSA private key encryption
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: plaintext input
  * \param in_len: length of plaintext input
  * \param out: encrypted output
@@ -147,12 +147,12 @@ lws_genrsa_public_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_private_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_private_encrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			   size_t in_len, uint8_t *out);
 
-/** lws_genrsa_public_decrypt() - Perform RSA public key decryption
+/** aws_lws_genrsa_public_decrypt() - Perform RSA public key decryption
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: encrypted input
  * \param in_len: length of encrypted input
  * \param out: decrypted output
@@ -165,12 +165,12 @@ lws_genrsa_private_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_public_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_public_decrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			  size_t in_len, uint8_t *out, size_t out_max);
 
-/** lws_genrsa_private_decrypt() - Perform RSA private key decryption
+/** aws_lws_genrsa_private_decrypt() - Perform RSA private key decryption
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: encrypted input
  * \param in_len: length of encrypted input
  * \param out: decrypted output
@@ -183,12 +183,12 @@ lws_genrsa_public_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_private_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_private_decrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			   size_t in_len, uint8_t *out, size_t out_max);
 
-/** lws_genrsa_hash_sig_verify() - Verifies RSA signature on a given hash
+/** aws_lws_genrsa_hash_sig_verify() - Verifies RSA signature on a given hash
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: input to be hashed
  * \param hash_type: one of LWS_GENHASH_TYPE_
  * \param sig: pointer to the signature we received with the payload
@@ -204,13 +204,13 @@ lws_genrsa_private_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
-			   enum lws_genhash_types hash_type,
+aws_lws_genrsa_hash_sig_verify(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
+			   enum aws_lws_genhash_types hash_type,
 			   const uint8_t *sig, size_t sig_len);
 
-/** lws_genrsa_hash_sign() - Creates an ECDSA signature for a hash you provide
+/** aws_lws_genrsa_hash_sign() - Creates an ECDSA signature for a hash you provide
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: input to be hashed and signed
  * \param hash_type: one of LWS_GENHASH_TYPE_
  * \param sig: pointer to buffer to take signature
@@ -225,24 +225,24 @@ lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
-		     enum lws_genhash_types hash_type,
+aws_lws_genrsa_hash_sign(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
+		     enum aws_lws_genhash_types hash_type,
 		     uint8_t *sig, size_t sig_len);
 
-/** lws_genrsa_public_decrypt_destroy() - Destroy RSA public decrypt context
+/** aws_lws_genrsa_public_decrypt_destroy() - Destroy RSA public decrypt context
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  *
  * Destroys any allocations related to \p ctx.
  *
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_genrsa_destroy(struct lws_genrsa_ctx *ctx);
+aws_lws_genrsa_destroy(struct aws_lws_genrsa_ctx *ctx);
 
-/** lws_genrsa_render_pkey_asn1() - Exports public or private key to ASN1/DER
+/** aws_lws_genrsa_render_pkey_asn1() - Exports public or private key to ASN1/DER
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param _private: 0 = public part only, 1 = all parts of the key
  * \param pkey_asn1: pointer to buffer to take the ASN1
  * \param pkey_asn1_len: max size of the pkey_asn1_len
@@ -250,6 +250,6 @@ lws_genrsa_destroy(struct lws_genrsa_ctx *ctx);
  * Returns length of pkey_asn1 written, or -1 for error.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genrsa_render_pkey_asn1(struct lws_genrsa_ctx *ctx, int _private,
+aws_lws_genrsa_render_pkey_asn1(struct aws_lws_genrsa_ctx *ctx, int _private,
 			    uint8_t *pkey_asn1, size_t pkey_asn1_len);
 ///@}

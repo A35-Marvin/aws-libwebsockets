@@ -144,20 +144,20 @@ static const char * const default_ss_policy =
 ;
 
 typedef struct myss {
-	struct lws_ss_handle 	*ss;
+	struct aws_lws_ss_handle 	*ss;
 	void			*opaque_data;
 	/* ... application specific state ... */
 } myss_t;
 
 /* secure streams payload interface */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 //	myss_t *m = (myss_t *)userobj;
 
-	lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
-	lwsl_hexdump_info(buf, len);
+	aws_lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
+	aws_lwsl_hexdump_info(buf, len);
 
 	/*
 	 * If we received the whole message, we let the sequencer know it
@@ -171,8 +171,8 @@ myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+myss_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	int *flags)
 {
 	// myss_t *m = (myss_t *)userobj;
@@ -182,18 +182,18 @@ myss_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_state(void *userobj, void *sh, lws_ss_constate_t state,
-		lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+myss_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+		aws_lws_ss_tx_ordinal_t ack)
 {
 	myss_t *m = (myss_t *)userobj;
 
-	lwsl_user("%s: %s, ord 0x%x\n", __func__, lws_ss_state_name(state),
+	aws_lwsl_user("%s: %s, ord 0x%x\n", __func__, aws_lws_ss_state_name(state),
 		  (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_CREATING:
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	case LWSSSCS_ALL_RETRIES_FAILED:
 		/* if we're out of retries, we want to close the app and FAIL */
@@ -214,7 +214,7 @@ typedef enum {
 } myseq_state_t;
 
 typedef struct myseq {
-	struct lws_ss_handle	*ss;
+	struct aws_lws_ss_handle	*ss;
 
 	myseq_state_t		state;
 	int			http_resp;
@@ -226,12 +226,12 @@ typedef struct myseq {
  * This defines the sequence of things the test app does.
  */
 
-static lws_seq_cb_return_t
-min_sec_str_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
+static aws_lws_seq_cb_return_t
+min_sec_str_sequencer_cb(struct aws_lws_sequencer *seq, void *user, int event,
 			 void *v, void *a)
 {
 	struct myseq *s = (struct myseq *)user;
-	lws_ss_info_t ssi;
+	aws_lws_ss_info_t ssi;
 
 	switch ((int)event) {
 
@@ -239,7 +239,7 @@ min_sec_str_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 
 	case LWSSEQ_CREATED: /* our sequencer just got started */
 		s->state = SEQ_IDLE;
-		lwsl_notice("%s: LWSSEQ_CREATED\n", __func__);
+		aws_lwsl_notice("%s: LWSSEQ_CREATED\n", __func__);
 
 		/* We're making an outgoing secure stream ourselves */
 
@@ -262,9 +262,9 @@ min_sec_str_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 				/* default to h1 GET */
 				ssi.streamtype = "mintest";
 
-		if (lws_ss_create(lws_seq_get_context(seq), 0, &ssi, NULL,
+		if (aws_lws_ss_create(aws_lws_seq_get_context(seq), 0, &ssi, NULL,
 				  &s->ss, seq, NULL)) {
-			lwsl_err("%s: failed to create secure stream\n",
+			aws_lwsl_err("%s: failed to create secure stream\n",
 				 __func__);
 
 			return LWSSEQ_RET_DESTROY;
@@ -272,55 +272,55 @@ min_sec_str_sequencer_cb(struct lws_sequencer *seq, void *user, int event,
 		break;
 
 	case LWSSEQ_DESTROYED:
-		lwsl_notice("%s: LWSSEQ_DESTROYED\n", __func__);
+		aws_lwsl_notice("%s: LWSSEQ_DESTROYED\n", __func__);
 		break;
 
 	case LWSSEQ_TIMED_OUT: /* current step timed out */
 		if (s->state == SEQ_RECONNECT_WAIT)
-			return lws_ss_request_tx(s->ss);
+			return aws_lws_ss_request_tx(s->ss);
 		break;
 
 	/*
 	 * These messages are created because we have a secure stream that was
 	 * bound to this sequencer at creation time.  It copies its state
-	 * events to us as its sequencer parent.  v is the lws_ss_handle_t *
+	 * events to us as its sequencer parent.  v is the aws_lws_ss_handle_t *
 	 */
 
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_CREATING:
-		lwsl_info("%s: seq LWSSSCS_CREATING\n", __func__);
-		return lws_ss_request_tx(s->ss);
+		aws_lwsl_info("%s: seq LWSSSCS_CREATING\n", __func__);
+		return aws_lws_ss_request_tx(s->ss);
 
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_DISCONNECTED:
-		lwsl_info("%s: seq LWSSSCS_DISCONNECTED\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_DISCONNECTED\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_UNREACHABLE:
-		lwsl_info("%s: seq LWSSSCS_UNREACHABLE\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_UNREACHABLE\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_AUTH_FAILED:
-		lwsl_info("%s: seq LWSSSCS_AUTH_FAILED\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_AUTH_FAILED\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_CONNECTED:
-		lwsl_info("%s: seq LWSSSCS_CONNECTED\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_CONNECTED\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_CONNECTING:
-		lwsl_info("%s: seq LWSSSCS_CONNECTING\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_CONNECTING\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_DESTROYING:
-		lwsl_info("%s: seq LWSSSCS_DESTROYING\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_DESTROYING\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_POLL:
-		/* somebody called lws_ss_poll() on the stream */
-		lwsl_info("%s: seq LWSSSCS_POLL\n", __func__);
+		/* somebody called aws_lws_ss_poll() on the stream */
+		aws_lwsl_info("%s: seq LWSSSCS_POLL\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_ALL_RETRIES_FAILED:
-		lwsl_info("%s: seq LWSSSCS_ALL_RETRIES_FAILED\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_ALL_RETRIES_FAILED\n", __func__);
 		interrupted = 1;
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_QOS_ACK_REMOTE:
-		lwsl_info("%s: seq LWSSSCS_QOS_ACK_REMOTE\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_QOS_ACK_REMOTE\n", __func__);
 		break;
 	case LWSSEQ_SS_STATE_BASE + LWSSSCS_QOS_ACK_LOCAL:
-		lwsl_info("%s: seq LWSSSCS_QOS_ACK_LOCAL\n", __func__);
+		aws_lwsl_info("%s: seq LWSSSCS_QOS_ACK_LOCAL\n", __func__);
 		break;
 
 	/*
@@ -349,22 +349,22 @@ sigint_handler(int sig)
 int main(int argc, const char **argv)
 {
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
-	struct lws_context *context;
-	lws_seq_info_t i;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
+	aws_lws_seq_info_t i;
 	const char *p;
 	myseq_t *ms;
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal secure streams [-d<verbosity>][-f][--h1post]\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal secure streams [-d<verbosity>][-f][--h1post]\n");
 
-	flag_conn_fail = !!lws_cmdline_option(argc, argv, "-f");
-	flag_h1post = !!lws_cmdline_option(argc, argv, "--h1post");
+	flag_conn_fail = !!aws_lws_cmdline_option(argc, argv, "-f");
+	flag_h1post = !!aws_lws_cmdline_option(argc, argv, "--h1post");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 
@@ -374,9 +374,9 @@ int main(int argc, const char **argv)
 	info.pss_policies_json = default_ss_policy;
 	info.port = CONTEXT_PORT_NO_LISTEN;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -392,19 +392,19 @@ int main(int argc, const char **argv)
 	i.cb		= min_sec_str_sequencer_cb;
 	i.name		= "min-sec-stream-seq";
 
-	if (!lws_seq_create(&i)) {
-		lwsl_err("%s: failed to create sequencer\n", __func__);
+	if (!aws_lws_seq_create(&i)) {
+		aws_lwsl_err("%s: failed to create sequencer\n", __func__);
 		goto bail;
 	}
 
 	/* the event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 bail:
-	lws_context_destroy(context);
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

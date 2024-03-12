@@ -23,7 +23,7 @@
  */
 #include "private-lib-core.h"
 
-typedef enum lws_button_classify_states {
+typedef enum aws_lws_button_classify_states {
 	LBCS_IDLE,		/* nothing happening */
 	LBCS_MIN_DOWN_QUALIFY,
 
@@ -34,41 +34,41 @@ typedef enum lws_button_classify_states {
 
 	LBCS_WAIT_UP,
 	LBCS_UP_SETTLE2,
-} lws_button_classify_states_t;
+} aws_lws_button_classify_states_t;
 
 /*
  * This is the opaque, allocated, non-const, dynamic footprint of the
  * button controller
  */
 
-typedef struct lws_button_state {
+typedef struct aws_lws_button_state {
 #if defined(LWS_PLAT_TIMER_TYPE)
 	LWS_PLAT_TIMER_TYPE			timer;	   /* bh timer */
 	LWS_PLAT_TIMER_TYPE			timer_mon; /* monitor timer */
 #endif
-	const lws_button_controller_t		*controller;
-	struct lws_context			*ctx;
+	const aws_lws_button_controller_t		*controller;
+	struct aws_lws_context			*ctx;
 	short					mon_refcount;
-	lws_button_idx_t			enable_bitmap;
-	lws_button_idx_t			state_bitmap;
+	aws_lws_button_idx_t			enable_bitmap;
+	aws_lws_button_idx_t			state_bitmap;
 
 	uint16_t				mon_timer_count;
 	/* incremented each time the mon timer cb happens */
 
-	/* lws_button_each_t per button overallocated after this */
-} lws_button_state_t;
+	/* aws_lws_button_each_t per button overallocated after this */
+} aws_lws_button_state_t;
 
-typedef struct lws_button_each {
-	lws_button_state_t			*bcs;
+typedef struct aws_lws_button_each {
+	aws_lws_button_state_t			*bcs;
 	uint16_t				mon_timer_comp;
 	uint16_t				mon_timer_repeat;
 	uint8_t					state;
-	/**^ lws_button_classify_states_t */
+	/**^ aws_lws_button_classify_states_t */
 	uint8_t					isr_pending;
-} lws_button_each_t;
+} aws_lws_button_each_t;
 
 #if defined(LWS_PLAT_TIMER_START)
-static const lws_button_regime_t default_regime = {
+static const aws_lws_button_regime_t default_regime = {
 	.ms_min_down			= 20,
 	.ms_min_down_longpress		= 300,
 	.ms_up_settle			= 20,
@@ -80,16 +80,16 @@ static const lws_button_regime_t default_regime = {
 
 /*
  * This is happening in interrupt context, we have to schedule a bottom half to
- * do the foreground lws_smd queueing, using, eg, a platform timer.
+ * do the foreground aws_lws_smd queueing, using, eg, a platform timer.
  *
  * All the buttons point here and use one timer per button controller.  An
  * interrupt here means, "something happened to one or more buttons"
  */
 #if defined(LWS_PLAT_TIMER_START)
 void
-lws_button_irq_cb_t(void *arg)
+aws_lws_button_irq_cb_t(void *arg)
 {
-	lws_button_each_t *each = (lws_button_each_t *)arg;
+	aws_lws_button_each_t *each = (aws_lws_button_each_t *)arg;
 
 	each->isr_pending = 1;
 	LWS_PLAT_TIMER_START(each->bcs->timer);
@@ -105,17 +105,17 @@ lws_button_irq_cb_t(void *arg)
  */
 
 #if defined(LWS_PLAT_TIMER_CB)
-static LWS_PLAT_TIMER_CB(lws_button_bh, th)
+static LWS_PLAT_TIMER_CB(aws_lws_button_bh, th)
 {
-	lws_button_state_t *bcs = LWS_PLAT_TIMER_CB_GET_OPAQUE(th);
-	lws_button_each_t *each = (lws_button_each_t *)&bcs[1];
-	const lws_button_controller_t *bc = bcs->controller;
+	aws_lws_button_state_t *bcs = LWS_PLAT_TIMER_CB_GET_OPAQUE(th);
+	aws_lws_button_each_t *each = (aws_lws_button_each_t *)&bcs[1];
+	const aws_lws_button_controller_t *bc = bcs->controller;
 	size_t n;
 
 	/*
 	 * The ISR and bottom-half is shared by all the buttons.  Each gpio
 	 * IRQ has an individual opaque ptr pointing to the corresponding
-	 * button's dynamic lws_button_each_t, the ISR marks the button's
+	 * button's dynamic aws_lws_button_each_t, the ISR marks the button's
 	 * each->isr_pending and schedules this bottom half.
 	 *
 	 * So now the bh timer has fired and something to do, we need to go
@@ -195,18 +195,18 @@ static LWS_PLAT_TIMER_CB(lws_button_bh, th)
 				       bc->active_state_bitmap & (1 << n) ?
 					   LWSGGPIO_IRQ_RISING :
 					   LWSGGPIO_IRQ_FALLING,
-					      lws_button_irq_cb_t, &each[n]);
+					      aws_lws_button_irq_cb_t, &each[n]);
 	}
 }
 #endif
 
 #if defined(LWS_PLAT_TIMER_CB)
-static LWS_PLAT_TIMER_CB(lws_button_mon, th)
+static LWS_PLAT_TIMER_CB(aws_lws_button_mon, th)
 {
-	lws_button_state_t *bcs = LWS_PLAT_TIMER_CB_GET_OPAQUE(th);
-	lws_button_each_t *each = (lws_button_each_t *)&bcs[1];
-	const lws_button_controller_t *bc = bcs->controller;
-	const lws_button_regime_t *regime;
+	aws_lws_button_state_t *bcs = LWS_PLAT_TIMER_CB_GET_OPAQUE(th);
+	aws_lws_button_each_t *each = (aws_lws_button_each_t *)&bcs[1];
+	const aws_lws_button_controller_t *bc = bcs->controller;
+	const aws_lws_button_regime_t *regime;
 	const char *event_name;
 	int comp_age_ms;
 	char active;
@@ -232,7 +232,7 @@ static LWS_PLAT_TIMER_CB(lws_button_mon, th)
 		active = bc->gpio_ops->read(bc->button_map[n].gpio) ^
 			       (!(bc->active_state_bitmap & (1 << n)));
 
-		// lwsl_notice("%d\n", each->state);
+		// aws_lwsl_notice("%d\n", each->state);
 
 		switch (each->state) {
 		case LBCS_MIN_DOWN_QUALIFY:
@@ -415,7 +415,7 @@ stilldown:
 		continue;
 
 emit:
-		lws_smd_msg_printf(bcs->ctx, LWSSMDCL_INTERACTION,
+		aws_lws_smd_msg_printf(bcs->ctx, LWSSMDCL_INTERACTION,
 				   "{\"type\":\"button\","
 				   "\"src\":\"%s/%s\",\"event\":\"%s\"}",
 				   bc->smd_bc_name,
@@ -427,14 +427,14 @@ emit:
 }
 #endif
 
-struct lws_button_state *
-lws_button_controller_create(struct lws_context *ctx,
-			     const lws_button_controller_t *controller)
+struct aws_lws_button_state *
+aws_lws_button_controller_create(struct aws_lws_context *ctx,
+			     const aws_lws_button_controller_t *controller)
 {
-	lws_button_state_t *bcs = lws_zalloc(sizeof(lws_button_state_t) +
-			(controller->count_buttons * sizeof(lws_button_each_t)),
+	aws_lws_button_state_t *bcs = aws_lws_zalloc(sizeof(aws_lws_button_state_t) +
+			(controller->count_buttons * sizeof(aws_lws_button_each_t)),
 			__func__);
-	lws_button_each_t *each = (lws_button_each_t *)&bcs[1];
+	aws_lws_button_each_t *each = (aws_lws_button_each_t *)&bcs[1];
 	size_t n;
 
 	if (!bcs)
@@ -449,14 +449,14 @@ lws_button_controller_create(struct lws_context *ctx,
 #if defined(LWS_PLAT_TIMER_CREATE)
 	/* this only runs inbetween a gpio ISR and the bottom half */
 	bcs->timer = LWS_PLAT_TIMER_CREATE("bcst",
-			1, 0, bcs, (TimerCallbackFunction_t)lws_button_bh);
+			1, 0, bcs, (TimerCallbackFunction_t)aws_lws_button_bh);
 	if (!bcs->timer)
 		return NULL;
 
 	/* this only runs when a button activity is being classified */
 	bcs->timer_mon = LWS_PLAT_TIMER_CREATE("bcmon", LWS_BUTTON_MON_TIMER_MS,
 					       1, bcs, (TimerCallbackFunction_t)
-								lws_button_mon);
+								aws_lws_button_mon);
 	if (!bcs->timer_mon)
 		return NULL;
 #endif
@@ -465,23 +465,23 @@ lws_button_controller_create(struct lws_context *ctx,
 }
 
 void
-lws_button_controller_destroy(struct lws_button_state *bcs)
+aws_lws_button_controller_destroy(struct aws_lws_button_state *bcs)
 {
 	/* disable them all */
-	lws_button_enable(bcs, 0, 0);
+	aws_lws_button_enable(bcs, 0, 0);
 
 #if defined(LWS_PLAT_TIMER_DELETE)
 	LWS_PLAT_TIMER_DELETE(&bcs->timer);
 	LWS_PLAT_TIMER_DELETE(&bcs->timer_mon);
 #endif
 
-	lws_free(bcs);
+	aws_lws_free(bcs);
 }
 
-lws_button_idx_t
-lws_button_get_bit(struct lws_button_state *bcs, const char *name)
+aws_lws_button_idx_t
+aws_lws_button_get_bit(struct aws_lws_button_state *bcs, const char *name)
 {
-	const lws_button_controller_t *bc = bcs->controller;
+	const aws_lws_button_controller_t *bc = bcs->controller;
 	int n;
 
 	for (n = 0; n < bc->count_buttons; n++)
@@ -492,13 +492,13 @@ lws_button_get_bit(struct lws_button_state *bcs, const char *name)
 }
 
 void
-lws_button_enable(lws_button_state_t *bcs,
-		  lws_button_idx_t _reset, lws_button_idx_t _set)
+aws_lws_button_enable(aws_lws_button_state_t *bcs,
+		  aws_lws_button_idx_t _reset, aws_lws_button_idx_t _set)
 {
-	lws_button_idx_t u = (bcs->enable_bitmap & (~_reset)) | _set;
-	const lws_button_controller_t *bc = bcs->controller;
+	aws_lws_button_idx_t u = (bcs->enable_bitmap & (~_reset)) | _set;
+	const aws_lws_button_controller_t *bc = bcs->controller;
 #if defined(LWS_PLAT_TIMER_START)
-	lws_button_each_t *each = (lws_button_each_t *)&bcs[1];
+	aws_lws_button_each_t *each = (aws_lws_button_each_t *)&bcs[1];
 #endif
 	int n;
 
@@ -512,14 +512,14 @@ lws_button_enable(lws_button_state_t *bcs,
 #if defined(LWS_PLAT_TIMER_START)
 			/*
 			 * This one is becoming enabled... the opaque for the
-			 * ISR is the indvidual lws_button_each_t, they all
+			 * ISR is the indvidual aws_lws_button_each_t, they all
 			 * point to the same ISR
 			 */
 			bc->gpio_ops->irq_mode(bc->button_map[n].gpio,
 					bc->active_state_bitmap & (1 << n) ?
 						LWSGGPIO_IRQ_RISING :
 							LWSGGPIO_IRQ_FALLING,
-						lws_button_irq_cb_t, &each[n]);
+						aws_lws_button_irq_cb_t, &each[n]);
 #endif
 		}
 		if ((bcs->enable_bitmap & (1 << n)) && !(u & (1 << n)))

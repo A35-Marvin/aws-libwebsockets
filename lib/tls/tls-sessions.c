@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 void
-lws_tls_session_tag_discrete(const char *vhname, const char *host,
+aws_lws_tls_session_tag_discrete(const char *vhname, const char *host,
 			      uint16_t port, char *buf, size_t len)
 {
 	/*
@@ -34,11 +34,11 @@ lws_tls_session_tag_discrete(const char *vhname, const char *host,
 	 * different client certs.
 	 */
 
-	lws_snprintf(buf, len, "%s_%s_%u", vhname, host, port);
+	aws_lws_snprintf(buf, len, "%s_%s_%u", vhname, host, port);
 }
 
 int
-lws_tls_session_tag_from_wsi(struct lws *wsi, char *buf, size_t len)
+aws_lws_tls_session_tag_from_wsi(struct lws *wsi, char *buf, size_t len)
 {
 	const char *host;
 
@@ -55,7 +55,7 @@ lws_tls_session_tag_from_wsi(struct lws *wsi, char *buf, size_t len)
 	if (!host)
 		return 1;
 
-	lws_tls_session_tag_discrete(wsi->a.vhost->name, host, wsi->c_port,
+	aws_lws_tls_session_tag_discrete(wsi->a.vhost->name, host, wsi->c_port,
 				     buf, len);
 
 	return 0;

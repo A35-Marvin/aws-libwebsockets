@@ -18,7 +18,7 @@
 #include <signal.h>
 
 static int interrupted;
-static struct lws_context *context;
+static struct aws_lws_context *context;
 
 #define MAX_CUSTOM_POLLFDS	64
 
@@ -26,7 +26,7 @@ static struct lws_context *context;
  * to cooperate with */
 
 typedef struct custom_poll_ctx {
-	struct lws_pollfd	pollfds[MAX_CUSTOM_POLLFDS];
+	struct aws_lws_pollfd	pollfds[MAX_CUSTOM_POLLFDS];
 	int			count_pollfds;
 } custom_poll_ctx_t;
 
@@ -41,8 +41,8 @@ static custom_poll_ctx_t a_cpcx;
  * existing application.
  */
 
-static struct lws_pollfd *
-custom_poll_find_fd(custom_poll_ctx_t *cpcx, lws_sockfd_type fd)
+static struct aws_lws_pollfd *
+custom_poll_find_fd(custom_poll_ctx_t *cpcx, aws_lws_sockfd_type fd)
 {
 	int n;
 
@@ -54,20 +54,20 @@ custom_poll_find_fd(custom_poll_ctx_t *cpcx, lws_sockfd_type fd)
 }
 
 static int
-custom_poll_add_fd(custom_poll_ctx_t *cpcx, lws_sockfd_type fd, int events)
+custom_poll_add_fd(custom_poll_ctx_t *cpcx, aws_lws_sockfd_type fd, int events)
 {
-	struct lws_pollfd *pfd;
+	struct aws_lws_pollfd *pfd;
 
-	lwsl_info("%s: ADD fd %d, ev %d\n", __func__, fd, events);
+	aws_lwsl_info("%s: ADD fd %d, ev %d\n", __func__, fd, events);
 
 	pfd = custom_poll_find_fd(cpcx, fd);
 	if (pfd) {
-		lwsl_err("%s: ADD fd %d already in ext table\n", __func__, fd);
+		aws_lwsl_err("%s: ADD fd %d already in ext table\n", __func__, fd);
 		return 1;
 	}
 
 	if (cpcx->count_pollfds == LWS_ARRAY_SIZE(cpcx->pollfds)) {
-		lwsl_err("%s: no room left\n", __func__);
+		aws_lwsl_err("%s: no room left\n", __func__);
 		return 1;
 	}
 
@@ -80,15 +80,15 @@ custom_poll_add_fd(custom_poll_ctx_t *cpcx, lws_sockfd_type fd, int events)
 }
 
 static int
-custom_poll_del_fd(custom_poll_ctx_t *cpcx, lws_sockfd_type fd)
+custom_poll_del_fd(custom_poll_ctx_t *cpcx, aws_lws_sockfd_type fd)
 {
-	struct lws_pollfd *pfd;
+	struct aws_lws_pollfd *pfd;
 
-	lwsl_info("%s: DEL fd %d\n", __func__, fd);
+	aws_lwsl_info("%s: DEL fd %d\n", __func__, fd);
 
 	pfd = custom_poll_find_fd(cpcx, fd);
 	if (!pfd) {
-		lwsl_err("%s: DEL fd %d missing in ext table\n", __func__, fd);
+		aws_lwsl_err("%s: DEL fd %d missing in ext table\n", __func__, fd);
 		return 1;
 	}
 
@@ -101,12 +101,12 @@ custom_poll_del_fd(custom_poll_ctx_t *cpcx, lws_sockfd_type fd)
 }
 
 static int
-custom_poll_change_fd(custom_poll_ctx_t *cpcx, lws_sockfd_type fd,
+custom_poll_change_fd(custom_poll_ctx_t *cpcx, aws_lws_sockfd_type fd,
 		     int events_add, int events_remove)
 {
-	struct lws_pollfd *pfd;
+	struct aws_lws_pollfd *pfd;
 
-	lwsl_info("%s: CHG fd %d, ev_add %d, ev_rem %d\n", __func__, fd,
+	aws_lwsl_info("%s: CHG fd %d, ev_add %d, ev_rem %d\n", __func__, fd,
 			events_add, events_remove);
 
 	pfd = custom_poll_find_fd(cpcx, fd);
@@ -132,25 +132,25 @@ custom_poll_run(custom_poll_ctx_t *cpcx)
 		 * than the provided timeout.
 		 */
 
-		n = lws_service_adjust_timeout(context, 5000, 0);
+		n = aws_lws_service_adjust_timeout(context, 5000, 0);
 
-		lwsl_debug("%s: entering poll wait %dms\n", __func__, n);
+		aws_lwsl_debug("%s: entering poll wait %dms\n", __func__, n);
 
 		n = poll(cpcx->pollfds, (nfds_t)cpcx->count_pollfds, n);
 
-		lwsl_debug("%s: exiting poll ret %d\n", __func__, n);
+		aws_lwsl_debug("%s: exiting poll ret %d\n", __func__, n);
 
 		if (n <= 0)
 			continue;
 
 		for (n = 0; n < cpcx->count_pollfds; n++) {
-			lws_sockfd_type fd = cpcx->pollfds[n].fd;
+			aws_lws_sockfd_type fd = cpcx->pollfds[n].fd;
 			int m;
 
 			if (!cpcx->pollfds[n].revents)
 				continue;
 
-			m = lws_service_fd(context, &cpcx->pollfds[n]);
+			m = aws_lws_service_fd(context, &cpcx->pollfds[n]);
 
 			/* if something closed, retry this slot since may have been
 			 * swapped with end fd */
@@ -193,10 +193,10 @@ struct pt_eventlibs_custom {
  */
 
 static int
-init_pt_custom(struct lws_context *cx, void *_loop, int tsi)
+init_pt_custom(struct aws_lws_context *cx, void *_loop, int tsi)
 {
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
-					     lws_evlib_tsi_to_evlib_pt(cx, tsi);
+					     aws_lws_evlib_tsi_to_evlib_pt(cx, tsi);
 
 	/* store the loop we are bound to in our private part of the pt */
 
@@ -209,16 +209,16 @@ static int
 sock_accept_custom(struct lws *wsi)
 {
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
-						lws_evlib_wsi_to_evlib_pt(wsi);
+						aws_lws_evlib_wsi_to_evlib_pt(wsi);
 
-	return custom_poll_add_fd(priv->io_loop, lws_get_socket_fd(wsi), POLLIN);
+	return custom_poll_add_fd(priv->io_loop, aws_lws_get_socket_fd(wsi), POLLIN);
 }
 
 static void
 io_custom(struct lws *wsi, unsigned int flags)
 {
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
-						lws_evlib_wsi_to_evlib_pt(wsi);
+						aws_lws_evlib_wsi_to_evlib_pt(wsi);
 	int e_add = 0, e_remove = 0;
 
 	if (flags & LWS_EV_START) {
@@ -235,7 +235,7 @@ io_custom(struct lws *wsi, unsigned int flags)
 			e_remove |= POLLIN;
 	}
 
-	custom_poll_change_fd(priv->io_loop, lws_get_socket_fd(wsi),
+	custom_poll_change_fd(priv->io_loop, aws_lws_get_socket_fd(wsi),
 			      e_add, e_remove);
 }
 
@@ -243,11 +243,11 @@ static int
 wsi_logical_close_custom(struct lws *wsi)
 {
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
-						lws_evlib_wsi_to_evlib_pt(wsi);
-	return custom_poll_del_fd(priv->io_loop, lws_get_socket_fd(wsi));
+						aws_lws_evlib_wsi_to_evlib_pt(wsi);
+	return custom_poll_del_fd(priv->io_loop, aws_lws_get_socket_fd(wsi));
 }
 
-static const struct lws_event_loop_ops event_loop_ops_custom = {
+static const struct aws_lws_event_loop_ops event_loop_ops_custom = {
 	.name				= "custom",
 
 	.init_pt			= init_pt_custom,
@@ -259,10 +259,10 @@ static const struct lws_event_loop_ops event_loop_ops_custom = {
 	.evlib_size_pt			= sizeof(struct pt_eventlibs_custom)
 };
 
-static const lws_plugin_evlib_t evlib_custom = {
+static const aws_lws_plugin_evlib_t evlib_custom = {
 	.hdr = {
 		"custom event loop",
-		"lws_evlib_plugin",
+		"aws_lws_evlib_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},
@@ -275,7 +275,7 @@ static const lws_plugin_evlib_t evlib_custom = {
  * lines wiring up the custom event library handlers above.
  */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -301,26 +301,26 @@ static const struct lws_http_mount mount = {
  */
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: resp %u\n",
-				lws_http_client_http_response(wsi));
+		aws_lwsl_user("LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: resp %u\n",
+				aws_lws_http_client_http_response(wsi));
 		break;
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		break;
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
-		lwsl_hexdump_info(in, len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_hexdump_info(in, len);
 		return 0; /* don't passthru */
 
 	/* uninterpreted http content */
@@ -330,28 +330,28 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP %s\n",
-			  lws_wsi_tag(wsi));
+		aws_lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP %s\n",
+			  aws_lws_wsi_tag(wsi));
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
-		lwsl_info("%s: closed: %s\n", __func__, lws_wsi_tag(wsi));
+		aws_lwsl_info("%s: closed: %s\n", __func__, aws_lws_wsi_tag(wsi));
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{ "httptest", callback_http, 0, 0, 0, NULL, 0},
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -359,7 +359,7 @@ static const struct lws_protocols protocols[] = {
 static int
 do_client_conn(void)
 {
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 
 	memset(&i, 0, sizeof i); /* otherwise uninitialized garbage */
 
@@ -380,13 +380,13 @@ do_client_conn(void)
 	i.fi_wsi_name		= "user";
 #endif
 
-	if (!lws_client_connect_via_info(&i)) {
-		lwsl_err("Client creation failed\n");
+	if (!aws_lws_client_connect_via_info(&i)) {
+		aws_lwsl_err("Client creation failed\n");
 
 		return 1;
 	}
 
-	lwsl_notice("Client creation OK\n");
+	aws_lwsl_notice("Client creation OK\n");
 
 	return 0;
 }
@@ -404,14 +404,14 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	void *foreign_loops[1];
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
 	/*
@@ -419,8 +419,8 @@ int main(int argc, const char **argv)
 	 * run it yet. In our example, no init required.
 	 */
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -438,9 +438,9 @@ int main(int argc, const char **argv)
 	/* optional to demonstrate client connection */
 	info.protocols = protocols;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -458,7 +458,7 @@ int main(int argc, const char **argv)
 
 	/* clean up lws part */
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

@@ -27,30 +27,30 @@
 #include <private-lib-core.h>
 
 typedef struct ss_cpd {
-	struct lws_ss_handle 	*ss;
+	struct aws_lws_ss_handle 	*ss;
 	void			*opaque_data;
 	/* ... application specific state ... */
 
-	lws_sorted_usec_list_t	sul;
+	aws_lws_sorted_usec_list_t	sul;
 } ss_cpd_t;
 
-static lws_ss_state_return_t
-ss_cpd_state(void *userobj, void *sh, lws_ss_constate_t state,
-	     lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+ss_cpd_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+	     aws_lws_ss_tx_ordinal_t ack)
 {
 	ss_cpd_t *m = (ss_cpd_t *)userobj;
-	struct lws_context *cx = (struct lws_context *)m->opaque_data;
+	struct aws_lws_context *cx = (struct aws_lws_context *)m->opaque_data;
 
-	lwsl_ss_info(m->ss, "%s, ord 0x%x\n", lws_ss_state_name((int)state),
+	aws_lwsl_ss_info(m->ss, "%s, ord 0x%x\n", aws_lws_ss_state_name((int)state),
 		  (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_CREATING:
-		lws_ss_start_timeout(m->ss, 3 * LWS_US_PER_SEC);
-		return lws_ss_request_tx(m->ss);
+		aws_lws_ss_start_timeout(m->ss, 3 * LWS_US_PER_SEC);
+		return aws_lws_ss_request_tx(m->ss);
 
 	case LWSSSCS_QOS_ACK_REMOTE:
-		lws_system_cpd_set(cx, LWS_CPD_INTERNET_OK);
+		aws_lws_system_cpd_set(cx, LWS_CPD_INTERNET_OK);
 		cx->ss_cpd = NULL;
 		return LWSSSSRET_DESTROY_ME;
 
@@ -61,7 +61,7 @@ ss_cpd_state(void *userobj, void *sh, lws_ss_constate_t state,
 		 * First result reported sticks... if nothing else, this will
 		 * cover the situation we didn't connect to anything
 		 */
-		lws_system_cpd_set(cx, LWS_CPD_NO_INTERNET);
+		aws_lws_system_cpd_set(cx, LWS_CPD_NO_INTERNET);
 		cx->ss_cpd = NULL;
 		return LWSSSSRET_DESTROY_ME;
 
@@ -72,7 +72,7 @@ ss_cpd_state(void *userobj, void *sh, lws_ss_constate_t state,
 	return LWSSSSRET_OK;
 }
 
-static const lws_ss_info_t ssi_cpd = {
+static const aws_lws_ss_info_t ssi_cpd = {
 	.handle_offset			= offsetof(ss_cpd_t, ss),
 	.opaque_user_data_offset	= offsetof(ss_cpd_t, opaque_data),
 	.state				= ss_cpd_state,
@@ -81,15 +81,15 @@ static const lws_ss_info_t ssi_cpd = {
 };
 
 int
-lws_ss_sys_cpd(struct lws_context *cx)
+aws_lws_ss_sys_cpd(struct aws_lws_context *cx)
 {
 	if (cx->ss_cpd) {
-		lwsl_cx_notice(cx, "CPD already ongoing");
+		aws_lwsl_cx_notice(cx, "CPD already ongoing");
 		return 0;
 	}
 
-	if (lws_ss_create(cx, 0, &ssi_cpd, cx, &cx->ss_cpd, NULL, NULL)) {
-		lwsl_cx_info(cx, "Create stream failed (policy?)");
+	if (aws_lws_ss_create(cx, 0, &ssi_cpd, cx, &cx->ss_cpd, NULL, NULL)) {
+		aws_lwsl_cx_info(cx, "Create stream failed (policy?)");
 
 		return 1;
 	}

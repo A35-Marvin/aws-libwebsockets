@@ -11,7 +11,7 @@
 #include <signal.h>
 
 static int interrupted, ok, fail, exp = 1;
-struct lws_context *context;
+struct aws_lws_context *context;
 const char *nif;
 
 static const char * const sa46_names[] = {
@@ -26,16 +26,16 @@ static const char * const sa46_names[] = {
 };
 
 static int
-lws_dhcpc_cb(void *opaque, lws_dhcpc_ifstate_t *is)
+aws_lws_dhcpc_cb(void *opaque, aws_lws_dhcpc_ifstate_t *is)
 {
 	unsigned int n;
 	char buf[64];
 
-	lwsl_user("%s: dhcp set OK\n", __func__);
+	aws_lwsl_user("%s: dhcp set OK\n", __func__);
 
 	for (n = 0; n < LWS_ARRAY_SIZE(sa46_names); n++) {
-		lws_sa46_write_numeric_address(&is->sa46[n], buf, sizeof(buf));
-		lwsl_notice("%s: %s: %s\n", __func__, sa46_names[n], buf);
+		aws_lws_sa46_write_numeric_address(&is->sa46[n], buf, sizeof(buf));
+		aws_lwsl_notice("%s: %s: %s\n", __func__, sa46_names[n], buf);
 	}
 
 	ok = 1;
@@ -51,33 +51,33 @@ void sigint_handler(int sig)
 int
 main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 1;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
-	lwsl_user("LWS API selftest: DHCP Client\n");
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lwsl_user("LWS API selftest: DHCP Client\n");
 
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 
-	if ((p = lws_cmdline_option(argc, argv, "-i")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-i")))
 		nif = p;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	if (nif) {
-		lwsl_user("%s: requesting DHCP for %s\n", __func__, nif);
-		lws_dhcpc_request(context, nif, AF_INET, lws_dhcpc_cb, NULL);
+		aws_lwsl_user("%s: requesting DHCP for %s\n", __func__, nif);
+		aws_lws_dhcpc_request(context, nif, AF_INET, aws_lws_dhcpc_cb, NULL);
 	} else {
-		lwsl_err("%s: use -i <network-interface> to select if\n", __func__);
+		aws_lwsl_err("%s: use -i <network-interface> to select if\n", __func__);
 		interrupted = 1;
 	}
 
@@ -85,15 +85,15 @@ main(int argc, const char **argv)
 
 	n = 1;
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	if (fail || ok != exp)
-		lwsl_user("Completed: PASS: %d / %d, FAIL: %d\n", ok, exp,
+		aws_lwsl_user("Completed: PASS: %d / %d, FAIL: %d\n", ok, exp,
 				fail);
 	else
-		lwsl_user("Completed: ALL PASS: %d / %d\n", ok, exp);
+		aws_lwsl_user("Completed: ALL PASS: %d / %d\n", ok, exp);
 
 	return !(ok == exp && !fail);
 }

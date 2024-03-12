@@ -29,7 +29,7 @@
 #include <libwebsockets.h>
 	
 int
-lws_i2c_command(const lws_i2c_ops_t *ctx, uint8_t ads7, uint8_t c)
+aws_lws_i2c_command(const aws_lws_i2c_ops_t *ctx, uint8_t ads7, uint8_t c)
 {
 	if (ctx->start(ctx))
 		return 1;
@@ -48,11 +48,11 @@ lws_i2c_command(const lws_i2c_ops_t *ctx, uint8_t ads7, uint8_t c)
 }
 
 int
-lws_i2c_command_list(const lws_i2c_ops_t *ctx, uint8_t ads7, const uint8_t *buf,
+aws_lws_i2c_command_list(const aws_lws_i2c_ops_t *ctx, uint8_t ads7, const uint8_t *buf,
 		     size_t len)
 {
 	while (len--)
-		if (lws_i2c_command(ctx, ads7, *buf++))
+		if (aws_lws_i2c_command(ctx, ads7, *buf++))
 			return 1;
 
 	return 0;

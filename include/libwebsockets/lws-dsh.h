@@ -23,27 +23,27 @@
  */
 
 /*
- * lws_dsh (Disordered Shared Heap) is an opaque abstraction supporting a single
- * linear buffer (overallocated at end of the lws_dsh_t) which may contain
+ * aws_lws_dsh (Disordered Shared Heap) is an opaque abstraction supporting a single
+ * linear buffer (overallocated at end of the aws_lws_dsh_t) which may contain
  * multiple kinds of packets that are retired out of order, and tracked by kind.
  *
- * Each kind of packet has an lws_dll2 list of its kind of packets and acts as
+ * Each kind of packet has an aws_lws_dll2 list of its kind of packets and acts as
  * a FIFO; packets of a particular type are always retired in order.  But there
  * is no requirement about the order types are retired matching the original
  * order they arrived.
  * 
  * Gaps are tracked as just another kind of "packet" list.
  *
- * "allocations" (including gaps) are prepended by an lws_dsh_object_t.
+ * "allocations" (including gaps) are prepended by an aws_lws_dsh_object_t.
  *
- * dsh may themselves be on an lws_dll2_owner list, and under memory pressure
+ * dsh may themselves be on an aws_lws_dll2_owner list, and under memory pressure
  * allocate into other buffers on the list.
  *
  * All management structures exist inside the allocated buffer.
  */
 
 /**
- * lws_dsh_create() - Allocate a DSH buffer
+ * aws_lws_dsh_create() - Allocate a DSH buffer
  *
  * \param owner: the owning list this dsh belongs on, or NULL if standalone
  * \param buffer_size: the allocation in bytes
@@ -55,18 +55,18 @@
  *
  * Every "kind" of allocation shares the same buffer space.
  *
- * Multiple buffers may be bound together in an lws_dll2 list, and if an
+ * Multiple buffers may be bound together in an aws_lws_dll2 list, and if an
  * allocation cannot be satisfied by the local buffer, space can be borrowed
  * from other dsh in the same list (the local dsh FIFO tracks these "foreign"
  * allocations as if they were local).
  *
  * Returns an opaque pointer to the dsh, or NULL if allocation failed.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_dsh *
-lws_dsh_create(lws_dll2_owner_t *owner, size_t buffer_size, int count_kinds);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_dsh *
+aws_lws_dsh_create(aws_lws_dll2_owner_t *owner, size_t buffer_size, int count_kinds);
 
 /**
- * lws_dsh_destroy() - Destroy a DSH buffer
+ * aws_lws_dsh_destroy() - Destroy a DSH buffer
  *
  * \param pdsh: pointer to the dsh pointer
  *
@@ -80,10 +80,10 @@ lws_dsh_create(lws_dll2_owner_t *owner, size_t buffer_size, int count_kinds);
  * unmigratable objects are cleanly destroyed.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_dsh_destroy(struct lws_dsh **pdsh);
+aws_lws_dsh_destroy(struct aws_lws_dsh **pdsh);
 
 /**
- * lws_dsh_alloc_tail() - make a suballocation inside a dsh
+ * aws_lws_dsh_alloc_tail() - make a suballocation inside a dsh
  *
  * \param dsh: the dsh tracking the allocation
  * \param kind: the kind of allocation
@@ -101,11 +101,11 @@ lws_dsh_destroy(struct lws_dsh **pdsh);
  * The suballocation is added to the kind-specific FIFO at the tail.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_dsh_alloc_tail(struct lws_dsh *dsh, int kind, const void *src1,
+aws_lws_dsh_alloc_tail(struct aws_lws_dsh *dsh, int kind, const void *src1,
 		   size_t size1, const void *src2, size_t size2);
 
 /**
- * lws_dsh_free() - free a suballocation from the dsh
+ * aws_lws_dsh_free() - free a suballocation from the dsh
  *
  * \param obj: a pointer to a void * that pointed to the allocated payload
  *
@@ -113,13 +113,13 @@ lws_dsh_alloc_tail(struct lws_dsh *dsh, int kind, const void *src1,
  * of the dsh the allocation came from.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_dsh_free(void **obj);
+aws_lws_dsh_free(void **obj);
 
 LWS_VISIBLE LWS_EXTERN size_t
-lws_dsh_get_size(struct lws_dsh *dsh, int kind);
+aws_lws_dsh_get_size(struct aws_lws_dsh *dsh, int kind);
 
 /**
- * lws_dsh_get_head() - get the head allocation inside the dsh
+ * aws_lws_dsh_get_head() - get the head allocation inside the dsh
  *
  * \param dsh: the dsh tracking the allocation
  * \param kind: the kind of allocation
@@ -129,20 +129,20 @@ lws_dsh_get_size(struct lws_dsh *dsh, int kind);
  * This gets the "next" object in the kind FIFO for the dsh, and returns 0 if
  * any.  If none, returns nonzero.
  *
- * This is nondestructive of the fifo or the payload.  Use lws_dsh_free on
+ * This is nondestructive of the fifo or the payload.  Use aws_lws_dsh_free on
  * obj to remove the entry from the kind fifo and return the payload to the
  * free list.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_dsh_get_head(struct lws_dsh *dsh, int kind, void **obj, size_t *size);
+aws_lws_dsh_get_head(struct aws_lws_dsh *dsh, int kind, void **obj, size_t *size);
 
 /**
- * lws_dsh_describe() - DEBUG BUILDS ONLY dump the dsh to the logs
+ * aws_lws_dsh_describe() - DEBUG BUILDS ONLY dump the dsh to the logs
  *
  * \param dsh: the dsh to dump
  * \param desc: text that appears at the top of the dump
  *
- * Useful information for debugging lws_dsh
+ * Useful information for debugging aws_lws_dsh
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_dsh_describe(struct lws_dsh *dsh, const char *desc);
+aws_lws_dsh_describe(struct aws_lws_dsh *dsh, const char *desc);

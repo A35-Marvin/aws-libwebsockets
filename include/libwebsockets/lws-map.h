@@ -22,17 +22,17 @@
  * IN THE SOFTWARE.
  */
 
-/** \defgroup lws_map generic map apis
+/** \defgroup aws_lws_map generic map apis
  * ##Generic map structures and apis
- * \ingroup lwsapi
+ * \ingroup aws_lwsapi
  *
- * lws_map
+ * aws_lws_map
  *
  * Discrete owner object represents the whole map, created with key-specific
  * ops for hashing the key to a uint32_t and comparing two keys.  Owns a list
  * of hash tables whose size / modulo it set at creation time.
  *
- * Items in the map are contained in a lws_map_item_t that is indexed in a
+ * Items in the map are contained in a aws_lws_map_item_t that is indexed in a
  * hash table.
  *
  * It's difficult to make a single compact map abstraction that fits all cases,
@@ -42,97 +42,97 @@
  */
 //@{
 
-typedef struct lws_map lws_map_t;
-typedef struct lws_map_item lws_map_item_t;
+typedef struct aws_lws_map aws_lws_map_t;
+typedef struct aws_lws_map_item aws_lws_map_item_t;
 
-typedef void * lws_map_key_t;
-typedef void * lws_map_value_t;
-typedef uint32_t lws_map_hash_t;
+typedef void * aws_lws_map_key_t;
+typedef void * aws_lws_map_value_t;
+typedef uint32_t aws_lws_map_hash_t;
 
-typedef lws_map_hash_t (*lws_map_hash_from_key_t)(const lws_map_key_t key,
+typedef aws_lws_map_hash_t (*aws_lws_map_hash_from_key_t)(const aws_lws_map_key_t key,
 						  size_t kl);
-typedef int (*lws_map_compare_key_t)(const lws_map_key_t key1, size_t kl1,
-				     const lws_map_value_t key2, size_t kl2);
-typedef void * (*lws_map_alloc_t)(struct lws_map *mo, size_t x);
-typedef void (*lws_map_free_t)(void *);
+typedef int (*aws_lws_map_compare_key_t)(const aws_lws_map_key_t key1, size_t kl1,
+				     const aws_lws_map_value_t key2, size_t kl2);
+typedef void * (*aws_lws_map_alloc_t)(struct aws_lws_map *mo, size_t x);
+typedef void (*aws_lws_map_free_t)(void *);
 
 /*
  * Creation parameters for the map, copied into the map owner
  */
 
-typedef struct lws_map_info {
-	lws_map_hash_from_key_t		_hash;
-	lws_map_compare_key_t		_compare;
-	lws_map_alloc_t			_alloc;	/* NULL = lws_malloc */
-	lws_map_free_t			_free;	/* NULL = lws_free */
+typedef struct aws_lws_map_info {
+	aws_lws_map_hash_from_key_t		_hash;
+	aws_lws_map_compare_key_t		_compare;
+	aws_lws_map_alloc_t			_alloc;	/* NULL = aws_lws_malloc */
+	aws_lws_map_free_t			_free;	/* NULL = aws_lws_free */
 
 	void				*opaque;
-	/**< &lwsac if using lwsac allocator */
+	/**< &aws_lwsac if using aws_lwsac allocator */
 	void				*aux;
-	/**< chunk size if using lwsac allocator */
-	/**< this can be used by the alloc handler, eg for lws_ac */
+	/**< chunk size if using aws_lwsac allocator */
+	/**< this can be used by the alloc handler, eg for aws_lws_ac */
 	size_t				modulo;
 	/**< number of hashed owner lists to create */
-} lws_map_info_t;
+} aws_lws_map_info_t;
 
 LWS_VISIBLE LWS_EXTERN const void *
-lws_map_item_key(lws_map_item_t *_item);
+aws_lws_map_item_key(aws_lws_map_item_t *_item);
 LWS_VISIBLE LWS_EXTERN const void *
-lws_map_item_value(lws_map_item_t *_item);
+aws_lws_map_item_value(aws_lws_map_item_t *_item);
 LWS_VISIBLE LWS_EXTERN size_t
-lws_map_item_key_len(lws_map_item_t *_item);
+aws_lws_map_item_key_len(aws_lws_map_item_t *_item);
 LWS_VISIBLE LWS_EXTERN size_t
-lws_map_item_value_len(lws_map_item_t *_item);
+aws_lws_map_item_value_len(aws_lws_map_item_t *_item);
 
 /*
  * Helpers for C string keys case
  */
 
-#define lws_map_item_create_ks(_map, _str, _v, _vl) \
-		lws_map_item_create(_map, (const lws_map_key_t)_str, \
-				    strlen(_str), (const lws_map_value_t)_v, \
+#define aws_lws_map_item_create_ks(_map, _str, _v, _vl) \
+		aws_lws_map_item_create(_map, (const aws_lws_map_key_t)_str, \
+				    strlen(_str), (const aws_lws_map_value_t)_v, \
 						    _vl)
-#define lws_map_item_lookup_ks(_map, _str) \
-		lws_map_item_lookup(_map, (const lws_map_key_t)_str, strlen(_str))
+#define aws_lws_map_item_lookup_ks(_map, _str) \
+		aws_lws_map_item_lookup(_map, (const aws_lws_map_key_t)_str, strlen(_str))
 
 /**
- * lws_map_create() - create a map object and hashtables on heap
+ * aws_lws_map_create() - create a map object and hashtables on heap
  *
  * \param info: description of map to create
  *
- * Creates a map object on heap, using lws_malloc().
+ * Creates a map object on heap, using aws_lws_malloc().
  *
  * \p info may be all zeros inside, if so, modulo defaults to 8, and the
- * operation callbacks default to using lws_malloc() / _free() for item alloc,
+ * operation callbacks default to using aws_lws_malloc() / _free() for item alloc,
  * a default xor / shift based hash and simple linear memory key compare.
  *
  * For less typical use-cases, the provided \p info members can be tuned to
  * control how the allocation of mapped items is done, lws provides two exports
- * lws_map_alloc_lwsac() and lws_map_free_lwsac() that can be used for _alloc
- * and _free to have items allocated inside an lwsac.
+ * aws_lws_map_alloc_lwsac() and aws_lws_map_free_lwsac() that can be used for _alloc
+ * and _free to have items allocated inside an aws_lwsac.
  *
  * The map itself is created on the heap directly, the info._alloc() op is only
  * used when creating items.
  *
  * keys have individual memory sizes and do not need to all be the same length.
  */
-LWS_VISIBLE LWS_EXTERN lws_map_t *
-lws_map_create(const lws_map_info_t *info);
+LWS_VISIBLE LWS_EXTERN aws_lws_map_t *
+aws_lws_map_create(const aws_lws_map_info_t *info);
 
 /*
- * helpers that can be used for info._alloc and info._free if using lwsac
- * allocation for items, set info.opaque to point to the lwsac pointer, and
+ * helpers that can be used for info._alloc and info._free if using aws_lwsac
+ * allocation for items, set info.opaque to point to the aws_lwsac pointer, and
  * aux to (void *)chunksize, or leave zero / NULL for the default
  */
 
 LWS_VISIBLE LWS_EXTERN void *
-lws_map_alloc_lwsac(struct lws_map *map, size_t x);
+aws_lws_map_alloc_lwsac(struct aws_lws_map *map, size_t x);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_map_free_lwsac(void *v);
+aws_lws_map_free_lwsac(void *v);
 
 /**
- * lws_map_destroy() - deallocate all items and free map
+ * aws_lws_map_destroy() - deallocate all items and free map
  *
  * \param pmap: pointer to pointer map object to deallocate
  *
@@ -140,10 +140,10 @@ lws_map_free_lwsac(void *v);
  * from heap directly.  \p *pmap is set to NULL.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_map_destroy(lws_map_t **pmap);
+aws_lws_map_destroy(aws_lws_map_t **pmap);
 
 /**
- * lws_map_item_create() - allocate and map an item into an existing map
+ * aws_lws_map_item_create() - allocate and map an item into an existing map
  *
  * \param map: the map to add items into
  * \param key: the key, may be any kind of object
@@ -158,21 +158,21 @@ lws_map_destroy(lws_map_t **pmap);
  * creating and adding the new one.
  */
 
-LWS_VISIBLE LWS_EXTERN lws_map_item_t *
-lws_map_item_create(lws_map_t *map,
-		    const lws_map_key_t key, size_t keylen,
-		    const lws_map_value_t value, size_t valuelen);
+LWS_VISIBLE LWS_EXTERN aws_lws_map_item_t *
+aws_lws_map_item_create(aws_lws_map_t *map,
+		    const aws_lws_map_key_t key, size_t keylen,
+		    const aws_lws_map_value_t value, size_t valuelen);
 
 /**
- * lws_map_item_destroy() - remove item from map and free
+ * aws_lws_map_item_destroy() - remove item from map and free
  *
  * \param item: the item in the map to remove and free
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_map_item_destroy(lws_map_item_t *item);
+aws_lws_map_item_destroy(aws_lws_map_item_t *item);
 
 /**
- * lws_map_item_lookup() - look for a item with the given key in the map
+ * aws_lws_map_item_lookup() - look for a item with the given key in the map
  *
  * \param map: the map
  * \param key: the key to look for
@@ -182,7 +182,7 @@ lws_map_item_destroy(lws_map_item_t *item);
  * functions.
  */
 
-LWS_VISIBLE LWS_EXTERN lws_map_item_t *
-lws_map_item_lookup(lws_map_t *map, const lws_map_key_t key, size_t keylen);
+LWS_VISIBLE LWS_EXTERN aws_lws_map_item_t *
+aws_lws_map_item_lookup(aws_lws_map_t *map, const aws_lws_map_key_t key, size_t keylen);
 
 //@}

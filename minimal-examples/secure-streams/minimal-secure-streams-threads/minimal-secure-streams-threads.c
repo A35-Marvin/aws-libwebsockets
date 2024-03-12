@@ -8,7 +8,7 @@
  *
  *
  * This demonstrates how other threads can wake the lws event loop and ask it
- * to do things via lws_cancel_service(), notifying Secure Streams using the
+ * to do things via aws_lws_cancel_service(), notifying Secure Streams using the
  * LWSSSCS_EVENT_WAIT_CANCELLED state callback.
  *
  * Because of what we're testing, we don't actually connect the SS just create
@@ -35,13 +35,13 @@
 // #define DO_ILLEGAL_API_THREAD
 
 static int interrupted, bad = 1, finished;
-static lws_sorted_usec_list_t sul_timeout;
-static struct lws_context *context;
+static aws_lws_sorted_usec_list_t sul_timeout;
+static struct aws_lws_context *context;
 static pthread_t pthread_spam;
 static int wakes, started_thread;
 
 #if defined(DO_ILLEGAL_API_THREAD)
-static struct lws_ss_handle *ss; /* only needed for DO_ILLEGAL_API_THREAD */
+static struct aws_lws_ss_handle *ss; /* only needed for DO_ILLEGAL_API_THREAD */
 #endif
 
 /* the data shared between the spam thread and the lws event loop */
@@ -74,7 +74,7 @@ static const char * const default_ss_policy =
 #endif
 
 typedef struct myss {
-	struct lws_ss_handle 		*ss;
+	struct aws_lws_ss_handle 		*ss;
 	void				*opaque_data;
 	/* ... application specific state ... */
 } myss_t;
@@ -95,9 +95,9 @@ thread_spam(void *d)
 
 		shared_counter++;
 
-		lwsl_notice("%s: cancelling wait from spam thread: %d\n",
+		aws_lwsl_notice("%s: cancelling wait from spam thread: %d\n",
 				__func__, shared_counter);
-		lws_cancel_service(context);
+		aws_lws_cancel_service(context);
 
 #if defined(DO_ILLEGAL_API_THREAD)
 		/*
@@ -106,7 +106,7 @@ thread_spam(void *d)
 		 */
 
 		if (ss)
-			lws_ss_request_tx(ss);
+			aws_lws_ss_request_tx(ss);
 #endif
 
 		pthread_mutex_unlock(&lock_shared); /* } shared lock ------- */
@@ -121,9 +121,9 @@ thread_spam(void *d)
 }
 
 
-static lws_ss_state_return_t
-myss_state(void *userobj, void *h_src, lws_ss_constate_t state,
-	   lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+myss_state(void *userobj, void *h_src, aws_lws_ss_constate_t state,
+	   aws_lws_ss_tx_ordinal_t ack)
 {
 	// myss_t *m = (myss_t *)userobj;
 	void *retval;
@@ -131,7 +131,7 @@ myss_state(void *userobj, void *h_src, lws_ss_constate_t state,
 	switch (state) {
 	case LWSSSCS_CREATING:
 		if (pthread_create(&pthread_spam, NULL, thread_spam, NULL)) {
-			lwsl_err("thread creation failed\n");
+			aws_lwsl_err("thread creation failed\n");
 			return LWSSSSRET_DESTROY_ME;
 		}
 		started_thread = 1;
@@ -144,7 +144,7 @@ myss_state(void *userobj, void *h_src, lws_ss_constate_t state,
 
 	case LWSSSCS_EVENT_WAIT_CANCELLED:
 		pthread_mutex_lock(&lock_shared); /* --------- shared lock { */
-		lwsl_notice("%s: LWSSSCS_EVENT_WAIT_CANCELLED: %d, shared: %d\n",
+		aws_lwsl_notice("%s: LWSSSCS_EVENT_WAIT_CANCELLED: %d, shared: %d\n",
 			    __func__, ++wakes, shared_counter);
 		pthread_mutex_unlock(&lock_shared); /* } shared lock ------- */
 		break;
@@ -156,7 +156,7 @@ myss_state(void *userobj, void *h_src, lws_ss_constate_t state,
 	return LWSSSSRET_OK;
 }
 
-static const lws_ss_info_t ssi_lws_threads = {
+static const aws_lws_ss_info_t ssi_lws_threads = {
 	.handle_offset		  = offsetof(myss_t, ss),
 	.opaque_user_data_offset  = offsetof(myss_t, opaque_data),
 	/* we don't actually do any rx or tx in this test */
@@ -167,9 +167,9 @@ static const lws_ss_info_t ssi_lws_threads = {
 };
 
 static void
-sul_timeout_cb(lws_sorted_usec_list_t *sul)
+sul_timeout_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	lwsl_notice("%s: test finishing\n", __func__);
+	aws_lwsl_notice("%s: test finishing\n", __func__);
 	interrupted = 1;
 }
 
@@ -181,7 +181,7 @@ sigint_handler(int sig)
 }
 
 static int
-system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+system_notify_cb(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		   int current, int target)
 {
 	if (current != LWS_SYSTATE_OPERATIONAL || target != LWS_SYSTATE_OPERATIONAL)
@@ -191,14 +191,14 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	 * messages are coming
 	 */
 
-	if (lws_ss_create(context, 0, &ssi_lws_threads, NULL,
+	if (aws_lws_ss_create(context, 0, &ssi_lws_threads, NULL,
 #if defined(DO_ILLEGAL_API_THREAD)
 			&ss,
 #else
 			NULL,
 #endif
 			NULL, NULL)) {
-		lwsl_err("%s: failed to create secure stream\n",
+		aws_lwsl_err("%s: failed to create secure stream\n",
 			 __func__);
 
 		return -1;
@@ -206,7 +206,7 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 	/* set up the test timeout */
 
-	lws_sul_schedule(context, 0, &sul_timeout, sul_timeout_cb,
+	aws_lws_sul_schedule(context, 0, &sul_timeout, sul_timeout_cb,
 			 3 * LWS_US_PER_SEC);
 
 	return 0;
@@ -214,41 +214,41 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 int main(int argc, const char **argv)
 {
-	lws_state_notify_link_t notifier = { { NULL, NULL, NULL},
+	aws_lws_state_notify_link_t notifier = { { NULL, NULL, NULL},
 					     system_notify_cb, "app" };
-	lws_state_notify_link_t *na[] = { &notifier, NULL };
-	struct lws_context_creation_info info;
+	aws_lws_state_notify_link_t *na[] = { &notifier, NULL };
+	struct aws_lws_context_creation_info info;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info);
 
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS Secure Streams threads test client [-d<verb>]\n");
+	aws_lwsl_user("LWS Secure Streams threads test client [-d<verb>]\n");
 
 	info.fd_limit_per_thread	= 1 + 6 + 1;
 	info.port			= CONTEXT_PORT_NO_LISTEN;
 #if !defined(LWS_SS_USE_SSPC)
 	info.pss_policies_json		= default_ss_policy;
 #else
-	info.protocols			= lws_sspc_protocols;
+	info.protocols			= aws_lws_sspc_protocols;
 	{
 		const char *p;
 
 		/* connect to ssproxy via UDS by default, else via
 		 * tcp connection to this port */
-		if ((p = lws_cmdline_option(argc, argv, "-p")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-p")))
 			info.ss_proxy_port = (uint16_t)atoi(p);
 
 		/* UDS "proxy.ss.lws" in abstract namespace, else this socket
 		 * path; when -p given this can specify the network interface
 		 * to bind to */
-		if ((p = lws_cmdline_option(argc, argv, "-i")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-i")))
 			info.ss_proxy_bind = p;
 
 		/* if -p given, -a specifies the proxy address to connect to */
-		if ((p = lws_cmdline_option(argc, argv, "-a")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-a")))
 			info.ss_proxy_address = p;
 	}
 #endif
@@ -258,22 +258,22 @@ int main(int argc, const char **argv)
 
 	/* create the context */
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 #if defined(LWS_SS_USE_SSPC)
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("%s: failed to create default vhost\n", __func__);
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("%s: failed to create default vhost\n", __func__);
 		goto bail;
 	}
 #endif
 
 	/* the event loop */
 
-	while (lws_service(context, 0) >= 0 && !interrupted)
+	while (aws_lws_service(context, 0) >= 0 && !interrupted)
 		;
 
 	/* compare what happened with what we expect */
@@ -282,15 +282,15 @@ int main(int argc, const char **argv)
 		/* OSX can do the usleep thread slower than 100ms */
 		bad = 0;
 
-	lwsl_notice("wakes %d\n", wakes);
+	aws_lwsl_notice("wakes %d\n", wakes);
 
 #if defined(LWS_SS_USE_SSPC)
 bail:
 #endif
-	lws_sul_cancel(&sul_timeout);
-	lws_context_destroy(context);
+	aws_lws_sul_cancel(&sul_timeout);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

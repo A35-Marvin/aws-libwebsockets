@@ -64,26 +64,26 @@ static const char * const uri =
 ;
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		client_wsi = NULL;
 		break;
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
-		status = (int)lws_http_client_http_response(wsi);
-		lwsl_user("Connected with server response: %d\n", status);
+		status = (int)aws_lws_http_client_http_response(wsi);
+		aws_lwsl_user("Connected with server response: %d\n", status);
 		break;
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
 #if 0  /* enable to dump the html */
 		{
 			const char *p = in;
@@ -104,7 +104,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
@@ -112,23 +112,23 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
 		client_wsi = NULL;
 		bad = status != 200;
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
 		client_wsi = NULL;
 		bad = status != 200;
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"http",
 		callback_http,
@@ -145,17 +145,17 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_client_connect_info i;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_client_connect_info i;
+	struct aws_lws_context *context;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS minimal http client hugeurl [-d <verbosity>] [-l] [--h1]\n");
+	aws_lwsl_user("LWS minimal http client hugeurl [-d <verbosity>] [-l] [--h1]\n");
 
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 	info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
@@ -180,9 +180,9 @@ int main(int argc, const char **argv)
 	info.client_ssl_ca_filepath = "./warmcat.com.cer";
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -190,7 +190,7 @@ int main(int argc, const char **argv)
 	i.context = context;
 	i.ssl_connection = LCCSCF_USE_SSL;
 
-	if (lws_cmdline_option(argc, argv, "-l")) {
+	if (aws_lws_cmdline_option(argc, argv, "-l")) {
 		i.port = 7681;
 		i.address = "localhost";
 		i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
@@ -199,7 +199,7 @@ int main(int argc, const char **argv)
 		i.address = "warmcat.com";
 	}
 
-	if (lws_cmdline_option(argc, argv, "--h1"))
+	if (aws_lws_cmdline_option(argc, argv, "--h1"))
 		i.alpn = "http/1.1";
 
 	i.path = uri;
@@ -209,13 +209,13 @@ int main(int argc, const char **argv)
 	i.protocol = protocols[0].name;
 	i.pwsi = &client_wsi;
 
-	lws_client_connect_via_info(&i);
+	aws_lws_client_connect_via_info(&i);
 
 	while (n >= 0 && client_wsi && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
-	lwsl_user("Completed: %s\n", bad? "failed": "OK");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed: %s\n", bad? "failed": "OK");
 
 	return bad;
 }

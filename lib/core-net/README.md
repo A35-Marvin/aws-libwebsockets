@@ -32,8 +32,8 @@ The user code does not know which wsi was first or is queued, it just waits for
 stuff to happen the same either way.
 
 When the "leader" wsi connects, it performs its client transaction as normal,
-and at the end arrives at `lws_http_transaction_completed_client()`.  Here, it
-calls through to the lws_mux `_lws_generic_transaction_completed_active_conn()`
+and at the end arrives at `aws_lws_http_transaction_completed_client()`.  Here, it
+calls through to the aws_lws_mux `_lws_generic_transaction_completed_active_conn()`
 helper.  This helper sees if anything else is queued, and if so, migrates assets
 like the SSL *, the socket fd, and any remaining queue from the original leader
 to the head of the list, which replaces the old leader as the "active client

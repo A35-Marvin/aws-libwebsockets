@@ -28,10 +28,10 @@
 #include <assert.h>
 
 signed char
-lws_struct_schema_only_lejp_cb(struct lejp_ctx *ctx, char reason)
+aws_lws_struct_schema_only_lejp_cb(struct lejp_ctx *ctx, char reason)
 {
-	lws_struct_args_t *a = (lws_struct_args_t *)ctx->user;
-	const lws_struct_map_t *map = a->map_st[ctx->pst_sp];
+	aws_lws_struct_args_t *a = (aws_lws_struct_args_t *)ctx->user;
+	const aws_lws_struct_map_t *map = a->map_st[ctx->pst_sp];
 	size_t n = a->map_entries_st[ctx->pst_sp], imp = 0;
 	lejp_callback cb = map->lejp_cb;
 
@@ -54,7 +54,7 @@ lws_struct_schema_only_lejp_cb(struct lejp_ctx *ctx, char reason)
 			int m, child_members = (int)map->child_map_size;
 
 			for (m = 0; m < child_members; m++) {
-				const lws_struct_map_t *child = &map->child_map[m];
+				const aws_lws_struct_map_t *child = &map->child_map[m];
 				if (!strcmp(ctx->path, child->colname)) {
 					/*
 					 * We matched on him... map is pointing
@@ -69,7 +69,7 @@ lws_struct_schema_only_lejp_cb(struct lejp_ctx *ctx, char reason)
 			}
 			map++;
 		}
-		lwsl_notice("%s: can't match implicit schema %s\n",
+		aws_lwsl_notice("%s: can't match implicit schema %s\n",
 			    __func__, ctx->path);
 
 		return -1;
@@ -88,9 +88,9 @@ lws_struct_schema_only_lejp_cb(struct lejp_ctx *ctx, char reason)
 
 matched:
 
-		a->dest = lwsac_use_zero(&a->ac, map->aux, a->ac_block_size);
+		a->dest = aws_lwsac_use_zero(&a->ac, map->aux, a->ac_block_size);
 		if (!a->dest) {
-			lwsl_err("%s: OOT\n", __func__);
+			aws_lwsl_err("%s: OOT\n", __func__);
 
 			return 1;
 		}
@@ -99,14 +99,14 @@ matched:
 			a->top_schema_index = (int)(map - a->map_st[ctx->pst_sp]);
 
 		if (!cb)
-			cb = lws_struct_default_lejp_cb;
+			cb = aws_lws_struct_default_lejp_cb;
 
 		lejp_parser_push(ctx, a->dest, &map->child_map[0].colname,
 				 (uint8_t)map->child_map_size, cb);
 		a->map_st[ctx->pst_sp] = map->child_map;
 		a->map_entries_st[ctx->pst_sp] = map->child_map_size;
 
-		// lwsl_notice("%s: child map ofs_clist %d\n", __func__,
+		// aws_lwsl_notice("%s: child map ofs_clist %d\n", __func__,
 		// 		(int)a->map_st[ctx->pst_sp]->ofs_clist);
 
 		if (imp)
@@ -115,19 +115,19 @@ matched:
 		return 0;
 	}
 
-	lwsl_notice("%s: unknown schema %s\n", __func__, ctx->buf);
+	aws_lwsl_notice("%s: unknown schema %s\n", __func__, ctx->buf);
 
 	return 1;
 }
 
 static int
-lws_struct_lejp_push(struct lejp_ctx *ctx, lws_struct_args_t *args,
-		     const lws_struct_map_t *map, uint8_t *ch)
+aws_lws_struct_lejp_push(struct lejp_ctx *ctx, aws_lws_struct_args_t *args,
+		     const aws_lws_struct_map_t *map, uint8_t *ch)
 {
 	lejp_callback cb = map->lejp_cb;
 
 	if (!cb)
-		cb = lws_struct_default_lejp_cb;
+		cb = aws_lws_struct_default_lejp_cb;
 
 	lejp_parser_push(ctx, ch, (const char * const*)map->child_map,
 			 (uint8_t)map->child_map_size, cb);
@@ -139,10 +139,10 @@ lws_struct_lejp_push(struct lejp_ctx *ctx, lws_struct_args_t *args,
 }
 
 signed char
-lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
+aws_lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 {
-	lws_struct_args_t *args = (lws_struct_args_t *)ctx->user;
-	const lws_struct_map_t *map, *pmap = NULL;
+	aws_lws_struct_args_t *args = (aws_lws_struct_args_t *)ctx->user;
+	const aws_lws_struct_map_t *map, *pmap = NULL;
 	uint8_t *ch;
 	size_t n;
 	char *u;
@@ -155,11 +155,11 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 
 	if (reason == LEJPCB_ARRAY_START) {
 		if (!ctx->path_match)
-			lwsl_err("%s: ARRAY_START with ctx->path_match 0\n", __func__);
+			aws_lwsl_err("%s: ARRAY_START with ctx->path_match 0\n", __func__);
 		map = &args->map_st[ctx->pst_sp][ctx->path_match - 1];
 
 		if (map->type == LSMT_LIST)
-			lws_struct_lejp_push(ctx, args, map, NULL);
+			aws_lws_struct_lejp_push(ctx, args, map, NULL);
 
 		return 0;
 	}
@@ -186,7 +186,7 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 		}
 		pmap = map;
 
-		lws_struct_lejp_push(ctx, args, map, NULL);
+		aws_lws_struct_lejp_push(ctx, args, map, NULL);
 	}
 
 	if (reason == LEJPCB_OBJECT_END && pmap) {
@@ -214,19 +214,19 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 
 			/* instantiate the correct toplevel object */
 
-			ch = lwsac_use_zero(&args->ac, map->aux,
+			ch = aws_lwsac_use_zero(&args->ac, map->aux,
 					    args->ac_block_size);
 			if (!ch) {
-				lwsl_err("OOM\n");
+				aws_lwsl_err("OOM\n");
 
 				return 1;
 			}
 
-			lws_struct_lejp_push(ctx, args, map, ch);
+			aws_lws_struct_lejp_push(ctx, args, map, ch);
 
 			return 0;
 		}
-		lwsl_notice("%s: unknown schema %.*s, tried %d\n", __func__,
+		aws_lwsl_notice("%s: unknown schema %.*s, tried %d\n", __func__,
 				ctx->npos, ctx->buf,
 				(int)args->map_entries_st[ctx->pst_sp]);
 
@@ -234,8 +234,8 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 	}
 
 	if (!ctx->pst[ctx->pst_sp].user) {
-		struct lws_dll2_owner *owner;
-		struct lws_dll2 *list;
+		struct aws_lws_dll2_owner *owner;
+		struct aws_lws_dll2 *list;
 
 		/* create list item object if none already */
 
@@ -253,30 +253,30 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 
 		/* we need to create a child or array item object */
 
-		owner = (struct lws_dll2_owner *)
+		owner = (struct aws_lws_dll2_owner *)
 			(((char *)ctx->pst[ctx->pst_sp - 1].user) + pmap->ofs);
 
 		assert(pmap->aux);
 
 		/* instantiate one of the child objects */
 
-		ctx->pst[ctx->pst_sp].user = lwsac_use_zero(&args->ac,
+		ctx->pst[ctx->pst_sp].user = aws_lwsac_use_zero(&args->ac,
 						pmap->aux, args->ac_block_size);
 		if (!ctx->pst[ctx->pst_sp].user) {
-			lwsl_err("OOM\n");
+			aws_lwsl_err("OOM\n");
 
 			return 1;
 		}
-		lwsl_info("%s: created '%s' object size %d\n", __func__,
+		aws_lwsl_info("%s: created '%s' object size %d\n", __func__,
 				pmap->colname, (int)pmap->aux);
 
 		switch (pmap->type) {
 		case LSMT_LIST:
-			list = (struct lws_dll2 *)
+			list = (struct aws_lws_dll2 *)
 				 ((char *)ctx->pst[ctx->pst_sp].user +
 				 pmap->ofs_clist);
 
-			lws_dll2_add_tail(list, owner);
+			aws_lws_dll2_add_tail(list, owner);
 			break;
 		case LSMT_CHILD_PTR:
 			*((void **)owner) = ctx->pst[ctx->pst_sp].user;
@@ -299,10 +299,10 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 		    args->chunks_length >= map->aux)
 			return 0;
 
-		coll = lwsac_use_zero(&args->ac_chunks, sizeof(*coll),
+		coll = aws_lwsac_use_zero(&args->ac_chunks, sizeof(*coll),
 				      sizeof(*coll));
 		if (!coll) {
-			lwsl_err("%s: OOT\n", __func__);
+			aws_lwsl_err("%s: OOT\n", __func__);
 
 			return 1;
 		}
@@ -311,7 +311,7 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 		coll->chunks.owner = NULL;
 
 		coll->len = ctx->npos;
-		lws_dll2_add_tail(&coll->chunks, &args->chunks_owner);
+		aws_lws_dll2_add_tail(&coll->chunks, &args->chunks_owner);
 
 		memcpy(coll->buf, ctx->buf, ctx->npos);
 
@@ -418,7 +418,7 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 		case LSMT_STRING_PTR:
 			pp = (char **)(u + map->ofs);
 			lim = args->chunks_length + ctx->npos;
-			s = lwsac_use(&args->ac, lim + 1, args->ac_block_size);
+			s = aws_lwsac_use(&args->ac, lim + 1, args->ac_block_size);
 			if (!s)
 				goto cleanup;
 			*pp = s;
@@ -426,7 +426,7 @@ lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason)
 chunk_copy:
 			s[lim] = '\0';
 			/* copy up to lim from the string chunk ac first */
-			lws_start_foreach_dll_safe(struct lws_dll2 *, p, p1,
+			aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, p1,
 						args->chunks_owner.head) {
 				lejp_collation_t *coll = (lejp_collation_t *)p;
 
@@ -438,9 +438,9 @@ chunk_copy:
 					s += b;
 					lim -= b;
 				}
-			} lws_end_foreach_dll_safe(p, p1);
+			} aws_lws_end_foreach_dll_safe(p, p1);
 
-			lwsac_free(&args->ac_chunks);
+			aws_lwsac_free(&args->ac_chunks);
 			args->chunks_owner.count = 0;
 			args->chunks_owner.head = NULL;
 			args->chunks_owner.tail = NULL;
@@ -464,8 +464,8 @@ chunk_copy:
 	return 0;
 
 cleanup:
-	lwsl_notice("%s: cleanup\n", __func__);
-	lwsac_free(&args->ac_chunks);
+	aws_lwsl_notice("%s: cleanup\n", __func__);
+	aws_lwsac_free(&args->ac_chunks);
 	args->chunks_owner.count = 0;
 	args->chunks_owner.head = NULL;
 	args->chunks_owner.tail = NULL;
@@ -476,28 +476,28 @@ cleanup:
 static const char * schema[] = { "schema" };
 
 int
-lws_struct_json_init_parse(struct lejp_ctx *ctx, lejp_callback cb, void *user)
+aws_lws_struct_json_init_parse(struct lejp_ctx *ctx, lejp_callback cb, void *user)
 {
 	/*
 	 * By default we are looking to match on a toplevel member called
 	 * "schema", against an LSM_SCHEMA
 	 */
 	if (!cb)
-		cb = lws_struct_schema_only_lejp_cb;
+		cb = aws_lws_struct_schema_only_lejp_cb;
 	lejp_construct(ctx, cb, user, schema, 1);
 
-	ctx->path_stride = sizeof(lws_struct_map_t);
+	ctx->path_stride = sizeof(aws_lws_struct_map_t);
 
 	return 0;
 }
 
-lws_struct_serialize_t *
-lws_struct_json_serialize_create(const lws_struct_map_t *map,
+aws_lws_struct_serialize_t *
+aws_lws_struct_json_serialize_create(const aws_lws_struct_map_t *map,
 				 size_t map_entries, int flags,
 				 const void *ptoplevel)
 {
-	lws_struct_serialize_t *js = lws_zalloc(sizeof(*js), __func__);
-	lws_struct_serialize_st_t *j;
+	aws_lws_struct_serialize_t *js = aws_lws_zalloc(sizeof(*js), __func__);
+	aws_lws_struct_serialize_st_t *j;
 
 	if (!js)
 		return NULL;
@@ -514,18 +514,18 @@ lws_struct_json_serialize_create(const lws_struct_map_t *map,
 }
 
 void
-lws_struct_json_serialize_destroy(lws_struct_serialize_t **pjs)
+aws_lws_struct_json_serialize_destroy(aws_lws_struct_serialize_t **pjs)
 {
 	if (!*pjs)
 		return;
 
-	lws_free(*pjs);
+	aws_lws_free(*pjs);
 
 	*pjs = NULL;
 }
 
 static void
-lws_struct_pretty(lws_struct_serialize_t *js, uint8_t **pbuf, size_t *plen)
+aws_lws_struct_pretty(aws_lws_struct_serialize_t *js, uint8_t **pbuf, size_t *plen)
 {
 	if (js->flags & LSSERJ_FLAG_PRETTY) {
 		int n;
@@ -539,14 +539,14 @@ lws_struct_pretty(lws_struct_serialize_t *js, uint8_t **pbuf, size_t *plen)
 	}
 }
 
-lws_struct_json_serialize_result_t
-lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
+aws_lws_struct_json_serialize_result_t
+aws_lws_struct_json_serialize(aws_lws_struct_serialize_t *js, uint8_t *buf,
 			  size_t len, size_t *written)
 {
-	lws_struct_serialize_st_t *j;
-	const lws_struct_map_t *map;
+	aws_lws_struct_serialize_st_t *j;
+	const aws_lws_struct_map_t *map;
 	size_t budget = 0, olen = len, m;
-	struct lws_dll2_owner *o;
+	struct aws_lws_dll2_owner *o;
 	unsigned long long uli;
 	const char *q;
 	const void *p;
@@ -577,8 +577,8 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 			break;
 
 		case LSMT_LIST:
-			o = (struct lws_dll2_owner *)q;
-			p = j->dllpos = lws_dll2_get_head(o);
+			o = (struct aws_lws_dll2_owner *)q;
+			p = j->dllpos = aws_lws_dll2_get_head(o);
 			if (!p)
 				goto up;
 			break;
@@ -593,12 +593,12 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 		if (j->subsequent) {
 			*buf++ = ',';
 			len--;
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 		}
 		j->subsequent = 1;
 
 		if (map->type != LSMT_SCHEMA && !js->offset) {
-			n = lws_snprintf((char *)buf, len, "\"%s\":",
+			n = aws_lws_snprintf((char *)buf, len, "\"%s\":",
 					    map->colname);
 			buf += n;
 			len = len - (unsigned int)n;
@@ -626,10 +626,10 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 			q = dbuf;
 
 			if (map->type == LSMT_BOOLEAN) {
-				budget = (unsigned int)lws_snprintf(dbuf, sizeof(dbuf),
+				budget = (unsigned int)aws_lws_snprintf(dbuf, sizeof(dbuf),
 						"%s", uli ? "true" : "false");
 			} else
-				budget = (unsigned int)lws_snprintf(dbuf, sizeof(dbuf),
+				budget = (unsigned int)aws_lws_snprintf(dbuf, sizeof(dbuf),
 						      "%llu", uli);
 			break;
 
@@ -647,7 +647,7 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 				}
 			}
 			q = dbuf;
-			budget = (unsigned int)lws_snprintf(dbuf, sizeof(dbuf), "%lld", li);
+			budget = (unsigned int)aws_lws_snprintf(dbuf, sizeof(dbuf), "%lld", li);
 			break;
 
 		case LSMT_STRING_CHAR_ARRAY:
@@ -666,8 +666,8 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 
 			/* add a stack level to handle parsing array members */
 
-			o = (struct lws_dll2_owner *)q;
-			p = j->dllpos = lws_dll2_get_head(o);
+			o = (struct aws_lws_dll2_owner *)q;
+			p = j->dllpos = aws_lws_dll2_get_head(o);
 
 			if (!j->dllpos) {
 				*buf++ = ']';
@@ -683,10 +683,10 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 			j->size = map->aux;
 			j->subsequent = 0;
 			j->map_entry = 0;
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			*buf++ = '{';
 			len--;
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			if (p)
 				j->obj = ((char *)p) - j->map->ofs_clist;
 			else
@@ -710,7 +710,7 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 			j->map_entry = 0;
 			*buf++ = '{';
 			len--;
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			j->obj = q;
 
 			continue;
@@ -720,13 +720,13 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 			*buf++ = '{';
 			len--;
 			j = &js->st[++js->sp];
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			if (!(js->flags & LSSERJ_FLAG_OMIT_SCHEMA)) {
-				budget = (unsigned int)lws_snprintf(dbuf, 15, "\"schema\":");
+				budget = (unsigned int)aws_lws_snprintf(dbuf, 15, "\"schema\":");
 				if (js->flags & LSSERJ_FLAG_PRETTY)
 					dbuf[budget++] = ' ';
 
-				budget += (unsigned int)lws_snprintf(dbuf + budget,
+				budget += (unsigned int)aws_lws_snprintf(dbuf + budget,
 						       sizeof(dbuf) - budget,
 						       "\"%s\"", map->colname);
 			}
@@ -770,7 +770,7 @@ lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
 			 * in "used".
 			 */
 
-			lws_json_purify((char *)buf, q, (int)len, &used);
+			aws_lws_json_purify((char *)buf, q, (int)len, &used);
 			m = strlen((const char *)buf);
 			buf += m;
 			len -= m;
@@ -824,10 +824,10 @@ up:
 			continue;
 		js->sp--;
 		if (!js->sp) {
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			*buf++ = '}';
 			len--;
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			break;
 		}
 		js->offset = 0;
@@ -835,7 +835,7 @@ up:
 		map = &j->map[j->map_entry];
 
 		if (map->type == LSMT_CHILD_PTR) {
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			*buf++ = '}';
 			len--;
 
@@ -852,7 +852,7 @@ up:
 		 * advance to the next array member if there is one
 		 */
 
-		lws_struct_pretty(js, &buf, &len);
+		aws_lws_struct_pretty(js, &buf, &len);
 		*buf++ = '}';
 		len--;
 
@@ -864,7 +864,7 @@ up:
 			 */
 			*buf++ = ',';
 			len--;
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 			js->offset = 0;
 			j = &js->st[++js->sp];
 			j->map_entry = 0;
@@ -872,7 +872,7 @@ up:
 
 			*buf++ = '{';
 			len--;
-			lws_struct_pretty(js, &buf, &len);
+			aws_lws_struct_pretty(js, &buf, &len);
 
 			j->subsequent = 0;
 			j->obj = ((char *)p) - j->map->ofs_clist;
@@ -882,7 +882,7 @@ up:
 		/* there are no further items in the array */
 
 		js->offset = 0;
-		lws_struct_pretty(js, &buf, &len);
+		aws_lws_struct_pretty(js, &buf, &len);
 		*buf++ = ']';
 		len--;
 		goto up;

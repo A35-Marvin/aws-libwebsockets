@@ -15,11 +15,11 @@
 #if !defined(__LWS_GPIO_H__)
 #define __LWS_GPIO_H__
 
-typedef struct lws_gpio_ops {
+typedef struct aws_lws_gpio_ops {
 	void (*mode_write)(_lws_plat_gpio_t gpio);
 	void (*mode_read)(_lws_plat_gpio_t gpio);
 	int (*read)(_lws_plat_gpio_t gpio);
 	void (*set)(_lws_plat_gpio_t gpio, int val);
-} lws_gpio_ops_t;
+} aws_lws_gpio_ops_t;
 
 #endif

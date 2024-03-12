@@ -29,7 +29,7 @@ enum enum_genec_alg {
 	LEGENEC_ECDSA
 };
 
-struct lws_genec_ctx {
+struct aws_lws_genec_ctx {
 #if defined(LWS_WITH_MBEDTLS)
 	union {
 		mbedtls_ecdh_context *ctx_ecdh;
@@ -38,8 +38,8 @@ struct lws_genec_ctx {
 #else
 	EVP_PKEY_CTX *ctx[2];
 #endif
-	struct lws_context *context;
-	const struct lws_ec_curves *curve_table;
+	struct aws_lws_context *context;
+	const struct aws_lws_ec_curves *curve_table;
 	enum enum_genec_alg genec_alg;
 
 	char has_private;
@@ -57,7 +57,7 @@ enum enum_lws_dh_side {
 };
 #endif
 
-struct lws_ec_curves {
+struct aws_lws_ec_curves {
 	const char *name;
 	int tls_lib_nid;
 	uint16_t key_bytes;
@@ -66,21 +66,21 @@ struct lws_ec_curves {
 
 /* ECDH-specific apis */
 
-/** lws_genecdh_create() - Create a genecdh
+/** aws_lws_genecdh_create() - Create a genecdh
  *
  * \param ctx: your genec context
- * \param context: your lws_context (for RNG access)
+ * \param context: your aws_lws_context (for RNG access)
  * \param curve_table: NULL, enabling P-256, P-384 and P-521, or a replacement
- *		       struct lws_ec_curves array, terminated by an entry with
+ *		       struct aws_lws_ec_curves array, terminated by an entry with
  *		       .name = NULL, of curves you want to allow
  *
  * Initializes a genecdh
  */
 LWS_VISIBLE int
-lws_genecdh_create(struct lws_genec_ctx *ctx, struct lws_context *context,
-		   const struct lws_ec_curves *curve_table);
+aws_lws_genecdh_create(struct aws_lws_genec_ctx *ctx, struct aws_lws_context *context,
+		   const struct aws_lws_ec_curves *curve_table);
 
-/** lws_genecdh_set_key() - Apply an EC key to our or theirs side
+/** aws_lws_genecdh_set_key() - Apply an EC key to our or theirs side
  *
  * \param ctx: your genecdh context
  * \param el: your key elements
@@ -89,10 +89,10 @@ lws_genecdh_create(struct lws_genec_ctx *ctx, struct lws_context *context,
  * Applies an EC key to one side or the other of an ECDH ctx
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genecdh_set_key(struct lws_genec_ctx *ctx, struct lws_gencrypto_keyelem *el,
+aws_lws_genecdh_set_key(struct aws_lws_genec_ctx *ctx, struct aws_lws_gencrypto_keyelem *el,
 		    enum enum_lws_dh_side side);
 
-/** lws_genecdh_new_keypair() - Create a genec with a new public / private key
+/** aws_lws_genecdh_new_keypair() - Create a genec with a new public / private key
  *
  * \param ctx: your genec context
  * \param side: LDHS_OURS or LDHS_THEIRS
@@ -102,31 +102,31 @@ lws_genecdh_set_key(struct lws_genec_ctx *ctx, struct lws_gencrypto_keyelem *el,
  * Creates a genecdh with a newly minted EC public / private key
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
-		        const char *curve_name, struct lws_gencrypto_keyelem *el);
+aws_lws_genecdh_new_keypair(struct aws_lws_genec_ctx *ctx, enum enum_lws_dh_side side,
+		        const char *curve_name, struct aws_lws_gencrypto_keyelem *el);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_genecdh_compute_shared_secret(struct lws_genec_ctx *ctx, uint8_t *ss,
+aws_lws_genecdh_compute_shared_secret(struct aws_lws_genec_ctx *ctx, uint8_t *ss,
 		  int *ss_len);
 
 
 /* ECDSA-specific apis */
 
-/** lws_genecdsa_create() - Create a genecdsa and
+/** aws_lws_genecdsa_create() - Create a genecdsa and
  *
  * \param ctx: your genec context
- * \param context: your lws_context (for RNG access)
+ * \param context: your aws_lws_context (for RNG access)
  * \param curve_table: NULL, enabling P-256, P-384 and P-521, or a replacement
- *		       struct lws_ec_curves array, terminated by an entry with
+ *		       struct aws_lws_ec_curves array, terminated by an entry with
  *		       .name = NULL, of curves you want to allow
  *
  * Initializes a genecdh
  */
 LWS_VISIBLE int
-lws_genecdsa_create(struct lws_genec_ctx *ctx, struct lws_context *context,
-		    const struct lws_ec_curves *curve_table);
+aws_lws_genecdsa_create(struct aws_lws_genec_ctx *ctx, struct aws_lws_context *context,
+		    const struct aws_lws_ec_curves *curve_table);
 
-/** lws_genecdsa_new_keypair() - Create a genecdsa with a new public / private key
+/** aws_lws_genecdsa_new_keypair() - Create a genecdsa with a new public / private key
  *
  * \param ctx: your genec context
  * \param curve_name: an EC curve name, like "P-256"
@@ -135,10 +135,10 @@ lws_genecdsa_create(struct lws_genec_ctx *ctx, struct lws_context *context,
  * Creates a genecdsa with a newly minted EC public / private key
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
-			 struct lws_gencrypto_keyelem *el);
+aws_lws_genecdsa_new_keypair(struct aws_lws_genec_ctx *ctx, const char *curve_name,
+			 struct aws_lws_gencrypto_keyelem *el);
 
-/** lws_genecdsa_set_key() - Apply an EC key to an ecdsa context
+/** aws_lws_genecdsa_set_key() - Apply an EC key to an ecdsa context
  *
  * \param ctx: your genecdsa context
  * \param el: your key elements
@@ -146,12 +146,12 @@ lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
  * Applies an EC key to an ecdsa context
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genecdsa_set_key(struct lws_genec_ctx *ctx,
-		     const struct lws_gencrypto_keyelem *el);
+aws_lws_genecdsa_set_key(struct aws_lws_genec_ctx *ctx,
+		     const struct aws_lws_gencrypto_keyelem *el);
 
-/** lws_genecdsa_hash_sig_verify_jws() - Verifies a JWS ECDSA signature on a given hash
+/** aws_lws_genecdsa_hash_sig_verify_jws() - Verifies a JWS ECDSA signature on a given hash
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: unencrypted payload (usually a recomputed hash)
  * \param hash_type: one of LWS_GENHASH_TYPE_
  * \param keybits: number of bits in the crypto key
@@ -171,13 +171,13 @@ lws_genecdsa_set_key(struct lws_genec_ctx *ctx,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genecdsa_hash_sig_verify_jws(struct lws_genec_ctx *ctx, const uint8_t *in,
-				 enum lws_genhash_types hash_type, int keybits,
+aws_lws_genecdsa_hash_sig_verify_jws(struct aws_lws_genec_ctx *ctx, const uint8_t *in,
+				 enum aws_lws_genhash_types hash_type, int keybits,
 				 const uint8_t *sig, size_t sig_len);
 
-/** lws_genecdsa_hash_sign_jws() - Creates a JWS ECDSA signature for a hash you provide
+/** aws_lws_genecdsa_hash_sign_jws() - Creates a JWS ECDSA signature for a hash you provide
  *
- * \param ctx: your struct lws_genrsa_ctx
+ * \param ctx: your struct aws_lws_genrsa_ctx
  * \param in: precomputed hash
  * \param hash_type: one of LWS_GENHASH_TYPE_
  * \param keybits: number of bits in the crypto key
@@ -194,18 +194,18 @@ lws_genecdsa_hash_sig_verify_jws(struct lws_genec_ctx *ctx, const uint8_t *in,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genecdsa_hash_sign_jws(struct lws_genec_ctx *ctx, const uint8_t *in,
-			   enum lws_genhash_types hash_type, int keybits,
+aws_lws_genecdsa_hash_sign_jws(struct aws_lws_genec_ctx *ctx, const uint8_t *in,
+			   enum aws_lws_genhash_types hash_type, int keybits,
 			   uint8_t *sig, size_t sig_len);
 
 
 /* Apis that apply to both ECDH and ECDSA */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_genec_destroy(struct lws_genec_ctx *ctx);
+aws_lws_genec_destroy(struct aws_lws_genec_ctx *ctx);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_genec_destroy_elements(struct lws_gencrypto_keyelem *el);
+aws_lws_genec_destroy_elements(struct aws_lws_gencrypto_keyelem *el);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_genec_dump(struct lws_gencrypto_keyelem *el);
+aws_lws_genec_dump(struct aws_lws_gencrypto_keyelem *el);

@@ -7,7 +7,7 @@ The SS is able to receive system messages matching a specified
 class filter, and issue system messages also using SS payload
 semantics.
 
-Both a direct api lws_smd participant and an SS based one are instantiated.
+Both a direct api aws_lws_smd participant and an SS based one are instantiated.
 They both filter on system messages.
 
 When the Secure Stream is created, it asks to send using normal the SS api.
@@ -86,12 +86,12 @@ $ ./bin/lws-minimal-secure-streams-smd -d 1151
 [2020/06/18 21:44:54:5607] I: IPV6 not compiled in
 ...
 [2020/06/18 21:44:54:7906] D: _lws_state_transition: system: changed 11 'AUTH2' -> 12 'OPERATIONAL'
-[2020/06/18 21:44:54:7906] D: _realloc: size 81: lws_smd_msg_alloc
-[2020/06/18 21:44:54:7907] I: lws_cancel_service
-[2020/06/18 21:44:54:7912] I: lws_state_transition_steps: CONTEXT_CREATED -> OPERATIONAL
+[2020/06/18 21:44:54:7906] D: _realloc: size 81: aws_lws_smd_msg_alloc
+[2020/06/18 21:44:54:7907] I: aws_lws_cancel_service
+[2020/06/18 21:44:54:7912] I: aws_lws_state_transition_steps: CONTEXT_CREATED -> OPERATIONAL
 [2020/06/18 21:44:54:7919] N: myss_tx: sending SS smd
-[2020/06/18 21:44:54:7940] D: _realloc: size 84: lws_smd_msg_alloc
-[2020/06/18 21:44:54:7944] I: lws_cancel_service
+[2020/06/18 21:44:54:7940] D: _realloc: size 84: aws_lws_smd_msg_alloc
+[2020/06/18 21:44:54:7944] I: aws_lws_cancel_service
 [2020/06/18 21:44:54:7966] D: direct_smd_cb: class: 0x2, ts: 3139600721554
 [2020/06/18 21:44:54:7972] D: 
 [2020/06/18 21:44:54:7990] D: 0000: 7B 22 73 74 61 74 65 22 3A 22 49 4E 49 54 49 41    {"state":"INITIA
@@ -115,18 +115,18 @@ $ ./bin/lws-minimal-secure-streams-smd -d 1151
 [2020/06/18 21:44:54:8115] D: 0010: 73 65 65 6E 62 79 73 73 72 78 22 7D                seenbyssrx"}    
 [2020/06/18 21:44:54:8115] D: 
 [2020/06/18 21:44:57:5823] I: 11 12 1
-[2020/06/18 21:44:57:5838] I: lws_context_destroy: ctx 0x4f61db0
+[2020/06/18 21:44:57:5838] I: aws_lws_context_destroy: ctx 0x4f61db0
 [2020/06/18 21:44:57:5849] D: _lws_state_transition: system: changed 12 'OPERATIONAL' -> 13 'POLICY_INVALID'
-[2020/06/18 21:44:57:5851] D: _realloc: size 84: lws_smd_msg_alloc
-[2020/06/18 21:44:57:5853] I: lws_cancel_service
-[2020/06/18 21:44:57:5871] I: lws_destroy_event_pipe
-[2020/06/18 21:44:57:5906] I: lws_pt_destroy: pt destroyed
-[2020/06/18 21:44:57:5913] I: lws_context_destroy2: ctx 0x4f61db0
-[2020/06/18 21:44:57:5936] D: lwsac_free: head (nil)
+[2020/06/18 21:44:57:5851] D: _realloc: size 84: aws_lws_smd_msg_alloc
+[2020/06/18 21:44:57:5853] I: aws_lws_cancel_service
+[2020/06/18 21:44:57:5871] I: aws_lws_destroy_event_pipe
+[2020/06/18 21:44:57:5906] I: aws_lws_pt_destroy: pt destroyed
+[2020/06/18 21:44:57:5913] I: aws_lws_context_destroy2: ctx 0x4f61db0
+[2020/06/18 21:44:57:5936] D: aws_lwsac_free: head (nil)
 [2020/06/18 21:44:57:5947] D: 0x455970: post vh listl
 [2020/06/18 21:44:57:5950] D: 0x455970: post pdl
 [2020/06/18 21:44:57:5961] D: 0x455970: baggage
 [2020/06/18 21:44:57:5968] D: 0x455970: post dc2
-[2020/06/18 21:44:57:6010] D: lws_context_destroy3: ctx 0x4f61db0 freed
+[2020/06/18 21:44:57:6010] D: aws_lws_context_destroy3: ctx 0x4f61db0 freed
 [2020/06/18 21:44:57:6014] U: Completed: OK
 ```

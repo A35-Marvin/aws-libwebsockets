@@ -26,19 +26,19 @@
 
 #include <dbus/dbus.h>
 
-extern const struct lws_role_ops role_ops_dbus;
+extern const struct aws_lws_role_ops role_ops_dbus;
 
-#define lwsi_role_dbus(wsi) (wsi->role_ops == &role_ops_dbus)
+#define aws_lwsi_role_dbus(wsi) (wsi->role_ops == &role_ops_dbus)
 
-struct lws_role_dbus_timer {
-	struct lws_dll2 timer_list;
+struct aws_lws_role_dbus_timer {
+	struct aws_lws_dll2 timer_list;
 	void *data;
 	time_t fire;
 };
 
-struct lws_pt_role_dbus {
-	struct lws_dll2_owner timer_list_owner;
-	lws_sorted_usec_list_t sul;
+struct aws_lws_pt_role_dbus {
+	struct aws_lws_dll2_owner timer_list_owner;
+	aws_lws_sorted_usec_list_t sul;
 };
 
 struct _lws_dbus_mode_related {

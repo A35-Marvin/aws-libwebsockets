@@ -43,16 +43,16 @@
  */
 
 int
-lws_jwe_encrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_rsa_aes_cbc_hs(struct aws_lws_jwe *jwe,
 			       char *temp, int *temp_len)
 {
-	int n, hlen = (int)lws_genhmac_size(jwe->jose.enc_alg->hmac_type),
+	int n, hlen = (int)aws_lws_genhmac_size(jwe->jose.enc_alg->hmac_type),
 	    ot = *temp_len;
 	char ekey[LWS_GENHASH_LARGEST];
-	struct lws_genrsa_ctx rsactx;
+	struct aws_lws_genrsa_ctx rsactx;
 
 	if (jwe->jws.jwk->kty != LWS_GENCRYPTO_KTY_RSA) {
-		lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
+		aws_lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
 
 		return -1;
 	}
@@ -63,17 +63,17 @@ lws_jwe_encrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe,
 	 *
 	 * Create a b64 version of the JOSE header, needed as aad
 	 */
-	if (lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
+	if (aws_lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
 				       temp, temp_len,
 				       jwe->jws.map.buf[LJWE_JOSE],
 				       jwe->jws.map.len[LJWE_JOSE]))
 		return -1;
 
-	if (lws_jws_alloc_element(&jwe->jws.map, LJWE_ATAG, temp + (ot - *temp_len),
+	if (aws_lws_jws_alloc_element(&jwe->jws.map, LJWE_ATAG, temp + (ot - *temp_len),
 				  temp_len, (unsigned int)hlen / 2, 0))
 		return -1;
 
-	if (lws_jws_alloc_element(&jwe->jws.map, LJWE_IV, temp + (ot - *temp_len),
+	if (aws_lws_jws_alloc_element(&jwe->jws.map, LJWE_IV, temp + (ot - *temp_len),
 				  temp_len, LWS_JWE_AES_IV_BYTES, 0))
 		return -1;
 
@@ -81,7 +81,7 @@ lws_jwe_encrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe,
 	 * Without changing the unencrypted CEK in EKEY, reallocate enough
 	 * space to write the RSA-encrypted version in-situ.
 	 */
-	if (lws_jws_dup_element(&jwe->jws.map, LJWE_EKEY, temp + (ot - *temp_len),
+	if (aws_lws_jws_dup_element(&jwe->jws.map, LJWE_EKEY, temp + (ot - *temp_len),
 				temp_len, jwe->jws.map.buf[LJWE_EKEY],
 				jwe->jws.map.len[LJWE_EKEY],
 				jwe->jws.jwk->e[LWS_GENCRYPTO_RSA_KEYEL_N].len))
@@ -89,19 +89,19 @@ lws_jwe_encrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe,
 
 	/* Encrypt using the raw CEK (treated as MAC KEY | ENC KEY) */
 
-	n = lws_jwe_encrypt_cbc_hs(jwe, (uint8_t *)jwe->jws.map.buf[LJWE_EKEY],
+	n = aws_lws_jwe_encrypt_cbc_hs(jwe, (uint8_t *)jwe->jws.map.buf[LJWE_EKEY],
 				     (uint8_t *)jwe->jws.map_b64.buf[LJWE_JOSE],
 				     (int)jwe->jws.map_b64.len[LJWE_JOSE]);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt_cbc_hs failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt_cbc_hs failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
+	if (aws_lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
 			!strcmp(jwe->jose.alg->alg,   "RSA-OAEP") ?
 					LGRSAM_PKCS1_OAEP_PSS : LGRSAM_PKCS1_1_5,
 					LWS_GENHASH_TYPE_UNKNOWN)) {
-		lwsl_notice("%s: lws_genrsa_create\n",
+		aws_lwsl_notice("%s: lws_genrsa_create\n",
 			    __func__);
 		return -1;
 	}
@@ -111,12 +111,12 @@ lws_jwe_encrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe,
 
 	memcpy(ekey, jwe->jws.map.buf[LJWE_EKEY], (unsigned int)hlen);
 
-	n = lws_genrsa_public_encrypt(&rsactx, (uint8_t *)ekey, (unsigned int)hlen,
+	n = aws_lws_genrsa_public_encrypt(&rsactx, (uint8_t *)ekey, (unsigned int)hlen,
 				      (uint8_t *)jwe->jws.map.buf[LJWE_EKEY]);
-	lws_genrsa_destroy(&rsactx);
-	lws_explicit_bzero(ekey, (unsigned int)hlen); /* cleanse the temp CEK copy */
+	aws_lws_genrsa_destroy(&rsactx);
+	aws_lws_explicit_bzero(ekey, (unsigned int)hlen); /* cleanse the temp CEK copy */
 	if (n < 0) {
-		lwsl_err("%s: encrypt cek fail\n", __func__);
+		aws_lwsl_err("%s: encrypt cek fail\n", __func__);
 		return -1;
 	}
 	jwe->jws.map.len[LJWE_EKEY] = (unsigned int)n; /* update to encrypted EKEY size */
@@ -130,20 +130,20 @@ lws_jwe_encrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe,
 }
 
 int
-lws_jwe_auth_and_decrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe)
+aws_lws_jwe_auth_and_decrypt_rsa_aes_cbc_hs(struct aws_lws_jwe *jwe)
 {
 	int n;
-	struct lws_genrsa_ctx rsactx;
+	struct aws_lws_genrsa_ctx rsactx;
 	uint8_t enc_cek[512];
 
 	if (jwe->jws.jwk->kty != LWS_GENCRYPTO_KTY_RSA) {
-		lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
+		aws_lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
 
 		return -1;
 	}
 
 	if (jwe->jws.map.len[LJWE_EKEY] < 40) {
-		lwsl_err("%s: EKEY length too short %d\n", __func__,
+		aws_lwsl_err("%s: EKEY length too short %d\n", __func__,
 				jwe->jws.map.len[LJWE_EKEY]);
 
 		return -1;
@@ -151,30 +151,30 @@ lws_jwe_auth_and_decrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe)
 
 	/* Decrypt the JWE Encrypted Key to get the raw MAC || CEK */
 
-	if (lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
+	if (aws_lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
 			!strcmp(jwe->jose.alg->alg,   "RSA-OAEP") ?
 				LGRSAM_PKCS1_OAEP_PSS : LGRSAM_PKCS1_1_5,
 				LWS_GENHASH_TYPE_UNKNOWN)) {
-		lwsl_notice("%s: lws_genrsa_public_decrypt_create\n",
+		aws_lwsl_notice("%s: lws_genrsa_public_decrypt_create\n",
 			    __func__);
 		return -1;
 	}
 
-	n = lws_genrsa_private_decrypt(&rsactx,
+	n = aws_lws_genrsa_private_decrypt(&rsactx,
 				       (uint8_t *)jwe->jws.map.buf[LJWE_EKEY],
 				       jwe->jws.map.len[LJWE_EKEY], enc_cek,
 				       sizeof(enc_cek));
-	lws_genrsa_destroy(&rsactx);
+	aws_lws_genrsa_destroy(&rsactx);
 	if (n < 0) {
-		lwsl_err("%s: decrypt cek fail: \n", __func__);
+		aws_lwsl_err("%s: decrypt cek fail: \n", __func__);
 		return -1;
 	}
 
-	n = lws_jwe_auth_and_decrypt_cbc_hs(jwe, enc_cek,
+	n = aws_lws_jwe_auth_and_decrypt_cbc_hs(jwe, enc_cek,
 			     (uint8_t *)jwe->jws.map_b64.buf[LJWE_JOSE],
 			     (int)jwe->jws.map_b64.len[LJWE_JOSE]);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt_cbc_hs failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt_cbc_hs failed\n",
 			 __func__);
 		return -1;
 	}
@@ -185,7 +185,7 @@ lws_jwe_auth_and_decrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe)
 
 	n = jwe->jws.map.buf[LJWE_CTXT][jwe->jws.map.len[LJWE_CTXT] - 1];
 	if (n > 16) {
-		lwsl_err("%s: n == %d, plen %d\n", __func__, n,
+		aws_lwsl_err("%s: n == %d, plen %d\n", __func__, n,
 				(int)jwe->jws.map.len[LJWE_CTXT]);
 		return -1;
 	}

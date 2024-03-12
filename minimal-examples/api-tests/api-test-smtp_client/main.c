@@ -16,7 +16,7 @@
 static int interrupted, results[10], count_tests, count_passes;
 
 static int
-email_sent_or_failed(struct lws_smtp_email *email, void *buf, size_t len)
+email_sent_or_failed(struct aws_lws_smtp_email *email, void *buf, size_t len)
 {
 	free(email);
 
@@ -30,9 +30,9 @@ email_sent_or_failed(struct lws_smtp_email *email, void *buf, size_t len)
  */
 
 static int
-smtp_test_instance_init(lws_abs_t *instance)
+smtp_test_instance_init(aws_lws_abs_t *instance)
 {
-	lws_smtp_email_t *email = (lws_smtp_email_t *)
+	aws_lws_smtp_email_t *email = (aws_lws_smtp_email_t *)
 					malloc(sizeof(*email) + 2048);
 
 	if (!email)
@@ -46,7 +46,7 @@ smtp_test_instance_init(lws_abs_t *instance)
 	email->email_to = "andy@warmcat.com";
 	email->payload = (void *)&email[1];
 
-	lws_snprintf((char *)email->payload, 2048,
+	aws_lws_snprintf((char *)email->payload, 2048,
 			"From: noreply@example.com\n"
 			"To: %s\n"
 			"Subject: Test email for lws smtp-client\n"
@@ -55,8 +55,8 @@ smtp_test_instance_init(lws_abs_t *instance)
 			"\r\n.\r\n", "andy@warmcat.com");
 	email->done = email_sent_or_failed;
 
-	if (lws_smtpc_add_email(instance, email)) {
-		lwsl_err("%s: failed to add email\n", __func__);
+	if (aws_lws_smtpc_add_email(instance, email)) {
+		aws_lwsl_err("%s: failed to add email\n", __func__);
 		return 1;
 	}
 
@@ -70,7 +70,7 @@ smtp_test_instance_init(lws_abs_t *instance)
  *				test vector received from protocol
  */
 
-static lws_unit_test_packet_t test_send1[] = {
+static aws_lws_unit_test_packet_t test_send1[] = {
 	{
 		"220 smtp.example.com ESMTP Postfix",
 		smtp_test_instance_init, 34, LWS_AUT_EXPECT_RX
@@ -124,7 +124,7 @@ static lws_unit_test_packet_t test_send1[] = {
 };
 
 
-static lws_unit_test_packet_t test_send2[] = {
+static aws_lws_unit_test_packet_t test_send2[] = {
 	{
 		"220 smtp.example.com ESMTP Postfix",
 		smtp_test_instance_init, 34, LWS_AUT_EXPECT_RX
@@ -147,7 +147,7 @@ static lws_unit_test_packet_t test_send2[] = {
 	}
 };
 
-static lws_unit_test_t tests[] = {
+static aws_lws_unit_test_t tests[] = {
 	{ "sending", test_send1, 3 },
 	{ "rejected", test_send2, 3 },
 	{ }	/* sentinel */
@@ -163,7 +163,7 @@ sigint_handler(int sig)
  * set the HELO our SMTP client will use
  */
 
-static const lws_token_map_t smtp_ap_tokens[] = {
+static const aws_lws_token_map_t smtp_ap_tokens[] = {
  {
 	.u = { .value = "lws-test-client" },
 	.name_index = LTMI_PSMTP_V_HELO,
@@ -180,42 +180,42 @@ tests_completion_cb(const void *cb_user)
 int main(int argc, const char **argv)
 {
 	int n = 1, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
-	lws_test_sequencer_args_t args;
-	struct lws_context *context;
-	lws_abs_t *abs = NULL;
-	struct lws_vhost *vh;
+	struct aws_lws_context_creation_info info;
+	aws_lws_test_sequencer_args_t args;
+	struct aws_lws_context *context;
+	aws_lws_abs_t *abs = NULL;
+	struct aws_lws_vhost *vh;
 	const char *p;
 
 	/* the normal lws init */
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: SMTP client unit tests\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: SMTP client unit tests\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	vh = lws_create_vhost(context, &info);
+	vh = aws_lws_create_vhost(context, &info);
 	if (!vh) {
-		lwsl_err("Failed to create first vhost\n");
+		aws_lwsl_err("Failed to create first vhost\n");
 		goto bail1;
 	}
 
 	/* create the abs used to create connections */
 
-	abs = lws_abstract_alloc(vh, NULL, "smtp.unit_test",
+	abs = aws_lws_abstract_alloc(vh, NULL, "smtp.unit_test",
 				 &smtp_ap_tokens[0], NULL);
 	if (!abs)
 		goto bail1;
@@ -231,31 +231,31 @@ int main(int argc, const char **argv)
 	args.cb = tests_completion_cb;
 	args.cb_user = NULL;
 
-	if (lws_abs_unit_test_sequencer(&args)) {
-		lwsl_err("%s: failed to create test sequencer\n", __func__);
+	if (aws_lws_abs_unit_test_sequencer(&args)) {
+		aws_lwsl_err("%s: failed to create test sequencer\n", __func__);
 		goto bail1;
 	}
 
 	/* the usual lws event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 	/* describe the overall test results */
 
-	lwsl_user("%s: %d tests %d fail\n", __func__, count_tests,
+	aws_lwsl_user("%s: %d tests %d fail\n", __func__, count_tests,
 			count_tests - count_passes);
 	for (n = 0; n < count_tests; n++)
-		lwsl_user("  test %d: %s\n", n,
-			  lws_unit_test_result_name(results[n]));
+		aws_lwsl_user("  test %d: %s\n", n,
+			  aws_lws_unit_test_result_name(results[n]));
 
 bail1:
-	lwsl_user("Completed: %s\n",
+	aws_lwsl_user("Completed: %s\n",
 		  !count_tests || count_passes != count_tests ? "FAIL" : "PASS");
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lws_abstract_free(&abs);
+	aws_lws_abstract_free(&abs);
 
 	return !count_tests || count_passes != count_tests;
 }

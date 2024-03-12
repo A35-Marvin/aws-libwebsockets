@@ -10,4 +10,4 @@
 typedef int _lws_plat_gpio_t;
 #include "gpio.h"
 
-extern const lws_gpio_ops_t lws_gpio_esp32;
+extern const aws_lws_gpio_ops_t aws_lws_gpio_esp32;

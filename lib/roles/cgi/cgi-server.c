@@ -36,7 +36,7 @@
 static const char *hex = "0123456789ABCDEF";
 
 void
-lws_cgi_sul_cb(lws_sorted_usec_list_t *sul);
+aws_lws_cgi_sul_cb(aws_lws_sorted_usec_list_t *sul);
 
 static int
 urlencode(const char *in, int inlen, char *out, int outlen)
@@ -68,25 +68,25 @@ urlencode(const char *in, int inlen, char *out, int outlen)
 	if (out >= end - 4)
 		return -1;
 
-	return lws_ptr_diff(out, start);
+	return aws_lws_ptr_diff(out, start);
 }
 
 static void
-lws_cgi_grace(lws_sorted_usec_list_t *sul)
+aws_lws_cgi_grace(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_cgi *cgi = lws_container_of(sul, struct lws_cgi, sul_grace);
+	struct aws_lws_cgi *cgi = aws_lws_container_of(sul, struct aws_lws_cgi, sul_grace);
 
 	/* act on the reap cb from earlier */
 
 	if (!cgi->wsi->http.cgi->post_in_expected)
 		cgi->wsi->http.cgi->cgi_transaction_over = 1;
 
-	lws_callback_on_writable(cgi->wsi);
+	aws_lws_callback_on_writable(cgi->wsi);
 }
 
 
 static void
-lws_cgi_reap_cb(void *opaque, lws_usec_t *accounting, siginfo_t *si,
+aws_lws_cgi_reap_cb(void *opaque, aws_lws_usec_t *accounting, siginfo_t *si,
 		 int we_killed_him)
 {
 	struct lws *wsi = (struct lws *)opaque;
@@ -95,36 +95,36 @@ lws_cgi_reap_cb(void *opaque, lws_usec_t *accounting, siginfo_t *si,
 	 * The cgi has come to an end, by itself or with a signal...
 	 */
 
-	lwsl_wsi_info(wsi, "post_in_expected %d",
+	aws_lwsl_wsi_info(wsi, "post_in_expected %d",
 			   (int)wsi->http.cgi->post_in_expected);
 
 	/*
 	 * Grace period to handle the incoming stdout
 	 */
 
-	lws_sul_schedule(wsi->a.context, wsi->tsi, &wsi->http.cgi->sul_grace,
-			 lws_cgi_grace, 1 * LWS_US_PER_SEC);
+	aws_lws_sul_schedule(wsi->a.context, wsi->tsi, &wsi->http.cgi->sul_grace,
+			 aws_lws_cgi_grace, 1 * LWS_US_PER_SEC);
 }
 
 int
-lws_cgi(struct lws *wsi, const char * const *exec_array,
+aws_lws_cgi(struct lws *wsi, const char * const *exec_array,
 	int script_uri_path_len, int timeout_secs,
-	const struct lws_protocol_vhost_options *mp_cgienv)
+	const struct aws_lws_protocol_vhost_options *mp_cgienv)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws_spawn_piped_info info;
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_spawn_piped_info info;
 	char *env_array[30], cgi_path[500], e[1024], *p = e,
 	     *end = p + sizeof(e) - 1, tok[256], *t, *sum, *sumend;
-	struct lws_cgi *cgi;
+	struct aws_lws_cgi *cgi;
 	int n, m = 0, i, uritok = -1, c;
 
 	/*
 	 * give the cgi stream wsi a cgi struct
 	 */
 
-	wsi->http.cgi = lws_zalloc(sizeof(*wsi->http.cgi), "new cgi");
+	wsi->http.cgi = aws_lws_zalloc(sizeof(*wsi->http.cgi), "new cgi");
 	if (!wsi->http.cgi) {
-		lwsl_wsi_err(wsi, "OOM");
+		aws_lwsl_wsi_err(wsi, "OOM");
 		return -1;
 	}
 
@@ -136,25 +136,25 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 	sumend = sum + strlen(cgi->summary) - 1;
 
 	if (timeout_secs)
-		lws_set_timeout(wsi, PENDING_TIMEOUT_CGI, timeout_secs);
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_CGI, timeout_secs);
 
 	/* the cgi stdout is always sending us http1.x header data first */
 	wsi->hdr_state = LCHS_HEADER;
 
 	/* add us to the pt list of active cgis */
-	lwsl_wsi_debug(wsi, "adding cgi %p to list", wsi->http.cgi);
+	aws_lwsl_wsi_debug(wsi, "adding cgi %p to list", wsi->http.cgi);
 	cgi->cgi_list = pt->http.cgi_list;
 	pt->http.cgi_list = cgi;
 
 	/* if it's not already running, start the cleanup timer */
 	if (!pt->sul_cgi.list.owner)
-		lws_sul_schedule(pt->context, (int)(pt - pt->context->pt), &pt->sul_cgi,
-				 lws_cgi_sul_cb, 3 * LWS_US_PER_SEC);
+		aws_lws_sul_schedule(pt->context, (int)(pt - pt->context->pt), &pt->sul_cgi,
+				 aws_lws_cgi_sul_cb, 3 * LWS_US_PER_SEC);
 
-	sum += lws_snprintf(sum, lws_ptr_diff_size_t(sumend, sum), "%s ", exec_array[0]);
+	sum += aws_lws_snprintf(sum, aws_lws_ptr_diff_size_t(sumend, sum), "%s ", exec_array[0]);
 
 	if (0) {
-		char *pct = lws_hdr_simple_ptr(wsi,
+		char *pct = aws_lws_hdr_simple_ptr(wsi,
 				WSI_TOKEN_HTTP_CONTENT_ENCODING);
 
 		if (pct && !strcmp(pct, "gzip"))
@@ -165,9 +165,9 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 
 	n = 0;
 
-	if (lws_is_ssl(wsi)) {
+	if (aws_lws_is_ssl(wsi)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTPS=ON");
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTPS=ON");
 		p++;
 	}
 
@@ -197,7 +197,7 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 
 		if (script_uri_path_len >= 0)
 			for (m = 0; m < (int)LWS_ARRAY_SIZE(meths); m++)
-				if (lws_hdr_total_length(wsi, meths[m]) >=
+				if (aws_lws_hdr_total_length(wsi, meths[m]) >=
 						script_uri_path_len) {
 					uritok = meths[m];
 					break;
@@ -211,18 +211,18 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 		if (m >= 0) {
 			env_array[n++] = p;
 			if (m < (int)LWS_ARRAY_SIZE(meths) - 1) {
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 						  "REQUEST_METHOD=%s",
 						  meth_names[m]);
-				sum += lws_snprintf(sum, lws_ptr_diff_size_t(sumend, sum), "%s ",
+				sum += aws_lws_snprintf(sum, aws_lws_ptr_diff_size_t(sumend, sum), "%s ",
 						    meth_names[m]);
 #if defined(LWS_ROLE_H2)
 			} else {
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 						  "REQUEST_METHOD=%s",
-			  lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COLON_METHOD));
-				sum += lws_snprintf(sum, lws_ptr_diff_size_t(sumend, sum), "%s ",
-					lws_hdr_simple_ptr(wsi,
+			  aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COLON_METHOD));
+				sum += aws_lws_snprintf(sum, aws_lws_ptr_diff_size_t(sumend, sum), "%s ",
+					aws_lws_hdr_simple_ptr(wsi,
 						  WSI_TOKEN_HTTP_COLON_METHOD));
 #endif
 			}
@@ -230,15 +230,15 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 		}
 
 		if (uritok >= 0)
-			sum += lws_snprintf(sum, lws_ptr_diff_size_t(sumend, sum), "%s ",
-					    lws_hdr_simple_ptr(wsi, (enum lws_token_indexes)uritok));
+			sum += aws_lws_snprintf(sum, aws_lws_ptr_diff_size_t(sumend, sum), "%s ",
+					    aws_lws_hdr_simple_ptr(wsi, (enum aws_lws_token_indexes)uritok));
 
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "QUERY_STRING=");
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "QUERY_STRING=");
 		/* dump the individual URI Arg parameters */
 		m = 0;
 		while (script_uri_path_len >= 0) {
-			i = lws_hdr_copy_fragment(wsi, tok, sizeof(tok),
+			i = aws_lws_hdr_copy_fragment(wsi, tok, sizeof(tok),
 					     WSI_TOKEN_HTTP_URI_ARGS, m);
 			if (i < 0)
 				break;
@@ -247,7 +247,7 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 				*p++ = *t++;
 			if (*t == '=')
 				*p++ = *t++;
-			i = urlencode(t, i - lws_ptr_diff(t, tok), p, lws_ptr_diff(end, p));
+			i = urlencode(t, i - aws_lws_ptr_diff(t, tok), p, aws_lws_ptr_diff(end, p));
 			if (i > 0) {
 				p += i;
 				*p++ = '&';
@@ -260,8 +260,8 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 
 		if (uritok >= 0) {
 			strcpy(cgi_path, "REQUEST_URI=");
-			c = lws_hdr_copy(wsi, cgi_path + 12,
-					 sizeof(cgi_path) - 12, (enum lws_token_indexes)uritok);
+			c = aws_lws_hdr_copy(wsi, cgi_path + 12,
+					 sizeof(cgi_path) - 12, (enum aws_lws_token_indexes)uritok);
 			if (c < 0)
 				goto bail;
 
@@ -269,125 +269,125 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 			env_array[n++] = cgi_path;
 		}
 
-		sum += lws_snprintf(sum, lws_ptr_diff_size_t(sumend, sum), "%s", env_array[n - 1]);
+		sum += aws_lws_snprintf(sum, aws_lws_ptr_diff_size_t(sumend, sum), "%s", env_array[n - 1]);
 
 		if (script_uri_path_len >= 0) {
 			env_array[n++] = p;
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "PATH_INFO=%s",
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "PATH_INFO=%s",
 				      cgi_path + 12 + script_uri_path_len);
 			p++;
 		}
 	}
 #if defined(LWS_WITH_HTTP_UNCOMMON_HEADERS)
 	if (script_uri_path_len >= 0 &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_REFERER)) {
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_REFERER)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTP_REFERER=%s",
-			      lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_REFERER));
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTP_REFERER=%s",
+			      aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_REFERER));
 		p++;
 	}
 #endif
 	if (script_uri_path_len >= 0 &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HOST)) {
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HOST)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTP_HOST=%s",
-			      lws_hdr_simple_ptr(wsi, WSI_TOKEN_HOST));
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTP_HOST=%s",
+			      aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HOST));
 		p++;
 	}
 	if (script_uri_path_len >= 0 &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE)) {
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTP_COOKIE=");
-		m = lws_hdr_copy(wsi, p, lws_ptr_diff(end, p), WSI_TOKEN_HTTP_COOKIE);
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTP_COOKIE=");
+		m = aws_lws_hdr_copy(wsi, p, aws_lws_ptr_diff(end, p), WSI_TOKEN_HTTP_COOKIE);
 		if (m > 0)
-			p += lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE);
+			p += aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE);
 		*p++ = '\0';
 	}
 #if defined(LWS_WITH_HTTP_UNCOMMON_HEADERS)
 	if (script_uri_path_len >= 0 &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_USER_AGENT)) {
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_USER_AGENT)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTP_USER_AGENT=%s",
-			    lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_USER_AGENT));
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTP_USER_AGENT=%s",
+			    aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_USER_AGENT));
 		p++;
 	}
 #endif
 	if (script_uri_path_len >= 0 &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_ENCODING)) {
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_ENCODING)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTP_CONTENT_ENCODING=%s",
-		      lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_ENCODING));
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTP_CONTENT_ENCODING=%s",
+		      aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_ENCODING));
 		p++;
 	}
 	if (script_uri_path_len >= 0 &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_ACCEPT)) {
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_ACCEPT)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTP_ACCEPT=%s",
-			      lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_ACCEPT));
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTP_ACCEPT=%s",
+			      aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_ACCEPT));
 		p++;
 	}
 	if (script_uri_path_len >= 0 &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_ACCEPT_ENCODING)) {
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_ACCEPT_ENCODING)) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "HTTP_ACCEPT_ENCODING=%s",
-		      lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_ACCEPT_ENCODING));
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "HTTP_ACCEPT_ENCODING=%s",
+		      aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_ACCEPT_ENCODING));
 		p++;
 	}
 	if (script_uri_path_len >= 0 &&
 	    uritok == WSI_TOKEN_POST_URI) {
-		if (lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE)) {
+		if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE)) {
 			env_array[n++] = p;
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "CONTENT_TYPE=%s",
-			  lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE));
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "CONTENT_TYPE=%s",
+			  aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE));
 			p++;
 		}
 		if (!wsi->http.cgi->gzip_inflate &&
-		    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
+		    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
 			env_array[n++] = p;
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "CONTENT_LENGTH=%s",
-					  lws_hdr_simple_ptr(wsi,
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "CONTENT_LENGTH=%s",
+					  aws_lws_hdr_simple_ptr(wsi,
 					  WSI_TOKEN_HTTP_CONTENT_LENGTH));
 			p++;
 		}
 
-		if (lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH))
-			wsi->http.cgi->post_in_expected = (lws_filepos_t)
-				atoll(lws_hdr_simple_ptr(wsi,
+		if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH))
+			wsi->http.cgi->post_in_expected = (aws_lws_filepos_t)
+				atoll(aws_lws_hdr_simple_ptr(wsi,
 						WSI_TOKEN_HTTP_CONTENT_LENGTH));
 	}
 
 
 	env_array[n++] = p;
-	p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "PATH=/bin:/usr/bin:/usr/local/bin:/var/www/cgi-bin");
+	p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "PATH=/bin:/usr/bin:/usr/local/bin:/var/www/cgi-bin");
 	p++;
 
 	env_array[n++] = p;
-	p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "SCRIPT_PATH=%s", exec_array[0]);
+	p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "SCRIPT_PATH=%s", exec_array[0]);
 	p++;
 
 	while (mp_cgienv) {
 		env_array[n++] = p;
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "%s=%s", mp_cgienv->name,
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "%s=%s", mp_cgienv->name,
 			      mp_cgienv->value);
 		if (!strcmp(mp_cgienv->name, "GIT_PROJECT_ROOT")) {
 			wsi->http.cgi->implied_chunked = 1;
 			wsi->http.cgi->explicitly_chunked = 1;
 		}
-		lwsl_info("   Applying mount-specific cgi env '%s'\n",
+		aws_lwsl_info("   Applying mount-specific cgi env '%s'\n",
 			   env_array[n - 1]);
 		p++;
 		mp_cgienv = mp_cgienv->next;
 	}
 
 	env_array[n++] = p;
-	p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "SERVER_SOFTWARE=lws");
+	p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "SERVER_SOFTWARE=lws");
 	p++;
 
 	env_array[n] = NULL;
 
 #if 0
 	for (m = 0; m < n; m++)
-		lwsl_notice("    %s\n", env_array[m]);
+		aws_lwsl_notice("    %s\n", env_array[m]);
 #endif
 
 	memset(&info, 0, sizeof(info));
@@ -401,20 +401,20 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 	info.ops = &role_ops_cgi;
 	info.plsp = &wsi->http.cgi->lsp;
 	info.opaque = wsi;
-	info.reap_cb = lws_cgi_reap_cb;
+	info.reap_cb = aws_lws_cgi_reap_cb;
 
 	/*
 	 * Actually having made the env, as a cgi we don't need the ah
 	 * any more
 	 */
 	if (script_uri_path_len >= 0) {
-		lws_header_table_detach(wsi, 0);
+		aws_lws_header_table_detach(wsi, 0);
 		info.disable_ctrlc = 1;
 	}
 
-	wsi->http.cgi->lsp = lws_spawn_piped(&info);
+	wsi->http.cgi->lsp = aws_lws_spawn_piped(&info);
 	if (!wsi->http.cgi->lsp) {
-		lwsl_err("%s: spawn failed\n", __func__);
+		aws_lwsl_err("%s: spawn failed\n", __func__);
 		goto bail;
 	}
 
@@ -431,10 +431,10 @@ lws_cgi(struct lws *wsi, const char * const *exec_array,
 	return 0;
 
 bail:
-	lws_sul_cancel(&wsi->http.cgi->sul_grace);
-	lws_free_set_NULL(wsi->http.cgi);
+	aws_lws_sul_cancel(&wsi->http.cgi->sul_grace);
+	aws_lws_free_set_NULL(wsi->http.cgi);
 
-	lwsl_err("%s: failed\n", __func__);
+	aws_lwsl_err("%s: failed\n", __func__);
 
 	return -1;
 }
@@ -457,7 +457,7 @@ enum header_recode {
 };
 
 int
-lws_cgi_write_split_stdout_headers(struct lws *wsi)
+aws_lws_cgi_write_split_stdout_headers(struct lws *wsi)
 {
 	int n, m, cmd;
 	unsigned char buf[LWS_PRE + 4096], *start = &buf[LWS_PRE], *p = start,
@@ -475,25 +475,25 @@ lws_cgi_write_split_stdout_headers(struct lws *wsi)
 		 */
 		switch (wsi->hdr_state) {
 		case LHCS_RESPONSE:
-			lwsl_wsi_debug(wsi, "LHCS_RESPONSE: iss response %d",
+			aws_lwsl_wsi_debug(wsi, "LHCS_RESPONSE: iss response %d",
 					    wsi->http.cgi->response_code);
-			if (lws_add_http_header_status(wsi,
+			if (aws_lws_add_http_header_status(wsi,
 						   (unsigned int)wsi->http.cgi->response_code,
 						       &p, end))
 				return 1;
 			if (!wsi->http.cgi->explicitly_chunked &&
 			    !wsi->http.cgi->content_length &&
-				lws_add_http_header_by_token(wsi,
+				aws_lws_add_http_header_by_token(wsi,
 					WSI_TOKEN_HTTP_TRANSFER_ENCODING,
 					(unsigned char *)"chunked", 7, &p, end))
 				return 1;
 			if (!(wsi->mux_substream))
-				if (lws_add_http_header_by_token(wsi,
+				if (aws_lws_add_http_header_by_token(wsi,
 						WSI_TOKEN_CONNECTION,
 						(unsigned char *)"close", 5,
 						&p, end))
 					return 1;
-			n = lws_write(wsi, start, lws_ptr_diff_size_t(p, start),
+			n = aws_lws_write(wsi, start, aws_lws_ptr_diff_size_t(p, start),
 				      LWS_WRITE_HTTP_HEADERS | LWS_WRITE_NO_FIN);
 
 			/*
@@ -563,11 +563,11 @@ lws_cgi_write_split_stdout_headers(struct lws *wsi)
 						if ((strcmp((const char *)buf,
 							    "transfer-encoding")
 						)) {
-							lwsl_debug("+ %s: %s\n",
+							aws_lwsl_debug("+ %s: %s\n",
 								   buf, value);
 							if (
-					lws_add_http_header_by_name(wsi, buf,
-					(unsigned char *)value, lws_ptr_diff(name, value),
+					aws_lws_add_http_header_by_name(wsi, buf,
+					(unsigned char *)value, aws_lws_ptr_diff(name, value),
 					(unsigned char **)&wsi->http.cgi->headers_pos,
 					(unsigned char *)wsi->http.cgi->headers_end))
 								return 1;
@@ -582,17 +582,17 @@ lws_cgi_write_split_stdout_headers(struct lws *wsi)
 			}
 post_hpack_recode:
 			/* finalize cached headers before dumping them */
-			if (lws_finalize_http_header(wsi,
+			if (aws_lws_finalize_http_header(wsi,
 			      (unsigned char **)&wsi->http.cgi->headers_pos,
 			      (unsigned char *)wsi->http.cgi->headers_end)) {
 
-				lwsl_notice("finalize failed\n");
+				aws_lwsl_notice("finalize failed\n");
 				return -1;
 			}
 
 			wsi->hdr_state = LHCS_DUMP_HEADERS;
 			wsi->reason_bf |= LWS_CB_REASON_AUX_BF__CGI_HEADERS;
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 			/* back to the loop for writeability again */
 			return 0;
 
@@ -603,40 +603,40 @@ post_hpack_recode:
 			if (n > 512)
 				n = 512;
 
-			lwsl_wsi_debug(wsi, "LHCS_DUMP_HEADERS: %d", n);
+			aws_lwsl_wsi_debug(wsi, "LHCS_DUMP_HEADERS: %d", n);
 
 			cmd = LWS_WRITE_HTTP_HEADERS_CONTINUATION;
 			if (wsi->http.cgi->headers_dumped + n !=
 						wsi->http.cgi->headers_pos) {
-				lwsl_notice("adding no fin flag\n");
+				aws_lwsl_notice("adding no fin flag\n");
 				cmd |= LWS_WRITE_NO_FIN;
 			}
 
-			m = lws_write(wsi,
+			m = aws_lws_write(wsi,
 				 (unsigned char *)wsi->http.cgi->headers_dumped,
-				      (unsigned int)n, (enum lws_write_protocol)cmd);
+				      (unsigned int)n, (enum aws_lws_write_protocol)cmd);
 			if (m < 0) {
-				lwsl_wsi_debug(wsi, "write says %d", m);
+				aws_lwsl_wsi_debug(wsi, "write says %d", m);
 				return -1;
 			}
 			wsi->http.cgi->headers_dumped += n;
 			if (wsi->http.cgi->headers_dumped ==
 			    wsi->http.cgi->headers_pos) {
 				wsi->hdr_state = LHCS_PAYLOAD;
-				lws_free_set_NULL(wsi->http.cgi->headers_buf);
-				lwsl_wsi_debug(wsi, "freed cgi headers");
+				aws_lws_free_set_NULL(wsi->http.cgi->headers_buf);
+				aws_lwsl_wsi_debug(wsi, "freed cgi headers");
 
 				if (wsi->http.cgi->post_in_expected) {
-					lwsl_wsi_info(wsi, "post data still "
+					aws_lwsl_wsi_info(wsi, "post data still "
 							   "expected, asking "
 							   "for writeable");
-					lws_callback_on_writable(wsi);
+					aws_lws_callback_on_writable(wsi);
 				}
 
 			} else {
 				wsi->reason_bf |=
 					LWS_CB_REASON_AUX_BF__CGI_HEADERS;
-				lws_callback_on_writable(wsi);
+				aws_lws_callback_on_writable(wsi);
 			}
 
 			/*
@@ -651,14 +651,14 @@ post_hpack_recode:
 			n = 2048;
 			if (wsi->mux_substream)
 				n = 4096;
-			wsi->http.cgi->headers_buf = lws_malloc((unsigned int)n + LWS_PRE,
+			wsi->http.cgi->headers_buf = aws_lws_malloc((unsigned int)n + LWS_PRE,
 							   "cgi hdr buf");
 			if (!wsi->http.cgi->headers_buf) {
-				lwsl_wsi_err(wsi, "OOM");
+				aws_lwsl_wsi_err(wsi, "OOM");
 				return -1;
 			}
 
-			lwsl_wsi_debug(wsi, "allocated cgi hdrs");
+			aws_lwsl_wsi_debug(wsi, "allocated cgi hdrs");
 			wsi->http.cgi->headers_start =
 					wsi->http.cgi->headers_buf + LWS_PRE;
 			wsi->http.cgi->headers_pos = wsi->http.cgi->headers_start;
@@ -672,13 +672,13 @@ post_hpack_recode:
 			}
 		}
 
-		n = lws_get_socket_fd(wsi->http.cgi->lsp->stdwsi[LWS_STDOUT]);
+		n = aws_lws_get_socket_fd(wsi->http.cgi->lsp->stdwsi[LWS_STDOUT]);
 		if (n < 0)
 			return -1;
 		n = (int)read(n, &c, 1);
 		if (n < 0) {
 			if (errno != EAGAIN) {
-				lwsl_wsi_debug(wsi, "read says %d", n);
+				aws_lwsl_wsi_debug(wsi, "read says %d", n);
 				return -1;
 			}
 			else
@@ -686,7 +686,7 @@ post_hpack_recode:
 
 			if (wsi->http.cgi->headers_pos >=
 					wsi->http.cgi->headers_end - 4) {
-				lwsl_wsi_notice(wsi, "CGI hdrs > buf size");
+				aws_lwsl_wsi_notice(wsi, "CGI hdrs > buf size");
 
 				return -1;
 			}
@@ -694,7 +694,7 @@ post_hpack_recode:
 		if (!n)
 			goto agin;
 
-		lwsl_wsi_debug(wsi, "-- 0x%02X %c %d %d", (unsigned char)c, c,
+		aws_lwsl_wsi_debug(wsi, "-- 0x%02X %c %d %d", (unsigned char)c, c,
 				    wsi->http.cgi->match[1], wsi->hdr_state);
 		if (!c)
 			return -1;
@@ -714,12 +714,12 @@ post_hpack_recode:
 					switch (n) {
 					case SIGNIFICANT_HDR_CONTENT_LENGTH:
 						wsi->http.cgi->content_length =
-							(lws_filepos_t)atoll(wsi->http.cgi->l);
+							(aws_lws_filepos_t)atoll(wsi->http.cgi->l);
 						break;
 					case SIGNIFICANT_HDR_STATUS:
 						wsi->http.cgi->response_code =
 							atoi(wsi->http.cgi->l);
-						lwsl_wsi_debug(wsi, "Status set to %d",
+						aws_lwsl_wsi_debug(wsi, "Status set to %d",
 								wsi->http.cgi->response_code);
 						break;
 					default:
@@ -749,7 +749,7 @@ post_hpack_recode:
 			    !significant_hdr[SIGNIFICANT_HDR_TRANSFER_ENCODING]
 				    [wsi->http.cgi->match[
 					 SIGNIFICANT_HDR_TRANSFER_ENCODING]]) {
-				lwsl_wsi_info(wsi, "cgi produced chunked");
+				aws_lwsl_wsi_info(wsi, "cgi produced chunked");
 				wsi->http.cgi->explicitly_chunked = 1;
 			}
 
@@ -757,7 +757,7 @@ post_hpack_recode:
 			if (wsi->hdr_state != LCHS_HEADER &&
 			    !significant_hdr[SIGNIFICANT_HDR_LOCATION][
 			      wsi->http.cgi->match[SIGNIFICANT_HDR_LOCATION]]) {
-				lwsl_wsi_debug(wsi, "CGI: Location hdr seen");
+				aws_lwsl_wsi_debug(wsi, "CGI: Location hdr seen");
 				wsi->http.cgi->response_code = 302;
 			}
 			break;
@@ -768,7 +768,7 @@ post_hpack_recode:
 				break;
 			}
 			/* we got \r[^\n]... it's unreasonable */
-			lwsl_wsi_debug(wsi, "funny CRLF 0x%02X",
+			aws_lwsl_wsi_debug(wsi, "funny CRLF 0x%02X",
 					    (unsigned char)c);
 			return -1;
 
@@ -788,7 +788,7 @@ post_hpack_recode:
 		case LCHS_SINGLE_0A:
 			m = wsi->hdr_state;
 			if (c == '\x0a') {
-				lwsl_wsi_debug(wsi, "Content-Length: %lld",
+				aws_lwsl_wsi_debug(wsi, "Content-Length: %lld",
 					(unsigned long long)
 					wsi->http.cgi->content_length);
 				wsi->hdr_state = LHCS_RESPONSE;
@@ -823,21 +823,21 @@ agin:
 	m = !wsi->http.cgi->implied_chunked && !wsi->mux_substream &&
 	//    !wsi->http.cgi->explicitly_chunked &&
 	    !wsi->http.cgi->content_length;
-	n = lws_get_socket_fd(wsi->http.cgi->lsp->stdwsi[LWS_STDOUT]);
+	n = aws_lws_get_socket_fd(wsi->http.cgi->lsp->stdwsi[LWS_STDOUT]);
 	if (n < 0)
 		return -1;
 	n = (int)read(n, start, sizeof(buf) - LWS_PRE);
 
 	if (n < 0 && errno != EAGAIN) {
-		lwsl_wsi_debug(wsi, "stdout read says %d", n);
+		aws_lwsl_wsi_debug(wsi, "stdout read says %d", n);
 		return -1;
 	}
 	if (n > 0) {
-		// lwsl_hexdump_notice(buf, n);
+		// aws_lwsl_hexdump_notice(buf, n);
 
 		if (!wsi->mux_substream && m) {
 			char chdr[LWS_HTTP_CHUNK_HDR_SIZE];
-			m = lws_snprintf(chdr, LWS_HTTP_CHUNK_HDR_SIZE - 3,
+			m = aws_lws_snprintf(chdr, LWS_HTTP_CHUNK_HDR_SIZE - 3,
 					 "%X\x0d\x0a", n);
 			memmove(start + m, start, (unsigned int)n);
 			memcpy(start, chdr, (unsigned int)m);
@@ -848,7 +848,7 @@ agin:
 
 #if defined(LWS_WITH_HTTP2)
 		if (wsi->mux_substream) {
-			struct lws *nwsi = lws_get_network_wsi(wsi);
+			struct lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 			__lws_set_timeout(wsi,
 				PENDING_TIMEOUT_HTTP_KEEPALIVE_IDLE, 31);
@@ -864,10 +864,10 @@ agin:
 						wsi->http.cgi->content_length)
 			cmd = LWS_WRITE_HTTP_FINAL;
 
-		m = lws_write(wsi, (unsigned char *)start, (unsigned int)n, (enum lws_write_protocol)cmd);
-		//lwsl_notice("write %d\n", m);
+		m = aws_lws_write(wsi, (unsigned char *)start, (unsigned int)n, (enum aws_lws_write_protocol)cmd);
+		//aws_lwsl_notice("write %d\n", m);
 		if (m < 0) {
-			lwsl_wsi_debug(wsi, "stdout write says %d\n", m);
+			aws_lwsl_wsi_debug(wsi, "stdout write says %d\n", m);
 			return -1;
 		}
 		wsi->http.cgi->content_length_seen += (unsigned int)n;
@@ -876,10 +876,10 @@ agin:
 		if (!wsi->mux_substream && m) {
 			uint8_t term[LWS_PRE + 6];
 
-			lwsl_wsi_info(wsi, "sent trailer");
+			aws_lwsl_wsi_info(wsi, "sent trailer");
 			memcpy(term + LWS_PRE, (uint8_t *)"0\x0d\x0a\x0d\x0a", 5);
 
-			if (lws_write(wsi, term + LWS_PRE, 5,
+			if (aws_lws_write(wsi, term + LWS_PRE, 5,
 				      LWS_WRITE_HTTP_FINAL) != 5)
 				return -1;
 
@@ -889,9 +889,9 @@ agin:
 		}
 
 		if (wsi->cgi_stdout_zero_length) {
-			lwsl_wsi_debug(wsi, "stdout is POLLHUP'd");
+			aws_lwsl_wsi_debug(wsi, "stdout is POLLHUP'd");
 			if (wsi->mux_substream)
-				m = lws_write(wsi, (unsigned char *)start, 0,
+				m = aws_lws_write(wsi, (unsigned char *)start, 0,
 					      LWS_WRITE_HTTP_FINAL);
 			else
 				return -1;
@@ -903,9 +903,9 @@ agin:
 }
 
 int
-lws_cgi_kill(struct lws *wsi)
+aws_lws_cgi_kill(struct lws *wsi)
 {
-	struct lws_cgi_args args;
+	struct aws_lws_cgi_args args;
 	pid_t pid;
 	int n, m;
 
@@ -915,7 +915,7 @@ lws_cgi_kill(struct lws *wsi)
 	pid = wsi->http.cgi->lsp->child_pid;
 
 	args.stdwsi = &wsi->http.cgi->lsp->stdwsi[0];
-	lws_spawn_piped_kill_child_process(wsi->http.cgi->lsp);
+	aws_lws_spawn_piped_kill_child_process(wsi->http.cgi->lsp);
 	/* that has invalidated and NULL'd wsi->http.cgi->lsp */
 
 	if (pid != -1) {
@@ -925,16 +925,16 @@ lws_cgi_kill(struct lws *wsi)
 						wsi->user_space, (void *)&args,
 						(unsigned int)pid);
 		if (n && !m)
-			lws_close_free_wsi(wsi, 0, "lws_cgi_kill");
+			aws_lws_close_free_wsi(wsi, 0, "aws_lws_cgi_kill");
 	}
 
 	return 0;
 }
 
 int
-lws_cgi_kill_terminated(struct lws_context_per_thread *pt)
+aws_lws_cgi_kill_terminated(struct aws_lws_context_per_thread *pt)
 {
-	struct lws_cgi **pcgi, *cgi = NULL;
+	struct aws_lws_cgi **pcgi, *cgi = NULL;
 	int status, n = 1;
 
 	while (n > 0) {
@@ -942,7 +942,7 @@ lws_cgi_kill_terminated(struct lws_context_per_thread *pt)
 		n = waitpid(-1, &status, WNOHANG);
 		if (n <= 0)
 			continue;
-		lwsl_cx_debug(pt->context, "observed PID %d terminated", n);
+		aws_lwsl_cx_debug(pt->context, "observed PID %d terminated", n);
 
 		pcgi = &pt->http.cgi_list;
 
@@ -964,7 +964,7 @@ lws_cgi_kill_terminated(struct lws_context_per_thread *pt)
 				continue;
 
 			if (cgi->content_length) {
-				lwsl_cx_debug(pt->context, "expected content "
+				aws_lwsl_cx_debug(pt->context, "expected content "
 							   "length seen: %lld",
 				(unsigned long long)cgi->content_length_seen);
 			}
@@ -990,7 +990,7 @@ lws_cgi_kill_terminated(struct lws_context_per_thread *pt)
 
 				/* defeat kill() */
 				cgi->lsp->child_pid = 0;
-				lws_cgi_kill(cgi->wsi);
+				aws_lws_cgi_kill(cgi->wsi);
 
 				break;
 			}
@@ -1030,7 +1030,7 @@ lws_cgi_kill_terminated(struct lws_context_per_thread *pt)
 			continue;
 
 		if (cgi->content_length)
-			lwsl_wsi_debug(cgi->wsi, "expected cont len seen: %lld",
+			aws_lwsl_wsi_debug(cgi->wsi, "expected cont len seen: %lld",
 				  (unsigned long long)cgi->content_length_seen);
 
 		/* reap it */
@@ -1046,12 +1046,12 @@ lws_cgi_kill_terminated(struct lws_context_per_thread *pt)
 				continue;
 			}
 finish_him:
-			lwsl_cx_debug(pt->context, "found PID %d on cgi list",
+			aws_lwsl_cx_debug(pt->context, "found PID %d on cgi list",
 						   cgi->lsp->child_pid);
 
 			/* defeat kill() */
 			cgi->lsp->child_pid = 0;
-			lws_cgi_kill(cgi->wsi);
+			aws_lws_cgi_kill(cgi->wsi);
 
 			break;
 		}
@@ -1061,7 +1061,7 @@ finish_him:
 }
 
 struct lws *
-lws_cgi_get_stdwsi(struct lws *wsi, enum lws_enum_stdinouterr ch)
+aws_lws_cgi_get_stdwsi(struct lws *wsi, enum aws_lws_enum_stdinouterr ch)
 {
 	if (!wsi->http.cgi)
 		return NULL;
@@ -1070,10 +1070,10 @@ lws_cgi_get_stdwsi(struct lws *wsi, enum lws_enum_stdinouterr ch)
 }
 
 void
-lws_cgi_remove_and_kill(struct lws *wsi)
+aws_lws_cgi_remove_and_kill(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws_cgi **pcgi = &pt->http.cgi_list;
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_cgi **pcgi = &pt->http.cgi_list;
 
 	/* remove us from the cgi list */
 
@@ -1086,12 +1086,12 @@ lws_cgi_remove_and_kill(struct lws *wsi)
 		pcgi = &(*pcgi)->cgi_list;
 	}
 	if (wsi->http.cgi->headers_buf)
-		lws_free_set_NULL(wsi->http.cgi->headers_buf);
+		aws_lws_free_set_NULL(wsi->http.cgi->headers_buf);
 
 	/* we have a cgi going, we must kill it */
 	wsi->http.cgi->being_closed = 1;
-	lws_cgi_kill(wsi);
+	aws_lws_cgi_kill(wsi);
 
 	if (!pt->http.cgi_list)
-		lws_sul_cancel(&pt->sul_cgi);
+		aws_lws_sul_cancel(&pt->sul_cgi);
 }

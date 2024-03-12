@@ -40,26 +40,26 @@
 #undef RTA_ALIGNTO
 #define RTA_ALIGNTO 4U
 
-//#define lwsl_netlink lwsl_notice
-#define lwsl_cx_netlink lwsl_cx_info
+//#define aws_lwsl_netlink aws_lwsl_notice
+#define aws_lwsl_cx_netlink aws_lwsl_cx_info
 
 static void
-lws_netlink_coldplug_done_cb(lws_sorted_usec_list_t *sul)
+aws_lws_netlink_coldplug_done_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context *ctx = lws_container_of(sul, struct lws_context,
+	struct aws_lws_context *ctx = aws_lws_container_of(sul, struct aws_lws_context,
 						   sul_nl_coldplug);
 	ctx->nl_initial_done = 1;
 #if defined(LWS_WITH_SYS_STATE)
 	/* if nothing is there to intercept anything, go all the way */
-	lws_state_transition_steps(&ctx->mgr_system, LWS_SYSTATE_OPERATIONAL);
+	aws_lws_state_transition_steps(&ctx->mgr_system, LWS_SYSTATE_OPERATIONAL);
 #endif
 }
 
 static int
-rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
-			   struct lws_pollfd *pollfd)
+rops_handle_POLLIN_netlink(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+			   struct aws_lws_pollfd *pollfd)
 {
-	struct lws_context	*cx = pt->context;
+	struct aws_lws_context	*cx = pt->context;
 	uint8_t s[4096]
 #if defined(_DEBUG)
 	        , route_change = 0
@@ -69,7 +69,7 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 #endif
 			;
 	struct sockaddr_nl	nladdr;
-	lws_route_t		robj, *rou, *rmat;
+	aws_lws_route_t		robj, *rou, *rmat;
 	struct nlmsghdr		*h;
 	struct msghdr		msg;
 	struct iovec		iov;
@@ -92,11 +92,11 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 
 	n = (unsigned int)recvmsg(wsi->desc.sockfd, &msg, 0);
 	if ((int)n < 0) {
-		lwsl_cx_notice(cx, "recvmsg failed");
+		aws_lwsl_cx_notice(cx, "recvmsg failed");
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
 
-	// lwsl_hexdump_notice(s, (size_t)n);
+	// aws_lwsl_hexdump_notice(s, (size_t)n);
 
 	h = (struct nlmsghdr *)s;
 
@@ -116,7 +116,7 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 		struct rtattr *attribute;
 		unsigned int len;
 
-		lwsl_cx_netlink(cx, "RTM %d", h->nlmsg_type);
+		aws_lwsl_cx_netlink(cx, "RTM %d", h->nlmsg_type);
 
 		memset(&robj, 0, sizeof(robj));
 		robj.if_idx = -1;
@@ -139,11 +139,11 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 			/* loop over all attributes for the NEWLINK message */
 			for (attribute = IFLA_RTA(ifi); RTA_OK(attribute, len);
 					 attribute = RTA_NEXT(attribute, len)) {
-				lwsl_cx_netlink(cx, "if attr %d",
+				aws_lwsl_cx_netlink(cx, "if attr %d",
 					    (int)attribute->rta_type);
 				switch(attribute->rta_type) {
 				case IFLA_IFNAME:
-					lwsl_cx_netlink(cx, "NETLINK ifidx %d : %s",
+					aws_lwsl_cx_netlink(cx, "NETLINK ifidx %d : %s",
 						     ifi->ifi_index,
 						     (char *)RTA_DATA(attribute));
 					break;
@@ -152,7 +152,7 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 				} /* switch */
 			} /* for loop */
 
-			lwsl_cx_netlink(cx, "NEWLINK ifi_index %d, flags 0x%x",
+			aws_lwsl_cx_netlink(cx, "NEWLINK ifi_index %d, flags 0x%x",
 					ifi->ifi_index, ifi->ifi_flags);
 
 			/*
@@ -165,11 +165,11 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 				 * Interface is down, so scrub all routes that
 				 * applied to it
 				 */
-				lwsl_cx_netlink(cx, "NEWLINK: ifdown %d",
+				aws_lwsl_cx_netlink(cx, "NEWLINK: ifdown %d",
 						ifi->ifi_index);
-				lws_pt_lock(pt, __func__);
+				aws_lws_pt_lock(pt, __func__);
 				_lws_route_table_ifdown(pt, ifi->ifi_index);
-				lws_pt_unlock(pt);
+				aws_lws_pt_unlock(pt);
 			}
 			continue; /* ie, not break, no second half */
 
@@ -189,7 +189,7 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 			ra = (struct rtattr *)IFA_RTA(ifam);
 			ra_len = (unsigned int)IFA_PAYLOAD(h);
 
-			lwsl_cx_netlink(cx, "%s",
+			aws_lwsl_cx_netlink(cx, "%s",
 				     h->nlmsg_type == RTM_NEWADDR ?
 						     "NEWADDR" : "DELADDR");
 
@@ -202,7 +202,7 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 		case RTM_NEWROUTE:
 		case RTM_DELROUTE:
 
-			lwsl_cx_netlink(cx, "%s",
+			aws_lwsl_cx_netlink(cx, "%s",
 				     h->nlmsg_type == RTM_NEWROUTE ?
 						     "NEWROUTE" : "DELROUTE");
 
@@ -213,33 +213,33 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 
 		case RTM_DELNEIGH:
 		case RTM_NEWNEIGH:
-			lwsl_cx_netlink(cx, "%s", h->nlmsg_type ==
+			aws_lwsl_cx_netlink(cx, "%s", h->nlmsg_type ==
 						RTM_NEWNEIGH ? "NEWNEIGH" :
 							       "DELNEIGH");
 #if !defined(LWS_WITH_NO_LOGS) && defined(_DEBUG)
 			nd = (struct ndmsg *)rm;
-			lwsl_cx_netlink(cx, "fam %u, ifidx %u, flags 0x%x",
+			aws_lwsl_cx_netlink(cx, "fam %u, ifidx %u, flags 0x%x",
 				    nd->ndm_family, nd->ndm_ifindex,
 				    nd->ndm_flags);
 #endif
 			ra = (struct rtattr *)RTM_RTA(rm);
 			ra_len = (unsigned int)RTM_PAYLOAD(h);
 			for ( ; RTA_OK(ra, ra_len); ra = RTA_NEXT(ra, ra_len)) {
-				lwsl_cx_netlink(cx, "atr %d", ra->rta_type);
+				aws_lwsl_cx_netlink(cx, "atr %d", ra->rta_type);
 				switch (ra->rta_type) {
 				case NDA_DST:
-					lwsl_cx_netlink(cx, "dst len %d",
+					aws_lwsl_cx_netlink(cx, "dst len %d",
 							ra->rta_len);
 					break;
 				}
 			}
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 			_lws_route_pt_close_unroutable(pt);
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 			continue;
 
 		default:
-			lwsl_cx_netlink(cx, "*** Unknown RTM_%d",
+			aws_lwsl_cx_netlink(cx, "*** Unknown RTM_%d",
 					h->nlmsg_type);
 			continue;
 		} /* switch */
@@ -248,25 +248,25 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 
 		// iterate over route attributes
 		for ( ; RTA_OK(ra, ra_len); ra = RTA_NEXT(ra, ra_len)) {
-			// lwsl_netlink("%s: atr %d\n", __func__, ra->rta_type);
+			// aws_lwsl_netlink("%s: atr %d\n", __func__, ra->rta_type);
 			switch (ra->rta_type) {
 			case RTA_PREFSRC: /* protocol ads: preferred src ads */
 			case RTA_SRC:
-				lws_sa46_copy_address(&robj.src, RTA_DATA(ra),
+				aws_lws_sa46_copy_address(&robj.src, RTA_DATA(ra),
 							rm->rtm_family);
 				robj.src_len = rm->rtm_src_len;
-				lws_sa46_write_numeric_address(&robj.src, buf, sizeof(buf));
-				lwsl_cx_netlink(cx, "RTA_SRC: %s", buf);
+				aws_lws_sa46_write_numeric_address(&robj.src, buf, sizeof(buf));
+				aws_lwsl_cx_netlink(cx, "RTA_SRC: %s", buf);
 				break;
 			case RTA_DST:
-				lws_sa46_copy_address(&robj.dest, RTA_DATA(ra),
+				aws_lws_sa46_copy_address(&robj.dest, RTA_DATA(ra),
 							rm->rtm_family);
 				robj.dest_len = rm->rtm_dst_len;
-				lws_sa46_write_numeric_address(&robj.dest, buf, sizeof(buf));
-				lwsl_cx_netlink(cx, "RTA_DST: %s", buf);
+				aws_lws_sa46_write_numeric_address(&robj.dest, buf, sizeof(buf));
+				aws_lwsl_cx_netlink(cx, "RTA_DST: %s", buf);
 				break;
 			case RTA_GATEWAY:
-				lws_sa46_copy_address(&robj.gateway,
+				aws_lws_sa46_copy_address(&robj.gateway,
 						      RTA_DATA(ra),
 						      rm->rtm_family);
 #if defined(LWS_WITH_SYS_SMD)
@@ -276,7 +276,7 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 			case RTA_IIF: /* int: input interface index */
 			case RTA_OIF: /* int: output interface index */
 				robj.if_idx = *(int *)RTA_DATA(ra);
-				lwsl_cx_netlink(cx, "ifidx %d", robj.if_idx);
+				aws_lwsl_cx_netlink(cx, "ifidx %d", robj.if_idx);
 				break;
 			case RTA_PRIORITY: /* int: priority of route */
 				p = RTA_DATA(ra);
@@ -293,7 +293,7 @@ rops_handle_POLLIN_netlink(struct lws_context_per_thread *pt, struct lws *wsi,
 				break;
 
 			default:
-				lwsl_cx_info(cx, "unknown attr type %d",
+				aws_lwsl_cx_info(cx, "unknown attr type %d",
 					     ra->rta_type);
 				break;
 			}
@@ -309,16 +309,16 @@ second_half:
 			/*
 			 * This will also take down wsi marked as using it
 			 */
-			lwsl_cx_netlink(cx, "DELROUTE: if_idx %d",
+			aws_lwsl_cx_netlink(cx, "DELROUTE: if_idx %d",
 					robj.if_idx);
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 			_lws_route_remove(pt, &robj, 0);
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 			goto inform;
 
 		case RTM_NEWROUTE:
 
-			lwsl_cx_netlink(cx, "NEWROUTE rtm_type %d",
+			aws_lwsl_cx_netlink(cx, "NEWROUTE rtm_type %d",
 					rm->rtm_type);
 
 			/*
@@ -337,19 +337,19 @@ second_half:
 			goto ana;
 
 		case RTM_DELADDR:
-			lwsl_cx_notice(cx, "DELADDR");
+			aws_lwsl_cx_notice(cx, "DELADDR");
 #if defined(_DEBUG)
 			_lws_routing_entry_dump(cx, &robj);
 #endif
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 			_lws_route_remove(pt, &robj, LRR_MATCH_SRC | LRR_IGNORE_PRI);
 			_lws_route_pt_close_unroutable(pt);
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 			break;
 
 		case RTM_NEWADDR:
 
-			lwsl_cx_netlink(cx, "NEWADDR");
+			aws_lwsl_cx_netlink(cx, "NEWADDR");
 ana:
 
 			/*
@@ -359,28 +359,28 @@ ana:
 			 * no match == add
 			 */
 
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 
 			/* returns zero on match already in table */
 			rmat = _lws_route_remove(pt, &robj, LRR_MATCH_SRC |
 							    LRR_JUST_CHECK |
 							    LRR_IGNORE_PRI);
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 
 			if (rmat) {
 				rmat->priority = robj.priority;
 				break;
 			}
 
-			rou = lws_malloc(sizeof(*rou), __func__);
+			rou = aws_lws_malloc(sizeof(*rou), __func__);
 			if (!rou) {
-				lwsl_cx_err(cx, "oom");
+				aws_lwsl_cx_err(cx, "oom");
 				return LWS_HPI_RET_HANDLED;
 			}
 
 			*rou = robj;
 
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 
 			/*
 			 * We lock the pt before getting the uidx, so it
@@ -388,13 +388,13 @@ ana:
 			 */
 
 			rou->uidx = _lws_route_get_uidx(cx);
-			lws_dll2_add_tail(&rou->list, &cx->routing_table);
-			lwsl_cx_info(cx, "route list size %u",
+			aws_lws_dll2_add_tail(&rou->list, &cx->routing_table);
+			aws_lwsl_cx_info(cx, "route list size %u",
 					cx->routing_table.count);
 
 			_lws_route_pt_close_unroutable(pt);
 
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 
 inform:
 #if defined(_DEBUG)
@@ -406,7 +406,7 @@ inform:
 			 * Participants interested can refer to the pt
 			 * routing table
 			 */
-			(void)lws_smd_msg_printf(cx, LWSSMDCL_NETWORK,
+			(void)aws_lws_smd_msg_printf(cx, LWSSMDCL_NETWORK,
 				   "{\"rt\":\"%s\"}\n",
 				   (h->nlmsg_type == RTM_DELROUTE) ?
 						"del" : "add");
@@ -415,7 +415,7 @@ inform:
 			break;
 
 		default:
-			// lwsl_info("%s: unknown msg type %d\n", __func__,
+			// aws_lwsl_info("%s: unknown msg type %d\n", __func__,
 			//		h->nlmsg_type);
 			break;
 		}
@@ -427,16 +427,16 @@ inform:
 		 * If a route with a gw was added or deleted, retrigger captive
 		 * portal detection if we have that
 		 */
-		(void)lws_smd_msg_printf(cx, LWSSMDCL_NETWORK,
+		(void)aws_lws_smd_msg_printf(cx, LWSSMDCL_NETWORK,
 				   "{\"trigger\": \"cpdcheck\", "
 				   "\"src\":\"gw-change\"}");
 #endif
 
 #if defined(_DEBUG)
 	if (route_change) {
-		lws_context_lock(cx, __func__);
+		aws_lws_context_lock(cx, __func__);
 		_lws_routing_table_dump(cx);
-		lws_context_unlock(cx);
+		aws_lws_context_unlock(cx);
 	}
 #endif
 
@@ -447,11 +447,11 @@ inform:
 		 * While netlink info still coming, keep moving the timer for
 		 * calling it "done" to +100ms until after it stops coming
 		 */
-		lws_context_lock(cx, __func__);
-		lws_sul_schedule(cx, 0, &cx->sul_nl_coldplug,
-				 lws_netlink_coldplug_done_cb,
+		aws_lws_context_lock(cx, __func__);
+		aws_lws_sul_schedule(cx, 0, &cx->sul_nl_coldplug,
+				 aws_lws_netlink_coldplug_done_cb,
 				 100 * LWS_US_PER_MS);
-		lws_context_unlock(cx);
+		aws_lws_context_unlock(cx);
 	}
 
 	return LWS_HPI_RET_HANDLED;
@@ -463,9 +463,9 @@ struct nl_req_s {
 };
 
 int
-rops_pt_init_destroy_netlink(struct lws_context *context,
-			     const struct lws_context_creation_info *info,
-			     struct lws_context_per_thread *pt, int destroy)
+rops_pt_init_destroy_netlink(struct aws_lws_context *context,
+			     const struct aws_lws_context_creation_info *info,
+			     struct aws_lws_context_per_thread *pt, int destroy)
 {
 	struct sockaddr_nl sanl;
 	struct nl_req_s req;
@@ -492,26 +492,26 @@ rops_pt_init_destroy_netlink(struct lws_context *context,
 		/* we can only have one netlink socket */
 		return 0;
 
-	lwsl_cx_info(context, "creating netlink skt");
+	aws_lwsl_cx_info(context, "creating netlink skt");
 
 	/*
 	 * We want a netlink socket per pt as well
 	 */
 
-	lws_context_lock(context, __func__);
+	aws_lws_context_lock(context, __func__);
 	wsi = __lws_wsi_create_with_role(context, (int)(pt - &context->pt[0]),
 				       &role_ops_netlink, NULL);
-	lws_context_unlock(context);
+	aws_lws_context_unlock(context);
 	if (!wsi)
 		goto bail;
 
 	wsi->desc.sockfd = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
 	if (wsi->desc.sockfd == LWS_SOCK_INVALID) {
-		lwsl_cx_err(context, "unable to open netlink");
+		aws_lwsl_cx_err(context, "unable to open netlink");
 		goto bail1;
 	}
 
-	lws_plat_set_nonblocking(wsi->desc.sockfd);
+	aws_lws_plat_set_nonblocking(wsi->desc.sockfd);
 
 	__lws_lc_tag(context, &context->lcg[LWSLCG_VHOST], &wsi->lc,
 			"netlink");
@@ -528,19 +528,19 @@ rops_pt_init_destroy_netlink(struct lws_context *context,
 #endif
 				 ;
 
-	if (lws_fi(&context->fic, "netlink_bind") ||
+	if (aws_lws_fi(&context->fic, "netlink_bind") ||
 	    bind(wsi->desc.sockfd, (struct sockaddr*)&sanl, sizeof(sanl)) < 0) {
-		lwsl_cx_warn(context, "netlink bind failed");
+		aws_lwsl_cx_warn(context, "netlink bind failed");
 		ret = 0; /* some systems deny access, just ignore */
 		goto bail2;
 	}
 
 	context->netlink = wsi;
-	if (lws_wsi_inject_to_loop(pt, wsi))
+	if (aws_lws_wsi_inject_to_loop(pt, wsi))
 		goto bail2;
 
-/*	if (lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
-		lwsl_err("%s: pollfd in fail\n", __func__);
+/*	if (aws_lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
+		aws_lwsl_err("%s: pollfd in fail\n", __func__);
 		goto bail2;
 	}
 */
@@ -574,7 +574,7 @@ rops_pt_init_destroy_netlink(struct lws_context *context,
 
 	n = (int)sendmsg(wsi->desc.sockfd, (struct msghdr *)&msg, 0);
 	if (n < 0) {
-		lwsl_cx_notice(context, "rt dump req failed... permissions? errno %d",
+		aws_lwsl_cx_notice(context, "rt dump req failed... permissions? errno %d",
 				LWS_ERRNO);
 	}
 
@@ -585,7 +585,7 @@ rops_pt_init_destroy_netlink(struct lws_context *context,
 	 * cull any ongoing connections as unroutable otherwise
 	 */
 
-	lwsl_cx_debug(context, "starting netlink coldplug wait");
+	aws_lwsl_cx_debug(context, "starting netlink coldplug wait");
 
 	return 0;
 
@@ -593,17 +593,17 @@ bail2:
 	__lws_lc_untag(wsi->a.context, &wsi->lc);
 	compatible_close(wsi->desc.sockfd);
 bail1:
-	lws_free(wsi);
+	aws_lws_free(wsi);
 bail:
 	return ret;
 }
 
-static const lws_rops_t rops_table_netlink[] = {
+static const aws_lws_rops_t rops_table_netlink[] = {
 	/*  1 */ { .pt_init_destroy	= rops_pt_init_destroy_netlink },
 	/*  2 */ { .handle_POLLIN	= rops_handle_POLLIN_netlink },
 };
 
-const struct lws_role_ops role_ops_netlink = {
+const struct aws_lws_role_ops role_ops_netlink = {
 	/* role name */			"netlink",
 	/* alpn id */			NULL,
 

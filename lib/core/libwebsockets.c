@@ -30,14 +30,14 @@
 #include <signal.h>
 
 void
-lws_ser_wu16be(uint8_t *b, uint16_t u)
+aws_lws_ser_wu16be(uint8_t *b, uint16_t u)
 {
 	*b++ = (uint8_t)(u >> 8);
 	*b = (uint8_t)u;
 }
 
 void
-lws_ser_wu32be(uint8_t *b, uint32_t u32)
+aws_lws_ser_wu32be(uint8_t *b, uint32_t u32)
 {
 	*b++ = (uint8_t)(u32 >> 24);
 	*b++ = (uint8_t)(u32 >> 16);
@@ -46,32 +46,32 @@ lws_ser_wu32be(uint8_t *b, uint32_t u32)
 }
 
 void
-lws_ser_wu64be(uint8_t *b, uint64_t u64)
+aws_lws_ser_wu64be(uint8_t *b, uint64_t u64)
 {
-	lws_ser_wu32be(b, (uint32_t)(u64 >> 32));
-	lws_ser_wu32be(b + 4, (uint32_t)u64);
+	aws_lws_ser_wu32be(b, (uint32_t)(u64 >> 32));
+	aws_lws_ser_wu32be(b + 4, (uint32_t)u64);
 }
 
 uint16_t
-lws_ser_ru16be(const uint8_t *b)
+aws_lws_ser_ru16be(const uint8_t *b)
 {
 	return (uint16_t)((b[0] << 8) | b[1]);
 }
 
 uint32_t
-lws_ser_ru32be(const uint8_t *b)
+aws_lws_ser_ru32be(const uint8_t *b)
 {
 	return (unsigned int)((b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3]);
 }
 
 uint64_t
-lws_ser_ru64be(const uint8_t *b)
+aws_lws_ser_ru64be(const uint8_t *b)
 {
-	return (((uint64_t)lws_ser_ru32be(b)) << 32) | lws_ser_ru32be(b + 4);
+	return (((uint64_t)aws_lws_ser_ru32be(b)) << 32) | aws_lws_ser_ru32be(b + 4);
 }
 
 int
-lws_vbi_encode(uint64_t value, void *buf)
+aws_lws_vbi_encode(uint64_t value, void *buf)
 {
 	uint8_t *p = (uint8_t *)buf, b;
 
@@ -89,11 +89,11 @@ lws_vbi_encode(uint64_t value, void *buf)
 			*p++ = b;
 	} while (value);
 
-	return lws_ptr_diff(p, buf);
+	return aws_lws_ptr_diff(p, buf);
 }
 
 int
-lws_vbi_decode(const void *buf, uint64_t *value, size_t len)
+aws_lws_vbi_decode(const void *buf, uint64_t *value, size_t len)
 {
 	const uint8_t *p = (const uint8_t *)buf, *end = p + len;
 	uint64_t v = 0;
@@ -104,7 +104,7 @@ lws_vbi_decode(const void *buf, uint64_t *value, size_t len)
 		if (*p & 0x80) {
 			*value = v;
 
-			return lws_ptr_diff(p, buf);
+			return aws_lws_ptr_diff(p, buf);
 		}
 		s += 7;
 		if (s >= 64)
@@ -130,7 +130,7 @@ signed char char_to_hex(const char c)
 }
 
 int
-lws_hex_to_byte_array(const char *h, uint8_t *dest, int max)
+aws_lws_hex_to_byte_array(const char *h, uint8_t *dest, int max)
 {
 	uint8_t *odest = dest;
 
@@ -150,13 +150,13 @@ lws_hex_to_byte_array(const char *h, uint8_t *dest, int max)
 	if (max < 0)
 		return -1;
 
-	return lws_ptr_diff(dest, odest);
+	return aws_lws_ptr_diff(dest, odest);
 }
 
 static char *hexch = "0123456789abcdef";
 
 void
-lws_hex_from_byte_array(const uint8_t *src, size_t slen, char *dest, size_t len)
+aws_lws_hex_from_byte_array(const uint8_t *src, size_t slen, char *dest, size_t len)
 {
 	char *end = &dest[len - 1];
 
@@ -172,12 +172,12 @@ lws_hex_from_byte_array(const uint8_t *src, size_t slen, char *dest, size_t len)
 }
 
 int
-lws_hex_random(struct lws_context *context, char *dest, size_t len)
+aws_lws_hex_random(struct aws_lws_context *context, char *dest, size_t len)
 {
 	size_t n = ((len - 1) / 2) + 1;
 	uint8_t b, *r = (uint8_t *)dest + len - n;
 
-	if (lws_get_random(context, r, n) != n)
+	if (aws_lws_get_random(context, r, n) != n)
 		return 1;
 
 	while (len >= 3) {
@@ -198,7 +198,7 @@ lws_hex_random(struct lws_context *context, char *dest, size_t len)
 #if !defined(LWS_PLAT_OPTEE)
 
 #if defined(LWS_WITH_FILE_OPS)
-int lws_open(const char *__file, int __oflag, ...)
+int aws_lws_open(const char *__file, int __oflag, ...)
 {
 	va_list ap;
 	int n;
@@ -225,7 +225,7 @@ int lws_open(const char *__file, int __oflag, ...)
 		n = open(__file, __oflag);
 	va_end(ap);
 
-	if (n != -1 && lws_plat_apply_FD_CLOEXEC(n)) {
+	if (n != -1 && aws_lws_plat_apply_FD_CLOEXEC(n)) {
 		close(n);
 
 		return -1;
@@ -237,11 +237,11 @@ int lws_open(const char *__file, int __oflag, ...)
 #endif
 
 int
-lws_pthread_self_to_tsi(struct lws_context *context)
+aws_lws_pthread_self_to_tsi(struct aws_lws_context *context)
 {
 #if LWS_MAX_SMP > 1
 	pthread_t ps = pthread_self();
-	struct lws_context_per_thread *pt = &context->pt[0];
+	struct aws_lws_context_per_thread *pt = &context->pt[0];
 	int n;
 
 	/* case that we have SMP build, but don't use it */
@@ -261,13 +261,13 @@ lws_pthread_self_to_tsi(struct lws_context *context)
 }
 
 void *
-lws_context_user(struct lws_context *context)
+aws_lws_context_user(struct aws_lws_context *context)
 {
 	return context->user_space;
 }
 
 void
-lws_explicit_bzero(void *p, size_t len)
+aws_lws_explicit_bzero(void *p, size_t len)
 {
 	volatile uint8_t *vp = p;
 
@@ -278,11 +278,11 @@ lws_explicit_bzero(void *p, size_t len)
 #if !(defined(LWS_PLAT_OPTEE) && !defined(LWS_WITH_NETWORK))
 
 /**
- * lws_now_secs() - seconds since 1970-1-1
+ * aws_lws_now_secs() - seconds since 1970-1-1
  *
  */
 unsigned long
-lws_now_secs(void)
+aws_lws_now_secs(void)
 {
 	struct timeval tv;
 
@@ -295,14 +295,14 @@ lws_now_secs(void)
 
 #if defined(LWS_WITH_SERVER)
 const char *
-lws_canonical_hostname(struct lws_context *context)
+aws_lws_canonical_hostname(struct aws_lws_context *context)
 {
 	return (const char *)context->canonical_hostname;
 }
 #endif
 
 int
-lws_get_count_threads(struct lws_context *context)
+aws_lws_get_count_threads(struct aws_lws_context *context)
 {
 	return context->count_threads;
 }
@@ -336,7 +336,7 @@ static const unsigned char e0f4[] = {
 };
 
 int
-lws_check_byte_utf8(unsigned char state, unsigned char c)
+aws_lws_check_byte_utf8(unsigned char state, unsigned char c)
 {
 	unsigned char s = state;
 
@@ -359,7 +359,7 @@ lws_check_byte_utf8(unsigned char state, unsigned char c)
 }
 
 int
-lws_check_utf8(unsigned char *state, unsigned char *buf, size_t len)
+aws_lws_check_utf8(unsigned char *state, unsigned char *buf, size_t len)
 {
 	unsigned char s = *state;
 
@@ -390,9 +390,9 @@ lws_check_utf8(unsigned char *state, unsigned char *buf, size_t len)
 
 
 char *
-lws_strdup(const char *s)
+aws_lws_strdup(const char *s)
 {
-	char *d = lws_malloc(strlen(s) + 1, "strdup");
+	char *d = aws_lws_malloc(strlen(s) + 1, "strdup");
 
 	if (d)
 		strcpy(d, s);
@@ -401,7 +401,7 @@ lws_strdup(const char *s)
 }
 
 const char *
-lws_nstrstr(const char *buf, size_t len, const char *name, size_t nl)
+aws_lws_nstrstr(const char *buf, size_t len, const char *name, size_t nl)
 {
 	const char *end = buf + len - nl + 1;
 	size_t n;
@@ -445,10 +445,10 @@ lws_nstrstr(const char *buf, size_t len, const char *name, size_t nl)
  */
 
 const char *
-lws_json_simple_find(const char *buf, size_t len, const char *name, size_t *alen)
+aws_lws_json_simple_find(const char *buf, size_t len, const char *name, size_t *alen)
 {
 	size_t nl = strlen(name);
-	const char *np = lws_nstrstr(buf, len, name, nl),
+	const char *np = aws_lws_nstrstr(buf, len, name, nl),
 		   *end = buf + len, *as;
 	int qu = 0;
 
@@ -487,17 +487,17 @@ lws_json_simple_find(const char *buf, size_t len, const char *name, size_t *alen
 		np++;
 	}
 
-	*alen = (unsigned int)lws_ptr_diff(np, as);
+	*alen = (unsigned int)aws_lws_ptr_diff(np, as);
 
 	return as;
 }
 
 int
-lws_json_simple_strcmp(const char *buf, size_t len, const char *name,
+aws_lws_json_simple_strcmp(const char *buf, size_t len, const char *name,
 		       const char *comp)
 {
 	size_t al;
-	const char *hit = lws_json_simple_find(buf, len, name, &al);
+	const char *hit = aws_lws_json_simple_find(buf, len, name, &al);
 
 	if (!hit)
 		return -1;
@@ -511,7 +511,7 @@ lws_json_simple_strcmp(const char *buf, size_t len, const char *name,
 static const char *hex = "0123456789ABCDEF";
 
 const char *
-lws_sql_purify(char *escaped, const char *string, size_t len)
+aws_lws_sql_purify(char *escaped, const char *string, size_t len)
 {
 	const char *p = string;
 	char *q = escaped;
@@ -531,7 +531,7 @@ lws_sql_purify(char *escaped, const char *string, size_t len)
 }
 
 int
-lws_sql_purify_len(const char *p)
+aws_lws_sql_purify_len(const char *p)
 {
 	int olen = 0;
 
@@ -545,7 +545,7 @@ lws_sql_purify_len(const char *p)
 }
 
 const char *
-lws_json_purify(char *escaped, const char *string, int len, int *in_used)
+aws_lws_json_purify(char *escaped, const char *string, int len, int *in_used)
 {
 	const char *p = string;
 	char *q = escaped;
@@ -599,13 +599,13 @@ lws_json_purify(char *escaped, const char *string, int len, int *in_used)
 	*q = '\0';
 
 	if (in_used)
-		*in_used = lws_ptr_diff(p, string);
+		*in_used = aws_lws_ptr_diff(p, string);
 
 	return escaped;
 }
 
 int
-lws_json_purify_len(const char *string)
+aws_lws_json_purify_len(const char *string)
 {
 	int len = 0;
 	const char *p = string;
@@ -630,7 +630,7 @@ lws_json_purify_len(const char *string)
 }
 
 void
-lws_filename_purify_inplace(char *filename)
+aws_lws_filename_purify_inplace(char *filename)
 {
 	while (*filename) {
 
@@ -652,7 +652,7 @@ lws_filename_purify_inplace(char *filename)
 }
 
 const char *
-lws_urlencode(char *escaped, const char *string, int len)
+aws_lws_urlencode(char *escaped, const char *string, int len)
 {
 	const char *p = string;
 	char *q = escaped;
@@ -682,7 +682,7 @@ lws_urlencode(char *escaped, const char *string, int len)
 }
 
 int
-lws_urldecode(char *string, const char *escaped, int len)
+aws_lws_urldecode(char *string, const char *escaped, int len)
 {
 	int state = 0, n;
 	char sum = 0;
@@ -731,10 +731,10 @@ lws_urldecode(char *string, const char *escaped, int len)
 }
 
 int
-lws_finalize_startup(struct lws_context *context)
+aws_lws_finalize_startup(struct aws_lws_context *context)
 {
-	if (lws_check_opt(context->options, LWS_SERVER_OPTION_EXPLICIT_VHOSTS))
-		if (lws_plat_drop_app_privileges(context, 1))
+	if (aws_lws_check_opt(context->options, LWS_SERVER_OPTION_EXPLICIT_VHOSTS))
+		if (aws_lws_plat_drop_app_privileges(context, 1))
 			return 1;
 
 	return 0;
@@ -742,7 +742,7 @@ lws_finalize_startup(struct lws_context *context)
 
 #if !defined(LWS_PLAT_FREERTOS)
 void
-lws_get_effective_uid_gid(struct lws_context *context, uid_t *uid, gid_t *gid)
+aws_lws_get_effective_uid_gid(struct aws_lws_context *context, uid_t *uid, gid_t *gid)
 {
 	*uid = context->uid;
 	*gid = context->gid;
@@ -750,7 +750,7 @@ lws_get_effective_uid_gid(struct lws_context *context, uid_t *uid, gid_t *gid)
 #endif
 
 int
-lws_snprintf(char *str, size_t size, const char *format, ...)
+aws_lws_snprintf(char *str, size_t size, const char *format, ...)
 {
 	va_list ap;
 	int n;
@@ -769,7 +769,7 @@ lws_snprintf(char *str, size_t size, const char *format, ...)
 }
 
 char *
-lws_strncpy(char *dest, const char *src, size_t size)
+aws_lws_strncpy(char *dest, const char *src, size_t size)
 {
 	strncpy(dest, src, size - 1);
 	dest[size - 1] = '\0';
@@ -778,7 +778,7 @@ lws_strncpy(char *dest, const char *src, size_t size)
 }
 
 int
-lws_timingsafe_bcmp(const void *a, const void *b, uint32_t len)
+aws_lws_timingsafe_bcmp(const void *a, const void *b, uint32_t len)
 {
 	const uint8_t *pa = a, *pb = b;
 	uint8_t sum = 0;
@@ -795,13 +795,13 @@ typedef enum {
 	LWS_TOKZS_QUOTED_STRING,
 	LWS_TOKZS_TOKEN,
 	LWS_TOKZS_TOKEN_POST_TERMINAL
-} lws_tokenize_state;
+} aws_lws_tokenize_state;
 
-lws_tokenize_elem
-lws_tokenize(struct lws_tokenize *ts)
+aws_lws_tokenize_elem
+aws_lws_tokenize(struct aws_lws_tokenize *ts)
 {
 	const char *rfc7230_delims = "(),/:;<=>?@[\\]{}";
-	lws_tokenize_state state = LWS_TOKZS_LEADING_WHITESPACE;
+	aws_lws_tokenize_state state = LWS_TOKZS_LEADING_WHITESPACE;
 	char c, flo = 0, d_minus = '-', d_dot = '.', d_star = '*', s_minus = '\0',
 	     s_dot = '\0', s_star = '\0', d_eq = '=', s_eq = '\0', skipping = 0;
 	signed char num = (ts->flags & LWS_TOKENIZE_F_NO_INTEGERS) ? 0 : -1;
@@ -833,7 +833,7 @@ lws_tokenize(struct lws_tokenize *ts)
 		c = *ts->start++;
 		ts->len--;
 
-		utf8 = lws_check_byte_utf8((unsigned char)utf8, (unsigned char)c);
+		utf8 = aws_lws_check_byte_utf8((unsigned char)utf8, (unsigned char)c);
 		if (utf8 < 0)
 			return LWS_TOKZE_ERR_BROKEN_UTF8;
 
@@ -1046,7 +1046,7 @@ token_or_numeric:
 
 
 int
-lws_tokenize_cstr(struct lws_tokenize *ts, char *str, size_t max)
+aws_lws_tokenize_cstr(struct aws_lws_tokenize *ts, char *str, size_t max)
 {
 	if (ts->token_len + 1 >= max)
 		return 1;
@@ -1058,7 +1058,7 @@ lws_tokenize_cstr(struct lws_tokenize *ts, char *str, size_t max)
 }
 
 void
-lws_tokenize_init(struct lws_tokenize *ts, const char *start, int flags)
+aws_lws_tokenize_init(struct aws_lws_tokenize *ts, const char *start, int flags)
 {
 	ts->start = start;
 	ts->len = 0x7fffffff;
@@ -1072,10 +1072,10 @@ typedef enum {
 	LWS_EXPS_OPEN_OR_LIT,
 	LWS_EXPS_NAME_OR_CLOSE,
 	LWS_EXPS_DRAIN,
-} lws_strexp_state;
+} aws_lws_strexp_state;
 
 void
-lws_strexp_init(lws_strexp_t *exp, void *priv, lws_strexp_expand_cb cb,
+aws_lws_strexp_init(aws_lws_strexp_t *exp, void *priv, aws_lws_strexp_expand_cb cb,
 		 char *out, size_t olen)
 {
 	memset(exp, 0, sizeof(*exp));
@@ -1087,7 +1087,7 @@ lws_strexp_init(lws_strexp_t *exp, void *priv, lws_strexp_expand_cb cb,
 }
 
 void
-lws_strexp_reset_out(lws_strexp_t *exp, char *out, size_t olen)
+aws_lws_strexp_reset_out(aws_lws_strexp_t *exp, char *out, size_t olen)
 {
 	exp->out = out;
 	exp->olen = olen;
@@ -1095,7 +1095,7 @@ lws_strexp_reset_out(lws_strexp_t *exp, char *out, size_t olen)
 }
 
 int
-lws_strexp_expand(lws_strexp_t *exp, const char *in, size_t len,
+aws_lws_strexp_expand(aws_lws_strexp_t *exp, const char *in, size_t len,
 		  size_t *pused_in, size_t *pused_out)
 {
 	size_t used = 0;
@@ -1179,7 +1179,7 @@ drain:
 }
 
 int
-lws_strcmp_wildcard(const char *wildcard, size_t wlen, const char *check,
+aws_lws_strcmp_wildcard(const char *wildcard, size_t wlen, const char *check,
 		    size_t clen)
 {
 	const char *match[3], *wc[3], *wc_end = wildcard + wlen,
@@ -1222,7 +1222,7 @@ lws_strcmp_wildcard(const char *wildcard, size_t wlen, const char *check,
 			 */
 
 			if (sp == LWS_ARRAY_SIZE(match)) {
-				lwsl_err("%s: exceeds * stack\n", __func__);
+				aws_lwsl_err("%s: exceeds * stack\n", __func__);
 				return 1; /* we can't deal with it */
 			}
 
@@ -1264,7 +1264,7 @@ lws_strcmp_wildcard(const char *wildcard, size_t wlen, const char *check,
 #if LWS_MAX_SMP > 1
 
 void
-lws_mutex_refcount_init(struct lws_mutex_refcount *mr)
+aws_lws_mutex_refcount_init(struct aws_lws_mutex_refcount *mr)
 {
 	pthread_mutex_init(&mr->lock, NULL);
 	mr->last_lock_reason = NULL;
@@ -1280,13 +1280,13 @@ lws_mutex_refcount_init(struct lws_mutex_refcount *mr)
 }
 
 void
-lws_mutex_refcount_destroy(struct lws_mutex_refcount *mr)
+aws_lws_mutex_refcount_destroy(struct aws_lws_mutex_refcount *mr)
 {
 	pthread_mutex_destroy(&mr->lock);
 }
 
 void
-lws_mutex_refcount_lock(struct lws_mutex_refcount *mr, const char *reason)
+aws_lws_mutex_refcount_lock(struct aws_lws_mutex_refcount *mr, const char *reason)
 {
 	/* if true, this sequence is atomic because our thread has the lock
 	 *
@@ -1316,11 +1316,11 @@ lws_mutex_refcount_lock(struct lws_mutex_refcount *mr, const char *reason)
 	mr->last_lock_reason = reason;
 	mr->lock_owner = pthread_self();
 	mr->lock_depth = 1;
-	//lwsl_notice("tid %d: lock %s\n", mr->tid, reason);
+	//aws_lwsl_notice("tid %d: lock %s\n", mr->tid, reason);
 }
 
 void
-lws_mutex_refcount_unlock(struct lws_mutex_refcount *mr)
+aws_lws_mutex_refcount_unlock(struct aws_lws_mutex_refcount *mr)
 {
 	if (--mr->lock_depth)
 		/* atomic because only thread that has the lock can unlock */
@@ -1334,12 +1334,12 @@ lws_mutex_refcount_unlock(struct lws_mutex_refcount *mr)
 #else
 	mr->lock_owner = 0;
 #endif
-	// lwsl_notice("tid %d: unlock %s\n", mr->tid, mr->last_lock_reason);
+	// aws_lwsl_notice("tid %d: unlock %s\n", mr->tid, mr->last_lock_reason);
 	pthread_mutex_unlock(&mr->lock);
 }
 
 void
-lws_mutex_refcount_assert_held(struct lws_mutex_refcount *mr)
+aws_lws_mutex_refcount_assert_held(struct aws_lws_mutex_refcount *mr)
 {
 #ifdef __PTW32_H
 	/* If we use implementation of PThreads for Win that is
@@ -1354,7 +1354,7 @@ lws_mutex_refcount_assert_held(struct lws_mutex_refcount *mr)
 
 
 const char *
-lws_cmdline_option(int argc, const char **argv, const char *val)
+aws_lws_cmdline_option(int argc, const char **argv, const char *val)
 {
 	size_t n = strlen(val);
 	int c = argc;
@@ -1394,23 +1394,23 @@ enum opts {
 
 #if !defined(LWS_PLAT_FREERTOS)
 static void
-lws_sigterm_catch(int sig)
+aws_lws_sigterm_catch(int sig)
 {
 }
 #endif
 
 void
-lws_cmdline_option_handle_builtin(int argc, const char **argv,
-				  struct lws_context_creation_info *info)
+aws_lws_cmdline_option_handle_builtin(int argc, const char **argv,
+				  struct aws_lws_context_creation_info *info)
 {
 	const char *p;
 	int n, m, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	uint64_t seed = (uint64_t)lws_now_usecs();
+	uint64_t seed = (uint64_t)aws_lws_now_usecs();
 #endif
 
 	for (n = 0; n < (int)LWS_ARRAY_SIZE(builtins); n++) {
-		p = lws_cmdline_option(argc, argv, builtins[n]);
+		p = aws_lws_cmdline_option(argc, argv, builtins[n]);
 		if (!p)
 			continue;
 
@@ -1423,9 +1423,9 @@ lws_cmdline_option_handle_builtin(int argc, const char **argv,
 
 		case OPT_FAULTINJECTION:
 #if !defined(LWS_WITH_SYS_FAULT_INJECTION)
-			lwsl_err("%s: FAULT_INJECTION not built\n", __func__);
+			aws_lwsl_err("%s: FAULT_INJECTION not built\n", __func__);
 #endif
-			lws_fi_deserialize(&info->fic, p);
+			aws_lws_fi_deserialize(&info->fic, p);
 			break;
 
 		case OPT_FAULT_SEED:
@@ -1436,36 +1436,36 @@ lws_cmdline_option_handle_builtin(int argc, const char **argv,
 
 		case OPT_IGNORE_SIGTERM:
 #if !defined(LWS_PLAT_FREERTOS)
-			signal(SIGTERM, lws_sigterm_catch);
+			signal(SIGTERM, aws_lws_sigterm_catch);
 #endif
 			break;
 		}
 	}
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	lws_xos_init(&info->fic.xos, seed);
+	aws_lws_xos_init(&info->fic.xos, seed);
 #endif
-	lws_set_log_level(logs, NULL);
+	aws_lws_set_log_level(logs, NULL);
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
 	if (info->fic.fi_owner.count)
-		lwsl_notice("%s: Fault Injection seed %llu\n", __func__,
+		aws_lwsl_notice("%s: Fault Injection seed %llu\n", __func__,
 				(unsigned long long)seed);
 #endif
 }
 
 
-const lws_humanize_unit_t humanize_schema_si[] = {
+const aws_lws_humanize_unit_t humanize_schema_si[] = {
 	{ "Pi", LWS_PI }, { "Ti", LWS_TI }, { "Gi", LWS_GI },
 	{ "Mi", LWS_MI }, { "Ki", LWS_KI }, { "", 1 },
 	{ NULL, 0 }
 };
-const lws_humanize_unit_t humanize_schema_si_bytes[] = {
+const aws_lws_humanize_unit_t humanize_schema_si_bytes[] = {
 	{ "PiB", LWS_PI }, { "TiB", LWS_TI }, { "GiB", LWS_GI },
 	{ "MiB", LWS_MI }, { "KiB", LWS_KI }, { "B", 1 },
 	{ NULL, 0 }
 };
-const lws_humanize_unit_t humanize_schema_us[] = {
+const aws_lws_humanize_unit_t humanize_schema_us[] = {
 	{ "y",  (uint64_t)365 * 24 * 3600 * LWS_US_PER_SEC },
 	{ "d",  (uint64_t)24 * 3600 * LWS_US_PER_SEC },
 	{ "hr", (uint64_t)3600 * LWS_US_PER_SEC },
@@ -1503,11 +1503,11 @@ decim(char *r, uint64_t v, char chars, char leading)
 
 	*r = '\0';
 
-	return lws_ptr_diff(r, ro);
+	return aws_lws_ptr_diff(r, ro);
 }
 
 int
-lws_humanize(char *p, size_t len, uint64_t v, const lws_humanize_unit_t *schema)
+aws_lws_humanize(char *p, size_t len, uint64_t v, const aws_lws_humanize_unit_t *schema)
 {
 	char *obuf = p, *end = p + len;
 
@@ -1515,9 +1515,9 @@ lws_humanize(char *p, size_t len, uint64_t v, const lws_humanize_unit_t *schema)
 		if (v >= schema->factor || schema->factor == 1) {
 			if (schema->factor == 1) {
 				p += decim(p, v, 4, 0);
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 						    "%s", schema->name);
-				return lws_ptr_diff(p, obuf);
+				return aws_lws_ptr_diff(p, obuf);
 			}
 
 			p += decim(p, v / schema->factor, 4, 0);
@@ -1525,9 +1525,9 @@ lws_humanize(char *p, size_t len, uint64_t v, const lws_humanize_unit_t *schema)
 			p += decim(p, (v % schema->factor) /
 					(schema->factor / 1000), 3, 1);
 
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					    "%s", schema->name);
-			return lws_ptr_diff(p, obuf);
+			return aws_lws_ptr_diff(p, obuf);
 		}
 		schema++;
 	} while (schema->name);

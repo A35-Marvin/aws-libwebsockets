@@ -21,7 +21,7 @@
  * that is unrelated to (shorter than) the lifetime of the network connection.
  */
 struct pss {
-	struct lws_spa *spa;
+	struct aws_lws_spa *spa;
 };
 
 static int interrupted, use303;
@@ -37,7 +37,7 @@ enum enum_param_names {
 };
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;
@@ -68,7 +68,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		/* create the POST argument parser if not already existing */
 
 		if (!pss->spa) {
-			pss->spa = lws_spa_create(wsi, param_names,
+			pss->spa = aws_lws_spa_create(wsi, param_names,
 					LWS_ARRAY_SIZE(param_names), 1024,
 					NULL, NULL); /* no file upload */
 			if (!pss->spa)
@@ -77,12 +77,12 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 		/* let it parse the POST data */
 
-		if (lws_spa_process(pss->spa, in, (int)len))
+		if (aws_lws_spa_process(pss->spa, in, (int)len))
 			return -1;
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
-		if (pss->spa && lws_spa_destroy(pss->spa))
+		if (pss->spa && aws_lws_spa_destroy(pss->spa))
 			return -1;
 		break;
 
@@ -90,20 +90,20 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 		/* inform the spa no more payload data coming */
 
-		lwsl_user("LWS_CALLBACK_HTTP_BODY_COMPLETION\n");
-		lws_spa_finalize(pss->spa);
+		aws_lwsl_user("LWS_CALLBACK_HTTP_BODY_COMPLETION\n");
+		aws_lws_spa_finalize(pss->spa);
 
 		/* we just dump the decoded things to the log */
 
 		if (pss->spa)
 			for (n = 0; n < (int)LWS_ARRAY_SIZE(param_names); n++) {
-				if (!lws_spa_get_string(pss->spa, n))
-					lwsl_user("%s: undefined\n", param_names[n]);
+				if (!aws_lws_spa_get_string(pss->spa, n))
+					aws_lwsl_user("%s: undefined\n", param_names[n]);
 				else
-					lwsl_user("%s: (len %d) '%s'\n",
+					aws_lwsl_user("%s: (len %d) '%s'\n",
 					    param_names[n],
-					    lws_spa_get_length(pss->spa, n),
-					    lws_spa_get_string(pss->spa, n));
+					    aws_lws_spa_get_length(pss->spa, n),
+					    aws_lws_spa_get_string(pss->spa, n));
 			}
 
 		/*
@@ -111,7 +111,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * have generated a dynamic html page here instead.
 		 */
 
-		if (lws_http_redirect(wsi, use303 ? HTTP_STATUS_SEE_OTHER :
+		if (aws_lws_http_redirect(wsi, use303 ? HTTP_STATUS_SEE_OTHER :
 					   HTTP_STATUS_MOVED_PERMANENTLY,
 				      (unsigned char *)"after-form1.html",
 				      16, &p, end) < 0)
@@ -121,7 +121,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	case LWS_CALLBACK_HTTP_DROP_PROTOCOL:
 		/* called when our wsi user_space is going to be destroyed */
 		if (pss->spa) {
-			lws_spa_destroy(pss->spa);
+			aws_lws_spa_destroy(pss->spa);
 			pss->spa = NULL;
 		}
 		break;
@@ -130,17 +130,17 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	{ "http", callback_http, sizeof(struct pss), 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
 
 /* default mount serves the URL space from ./mount-origin */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */	       NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */		"./mount-origin",	/* serve from dir */
@@ -167,8 +167,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -180,11 +180,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server POST | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server POST | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -193,31 +193,31 @@ int main(int argc, const char **argv)
 	info.options =
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 #if defined(LWS_WITH_TLS)
-	if (lws_cmdline_option(argc, argv, "-s")) {
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 		info.ssl_cert_filepath = "localhost-100y.cert";
 		info.ssl_private_key_filepath = "localhost-100y.key";
 	}
 #endif
 
-	if ((p = lws_cmdline_option(argc, argv, "--port")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--port")))
 		info.port = atoi(p);
 
-	if (lws_cmdline_option(argc, argv, "--303")) {
-		lwsl_user("%s: using 303 redirect\n", __func__);
+	if (aws_lws_cmdline_option(argc, argv, "--303")) {
+		aws_lwsl_user("%s: using 303 redirect\n", __func__);
 		use303 = 1;
 	}
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

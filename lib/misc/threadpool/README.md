@@ -47,7 +47,7 @@ responsibility to free the user pointer on destruction when the task is created.
 
 Once created, although tasks may run asynchronously, the task itself does not
 get destroyed on completion but added to a "done queue".  Only when the lws
-service thread context queries the task state with `lws_threadpool_task_status()`
+service thread context queries the task state with `aws_lws_threadpool_task_status()`
 may the task be reaped and memory freed.
 
 This is analogous to unix processes and `wait()`.
@@ -63,8 +63,8 @@ The api is declared at https://libwebsockets.org/git/libwebsockets/tree/include/
 #### Threadpool creation / destruction
 
 The threadpool should be created at program or vhost init using
-`lws_threadpool_create()` and destroyed on exit or vhost destruction using
-first `lws_threadpool_finish()` and then `lws_threadpool_destroy()`.
+`aws_lws_threadpool_create()` and destroyed on exit or vhost destruction using
+first `aws_lws_threadpool_finish()` and then `aws_lws_threadpool_destroy()`.
 
 Threadpools should be named, varargs are provided on the create function
 to facilite eg, naming the threadpool by the vhost it's associated with.
@@ -78,7 +78,7 @@ max_queue_depth|The maximum number of tasks allowed to wait for a place in the p
 
 #### Task creation / destruction
 
-Tasks are created and queued using `lws_threadpool_enqueue()`, this takes an
+Tasks are created and queued using `aws_lws_threadpool_enqueue()`, this takes an
 args struct with the following members
 
 Member|function
@@ -122,7 +122,7 @@ The task function may return one of
 Return|Meaning
 ---|---
 LWS_TP_RETURN_CHECKING_IN|Still wants to run, but confirming nobody asked him to stop.  Will be called again immediately with `LWS_TP_STATUS_RUNNING` or `LWS_TP_STATUS_STOPPING`
-LWS_TP_RETURN_SYNC|Task wants to trigger a WRITABLE callback and block until lws service thread restarts it with `lws_threadpool_task_sync()`
+LWS_TP_RETURN_SYNC|Task wants to trigger a WRITABLE callback and block until lws service thread restarts it with `aws_lws_threadpool_task_sync()`
 LWS_TP_RETURN_FINISHED|Task has finished, successfully as far as it goes
 LWS_TP_RETURN_STOPPED|Task has finished, aborting in response to a request to stop
 
@@ -138,18 +138,18 @@ the task.  The task can then be monitored separately by using the token.
 The task can choose to "SYNC" with the lws service thread, in other words
 cause a WRITABLE callback on the associated wsi in the lws service thread
 context and block itself until it hears back from there via
-`lws_threadpool_task_sync()` to resume the task.
+`aws_lws_threadpool_task_sync()` to resume the task.
 
 This is typically used when, eg, the task has filled its buffer, or ringbuffer,
 and needs to pause operations until what's done has been sent and some buffer
 space is open again.
 
 In the WRITABLE callback, in lws service thread context, the buffer can be
-sent with `lws_write()` and then `lws_threadpool_task_sync()` to allow the task
+sent with `aws_lws_write()` and then `aws_lws_threadpool_task_sync()` to allow the task
 to fill another buffer and continue that way.
 
 If the WRITABLE callback determines that the task should stop, it can just call
-`lws_threadpool_task_sync()` with the second argument as 1, to force the task
+`aws_lws_threadpool_task_sync()` with the second argument as 1, to force the task
 to stop immediately after it resumes.
 
 #### The cleanup function

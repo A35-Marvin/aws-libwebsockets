@@ -136,18 +136,18 @@ struct lexico {
 };
 
 static int
-_lws_jwk_set_el_jwk_b64(struct lws_gencrypto_keyelem *e, char *in, int len)
+_lws_jwk_set_el_jwk_b64(struct aws_lws_gencrypto_keyelem *e, char *in, int len)
 {
-	size_t dec_size = (unsigned int)lws_base64_size(len);
+	size_t dec_size = (unsigned int)aws_lws_base64_size(len);
 	int n;
 
-	e->buf = lws_malloc(dec_size, "jwk");
+	e->buf = aws_lws_malloc(dec_size, "jwk");
 	if (!e->buf)
 		return -1;
 
 	/* same decoder accepts both url or original styles */
 
-	n = lws_b64_decode_string_len(in, len, (char *)e->buf, (int)dec_size - 1);
+	n = aws_lws_b64_decode_string_len(in, len, (char *)e->buf, (int)dec_size - 1);
 	if (n < 0)
 		return -1;
 	e->len = (uint32_t)n;
@@ -156,18 +156,18 @@ _lws_jwk_set_el_jwk_b64(struct lws_gencrypto_keyelem *e, char *in, int len)
 }
 
 static int
-_lws_jwk_set_el_jwk_b64u(struct lws_gencrypto_keyelem *e, char *in, int len)
+_lws_jwk_set_el_jwk_b64u(struct aws_lws_gencrypto_keyelem *e, char *in, int len)
 {
-	size_t dec_size = (size_t)lws_base64_size(len);
+	size_t dec_size = (size_t)aws_lws_base64_size(len);
 	int n;
 
-	e->buf = lws_malloc(dec_size, "jwk");
+	e->buf = aws_lws_malloc(dec_size, "jwk");
 	if (!e->buf)
 		return -1;
 
 	/* same decoder accepts both url or original styles */
 
-	n = lws_b64_decode_string_len(in, len, (char *)e->buf, (int)dec_size - 1);
+	n = aws_lws_b64_decode_string_len(in, len, (char *)e->buf, (int)dec_size - 1);
 	if (n < 0)
 		return -1;
 	e->len = (uint32_t)n;
@@ -179,8 +179,8 @@ _lws_jwk_set_el_jwk_b64u(struct lws_gencrypto_keyelem *e, char *in, int len)
 signed char
 cb_jwk(struct lejp_ctx *ctx, char reason)
 {
-	struct lws_jwk_parse_state *jps = (struct lws_jwk_parse_state *)ctx->user;
-	struct lws_jwk *jwk = jps->jwk;
+	struct aws_lws_jwk_parse_state *jps = (struct aws_lws_jwk_parse_state *)ctx->user;
+	struct aws_lws_jwk *jwk = jps->jwk;
 	unsigned int idx, n;
 	unsigned short poss;
 	char dotstar[64];
@@ -204,14 +204,14 @@ cb_jwk(struct lejp_ctx *ctx, char reason)
 		if (jps->per_key_cb && jps->possible) {
 			if (jps->per_key_cb(jps->jwk, jps->user)) {
 
-				lwsl_notice("%s: user cb halts import\n",
+				aws_lwsl_notice("%s: user cb halts import\n",
 					    __func__);
 
 				return -2;
 			}
 
 			/* clear it down */
-			lws_jwk_destroy(jps->jwk);
+			aws_lws_jwk_destroy(jps->jwk);
 			jps->possible = 0;
 		}
 	}
@@ -237,7 +237,7 @@ cb_jwk(struct lejp_ctx *ctx, char reason)
 			     !jwk->meta[tok_map[n] & 0xff].buf) ||
 			    ((tok_map[n] & (F_M | F_META)) == F_M &&
 			     !jwk->e[tok_map[n] & 0xff].buf))) {
-				lwsl_notice("%s: missing %s\n", __func__,
+				aws_lwsl_notice("%s: missing %s\n", __func__,
 					    jwk_tok[n]);
 					return -3;
 				}
@@ -264,7 +264,7 @@ cb_jwk(struct lejp_ctx *ctx, char reason)
 		       jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].buf &&
 		       jwk->e[LWS_GENCRYPTO_RSA_KEYEL_Q].buf))
 		      ) {
-			lwsl_notice("%s: RSA requires D, P and Q for private\n",
+			aws_lwsl_notice("%s: RSA requires D, P and Q for private\n",
 				    __func__);
 			return -3;
 		}
@@ -281,7 +281,7 @@ cb_jwk(struct lejp_ctx *ctx, char reason)
 		       jwk->e[LWS_GENCRYPTO_RSA_KEYEL_DQ].buf &&
 		       jwk->e[LWS_GENCRYPTO_RSA_KEYEL_QI].buf))
 		      ) {
-			lwsl_notice("%s: RSA DP, DQ, QI must all appear "
+			aws_lwsl_notice("%s: RSA DP, DQ, QI must all appear "
 				    "or none\n", __func__);
 			return -3;
 		}
@@ -293,7 +293,7 @@ cb_jwk(struct lejp_ctx *ctx, char reason)
 		if (jwk->kty == LWS_GENCRYPTO_KTY_RSA &&
 		    !jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf &&
 		     jwk->e[LWS_GENCRYPTO_RSA_KEYEL_DQ].buf) {
-			lwsl_notice("%s: RSA DP, DQ, QI can appear only with "
+			aws_lwsl_notice("%s: RSA DP, DQ, QI can appear only with "
 				    "private key\n", __func__);
 			return -3;
 		}
@@ -344,8 +344,8 @@ cb_jwk(struct lejp_ctx *ctx, char reason)
 			jps->possible = F_EC;
 			goto cont;
 		}
-		lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
-		lwsl_err("%s: Unknown KTY '%s'\n", __func__, dotstar);
+		aws_lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
+		aws_lwsl_err("%s: Unknown KTY '%s'\n", __func__, dotstar);
 		return -1;
 
 	default:
@@ -382,7 +382,7 @@ cont:
 
 			if (jwk->e[idx & 0x7f].len >
 					LWS_JWE_LIMIT_KEY_ELEMENT_BYTES) {
-				lwsl_notice("%s: oversize keydata\n", __func__);
+				aws_lwsl_notice("%s: oversize keydata\n", __func__);
 				goto bail;
 			}
 
@@ -407,23 +407,23 @@ cont:
 	return 0;
 
 elements_mismatch:
-	lwsl_err("%s: jwk elements mismatch\n", __func__);
+	aws_lwsl_err("%s: jwk elements mismatch\n", __func__);
 
 bail:
-	lwsl_err("%s: element failed\n", __func__);
+	aws_lwsl_err("%s: element failed\n", __func__);
 
 	return -1;
 }
 
 int
-lws_jwk_import(struct lws_jwk *jwk, lws_jwk_key_import_callback cb, void *user,
+aws_lws_jwk_import(struct aws_lws_jwk *jwk, aws_lws_jwk_key_import_callback cb, void *user,
 	       const char *in, size_t len)
 {
 	struct lejp_ctx jctx;
-	struct lws_jwk_parse_state jps;
+	struct aws_lws_jwk_parse_state jps;
 	int m;
 
-	lws_jwk_init_jps(&jps, jwk, cb, user);
+	aws_lws_jwk_init_jps(&jps, jwk, cb, user);
 
 	lejp_construct(&jctx, cb_jwk, &jps, cb ? jwk_outer_tok: jwk_tok,
 		       LWS_ARRAY_SIZE(jwk_tok));
@@ -432,15 +432,15 @@ lws_jwk_import(struct lws_jwk *jwk, lws_jwk_key_import_callback cb, void *user,
 	lejp_destruct(&jctx);
 
 	if (m < 0) {
-		lwsl_notice("%s: parse got %d\n", __func__, m);
-		lws_jwk_destroy(jwk);
+		aws_lwsl_notice("%s: parse got %d\n", __func__, m);
+		aws_lws_jwk_destroy(jwk);
 		return -1;
 	}
 
 	switch (jwk->kty) {
 	case LWS_GENCRYPTO_KTY_UNKNOWN:
-		lwsl_notice("%s: missing or unknown kty\n", __func__);
-		lws_jwk_destroy(jwk);
+		aws_lwsl_notice("%s: missing or unknown kty\n", __func__);
+		aws_lws_jwk_destroy(jwk);
 		return -1;
 	default:
 		break;
@@ -451,7 +451,7 @@ lws_jwk_import(struct lws_jwk *jwk, lws_jwk_key_import_callback cb, void *user,
 
 
 int
-lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len)
+aws_lws_jwk_export(struct aws_lws_jwk *jwk, int flags, char *p, int *len)
 {
 	char *start = p, *end = &p[*len - 1];
 	int n, m, limit, first = 1, asym = 0;
@@ -464,7 +464,7 @@ lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len)
 	 * ie, meta and key data elements appear interleaved in name alpha order
 	 */
 
-	p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "{");
+	p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "{");
 
 	switch (jwk->kty) {
 	case LWS_GENCRYPTO_KTY_OCT:
@@ -498,7 +498,7 @@ lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len)
 				if (!first)
 					*p++ = ',';
 				first = 0;
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "\"%s\":\"%s\"",
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "\"%s\":\"%s\"",
 						  l->name, kty_names[jwk->kty]);
 				break;
 			case JWK_META_KEY_OPS:
@@ -508,7 +508,7 @@ lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len)
 				q = (const char *)jwk->meta[l->idx].buf;
 				q_end = q + jwk->meta[l->idx].len;
 
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 						  "\"%s\":[", l->name);
 				/*
 				 * For the public version, usages that
@@ -530,7 +530,7 @@ lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len)
 						if (!f)
 							*p++ = ',';
 						f = 0;
-						p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+						p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 							"\"%s\"", tok);
 					}
 					q++;
@@ -548,12 +548,12 @@ lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len)
 				if (!first)
 					*p++ = ',';
 				first = 0;
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "\"%s\":\"",
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "\"%s\":\"",
 						  l->name);
-				lws_strnncpy(p, (const char *)jwk->meta[l->idx].buf,
+				aws_lws_strnncpy(p, (const char *)jwk->meta[l->idx].buf,
 					     jwk->meta[l->idx].len, end - p);
 				p += strlen(p);
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "\"");
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "\"");
 				break;
 			}
 		}
@@ -564,86 +564,86 @@ lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len)
 				*p++ = ',';
 			first = 0;
 
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "\"%s\":\"", l->name);
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "\"%s\":\"", l->name);
 
 			if (jwk->kty == LWS_GENCRYPTO_KTY_EC &&
 			    l->idx == (int)LWS_GENCRYPTO_EC_KEYEL_CRV) {
-				lws_strnncpy(p,
+				aws_lws_strnncpy(p,
 					     (const char *)jwk->e[l->idx].buf,
 					     jwk->e[l->idx].len, end - p);
 				m = (int)strlen(p);
 			} else
-				m = lws_jws_base64_enc(
+				m = aws_lws_jws_base64_enc(
 					(const char *)jwk->e[l->idx].buf,
-					jwk->e[l->idx].len, p, lws_ptr_diff_size_t(end, p) - 4);
+					jwk->e[l->idx].len, p, aws_lws_ptr_diff_size_t(end, p) - 4);
 			if (m < 0) {
-				lwsl_notice("%s: enc failed\n", __func__);
+				aws_lwsl_notice("%s: enc failed\n", __func__);
 				return -1;
 			}
 			p += m;
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "\"");
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "\"");
 		}
 
 		l++;
 	}
 
-	p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+	p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 			  (flags & LWSJWKF_EXPORT_NOCRLF) ? "}" : "}\n");
 
-	*len -= lws_ptr_diff(p, start);
+	*len -= aws_lws_ptr_diff(p, start);
 
-	return lws_ptr_diff(p, start);
+	return aws_lws_ptr_diff(p, start);
 }
 
 int
-lws_jwk_load(struct lws_jwk *jwk, const char *filename,
-	     lws_jwk_key_import_callback cb, void *user)
+aws_lws_jwk_load(struct aws_lws_jwk *jwk, const char *filename,
+	     aws_lws_jwk_key_import_callback cb, void *user)
 {
 	unsigned int buflen = 4096;
-	char *buf = lws_malloc(buflen, "jwk-load");
+	char *buf = aws_lws_malloc(buflen, "jwk-load");
 	int n;
 
 	if (!buf)
 		return -1;
 
-	n = lws_plat_read_file(filename, buf, buflen);
+	n = aws_lws_plat_read_file(filename, buf, buflen);
 	if (n < 0)
 		goto bail;
 
-	n = lws_jwk_import(jwk, cb, user, buf, (unsigned int)n);
-	lws_free(buf);
+	n = aws_lws_jwk_import(jwk, cb, user, buf, (unsigned int)n);
+	aws_lws_free(buf);
 
 	return n;
 bail:
-	lws_free(buf);
+	aws_lws_free(buf);
 
 	return -1;
 }
 
 int
-lws_jwk_save(struct lws_jwk *jwk, const char *filename)
+aws_lws_jwk_save(struct aws_lws_jwk *jwk, const char *filename)
 {
 	int buflen = 4096;
-	char *buf = lws_malloc((unsigned int)buflen, "jwk-save");
+	char *buf = aws_lws_malloc((unsigned int)buflen, "jwk-save");
 	int n, m;
 
 	if (!buf)
 		return -1;
 
-	n = lws_jwk_export(jwk, LWSJWKF_EXPORT_PRIVATE, buf, &buflen);
+	n = aws_lws_jwk_export(jwk, LWSJWKF_EXPORT_PRIVATE, buf, &buflen);
 	if (n < 0)
 		goto bail;
 
-	m = lws_plat_write_file(filename, buf, (size_t)n);
+	m = aws_lws_plat_write_file(filename, buf, (size_t)n);
 
-	lws_free(buf);
+	aws_lws_free(buf);
 	if (m)
 		return -1;
 
 	return 0;
 
 bail:
-	lws_free(buf);
+	aws_lws_free(buf);
 
 	return -1;
 }

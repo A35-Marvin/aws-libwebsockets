@@ -72,23 +72,23 @@ enum pending_timeout {
 	PENDING_TIMEOUT_USER_REASON_BASE			= 1000
 };
 
-#define lws_time_in_microseconds lws_now_usecs
+#define aws_lws_time_in_microseconds aws_lws_now_usecs
 
 #define LWS_TO_KILL_ASYNC -1
-/**< If LWS_TO_KILL_ASYNC is given as the timeout sec in a lws_set_timeout()
+/**< If LWS_TO_KILL_ASYNC is given as the timeout sec in a aws_lws_set_timeout()
  * call, then the connection is marked to be killed at the next timeout
  * check.  This is how you should force-close the wsi being serviced if
  * you are doing it outside the callback (where you should close by nonzero
  * return).
  */
 #define LWS_TO_KILL_SYNC -2
-/**< If LWS_TO_KILL_SYNC is given as the timeout sec in a lws_set_timeout()
+/**< If LWS_TO_KILL_SYNC is given as the timeout sec in a aws_lws_set_timeout()
  * call, then the connection is closed before returning (which may delete
  * the wsi).  This should only be used where the wsi being closed is not the
  * wsi currently being serviced.
  */
 /**
- * lws_set_timeout() - marks the wsi as subject to a timeout some seconds hence
+ * aws_lws_set_timeout() - marks the wsi as subject to a timeout some seconds hence
  *
  * \param wsi:	Websocket connection instance
  * \param reason:	timeout reason
@@ -98,30 +98,30 @@ enum pending_timeout {
  *		wsi is not the one currently being serviced.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs);
+aws_lws_set_timeout(struct lws *wsi, enum pending_timeout reason, int secs);
 
 /**
- * lws_set_timeout_us() - marks the wsi as subject to a timeout some us hence
+ * aws_lws_set_timeout_us() - marks the wsi as subject to a timeout some us hence
  *
  * \param wsi:	Websocket connection instance
  * \param reason:	timeout reason
  * \param us:	0 removes the timeout, otherwise number of us to wait
  *
- * Higher-resolution version of lws_set_timeout().  Actual resolution depends
+ * Higher-resolution version of aws_lws_set_timeout().  Actual resolution depends
  * on platform and load, usually ms.
  */
 void
-lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, lws_usec_t us);
+aws_lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, aws_lws_usec_t us);
 
 /* helper for clearer LWS_TO_KILL_ASYNC / LWS_TO_KILL_SYNC usage */
-#define lws_wsi_close(w, to_kill) lws_set_timeout(w, 1, to_kill)
+#define aws_lws_wsi_close(w, to_kill) aws_lws_set_timeout(w, 1, to_kill)
 
 
-#define LWS_SET_TIMER_USEC_CANCEL ((lws_usec_t)-1ll)
-#define LWS_USEC_PER_SEC ((lws_usec_t)1000000)
+#define LWS_SET_TIMER_USEC_CANCEL ((aws_lws_usec_t)-1ll)
+#define LWS_USEC_PER_SEC ((aws_lws_usec_t)1000000)
 
 /**
- * lws_set_timer_usecs() - schedules a callback on the wsi in the future
+ * aws_lws_set_timer_usecs() - schedules a callback on the wsi in the future
  *
  * \param wsi:	Websocket connection instance
  * \param usecs:  LWS_SET_TIMER_USEC_CANCEL removes any existing scheduled
@@ -137,10 +137,10 @@ lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, lws_usec_t us);
  *
  * After the deadline expires, the wsi will get a callback of type
  * LWS_CALLBACK_TIMER and the timer is exhausted.  The deadline may be
- * continuously deferred by further calls to lws_set_timer_usecs() with a later
- * deadline, or cancelled by lws_set_timer_usecs(wsi, -1).
+ * continuously deferred by further calls to aws_lws_set_timer_usecs() with a later
+ * deadline, or cancelled by aws_lws_set_timer_usecs(wsi, -1).
  *
- * If the timer should repeat, lws_set_timer_usecs() must be called again from
+ * If the timer should repeat, aws_lws_set_timer_usecs() must be called again from
  * LWS_CALLBACK_TIMER.
  *
  * Accuracy depends on the platform and the load on the event loop or system...
@@ -148,18 +148,18 @@ lws_set_timeout_us(struct lws *wsi, enum pending_timeout reason, lws_usec_t us);
  * period.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_set_timer_usecs(struct lws *wsi, lws_usec_t usecs);
+aws_lws_set_timer_usecs(struct lws *wsi, aws_lws_usec_t usecs);
 
-struct lws_sorted_usec_list;
+struct aws_lws_sorted_usec_list;
 
-typedef void (*sul_cb_t)(struct lws_sorted_usec_list *sul);
+typedef void (*sul_cb_t)(struct aws_lws_sorted_usec_list *sul);
 
-typedef struct lws_sorted_usec_list {
-	struct lws_dll2 list;	/* simplify the code by keeping this at start */
-	lws_usec_t	us;
+typedef struct aws_lws_sorted_usec_list {
+	struct aws_lws_dll2 list;	/* simplify the code by keeping this at start */
+	aws_lws_usec_t	us;
 	sul_cb_t	cb;
 	uint32_t	latency_us;	/* us it may safely be delayed */
-} lws_sorted_usec_list_t;
+} aws_lws_sorted_usec_list_t;
 
 /*
  * There are multiple sul owners to allow accounting for, a) events that must
@@ -171,9 +171,9 @@ typedef struct lws_sorted_usec_list {
 #define LWSSULLI_WAKE_IF_SUSPENDED		1
 
 /*
- * lws_sul2_schedule() - schedule a callback
+ * aws_lws_sul2_schedule() - schedule a callback
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  * \param tsi: the thread service index (usually 0)
  * \param flags: LWSSULLI_...
  * \param sul: pointer to the sul element
@@ -197,11 +197,11 @@ typedef struct lws_sorted_usec_list {
  * event to a different owner (ie, wake or miss on suspend).
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_sul2_schedule(struct lws_context *context, int tsi, int flags,
-		  lws_sorted_usec_list_t *sul);
+aws_lws_sul2_schedule(struct aws_lws_context *context, int tsi, int flags,
+		  aws_lws_sorted_usec_list_t *sul);
 
 /*
- * lws_sul_cancel() - cancel scheduled callback
+ * aws_lws_sul_cancel() - cancel scheduled callback
  *
  * \param sul: pointer to the sul element
  *
@@ -209,40 +209,40 @@ lws_sul2_schedule(struct lws_context *context, int tsi, int flags,
  * If not scheduled, it's a NOP.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_sul_cancel(lws_sorted_usec_list_t *sul);
+aws_lws_sul_cancel(aws_lws_sorted_usec_list_t *sul);
 
 /*
- * lws_sul_earliest_wakeable_event() - get earliest wake-from-suspend event
+ * aws_lws_sul_earliest_wakeable_event() - get earliest wake-from-suspend event
  *
  * \param ctx: the lws context
- * \param pearliest: pointer to lws_usec_t to take the result
+ * \param pearliest: pointer to aws_lws_usec_t to take the result
  *
  * Either returns 1 if no pending event, or 0 and sets *pearliest to the
  * MONOTONIC time of the current earliest next expected event.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_sul_earliest_wakeable_event(struct lws_context *ctx, lws_usec_t *pearliest);
+aws_lws_sul_earliest_wakeable_event(struct aws_lws_context *ctx, aws_lws_usec_t *pearliest);
 
 /*
  * For backwards compatibility
  *
  * If us is LWS_SET_TIMER_USEC_CANCEL, the sul is removed from the scheduler.
- * New code can use lws_sul_cancel()
+ * New code can use aws_lws_sul_cancel()
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_sul_schedule(struct lws_context *ctx, int tsi, lws_sorted_usec_list_t *sul,
-		 sul_cb_t _cb, lws_usec_t _us);
+aws_lws_sul_schedule(struct aws_lws_context *ctx, int tsi, aws_lws_sorted_usec_list_t *sul,
+		 sul_cb_t _cb, aws_lws_usec_t _us);
 LWS_VISIBLE LWS_EXTERN void
-lws_sul_schedule_wakesuspend(struct lws_context *ctx, int tsi,
-			     lws_sorted_usec_list_t *sul, sul_cb_t _cb,
-			     lws_usec_t _us);
+aws_lws_sul_schedule_wakesuspend(struct aws_lws_context *ctx, int tsi,
+			     aws_lws_sorted_usec_list_t *sul, sul_cb_t _cb,
+			     aws_lws_usec_t _us);
 
 #if defined(LWS_WITH_SUL_DEBUGGING)
 /**
- * lws_sul_debug_zombies() - assert there are no scheduled sul in a given object
+ * aws_lws_sul_debug_zombies() - assert there are no scheduled sul in a given object
  *
- * \param ctx: lws_context
+ * \param ctx: aws_lws_context
  * \param po: pointer to the object that is about to be destroyed
  * \param len: length of the object that is about to be destroyed
  * \param destroy_description: string clue what any failure is related to
@@ -262,14 +262,14 @@ lws_sul_schedule_wakesuspend(struct lws_context *ctx, int tsi,
  * living in.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_sul_debug_zombies(struct lws_context *ctx, void *po, size_t len,
+aws_lws_sul_debug_zombies(struct aws_lws_context *ctx, void *po, size_t len,
 		      const char *destroy_description);
 #else
-#define lws_sul_debug_zombies(_a, _b, _c, _d)
+#define aws_lws_sul_debug_zombies(_a, _b, _c, _d)
 #endif
 
 /*
- * lws_validity_confirmed() - reset the validity timer for a network connection
+ * aws_lws_validity_confirmed() - reset the validity timer for a network connection
  *
  * \param wsi: the connection that saw traffic proving the connection valid
  *
@@ -288,17 +288,17 @@ lws_sul_debug_zombies(struct lws_context *ctx, void *po, size_t len,
  * the connection validity timer is reset and the scheme repeats.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_validity_confirmed(struct lws *wsi);
+aws_lws_validity_confirmed(struct lws *wsi);
 
 /*
  * These are not normally needed, they're exported for the case there's code
- * using lws_sul for which lws is an optional link dependency.
+ * using aws_lws_sul for which lws is an optional link dependency.
  */
 
 LWS_VISIBLE LWS_EXTERN int
-__lws_sul_insert(lws_dll2_owner_t *own, lws_sorted_usec_list_t *sul);
+__lws_sul_insert(aws_lws_dll2_owner_t *own, aws_lws_sorted_usec_list_t *sul);
 
-LWS_VISIBLE LWS_EXTERN lws_usec_t
-__lws_sul_service_ripe(lws_dll2_owner_t *own, int own_len, lws_usec_t usnow);
+LWS_VISIBLE LWS_EXTERN aws_lws_usec_t
+__lws_sul_service_ripe(aws_lws_dll2_owner_t *own, int own_len, aws_lws_usec_t usnow);
 
 ///@}

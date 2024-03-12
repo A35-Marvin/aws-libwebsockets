@@ -39,7 +39,7 @@
  * lws convention of 0 for success.
  */
 
-int lws_openssl_describe_cipher(struct lws *wsi);
+int aws_lws_openssl_describe_cipher(struct lws *wsi);
 
 extern int openssl_websocket_private_data_index,
     openssl_SSL_CTX_private_data_index;
@@ -54,7 +54,7 @@ extern int openssl_websocket_private_data_index,
  */
 
 int
-lws_tls_jit_trust_got_cert_cb(void *got_opaque, const uint8_t *der,
+aws_lws_tls_jit_trust_got_cert_cb(void *got_opaque, const uint8_t *der,
 			      size_t der_len)
 {
 	X509 *x = d2i_X509(NULL, &der, (long)der_len);
@@ -64,20 +64,20 @@ lws_tls_jit_trust_got_cert_cb(void *got_opaque, const uint8_t *der,
 	int ret = 0;
 
 	if (!x) {
-		lwsl_err("%s: failed\n", __func__);
+		aws_lwsl_err("%s: failed\n", __func__);
 		return 1;
 	}
 
 	xs = SSL_CTX_get_cert_store(SSL_get_SSL_CTX(wsi->tls.ssl));
 	if (xs) {
 		if (X509_STORE_add_cert(xs, x) != 1) {
-			lwsl_warn("%s: unable to set trusted CA\n", __func__);
+			aws_lwsl_warn("%s: unable to set trusted CA\n", __func__);
 			ret = 1;
 		} else
-			lwsl_notice("%s: added trusted CA to CTX for next time\n",
+			aws_lwsl_notice("%s: added trusted CA to CTX for next time\n",
 					__func__);
 	} else
-		lwsl_warn("%s: couldn't get cert store\n", __func__);
+		aws_lwsl_warn("%s: couldn't get cert store\n", __func__);
 
 	X509_free(x);
 
@@ -103,7 +103,7 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 			wsi = SSL_get_ex_data(ssl,
 					openssl_websocket_private_data_index);
 			if (!wsi) {
-				lwsl_err("%s: can't get wsi from ssl privdata\n",
+				aws_lwsl_err("%s: can't get wsi from ssl privdata\n",
 					 __func__);
 
 				return 0;
@@ -112,25 +112,25 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 			if ((err == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT ||
 			     err == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN) &&
 			     wsi->tls.use_ssl & LCCSCF_ALLOW_SELFSIGNED) {
-				lwsl_notice("accepting self-signed "
+				aws_lwsl_notice("accepting self-signed "
 					    "certificate (verify_callback)\n");
 				X509_STORE_CTX_set_error(x509_ctx, X509_V_OK);
 				return 1;	// ok
 		} else if ((err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY ||
 			    err == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE) &&
 			    wsi->tls.use_ssl & LCCSCF_ALLOW_INSECURE) {
-				lwsl_notice("accepting non-trusted certificate\n");
+				aws_lwsl_notice("accepting non-trusted certificate\n");
 				X509_STORE_CTX_set_error(x509_ctx, X509_V_OK);
 				return 1;  /* ok */
 			} else if ((err == X509_V_ERR_CERT_NOT_YET_VALID ||
 				    err == X509_V_ERR_CERT_HAS_EXPIRED) &&
 				    wsi->tls.use_ssl & LCCSCF_ALLOW_EXPIRED) {
 				if (err == X509_V_ERR_CERT_NOT_YET_VALID)
-					lwsl_notice("accepting not yet valid "
+					aws_lwsl_notice("accepting not yet valid "
 						    "certificate (verify_"
 						    "callback)\n");
 				else if (err == X509_V_ERR_CERT_HAS_EXPIRED)
-					lwsl_notice("accepting expired "
+					aws_lwsl_notice("accepting expired "
 						    "certificate (verify_"
 						    "callback)\n");
 				X509_STORE_CTX_set_error(x509_ctx, X509_V_OK);
@@ -143,14 +143,14 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 					 SSL_get_ex_data_X509_STORE_CTX_idx());
 	wsi = SSL_get_ex_data(ssl, openssl_websocket_private_data_index);
 	if (!wsi) {
-		lwsl_err("%s: can't get wsi from ssl privdata\n",  __func__);
+		aws_lwsl_err("%s: can't get wsi from ssl privdata\n",  __func__);
 
 		return 0;
 	}
 
 #if defined(LWS_WITH_TLS_JIT_TRUST)
 	if (err == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY) {
-		union lws_tls_cert_info_results ci;
+		union aws_lws_tls_cert_info_results ci;
 		STACK_OF(X509) *x509_stack;
 
 		x509_stack = X509_STORE_CTX_get1_chain(x509_ctx);
@@ -161,17 +161,17 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 				     LWS_ARRAY_SIZE(wsi->tls.kid_chain.akid); n++) {
 				X509 *x509 = OPENSSL_sk_value((const OPENSSL_STACK *)x509_stack, n);
 
-				if (!lws_tls_openssl_cert_info(x509,
+				if (!aws_lws_tls_openssl_cert_info(x509,
 					    LWS_TLS_CERT_INFO_SUBJECT_KEY_ID,
 					    &ci, 0))
-					lws_tls_kid_copy(&ci,
+					aws_lws_tls_kid_copy(&ci,
 						&wsi->tls.kid_chain.skid[
 						     wsi->tls.kid_chain.count]);
 
-				if (!lws_tls_openssl_cert_info(x509,
+				if (!aws_lws_tls_openssl_cert_info(x509,
 					     LWS_TLS_CERT_INFO_AUTHORITY_KEY_ID,
 					     &ci, 0))
-					lws_tls_kid_copy(&ci,
+					aws_lws_tls_kid_copy(&ci,
 						 &wsi->tls.kid_chain.akid[
 						     wsi->tls.kid_chain.count]);
 
@@ -181,11 +181,11 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 			sk_X509_pop_free(x509_stack, X509_free);
 		}
 
-		lws_tls_jit_trust_sort_kids(wsi, &wsi->tls.kid_chain);
+		aws_lws_tls_jit_trust_sort_kids(wsi, &wsi->tls.kid_chain);
 	}
 #endif
 
-	n = lws_get_context_protocol(wsi->a.context, 0).callback(wsi,
+	n = aws_lws_get_context_protocol(wsi->a.context, 0).callback(wsi,
 			LWS_CALLBACK_OPENSSL_PERFORM_SERVER_CERT_VERIFICATION,
 			x509_ctx, ssl, (unsigned int)preverify_ok);
 
@@ -201,20 +201,20 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 			int depth = X509_STORE_CTX_get_error_depth(x509_ctx);
 			const char *msg = X509_verify_cert_error_string(err);
 
-			lws_strncpy(wsi->tls.err_helper, msg,
+			aws_lws_strncpy(wsi->tls.err_helper, msg,
 				    sizeof(wsi->tls.err_helper));
 
-			lwsl_err("SSL error: %s (preverify_ok=%d;err=%d;"
+			aws_lwsl_err("SSL error: %s (preverify_ok=%d;err=%d;"
 				 "depth=%d)\n", msg, preverify_ok, err, depth);
 
 #if defined(LWS_WITH_SYS_METRICS)
 			{
 				char buckname[64];
 
-				lws_snprintf(buckname, sizeof(buckname),
+				aws_lws_snprintf(buckname, sizeof(buckname),
 					     "tls=\"%s\"", msg);
-				lws_metrics_hist_bump_describe_wsi(wsi,
-					lws_metrics_priv_to_pub(wsi->a.context->mth_conn_failures),
+				aws_lws_metrics_hist_bump_describe_wsi(wsi,
+					aws_lws_metrics_priv_to_pub(wsi->a.context->mth_conn_failures),
 					buckname);
 			}
 #endif
@@ -231,7 +231,7 @@ OpenSSL_client_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 #endif
 
 int
-lws_ssl_client_bio_create(struct lws *wsi)
+aws_lws_ssl_client_bio_create(struct lws *wsi)
 {
 	char hostname[128], *p;
 #if defined(LWS_HAVE_SSL_set_alpn_protos) && \
@@ -242,18 +242,18 @@ lws_ssl_client_bio_create(struct lws *wsi)
 #endif
 
 	if (wsi->stash) {
-		lws_strncpy(hostname, wsi->stash->cis[CIS_HOST], sizeof(hostname));
+		aws_lws_strncpy(hostname, wsi->stash->cis[CIS_HOST], sizeof(hostname));
 #if defined(LWS_HAVE_SSL_set_alpn_protos) && \
     defined(LWS_HAVE_SSL_get0_alpn_selected)
 		alpn_comma = wsi->stash->cis[CIS_ALPN];
 #endif
 	} else {
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-		if (lws_hdr_copy(wsi, hostname, sizeof(hostname),
+		if (aws_lws_hdr_copy(wsi, hostname, sizeof(hostname),
 				 _WSI_TOKEN_CLIENT_HOST) <= 0)
 #endif
 		{
-			lwsl_err("%s: Unable to get hostname\n", __func__);
+			aws_lwsl_err("%s: Unable to get hostname\n", __func__);
 
 			return -1;
 		}
@@ -280,20 +280,20 @@ lws_ssl_client_bio_create(struct lws *wsi)
 #else
 	(unsigned long)
 #endif
-	lws_ssl_get_error(wsi, 0), NULL);
-		lwsl_err("SSL_new failed: %s\n", es);
-		lws_tls_err_describe_clear();
+	aws_lws_ssl_get_error(wsi, 0), NULL);
+		aws_lwsl_err("SSL_new failed: %s\n", es);
+		aws_lws_tls_err_describe_clear();
 		return -1;
 	}
 
 #if defined(LWS_WITH_TLS_SESSIONS)
 	if (!(wsi->a.vhost->options & LWS_SERVER_OPTION_DISABLE_TLS_SESSION_CACHE))
-		lws_tls_reuse_session(wsi);
+		aws_lws_tls_reuse_session(wsi);
 #endif
 
 #if defined (LWS_HAVE_SSL_SET_INFO_CALLBACK)
 	if (wsi->a.vhost->tls.ssl_info_event_mask)
-		SSL_set_info_callback(wsi->tls.ssl, lws_ssl_info_callback);
+		SSL_set_info_callback(wsi->tls.ssl, aws_lws_ssl_info_callback);
 #endif
 
 #if defined(LWS_HAVE_X509_VERIFY_PARAM_set1_host)
@@ -314,7 +314,7 @@ lws_ssl_client_bio_create(struct lws *wsi)
 	}
 #else
 	if (!(wsi->tls.use_ssl & LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK)) {
-		lwsl_err("%s: your tls lib is too old to have "
+		aws_lwsl_err("%s: your tls lib is too old to have "
 			 "X509_VERIFY_PARAM_set1_host, failing all client tls\n",
 			 __func__);
 		return -1;
@@ -371,7 +371,7 @@ lws_ssl_client_bio_create(struct lws *wsi)
 #endif
 #endif /* USE_WOLFSSL */
 
-	wsi->tls.client_bio = BIO_new_socket((int)(lws_intptr_t)wsi->desc.sockfd,
+	wsi->tls.client_bio = BIO_new_socket((int)(aws_lws_intptr_t)wsi->desc.sockfd,
 					     BIO_NOCLOSE);
 	SSL_set_bio(wsi->tls.ssl, wsi->tls.client_bio, wsi->tls.client_bio);
 
@@ -392,14 +392,14 @@ lws_ssl_client_bio_create(struct lws *wsi)
 	if (wsi->stash)
 		alpn_comma = wsi->stash->cis[CIS_ALPN];
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-	if (lws_hdr_copy(wsi, hostname, sizeof(hostname),
+	if (aws_lws_hdr_copy(wsi, hostname, sizeof(hostname),
 			 _WSI_TOKEN_CLIENT_ALPN) > 0)
 		alpn_comma = hostname;
 #endif
 
-	lwsl_info("%s client conn using alpn list '%s'\n", wsi->role_ops->name, alpn_comma);
+	aws_lwsl_info("%s client conn using alpn list '%s'\n", wsi->role_ops->name, alpn_comma);
 
-	n = lws_alpn_comma_to_openssl(alpn_comma, openssl_alpn,
+	n = aws_lws_alpn_comma_to_openssl(alpn_comma, openssl_alpn,
 				      sizeof(openssl_alpn) - 1);
 
 	SSL_set_alpn_protos(wsi->tls.ssl, openssl_alpn, (unsigned int)n);
@@ -409,7 +409,7 @@ lws_ssl_client_bio_create(struct lws *wsi)
 			wsi);
 
 	if (wsi->sys_tls_client_cert) {
-		lws_system_blob_t *b = lws_system_get_blob(wsi->a.context,
+		aws_lws_system_blob_t *b = aws_lws_system_get_blob(wsi->a.context,
 					LWS_SYSBLOB_TYPE_CLIENT_CERT_DER,
 					wsi->sys_tls_client_cert - 1);
 		const uint8_t *data;
@@ -422,11 +422,11 @@ lws_ssl_client_bio_create(struct lws *wsi)
 		 * Set up the per-connection client cert
 		 */
 
-		size = lws_system_blob_get_size(b);
+		size = aws_lws_system_blob_get_size(b);
 		if (!size)
 			goto no_client_cert;
 
-		if (lws_system_blob_get_single_ptr(b, &data))
+		if (aws_lws_system_blob_get_single_ptr(b, &data))
 			goto no_client_cert;
 
 		if (SSL_use_certificate_ASN1(wsi->tls.ssl,
@@ -440,22 +440,22 @@ lws_ssl_client_bio_create(struct lws *wsi)
 					(int)
 #endif
 					size) != 1) {
-			lwsl_err("%s: use_certificate failed\n", __func__);
-			lws_tls_err_describe_clear();
+			aws_lwsl_err("%s: use_certificate failed\n", __func__);
+			aws_lws_tls_err_describe_clear();
 			goto no_client_cert;
 		}
 
-		b = lws_system_get_blob(wsi->a.context,
+		b = aws_lws_system_get_blob(wsi->a.context,
 					LWS_SYSBLOB_TYPE_CLIENT_KEY_DER,
 					wsi->sys_tls_client_cert - 1);
 		if (!b)
 			goto no_client_cert;
 
-		size = lws_system_blob_get_size(b);
+		size = aws_lws_system_blob_get_size(b);
 		if (!size)
 			goto no_client_cert;
 
-		if (lws_system_blob_get_single_ptr(b, &data))
+		if (aws_lws_system_blob_get_single_ptr(b, &data))
 			goto no_client_cert;
 
 		if (SSL_use_PrivateKey_ASN1(EVP_PKEY_RSA, wsi->tls.ssl,
@@ -481,32 +481,32 @@ lws_ssl_client_bio_create(struct lws *wsi)
 					(int)
 #endif
 					    size) != 1) {
-			lwsl_err("%s: use_privkey failed\n", __func__);
-			lws_tls_err_describe_clear();
+			aws_lwsl_err("%s: use_privkey failed\n", __func__);
+			aws_lws_tls_err_describe_clear();
 			goto no_client_cert;
 		}
 
 		if (SSL_check_private_key(wsi->tls.ssl) != 1) {
-			lwsl_err("Private SSL key doesn't match cert\n");
-			lws_tls_err_describe_clear();
+			aws_lwsl_err("Private SSL key doesn't match cert\n");
+			aws_lws_tls_err_describe_clear();
 			return 1;
 		}
 
-		lwsl_notice("%s: set system client cert %u\n", __func__,
+		aws_lwsl_notice("%s: set system client cert %u\n", __func__,
 				wsi->sys_tls_client_cert - 1);
 	}
 
 	return 0;
 
 no_client_cert:
-	lwsl_err("%s: unable to set up system client cert %d\n", __func__,
+	aws_lwsl_err("%s: unable to set up system client cert %d\n", __func__,
 			wsi->sys_tls_client_cert - 1);
 
 	return 1;
 }
 
-enum lws_ssl_capable_status
-lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
+enum aws_lws_ssl_capable_status
+aws_lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
 {
 #if defined(LWS_HAVE_SSL_set_alpn_protos) && \
     defined(LWS_HAVE_SSL_get0_alpn_selected)
@@ -524,7 +524,7 @@ lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
 	n = SSL_connect(wsi->tls.ssl);
 	en = errno;
 
-	m = lws_ssl_get_error(wsi, n);
+	m = aws_lws_ssl_get_error(wsi, n);
 
 	if (m == SSL_ERROR_SYSCALL
 #if defined(WIN32)
@@ -532,14 +532,14 @@ lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
 #endif
 	) {
 #if defined(WIN32) || (_LWS_ENABLED_LOGS & LLL_INFO)
-		lwsl_info("%s: n %d, m %d, errno %d\n", __func__, n, m, en);
+		aws_lwsl_info("%s: n %d, m %d, errno %d\n", __func__, n, m, en);
 #endif
-		lws_snprintf(errbuf, elen, "connect SYSCALL %d", en);
+		aws_lws_snprintf(errbuf, elen, "connect SYSCALL %d", en);
 		return LWS_SSL_CAPABLE_ERROR;
 	}
 
 	if (m == SSL_ERROR_SSL) {
-		n = lws_snprintf(errbuf, elen, "tls: %s", wsi->tls.err_helper);
+		n = aws_lws_snprintf(errbuf, elen, "tls: %s", wsi->tls.err_helper);
 		if (!wsi->tls.err_helper[0])
 			ERR_error_string_n((unsigned int)m, errbuf + n, (elen - (unsigned int)n));
 		return LWS_SSL_CAPABLE_ERROR;
@@ -575,32 +575,32 @@ lws_tls_client_connect(struct lws *wsi, char *errbuf, size_t elen)
 		memcpy(a, (const char *)prot, len);
 		a[len] = '\0';
 
-		lws_role_call_alpn_negotiated(wsi, (const char *)a);
+		aws_lws_role_call_alpn_negotiated(wsi, (const char *)a);
 #endif
 #if defined(LWS_TLS_SYNTHESIZE_CB)
-		lws_sul_schedule(wsi->a.context, wsi->tsi,
+		aws_lws_sul_schedule(wsi->a.context, wsi->tsi,
 				 &wsi->tls.sul_cb_synth,
-				 lws_sess_cache_synth_cb, 500 * LWS_US_PER_MS);
+				 aws_lws_sess_cache_synth_cb, 500 * LWS_US_PER_MS);
 #endif
 
-		lwsl_info("client connect OK\n");
-		lws_openssl_describe_cipher(wsi);
+		aws_lwsl_info("client connect OK\n");
+		aws_lws_openssl_describe_cipher(wsi);
 		return LWS_SSL_CAPABLE_DONE;
 	}
 
 	if (!n) /* we don't know what he wants, but he says to retry */
 		return LWS_SSL_CAPABLE_MORE_SERVICE;
 
-	lws_snprintf(errbuf, elen, "connect unk %d", m);
+	aws_lws_snprintf(errbuf, elen, "connect unk %d", m);
 
 	return LWS_SSL_CAPABLE_ERROR;
 }
 
 int
-lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len)
+aws_lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len)
 {
 #if !defined(USE_WOLFSSL)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	char *p = (char *)&pt->serv_buf[0];
 	const char *es, *type = "";
 	unsigned int avoid = 0;
@@ -638,15 +638,15 @@ lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len)
 		break;
 	}
 
-	lwsl_info("%s: cert problem: %s\n", __func__, type);
+	aws_lwsl_info("%s: cert problem: %s\n", __func__, type);
 
 #if defined(LWS_WITH_SYS_METRICS)
-	lws_metrics_hist_bump_describe_wsi(wsi,
-			lws_metrics_priv_to_pub(wsi->a.context->mth_conn_failures), type);
+	aws_lws_metrics_hist_bump_describe_wsi(wsi,
+			aws_lws_metrics_priv_to_pub(wsi->a.context->mth_conn_failures), type);
 #endif
 
 	if (wsi->tls.use_ssl & avoid) {
-		lwsl_info("%s: allowing anyway\n", __func__);
+		aws_lwsl_info("%s: allowing anyway\n", __func__);
 
 		return 0;
 	}
@@ -658,11 +658,11 @@ lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len)
 					 (unsigned long)
 	#endif
 					 n, sb);
-	lws_snprintf(ebuf, ebuf_len,
+	aws_lws_snprintf(ebuf, ebuf_len,
 		"server's cert didn't look good, %s X509_V_ERR = %ld: %s\n",
 		 type, n, es);
-	lwsl_info("%s\n", ebuf);
-	lws_tls_err_describe_clear();
+	aws_lwsl_info("%s\n", ebuf);
+	aws_lws_tls_err_describe_clear();
 
 	return -1;
 
@@ -672,7 +672,7 @@ lws_tls_client_confirm_peer_cert(struct lws *wsi, char *ebuf, size_t ebuf_len)
 }
 
 int
-lws_tls_client_vhost_extra_cert_mem(struct lws_vhost *vh,
+aws_lws_tls_client_vhost_extra_cert_mem(struct aws_lws_vhost *vh,
                 const uint8_t *der, size_t der_len)
 {
 	X509_STORE *st;
@@ -684,21 +684,21 @@ lws_tls_client_vhost_extra_cert_mem(struct lws_vhost *vh,
 	int n;
 
 	if (!x) {
-		lwsl_err("%s: Failed to load DER\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_err("%s: Failed to load DER\n", __func__);
+		aws_lws_tls_err_describe_clear();
 		return 1;
 	}
 
 	st = SSL_CTX_get_cert_store(vh->tls.ssl_client_ctx);
 	if (!st) {
-		lwsl_err("%s: failed to get cert store\n", __func__);
+		aws_lwsl_err("%s: failed to get cert store\n", __func__);
 		X509_free(x);
 		return 1;
 	}
 
 	n = X509_STORE_add_cert(st, x);
 	if (n != 1)
-		lwsl_err("%s: failed to add cert\n", __func__);
+		aws_lwsl_err("%s: failed to add cert\n", __func__);
 
 	X509_free(x);
 
@@ -706,8 +706,8 @@ lws_tls_client_vhost_extra_cert_mem(struct lws_vhost *vh,
 }
 
 int
-lws_tls_client_create_vhost_context(struct lws_vhost *vh,
-				    const struct lws_context_creation_info *info,
+aws_lws_tls_client_create_vhost_context(struct aws_lws_vhost *vh,
+				    const struct aws_lws_context_creation_info *info,
 				    const char *cipher_list,
 				    const char *ca_filepath,
 				    const void *ca_mem,
@@ -720,7 +720,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 				    unsigned int key_mem_len
 					)
 {
-	struct lws_tls_client_reuse *tcr;
+	struct aws_lws_tls_client_reuse *tcr;
 	X509_STORE *x509_store;
 	unsigned long error;
 	SSL_METHOD *method;
@@ -753,7 +753,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 			(unsigned long)
 		#endif
 			 error, (char *)vh->context->pt[0].serv_buf);
-		lwsl_err("problem creating ssl method %lu: %s\n",
+		aws_lwsl_err("problem creating ssl method %lu: %s\n",
 			error, es);
 		return 1;
 	}
@@ -799,7 +799,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 				 strlen(info->client_tls_1_3_plus_cipher_list));
 #endif
 
-	if (!lws_check_opt(vh->options, LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS)) {
+	if (!aws_lws_check_opt(vh->options, LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS)) {
 		c = 1;
 		EVP_DigestUpdate(mdctx, &c, 1);
 	}
@@ -825,9 +825,9 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 
 	/* look for existing client context with same config already */
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, p, tp,
-			 lws_dll2_get_head(&vh->context->tls.cc_owner)) {
-		tcr = lws_container_of(p, struct lws_tls_client_reuse, cc_list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, tp,
+			 aws_lws_dll2_get_head(&vh->context->tls.cc_owner)) {
+		tcr = aws_lws_container_of(p, struct aws_lws_tls_client_reuse, cc_list);
 
 		if (!memcmp(hash, tcr->hash, len)) {
 
@@ -837,13 +837,13 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 			vh->tls.ssl_client_ctx = tcr->ssl_client_ctx;
 			vh->tls.tcr = tcr;
 
-			lwsl_info("%s: vh %s: reusing client ctx %d: use %d\n",
+			aws_lwsl_info("%s: vh %s: reusing client ctx %d: use %d\n",
 				   __func__, vh->name, tcr->index,
 				   tcr->refcount);
 
 			return 0;
 		}
-	} lws_end_foreach_dll_safe(p, tp);
+	} aws_lws_end_foreach_dll_safe(p, tp);
 
 	/* no existing one the same... create new client SSL_CTX */
 
@@ -861,14 +861,14 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 			(unsigned long)
 		#endif
 			 error, (char *)vh->context->pt[0].serv_buf);
-		lwsl_err("problem creating ssl context %lu: %s\n",
+		aws_lwsl_err("problem creating ssl context %lu: %s\n",
 			error, es);
 		return 1;
 	}
 
-	lws_plat_vhost_tls_client_ctx_init(vh);
+	aws_lws_plat_vhost_tls_client_ctx_init(vh);
 
-	tcr = lws_zalloc(sizeof(*tcr), "client ctx tcr");
+	tcr = aws_lws_zalloc(sizeof(*tcr), "client ctx tcr");
 	if (!tcr) {
 		SSL_CTX_free(vh->tls.ssl_client_ctx);
 		return 1;
@@ -878,9 +878,9 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 	tcr->refcount = 1;
 	memcpy(tcr->hash, hash, len);
 	tcr->index = vh->context->tls.count_client_contexts++;
-	lws_dll2_add_head(&tcr->cc_list, &vh->context->tls.cc_owner);
+	aws_lws_dll2_add_head(&tcr->cc_list, &vh->context->tls.cc_owner);
 
-	lwsl_info("%s: vh %s: created new client ctx %d\n", __func__,
+	aws_lwsl_info("%s: vh %s: created new client ctx %d\n", __func__,
 			vh->name, tcr->index);
 
 	/* bind the tcr to the client context */
@@ -890,7 +890,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 #if defined(LWS_WITH_TLS_SESSIONS)
 	vh->tls_session_cache_max = info->tls_session_cache_max ?
 				    info->tls_session_cache_max : 10;
-	lws_tls_session_cache(vh, info->tls_session_timeout);
+	aws_lws_tls_session_cache(vh, info->tls_session_timeout);
 #endif
 
 #ifdef SSL_OP_NO_COMPRESSION
@@ -947,7 +947,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 #endif
 
 #ifdef LWS_SSL_CLIENT_USE_OS_CA_CERTS
-	if (!lws_check_opt(vh->options, LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS))
+	if (!aws_lws_check_opt(vh->options, LWS_SERVER_OPTION_DISABLE_OS_CA_CERTS))
 		/* loads OS default CA certs */
 		SSL_CTX_set_default_verify_paths(vh->tls.ssl_client_ctx);
 #endif
@@ -961,7 +961,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 		if (!SSL_CTX_load_verify_locations(
 			vh->tls.ssl_client_ctx, NULL, LWS_OPENSSL_CLIENT_CERTS))
 #endif
-			lwsl_err("Unable to load SSL Client certs from %s "
+			aws_lwsl_err("Unable to load SSL Client certs from %s "
 			    "(set by LWS_OPENSSL_CLIENT_CERTS) -- "
 			    "client ssl isn't going to work\n",
 			    LWS_OPENSSL_CLIENT_CERTS);
@@ -973,24 +973,24 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 		if (!SSL_CTX_load_verify_locations(
 			vh->tls.ssl_client_ctx, ca_filepath, NULL)) {
 #endif
-			lwsl_err(
+			aws_lwsl_err(
 				"Unable to load SSL Client certs "
 				"file from %s -- client ssl isn't "
 				"going to work\n", ca_filepath);
-			lws_tls_err_describe_clear();
+			aws_lws_tls_err_describe_clear();
 		}
 		else
-			lwsl_info("loaded ssl_ca_filepath\n");
+			aws_lwsl_info("loaded ssl_ca_filepath\n");
 	} else {
 
-		lws_filepos_t amount = 0;
+		aws_lws_filepos_t amount = 0;
 		const uint8_t *up;
 		uint8_t *up1;
 
-		if (lws_tls_alloc_pem_to_der_file(vh->context, NULL, ca_mem,
+		if (aws_lws_tls_alloc_pem_to_der_file(vh->context, NULL, ca_mem,
 						  ca_mem_len, &up1, &amount)) {
-			lwsl_err("%s: Unable to decode x.509 mem\n", __func__);
-			lwsl_hexdump_notice(ca_mem, ca_mem_len);
+			aws_lwsl_err("%s: Unable to decode x.509 mem\n", __func__);
+			aws_lwsl_hexdump_notice(ca_mem, ca_mem_len);
 			return 1;
 		}
 
@@ -1001,28 +1001,28 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 		client_CA = d2i_X509(NULL, &up, (long)amount);
 #endif
 		if (!client_CA) {
-			lwsl_err("%s: d2i_X509 failed\n", __func__);
-			lwsl_hexdump_notice(up1, (size_t)amount);
-			lws_tls_err_describe_clear();
+			aws_lwsl_err("%s: d2i_X509 failed\n", __func__);
+			aws_lwsl_hexdump_notice(up1, (size_t)amount);
+			aws_lws_tls_err_describe_clear();
 		} else {
 			x509_store = X509_STORE_new();
 			if (!X509_STORE_add_cert(x509_store, client_CA)) {
 				X509_STORE_free(x509_store);
-				lwsl_err("Unable to load SSL Client certs from "
+				aws_lwsl_err("Unable to load SSL Client certs from "
 					 "ssl_ca_mem -- client ssl isn't going to "
 					 "work\n");
-				lws_tls_err_describe_clear();
+				aws_lws_tls_err_describe_clear();
 			} else {
 				/* it doesn't increment x509_store ref counter */
 				SSL_CTX_set_cert_store(vh->tls.ssl_client_ctx,
 						       x509_store);
-				lwsl_info("loaded ssl_ca_mem\n");
+				aws_lwsl_info("loaded ssl_ca_mem\n");
 			}
 		}
 		if (client_CA)
 			X509_free(client_CA);
-		lws_free(up1);
-	//	lws_tls_client_vhost_extra_cert_mem(vh, ca_mem, ca_mem_len);
+		aws_lws_free(up1);
+	//	aws_lws_tls_client_vhost_extra_cert_mem(vh, ca_mem, ca_mem_len);
 	}
 
 	/*
@@ -1033,30 +1033,30 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 	/* support for client-side certificate authentication */
 
 	if (cert_filepath) {
-		if (lws_tls_use_any_upgrade_check_extant(cert_filepath) !=
+		if (aws_lws_tls_use_any_upgrade_check_extant(cert_filepath) !=
 				LWS_TLS_EXTANT_YES &&
 		    (info->options & LWS_SERVER_OPTION_IGNORE_MISSING_CERT))
 			return 0;
 
-		lwsl_notice("%s: doing cert filepath %s\n", __func__,
+		aws_lwsl_notice("%s: doing cert filepath %s\n", __func__,
 				cert_filepath);
 		n = SSL_CTX_use_certificate_chain_file(vh->tls.ssl_client_ctx,
 						       cert_filepath);
 		if (n < 1) {
-			lwsl_err("problem %d getting cert '%s'\n", n,
+			aws_lwsl_err("problem %d getting cert '%s'\n", n,
 				 cert_filepath);
-			lws_tls_err_describe_clear();
+			aws_lws_tls_err_describe_clear();
 			return 1;
 		}
-		lwsl_info("Loaded client cert %s\n", cert_filepath);
+		aws_lwsl_info("Loaded client cert %s\n", cert_filepath);
 
 	} else if (cert_mem && cert_mem_len) {
-		lws_filepos_t flen;
+		aws_lws_filepos_t flen;
 		uint8_t *p;
 
-		if (lws_tls_alloc_pem_to_der_file(vh->context, NULL, cert_mem,
+		if (aws_lws_tls_alloc_pem_to_der_file(vh->context, NULL, cert_mem,
 						  cert_mem_len, &p, &flen)) {
-			lwsl_err("%s: couldn't read cert file\n", __func__);
+			aws_lwsl_err("%s: couldn't read cert file\n", __func__);
 
 			return 1;
 		}
@@ -1070,44 +1070,44 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 				flen, p);
 
 		if (n < 1) {
-			lwsl_err("%s: problem interpreting client cert\n",  __func__);
-			lws_tls_err_describe_clear();
+			aws_lwsl_err("%s: problem interpreting client cert\n",  __func__);
+			aws_lws_tls_err_describe_clear();
 		}
 
-		lws_free_set_NULL(p);
+		aws_lws_free_set_NULL(p);
 
 		if (n != 1)
 			return 1;
 
 	}
 	if (private_key_filepath) {
-		lwsl_info("%s: using private key filepath\n", __func__);
-		lws_ssl_bind_passphrase(vh->tls.ssl_client_ctx, 1, info);
+		aws_lwsl_info("%s: using private key filepath\n", __func__);
+		aws_lws_ssl_bind_passphrase(vh->tls.ssl_client_ctx, 1, info);
 		/* set the private key from KeyFile */
 		if (SSL_CTX_use_PrivateKey_file(vh->tls.ssl_client_ctx,
 		    private_key_filepath, SSL_FILETYPE_PEM) != 1) {
-			lwsl_err("use_PrivateKey_file '%s'\n",
+			aws_lwsl_err("use_PrivateKey_file '%s'\n",
 				 private_key_filepath);
-			lws_tls_err_describe_clear();
+			aws_lws_tls_err_describe_clear();
 			return 1;
 		}
-		lwsl_info("Loaded client cert private key %s\n",
+		aws_lwsl_info("Loaded client cert private key %s\n",
 			    private_key_filepath);
 
 		/* verify private key */
 		if (!SSL_CTX_check_private_key(vh->tls.ssl_client_ctx)) {
-			lwsl_err("Private SSL key doesn't match cert\n");
+			aws_lwsl_err("Private SSL key doesn't match cert\n");
 			return 1;
 		}
 	}
 	else if (key_mem && key_mem_len) {
 
-		lws_filepos_t flen;
+		aws_lws_filepos_t flen;
 		uint8_t *p;
 
-		if (lws_tls_alloc_pem_to_der_file(vh->context, NULL, key_mem,
+		if (aws_lws_tls_alloc_pem_to_der_file(vh->context, NULL, key_mem,
 						  key_mem_len, &p, &flen)) {
-			lwsl_err("%s: couldn't use mem cert\n", __func__);
+			aws_lwsl_err("%s: couldn't use mem cert\n", __func__);
 
 			return 1;
 		}
@@ -1116,7 +1116,7 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 #if defined(LWS_WITH_BORINGSSL)
 				(size_t)
 #else
-				(long)(lws_intptr_t)
+				(long)(aws_lws_intptr_t)
 #endif
 						flen);
 		if (n != 1)
@@ -1125,14 +1125,14 @@ lws_tls_client_create_vhost_context(struct lws_vhost *vh,
 #if defined(LWS_WITH_BORINGSSL)
 				(size_t)
 #else
-				(long)(lws_intptr_t)
+				(long)(aws_lws_intptr_t)
 #endif
 						flen);
 
-		lws_free_set_NULL(p);
+		aws_lws_free_set_NULL(p);
 
 		if (n != 1)  {
-			lwsl_err("%s: unable to use key_mem\n", __func__);
+			aws_lwsl_err("%s: unable to use key_mem\n", __func__);
 
 			return 1;
 		}

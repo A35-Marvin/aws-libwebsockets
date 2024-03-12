@@ -29,7 +29,7 @@
  * passed using these when the client created and bound to the transport.
  */
 
-typedef struct lws_token_map {
+typedef struct aws_lws_token_map {
 	union {
 		const char	*value;
 		uint8_t		*bvalue;
@@ -37,7 +37,7 @@ typedef struct lws_token_map {
 	} u;
 	short			name_index;  /* 0 here indicates end of array */
 	short			length_or_zero;
-} lws_token_map_t;
+} aws_lws_token_map_t;
 
 /*
  * The indvidual protocols and transports define their own name_index-es which
@@ -53,24 +53,24 @@ enum {
 	LTMI_TRANSPORT_BASE	= 4096
 };
 
-struct lws_abs_transport;
-struct lws_abs_protocol;
-typedef struct lws_abs lws_abs_t;
+struct aws_lws_abs_transport;
+struct aws_lws_abs_protocol;
+typedef struct aws_lws_abs aws_lws_abs_t;
 
-LWS_VISIBLE LWS_EXTERN const lws_token_map_t *
-lws_abs_get_token(const lws_token_map_t *token_map, short name_index);
+LWS_VISIBLE LWS_EXTERN const aws_lws_token_map_t *
+aws_lws_abs_get_token(const aws_lws_token_map_t *token_map, short name_index);
 
 /*
  * the combination of a protocol, transport, and token maps for each
  */
 
-typedef void lws_abs_transport_inst_t;
-typedef void lws_abs_protocol_inst_t;
+typedef void aws_lws_abs_transport_inst_t;
+typedef void aws_lws_abs_protocol_inst_t;
 
 /**
- * lws_abstract_alloc() - allocate and configure an lws_abs_t
+ * aws_lws_abstract_alloc() - allocate and configure an aws_lws_abs_t
  *
- * \param vhost: the struct lws_vhost to bind to
+ * \param vhost: the struct aws_lws_vhost to bind to
  * \param user: opaque user pointer
  * \param abstract_path: "protocol.transport" names
  * \param ap_tokens: tokens for protocol options
@@ -78,34 +78,34 @@ typedef void lws_abs_protocol_inst_t;
  * \param seq: optional sequencer we should bind to, or NULL
  * \param opaque_user_data: data given in sequencer callback, if any
  *
- * Returns an allocated lws_abs_t pointer set up with the other arguments.
+ * Returns an allocated aws_lws_abs_t pointer set up with the other arguments.
  *
- * Doesn't create a connection instance, just allocates the lws_abs_t and
+ * Doesn't create a connection instance, just allocates the aws_lws_abs_t and
  * sets it up with the arguments.
  *
  * Returns NULL is there's any problem.
  */
-LWS_VISIBLE LWS_EXTERN lws_abs_t *
-lws_abstract_alloc(struct lws_vhost *vhost, void *user,
-		   const char *abstract_path, const lws_token_map_t *ap_tokens,
-		   const lws_token_map_t *at_tokens, struct lws_sequencer *seq,
+LWS_VISIBLE LWS_EXTERN aws_lws_abs_t *
+aws_lws_abstract_alloc(struct aws_lws_vhost *vhost, void *user,
+		   const char *abstract_path, const aws_lws_token_map_t *ap_tokens,
+		   const aws_lws_token_map_t *at_tokens, struct aws_lws_sequencer *seq,
 		   void *opaque_user_data);
 
 /**
- * lws_abstract_free() - free an allocated lws_abs_t
+ * aws_lws_abstract_free() - free an allocated aws_lws_abs_t
  *
- * \param pabs: pointer to the lws_abs_t * to free
+ * \param pabs: pointer to the aws_lws_abs_t * to free
  *
  * Frees and sets the pointer to NULL.
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_abstract_free(lws_abs_t **pabs);
+aws_lws_abstract_free(aws_lws_abs_t **pabs);
 
 /**
- * lws_abs_bind_and_create_instance - use an abstract protocol and transport
+ * aws_lws_abs_bind_and_create_instance - use an abstract protocol and transport
  *
- * \param abs: the lws_abs_t describing the combination desired
+ * \param abs: the aws_lws_abs_t describing the combination desired
  *
  * This instantiates an abstract protocol and abstract transport bound together.
  * A single heap allocation is made for the combination and the protocol and
@@ -113,22 +113,22 @@ lws_abstract_free(lws_abs_t **pabs);
  * are consulted by the creation ops to decide the details of the protocol and
  * transport for the instance.
  */
-LWS_VISIBLE LWS_EXTERN lws_abs_t *
-lws_abs_bind_and_create_instance(const lws_abs_t *ai);
+LWS_VISIBLE LWS_EXTERN aws_lws_abs_t *
+aws_lws_abs_bind_and_create_instance(const aws_lws_abs_t *ai);
 
 /**
- * lws_abs_destroy_instance() - destroys an instance
+ * aws_lws_abs_destroy_instance() - destroys an instance
  *
  * \param ai: pointer to the ai pointer to destroy
  *
  * This is for destroying an instance created by
- * lws_abs_bind_and_create_instance() above.
+ * aws_lws_abs_bind_and_create_instance() above.
  *
  * Calls the protocol and transport destroy operations on the instance, then
  * frees the combined allocation in one step.  The pointer ai is set to NULL.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_abs_destroy_instance(lws_abs_t **ai);
+aws_lws_abs_destroy_instance(aws_lws_abs_t **ai);
 
 /*
  * bring in all the protocols and transports definitions

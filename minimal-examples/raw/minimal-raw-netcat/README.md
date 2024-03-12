@@ -26,7 +26,7 @@ to print results that are in flight.
 [2018/05/02 08:53:53:5646] USER: LWS_CALLBACK_RAW_CLOSE_FILE
 [2018/05/02 08:53:53:8600] USER: LWS_CALLBACK_RAW_RX (186)
 HTTP/1.1 301 Redirect
-server: lwsws
+server: aws_lwsws
 Strict-Transport-Security: max-age=15768000 ; includeSubDomains
 location: https://libwebsockets.org
 content-type: text/html

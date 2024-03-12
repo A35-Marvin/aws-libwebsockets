@@ -10,7 +10,7 @@
  */
 
 typedef struct ss_s3_put {
-	struct lws_ss_handle	*ss;
+	struct aws_lws_ss_handle	*ss;
 	void			*opaque_data;
 
 	/* ... application specific state ... */

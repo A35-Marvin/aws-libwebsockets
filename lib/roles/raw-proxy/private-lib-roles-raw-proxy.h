@@ -24,16 +24,16 @@
  *  This is included from private-lib-core.h if LWS_ROLE_RAW_PROXY
  */
 
-extern const struct lws_role_ops role_ops_raw_proxy;
+extern const struct aws_lws_role_ops role_ops_raw_proxy;
 
-#define lwsi_role_raw_proxy(wsi) (wsi->role_ops == &role_ops_raw_proxy)
+#define aws_lwsi_role_raw_proxy(wsi) (wsi->role_ops == &role_ops_raw_proxy)
 
 #if 0
-struct lws_vhost_role_ws {
-	const struct lws_extension *extensions;
+struct aws_lws_vhost_role_ws {
+	const struct aws_lws_extension *extensions;
 };
 
-struct lws_pt_role_ws {
+struct aws_lws_pt_role_ws {
 	struct lws *rx_draining_ext_list;
 	struct lws *tx_draining_ext_list;
 };

@@ -28,9 +28,9 @@
 #define _LWS_MQTT_H 1
 
 struct _lws_mqtt_related;
-typedef struct _lws_mqtt_related lws_mqtt_related_t;
-struct lws_mqtt_str_st;
-typedef struct lws_mqtt_str_st lws_mqtt_str_t;
+typedef struct _lws_mqtt_related aws_lws_mqtt_related_t;
+struct aws_lws_mqtt_str_st;
+typedef struct aws_lws_mqtt_str_st aws_lws_mqtt_str_t;
 
 #define MQTT_VER_3_1_1 4
 
@@ -48,7 +48,7 @@ typedef enum {
 	QOS2,				/* not supported */
 	RESERVED_QOS_LEVEL,
 	FAILURE_QOS_LEVEL = 0x80
-} lws_mqtt_qos_levels_t;
+} aws_lws_mqtt_qos_levels_t;
 
 typedef union {
 	struct {
@@ -58,14 +58,14 @@ typedef union {
 		uint8_t 	ctrl_pkt_type:4;
 	} flags;
 	uint8_t 		bits;
-} lws_mqtt_fixed_hdr_t;
+} aws_lws_mqtt_fixed_hdr_t;
 
 /*
  * MQTT connection parameters, passed into struct
- * lws_client_connect_info to establish a connection using
- * lws_client_connect_via_info().
+ * aws_lws_client_connect_info to establish a connection using
+ * aws_lws_client_connect_via_info().
 */
-typedef struct lws_mqtt_client_connect_param_s {
+typedef struct aws_lws_mqtt_client_connect_param_s {
 	const char 			*client_id;	/* Client ID */
 	uint16_t 			keep_alive;	/* MQTT keep alive
 							   interval in
@@ -81,59 +81,59 @@ typedef struct lws_mqtt_client_connect_param_s {
 	struct {
 		const char 		*topic;
 		const char 		*message;
-		lws_mqtt_qos_levels_t	qos;
+		aws_lws_mqtt_qos_levels_t	qos;
 		uint8_t 		retain;
 	} will_param;				/* MQTT LWT
 						   parameters */
 	struct {
 		const char 		*topic;
 		const char 		*message;
-		lws_mqtt_qos_levels_t	qos;
+		aws_lws_mqtt_qos_levels_t	qos;
 		uint8_t 		retain;
 	} birth_param;				/* MQTT Birth
 						   parameters */
 	const char 			*username;
 	const char 			*password;
 	uint8_t				aws_iot;
-} lws_mqtt_client_connect_param_t;
+} aws_lws_mqtt_client_connect_param_t;
 
 /*
  * MQTT publish parameters
 */
-typedef struct lws_mqtt_publish_param_s {
+typedef struct aws_lws_mqtt_publish_param_s {
 	char			*topic;		/* Topic Name */
 	uint16_t 		topic_len;
 	const void 		*payload;	/* Publish Payload */
 	uint32_t 		payload_len;	/* Size of the
 						   complete payload */
 	uint32_t		payload_pos;	/* where we are in payload */
-	lws_mqtt_qos_levels_t 	qos;
+	aws_lws_mqtt_qos_levels_t 	qos;
 
 	/*--v-Following will be used by LWS-v--*/
 	uint16_t 		packet_id;	/* Packet ID for QoS >
 						   0 */
 	uint8_t 		dup:1;		/* Retried PUBLISH,
 						   for QoS > 0 */
-} lws_mqtt_publish_param_t;
+} aws_lws_mqtt_publish_param_t;
 
 typedef struct topic_elem {
 	const char		*name;		/* Topic Name */
-	lws_mqtt_qos_levels_t 	qos;		/* Requested QoS */
+	aws_lws_mqtt_qos_levels_t 	qos;		/* Requested QoS */
 
 	/*--v-Following will be used by LWS-v--*/
 	uint8_t 		acked;
-} lws_mqtt_topic_elem_t;
+} aws_lws_mqtt_topic_elem_t;
 
 /*
  * MQTT publish parameters
 */
-typedef struct lws_mqtt_subscribe_param_s {
+typedef struct aws_lws_mqtt_subscribe_param_s {
 	uint32_t		num_topics;	/* Number of topics */
-	lws_mqtt_topic_elem_t	*topic;		/* Array of topic elements */
+	aws_lws_mqtt_topic_elem_t	*topic;		/* Array of topic elements */
 
 	/*--v-Following will be used by LWS-v--*/
 	uint16_t		packet_id;
-} lws_mqtt_subscribe_param_t;
+} aws_lws_mqtt_subscribe_param_t;
 
 typedef enum {
 	LMQCP_RESERVED,
@@ -152,7 +152,7 @@ typedef enum {
 	LMQCP_STOC_PINGRESP,	/* PONG response */
 	LMQCP_DISCONNECT,	/* Disconnect notification */
 	LMQCP_AUTH		/* Authentication exchange */
-} lws_mqtt_control_packet_t;
+} aws_lws_mqtt_control_packet_t;
 
 /* flags from byte 8 of C_TO_S CONNECT */
 typedef enum {
@@ -169,12 +169,12 @@ typedef enum {
 	LMQCFT_RESERVED						= (1 << 0),
 
 	LMQCFT_WILL_QOS_MASK					= (3 << 3),
-} lws_mqtt_connect_flags_t;
+} aws_lws_mqtt_connect_flags_t;
 
 /* flags for S_TO_C CONNACK */
 typedef enum {
 	LMQCFT_SESSION_PRESENT					= (1 << 0),
-} lws_mqtt_connack_flags_t;
+} aws_lws_mqtt_connack_flags_t;
 
 typedef enum {
 	LMQCP_REASON_SUCCESS					= 0x00,
@@ -227,7 +227,7 @@ typedef enum {
 	LMQCP_REASON_MAXIMUM_CONNECT_TIME			= 0xa0,
 	LMQCP_REASON_SUBSCRIPTION_IDS_NOT_SUPPORTED		= 0xa1,
 	LMQCP_REASON_WILDCARD_SUBSCRIPTIONS_NOT_SUPPORTED	= 0xa2,
-} lws_mqtt_reason_t;
+} aws_lws_mqtt_reason_t;
 
 typedef enum {
 	LMQPROP_INVALID,
@@ -258,39 +258,39 @@ typedef enum {
 	LMQPROP_WILDCARD_SUBSCRIPTION_AVAIL			= 0x28,
 	LMQPROP_SUBSCRIPTION_IDENTIFIER_AVAIL			= 0x29,
 	LMQPROP_SHARED_SUBSCRIPTION_AVAIL			= 0x2a
-} lws_mqtt_property;
+} aws_lws_mqtt_property;
 
 int
-lws_read_mqtt(struct lws *wsi, unsigned char *buf, lws_filepos_t len);
+aws_lws_read_mqtt(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
 
 /* returns 0 if bd1 and bd2 are "the same", that includes empty, else nonzero */
 LWS_VISIBLE LWS_EXTERN int
-lws_mqtt_bindata_cmp(const lws_mqtt_str_t *bd1, const lws_mqtt_str_t *bd2);
+aws_lws_mqtt_bindata_cmp(const aws_lws_mqtt_str_t *bd1, const aws_lws_mqtt_str_t *bd2);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_mqtt_str_init(lws_mqtt_str_t *s, uint8_t *buf, uint16_t lim, char nf);
+aws_lws_mqtt_str_init(aws_lws_mqtt_str_t *s, uint8_t *buf, uint16_t lim, char nf);
 
-LWS_VISIBLE LWS_EXTERN lws_mqtt_str_t *
-lws_mqtt_str_create(uint16_t lim);
+LWS_VISIBLE LWS_EXTERN aws_lws_mqtt_str_t *
+aws_lws_mqtt_str_create(uint16_t lim);
 
-LWS_VISIBLE LWS_EXTERN lws_mqtt_str_t *
-lws_mqtt_str_create_init(uint8_t *buf, uint16_t len, uint16_t lim);
+LWS_VISIBLE LWS_EXTERN aws_lws_mqtt_str_t *
+aws_lws_mqtt_str_create_init(uint8_t *buf, uint16_t len, uint16_t lim);
 
-LWS_VISIBLE LWS_EXTERN lws_mqtt_str_t *
-lws_mqtt_str_create_cstr_dup(const char *buf, uint16_t lim);
+LWS_VISIBLE LWS_EXTERN aws_lws_mqtt_str_t *
+aws_lws_mqtt_str_create_cstr_dup(const char *buf, uint16_t lim);
 
 LWS_VISIBLE LWS_EXTERN uint8_t *
-lws_mqtt_str_next(lws_mqtt_str_t *s, uint16_t *budget);
+aws_lws_mqtt_str_next(aws_lws_mqtt_str_t *s, uint16_t *budget);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_mqtt_str_advance(lws_mqtt_str_t *s, int n);
+aws_lws_mqtt_str_advance(aws_lws_mqtt_str_t *s, int n);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_mqtt_str_free(lws_mqtt_str_t **s);
+aws_lws_mqtt_str_free(aws_lws_mqtt_str_t **s);
 
 
 /**
- * lws_mqtt_client_send_publish() - lws_write a publish packet
+ * aws_lws_mqtt_client_send_publish() - aws_lws_write a publish packet
  *
  * \param wsi: the mqtt child wsi
  * \param pub: additional information on what we're publishing
@@ -317,11 +317,11 @@ lws_mqtt_str_free(lws_mqtt_str_t **s);
  * Final should be set when you're calling with the last part of the payload.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_mqtt_client_send_publish(struct lws *wsi, lws_mqtt_publish_param_t *pub,
+aws_lws_mqtt_client_send_publish(struct lws *wsi, aws_lws_mqtt_publish_param_t *pub,
 			     const void *buf, uint32_t len, int final);
 
 /**
- * lws_mqtt_client_send_subcribe() - lws_write a subscribe packet
+ * aws_lws_mqtt_client_send_subcribe() - aws_lws_write a subscribe packet
  *
  * \param wsi: the mqtt child wsi
  * \param sub: which topic(s) we want to subscribe to
@@ -334,10 +334,10 @@ lws_mqtt_client_send_publish(struct lws *wsi, lws_mqtt_publish_param_t *pub,
  * \p sub doesn't need to exist after the return from this function.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_mqtt_client_send_subcribe(struct lws *wsi, lws_mqtt_subscribe_param_t *sub);
+aws_lws_mqtt_client_send_subcribe(struct lws *wsi, aws_lws_mqtt_subscribe_param_t *sub);
 
 /**
- * lws_mqtt_client_send_unsubcribe() - lws_write a unsubscribe packet
+ * aws_lws_mqtt_client_send_unsubcribe() - aws_lws_write a unsubscribe packet
  *
  * \param wsi: the mqtt child wsi
  * \param sub: which topic(s) we want to unsubscribe from
@@ -351,7 +351,7 @@ lws_mqtt_client_send_subcribe(struct lws *wsi, lws_mqtt_subscribe_param_t *sub);
  * \p unsub doesn't need to exist after the return from this function.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_mqtt_client_send_unsubcribe(struct lws *wsi,
-				const lws_mqtt_subscribe_param_t *unsub);
+aws_lws_mqtt_client_send_unsubcribe(struct lws *wsi,
+				const aws_lws_mqtt_subscribe_param_t *unsub);
 
 #endif /* _LWS_MQTT_H */

@@ -25,8 +25,8 @@ to their browser window over a ws connection.
 [2018/03/14 17:50:10:6955] NOTICE:  Using non-SSL mode
 [2018/03/14 17:50:10:7035] NOTICE: created client ssl context for default
 [2018/03/14 17:50:11:7047] NOTICE: binding to lws-minimal-proxy
-[2018/03/14 17:50:11:7047] NOTICE: lws_client_connect_2: 0x872e60: address libwebsockets.org
-[2018/03/14 17:50:12:3282] NOTICE: lws_client_connect_2: 0x872e60: address libwebsockets.org
+[2018/03/14 17:50:11:7047] NOTICE: aws_lws_client_connect_2: 0x872e60: address libwebsockets.org
+[2018/03/14 17:50:12:3282] NOTICE: aws_lws_client_connect_2: 0x872e60: address libwebsockets.org
 [2018/03/14 17:50:13:8195] USER: callback_minimal: established
 ```
 

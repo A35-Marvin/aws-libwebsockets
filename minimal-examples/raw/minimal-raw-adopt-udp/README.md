@@ -14,8 +14,8 @@ happen next time around the event loop if there are no pending partials.
 With UDP, there is no "connection".  You need to write with sendto() and
 direct the packets to a specific destination.  You can learn the source
 of the last packet that arrived at the LWS_CALLBACK_RAW_RX callback by
-getting a `struct lws_udp *` from `lws_get_udp(wsi)`.  To be able to
-send back to that guy, you should take a copy of the `struct lws_udp *` and
+getting a `struct aws_lws_udp *` from `aws_lws_get_udp(wsi)`.  To be able to
+send back to that guy, you should take a copy of the `struct aws_lws_udp *` and
 use the .sa and .salen members in your sendto().
 
 However the kernel may not accept to buffer / write everything you wanted to send.

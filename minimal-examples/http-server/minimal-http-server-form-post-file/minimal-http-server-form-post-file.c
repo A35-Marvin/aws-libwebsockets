@@ -28,7 +28,7 @@
  * that is unrelated to (shorter than) the lifetime of the network connection.
  */
 struct pss {
-	struct lws_spa *spa;		/* lws helper decodes multipart form */
+	struct aws_lws_spa *spa;		/* lws helper decodes multipart form */
 	char filename[128];		/* the filename of the uploaded file */
 	unsigned long long file_length; /* the amount of bytes uploaded */
 	int fd;				/* fd on file being saved */
@@ -48,20 +48,20 @@ enum enum_param_names {
 
 static int
 file_upload_cb(void *data, const char *name, const char *filename,
-	       char *buf, int len, enum lws_spa_fileupload_states state)
+	       char *buf, int len, enum aws_lws_spa_fileupload_states state)
 {
 	struct pss *pss = (struct pss *)data;
 
 	switch (state) {
 	case LWS_UFS_OPEN:
 		/* take a copy of the provided filename */
-		lws_strncpy(pss->filename, filename, sizeof(pss->filename) - 1);
+		aws_lws_strncpy(pss->filename, filename, sizeof(pss->filename) - 1);
 		/* remove any scary things like .. */
-		lws_filename_purify_inplace(pss->filename);
+		aws_lws_filename_purify_inplace(pss->filename);
 		/* open a file of that name for write in the cwd */
-		pss->fd = lws_open(pss->filename, O_CREAT | O_TRUNC | O_RDWR, 0600);
+		pss->fd = aws_lws_open(pss->filename, O_CREAT | O_TRUNC | O_RDWR, 0600);
 		if (pss->fd == -1) {
-			lwsl_notice("Failed to open output file %s\n",
+			aws_lwsl_notice("Failed to open output file %s\n",
 				    pss->filename);
 			return 1;
 		}
@@ -75,7 +75,7 @@ file_upload_cb(void *data, const char *name, const char *filename,
 
 			n = (int)write(pss->fd, buf, (unsigned int)len);
 			if (n < len) {
-				lwsl_notice("Problem writing file %d\n", errno);
+				aws_lwsl_notice("Problem writing file %d\n", errno);
 			}
 		}
 		if (state == LWS_UFS_CONTENT)
@@ -84,7 +84,7 @@ file_upload_cb(void *data, const char *name, const char *filename,
 
 		/* the file upload is completed */
 
-		lwsl_user("%s: upload done, written %lld to %s\n", __func__,
+		aws_lwsl_user("%s: upload done, written %lld to %s\n", __func__,
 			  pss->file_length, pss->filename);
 
 		close(pss->fd);
@@ -98,7 +98,7 @@ file_upload_cb(void *data, const char *name, const char *filename,
 }
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 	uint8_t buf[LWS_PRE + LWS_RECOMMENDED_MIN_HEADER_SPACE], *start = &buf[LWS_PRE],
@@ -129,7 +129,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		/* create the POST argument parser if not already existing */
 
 		if (!pss->spa) {
-			pss->spa = lws_spa_create(wsi, param_names,
+			pss->spa = aws_lws_spa_create(wsi, param_names,
 					LWS_ARRAY_SIZE(param_names), 1024,
 					file_upload_cb, pss);
 			if (!pss->spa)
@@ -138,7 +138,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 		/* let it parse the POST data */
 
-		if (lws_spa_process(pss->spa, in, (int)len))
+		if (aws_lws_spa_process(pss->spa, in, (int)len))
 			return -1;
 		break;
 
@@ -146,18 +146,18 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 		/* inform the spa no more payload data coming */
 
-		lws_spa_finalize(pss->spa);
+		aws_lws_spa_finalize(pss->spa);
 
 		/* we just dump the decoded things to the log */
 
 		for (n = 0; n < (int)LWS_ARRAY_SIZE(param_names); n++) {
-			if (!lws_spa_get_string(pss->spa, n))
-				lwsl_user("%s: undefined\n", param_names[n]);
+			if (!aws_lws_spa_get_string(pss->spa, n))
+				aws_lwsl_user("%s: undefined\n", param_names[n]);
 			else
-				lwsl_user("%s: (len %d) '%s'\n",
+				aws_lwsl_user("%s: (len %d) '%s'\n",
 				    param_names[n],
-				    lws_spa_get_length(pss->spa, n),
-				    lws_spa_get_string(pss->spa, n));
+				    aws_lws_spa_get_length(pss->spa, n),
+				    aws_lws_spa_get_string(pss->spa, n));
 		}
 
 		/*
@@ -165,7 +165,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * have generated a dynamic html page here instead.
 		 */
 
-		if (lws_http_redirect(wsi, HTTP_STATUS_MOVED_PERMANENTLY,
+		if (aws_lws_http_redirect(wsi, HTTP_STATUS_MOVED_PERMANENTLY,
 				      (unsigned char *)"after-form1.html",
 				      16, &p, end) < 0)
 			return -1;
@@ -175,7 +175,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	case LWS_CALLBACK_HTTP_DROP_PROTOCOL:
 		/* called when our wsi user_space is going to be destroyed */
 		if (pss->spa) {
-			lws_spa_destroy(pss->spa);
+			aws_lws_spa_destroy(pss->spa);
 			pss->spa = NULL;
 		}
 		break;
@@ -184,17 +184,17 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	{ "http", callback_http, sizeof(struct pss), 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
 
 /* default mount serves the URL space from ./mount-origin */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */	       NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */		"./mount-origin",	/* serve from dir */
@@ -221,8 +221,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -234,11 +234,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server POST file | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server POST file | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -247,16 +247,16 @@ int main(int argc, const char **argv)
 	info.options =
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

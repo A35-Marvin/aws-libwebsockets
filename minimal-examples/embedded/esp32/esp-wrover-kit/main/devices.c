@@ -19,10 +19,10 @@
 
 #include <libwebsockets.h>
 
-struct lws_led_state *lls;
-lws_display_state_t lds;
-struct lws_button_state *bcs;
-lws_netdev_instance_wifi_t *wnd;
+struct aws_lws_led_state *lls;
+aws_lws_display_state_t lds;
+struct aws_lws_button_state *bcs;
+aws_lws_netdev_instance_wifi_t *wnd;
 
 /*
  * Button controller
@@ -35,16 +35,16 @@ lws_netdev_instance_wifi_t *wnd;
  * of the switch connected to 0V.
  */
 
-static const lws_button_map_t bcm[] = {
+static const aws_lws_button_map_t bcm[] = {
 	{
 		.gpio			= GPIO_NUM_14,
 		.smd_interaction_name	= "user"
 	},
 };
 
-static const lws_button_controller_t bc = {
+static const aws_lws_button_controller_t bc = {
 	.smd_bc_name			= "bc",
-	.gpio_ops			= &lws_gpio_plat,
+	.gpio_ops			= &aws_lws_gpio_plat,
 	.button_map			= &bcm[0],
 	.active_state_bitmap		= 0,
 	.count_buttons			= LWS_ARRAY_SIZE(bcm),
@@ -54,15 +54,15 @@ static const lws_button_controller_t bc = {
  * pwm controller
  */
 
-static const lws_pwm_map_t pwm_map[] = {
+static const aws_lws_pwm_map_t pwm_map[] = {
 	{ .gpio = GPIO_NUM_2, .index = 0, .active_level = 1 },
 	{ .gpio = GPIO_NUM_0, .index = 1, .active_level = 1 },
 	{ .gpio = GPIO_NUM_4, .index = 2, .active_level = 1 },
 	{ .gpio = GPIO_NUM_5, .index = 3, .active_level = 0 }
 };
 
-static const lws_pwm_ops_t pwm_ops = {
-	lws_pwm_plat_ops,
+static const aws_lws_pwm_ops_t pwm_ops = {
+	aws_lws_pwm_plat_ops,
 	.pwm_map			= &pwm_map[0],
 	.count_pwm_map			= LWS_ARRAY_SIZE(pwm_map)
 };
@@ -71,7 +71,7 @@ static const lws_pwm_ops_t pwm_ops = {
  * led controller
  */
 
-static const lws_led_gpio_map_t lgm[] = {
+static const aws_lws_led_gpio_map_t lgm[] = {
 	{
 		.name			= "red",
 		.gpio			= GPIO_NUM_2,
@@ -105,9 +105,9 @@ static const lws_led_gpio_map_t lgm[] = {
 	},
 };
 
-static const lws_led_gpio_controller_t lgc = {
-	.led_ops			= lws_led_gpio_ops,
-	.gpio_ops			= &lws_gpio_plat,
+static const aws_lws_led_gpio_controller_t lgc = {
+	.led_ops			= aws_lws_led_gpio_ops,
+	.gpio_ops			= &aws_lws_gpio_plat,
 	.led_map			= &lgm[0],
 	.count_leds			= LWS_ARRAY_SIZE(lgm)
 };
@@ -116,12 +116,12 @@ static const lws_led_gpio_controller_t lgc = {
  * Bitbang SPI configuration for display
  */
 
-static const lws_bb_spi_t lbspi = {
+static const aws_lws_bb_spi_t lbspi = {
 		.bb_ops = {
-			lws_bb_spi_ops,
+			aws_lws_bb_spi_ops,
 			.bus_mode = LWS_SPI_BUSMODE_CLK_IDLE_LOW_SAMP_RISING
 		},
-		.gpio		= &lws_gpio_plat,
+		.gpio		= &aws_lws_gpio_plat,
 		.clk		= GPIO_NUM_19,
 		.ncs		= { GPIO_NUM_22 },
 		.ncmd		= { GPIO_NUM_21 },
@@ -135,20 +135,20 @@ static const lws_bb_spi_t lbspi = {
  * SPI display
  */
 
-static const lws_display_ili9341_t disp = {
+static const aws_lws_display_ili9341_t disp = {
 	.disp = {
-		lws_display_ili9341_ops,
+		aws_lws_display_ili9341_ops,
 		.bl_pwm_ops		= &pwm_ops,
-		.bl_active		= &lws_pwmseq_static_on,
-		.bl_dim			= &lws_pwmseq_static_half,
-		.bl_transition		= &lws_pwmseq_linear_wipe,
+		.bl_active		= &aws_lws_pwmseq_static_on,
+		.bl_dim			= &aws_lws_pwmseq_static_half,
+		.bl_transition		= &aws_lws_pwmseq_linear_wipe,
 		.bl_index		= 3,
 		.w			= 320,
 		.h			= 240,
 		.latency_wake_ms	= 150,
 	},
-	.spi				= (lws_spi_ops_t *)&lbspi,
-	.gpio				= &lws_gpio_plat,
+	.spi				= (aws_lws_spi_ops_t *)&lbspi,
+	.gpio				= &aws_lws_gpio_plat,
 	.reset_gpio			= GPIO_NUM_18,
 	.spi_index			= 0
 };
@@ -157,27 +157,27 @@ static const lws_display_ili9341_t disp = {
  * Settings stored in platform nv
  */
 
-static const lws_settings_ops_t sett = {
-	lws_settings_ops_plat
+static const aws_lws_settings_ops_t sett = {
+	aws_lws_settings_ops_plat
 };
 
 /*
  * Wifi
  */
 
-static const lws_netdev_ops_t wifi_ops = {
-	lws_netdev_wifi_plat_ops
+static const aws_lws_netdev_ops_t wifi_ops = {
+	aws_lws_netdev_wifi_plat_ops
 };
 
 int
-init_plat_devices(struct lws_context *ctx)
+init_plat_devices(struct aws_lws_context *ctx)
 {
-	lws_settings_instance_t *si;
-	lws_netdevs_t *netdevs = lws_netdevs_from_ctx(ctx);
+	aws_lws_settings_instance_t *si;
+	aws_lws_netdevs_t *netdevs = aws_lws_netdevs_from_ctx(ctx);
 
-	si = lws_settings_init(&sett, (void *)"nvs");
+	si = aws_lws_settings_init(&sett, (void *)"nvs");
 	if (!si) {
-		lwsl_err("%s: failed to create settings instance\n", __func__);
+		aws_lwsl_err("%s: failed to create settings instance\n", __func__);
 		return 1;
 	}
 	netdevs->si = si;
@@ -189,40 +189,40 @@ init_plat_devices(struct lws_context *ctx)
 	 * while there's no UI atm
 	 */
 	{
-		lws_wifi_creds_t creds;
+		aws_lws_wifi_creds_t creds;
 
 		memset(&creds, 0, sizeof(creds));
 
-		lws_strncpy(creds.ssid, "xxx", sizeof(creds.ssid));
-		lws_strncpy(creds.passphrase, "yyy", sizeof(creds.passphrase));
-		lws_dll2_add_tail(&creds.list, &netdevs->owner_creds);
+		aws_lws_strncpy(creds.ssid, "xxx", sizeof(creds.ssid));
+		aws_lws_strncpy(creds.passphrase, "yyy", sizeof(creds.passphrase));
+		aws_lws_dll2_add_tail(&creds.list, &netdevs->owner_creds);
 
-		if (lws_netdev_credentials_settings_set(netdevs)) {
-			lwsl_err("%s: failed to write bootstrap creds\n",
+		if (aws_lws_netdev_credentials_settings_set(netdevs)) {
+			aws_lwsl_err("%s: failed to write bootstrap creds\n",
 					__func__);
 			return 1;
 		}
 	}
 #endif
 
-//	if (lws_netdev_instance_wifi_settings_get(si, "netdev.wl0", &niw, &ac)) {
-//		lwsl_err("%s: unable to fetch wl0 settings\n", __func__);
+//	if (aws_lws_netdev_instance_wifi_settings_get(si, "netdev.wl0", &niw, &ac)) {
+//		aws_lwsl_err("%s: unable to fetch wl0 settings\n", __func__);
 //		return 1;
 //	}
 
 	/* create the wifi network device and configure it */
 
-	wnd = (lws_netdev_instance_wifi_t *)
+	wnd = (aws_lws_netdev_instance_wifi_t *)
 				wifi_ops.create(ctx, &wifi_ops, "wl0", NULL);
 	if (!wnd) {
-		lwsl_err("%s: failed to create wifi object\n", __func__);
+		aws_lwsl_err("%s: failed to create wifi object\n", __func__);
 		return 1;
 	}
 
 	wnd->flags |= LNDIW_MODE_STA;
 
 	if (wifi_ops.configure(&wnd->inst, NULL)) {
-		lwsl_err("%s: failed to configure wifi object\n", __func__);
+		aws_lwsl_err("%s: failed to configure wifi object\n", __func__);
 		return 1;
 	}
 
@@ -232,7 +232,7 @@ init_plat_devices(struct lws_context *ctx)
 
 	lls = lgc.led_ops.create(&lgc.led_ops);
 	if (!lls) {
-		lwsl_err("%s: could not create led\n", __func__);
+		aws_lwsl_err("%s: could not create led\n", __func__);
 		return 1;
 	}
 
@@ -242,18 +242,18 @@ init_plat_devices(struct lws_context *ctx)
 
 	/* ... and the button controller */
 
-	bcs = lws_button_controller_create(ctx, &bc);
+	bcs = aws_lws_button_controller_create(ctx, &bc);
 	if (!bcs) {
-		lwsl_err("%s: could not create buttons\n", __func__);
+		aws_lwsl_err("%s: could not create buttons\n", __func__);
 		return 1;
 	}
 
-	lws_button_enable(bcs, 0, lws_button_get_bit(bcs, "user"));
+	aws_lws_button_enable(bcs, 0, aws_lws_button_get_bit(bcs, "user"));
 
 	/* ... bring up spi bb and the display */
 
 	lbspi.bb_ops.init(&lbspi.bb_ops);
-	lws_display_state_init(&lds, ctx, 30000, 10000, lls, &disp.disp);
+	aws_lws_display_state_init(&lds, ctx, 30000, 10000, lls, &disp.disp);
 
 	/*
 	 * Make the RGB LED do something using sequenced PWM... pressing the
@@ -261,12 +261,12 @@ init_plat_devices(struct lws_context *ctx)
 	 * different sequences
 	 */
 
-	lws_led_transition(lls, "blue", &lws_pwmseq_sine_endless_fast,
-					&lws_pwmseq_linear_wipe);
-	lws_led_transition(lls, "green", &lws_pwmseq_sine_endless_slow,
-					 &lws_pwmseq_linear_wipe);
-	lws_led_transition(lls, "red", &lws_pwmseq_sine_endless_slow,
-				       &lws_pwmseq_linear_wipe);
+	aws_lws_led_transition(lls, "blue", &aws_lws_pwmseq_sine_endless_fast,
+					&aws_lws_pwmseq_linear_wipe);
+	aws_lws_led_transition(lls, "green", &aws_lws_pwmseq_sine_endless_slow,
+					 &aws_lws_pwmseq_linear_wipe);
+	aws_lws_led_transition(lls, "red", &aws_lws_pwmseq_sine_endless_slow,
+				       &aws_lws_pwmseq_linear_wipe);
 
 	return 0;
 }

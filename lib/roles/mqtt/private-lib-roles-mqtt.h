@@ -25,9 +25,9 @@
 #ifndef _PRIVATE_LIB_ROLES_MQTT
 #define _PRIVATE_LIB_ROLES_MQTT 1
 
-extern struct lws_role_ops role_ops_mqtt;
+extern struct aws_lws_role_ops role_ops_mqtt;
 
-#define lwsi_role_mqtt(wsi) (wsi->role_ops == &role_ops_mqtt)
+#define aws_lwsi_role_mqtt(wsi) (wsi->role_ops == &role_ops_mqtt)
 
 #define LWS_MQTT_MAX_CHILDREN 8 /* max child streams on same parent */
 
@@ -38,7 +38,7 @@ extern struct lws_role_ops role_ops_mqtt;
 #define LMQCP_LUT_FLAG_PACKET_ID_MASK  0x60
 #define LMQCP_LUT_FLAG_PAYLOAD	       0x80	/* payload req (publish = opt)*/
 
-#define lws_mqtt_str_is_not_empty(s) ( ((s)) &&		\
+#define aws_lws_mqtt_str_is_not_empty(s) ( ((s)) &&		\
 				       ((s))->len &&	\
 				       ((s))->buf &&	\
 				       *((s))->buf )
@@ -54,20 +54,20 @@ typedef enum {
 	LMSPR_FAILED_OVERSIZE		= -2,
 	LMSPR_FAILED_FORMAT		= -3,
 	LMSPR_FAILED_ALREADY_COMPLETED	= -4,
-} lws_mqtt_stateful_primitive_return_t;
+} aws_lws_mqtt_stateful_primitive_return_t;
 
 typedef struct {
 	uint32_t value;
 	char budget;
 	char consumed;
-} lws_mqtt_vbi;
+} aws_lws_mqtt_vbi;
 
 /* works for vbi, 2-byte and 4-byte fixed length */
 static inline int
-lws_mqtt_mb_first(lws_mqtt_vbi *vbi) { return !vbi->consumed; }
+aws_lws_mqtt_mb_first(aws_lws_mqtt_vbi *vbi) { return !vbi->consumed; }
 
 int
-lws_mqtt_vbi_encode(uint32_t value, void *buf);
+aws_lws_mqtt_vbi_encode(uint32_t value, void *buf);
 
 /*
  * Decode is done statefully on an arbitrary amount of input data (which may
@@ -76,44 +76,44 @@ lws_mqtt_vbi_encode(uint32_t value, void *buf);
  *
  * VBI decode:
  *
- * Initialize the lws_mqtt_vbi state by calling lws_mqtt_vbi_init() on it, then
- * feed lws_mqtt_vbi_r() bytes to decode.
+ * Initialize the aws_lws_mqtt_vbi state by calling aws_lws_mqtt_vbi_init() on it, then
+ * feed aws_lws_mqtt_vbi_r() bytes to decode.
  *
  * Returns <0 for error, LMSPR_COMPLETED if done (vbi->value is valid), or
- * LMSPR_NEED_MORE if more calls to lws_mqtt_vbi_r() with subsequent bytes
+ * LMSPR_NEED_MORE if more calls to aws_lws_mqtt_vbi_r() with subsequent bytes
  * needed.
  *
  * *in and *len are updated accordingly.
  *
  * 2-byte and 4-byte decode:
  *
- * Initialize the lws_mqtt_vbi state by calling lws_mqtt_2byte_init() or
- * lws_mqtt_4byte_init() on it, then feed lws_mqtt_mb_parse() bytes
+ * Initialize the aws_lws_mqtt_vbi state by calling aws_lws_mqtt_2byte_init() or
+ * aws_lws_mqtt_4byte_init() on it, then feed aws_lws_mqtt_mb_parse() bytes
  * to decode.
  *
  * Returns <0 for error, LMSPR_COMPLETED if done (vbi->value is valid), or
- * LMSPR_NEED_MORE if more calls to lws_mqtt_mb_parse() with subsequent
+ * LMSPR_NEED_MORE if more calls to aws_lws_mqtt_mb_parse() with subsequent
  * bytes needed.
  *
  * *in and *len are updated accordingly.
  */
 
 void
-lws_mqtt_vbi_init(lws_mqtt_vbi *vbi);
+aws_lws_mqtt_vbi_init(aws_lws_mqtt_vbi *vbi);
 
 void
-lws_mqtt_2byte_init(lws_mqtt_vbi *vbi);
+aws_lws_mqtt_2byte_init(aws_lws_mqtt_vbi *vbi);
 
 void
-lws_mqtt_4byte_init(lws_mqtt_vbi *vbi);
+aws_lws_mqtt_4byte_init(aws_lws_mqtt_vbi *vbi);
 
-lws_mqtt_stateful_primitive_return_t
-lws_mqtt_vbi_r(lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len);
+aws_lws_mqtt_stateful_primitive_return_t
+aws_lws_mqtt_vbi_r(aws_lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len);
 
-lws_mqtt_stateful_primitive_return_t
-lws_mqtt_mb_parse(lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len);
+aws_lws_mqtt_stateful_primitive_return_t
+aws_lws_mqtt_mb_parse(aws_lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len);
 
-struct lws_mqtt_str_st {
+struct aws_lws_mqtt_str_st {
 	uint8_t		*buf;
 	uint16_t	len;
 
@@ -125,11 +125,11 @@ struct lws_mqtt_str_st {
 };
 
 static inline int
-lws_mqtt_str_first(struct lws_mqtt_str_st *s) { return !s->buf && !s->pos; }
+aws_lws_mqtt_str_first(struct aws_lws_mqtt_str_st *s) { return !s->buf && !s->pos; }
 
 
-lws_mqtt_stateful_primitive_return_t
-lws_mqtt_str_parse(struct lws_mqtt_str_st *bd, const uint8_t **in, size_t *len);
+aws_lws_mqtt_stateful_primitive_return_t
+aws_lws_mqtt_str_parse(struct aws_lws_mqtt_str_st *bd, const uint8_t **in, size_t *len);
 
 typedef enum {
 	LMQCPP_IDLE,
@@ -238,7 +238,7 @@ typedef enum {
 
 	LMQCPP_PROP_SHARED_SUBSCRIPTION_AVAILABLE_1BYTE			= 0x12a,
 
-} lws_mqtt_packet_parse_state_t;
+} aws_lws_mqtt_packet_parse_state_t;
 
 /*
  * the states an MQTT connection can be in
@@ -255,16 +255,16 @@ typedef enum {
 	LGSMQTT_SENT_SUBSCRIBE,
 	LGSMQTT_SUBSCRIBED,
 
-} lwsgs_mqtt_states_t;
+} aws_lwsgs_mqtt_states_t;
 
-typedef struct lws_mqtt_parser_st {
-	/* struct lws_mqtt_str_st s_content_type; */
-	lws_mqtt_packet_parse_state_t state;
-	lws_mqtt_vbi vbit;
+typedef struct aws_lws_mqtt_parser_st {
+	/* struct aws_lws_mqtt_str_st s_content_type; */
+	aws_lws_mqtt_packet_parse_state_t state;
+	aws_lws_mqtt_vbi vbit;
 
-	lws_mqtt_reason_t reason;
+	aws_lws_mqtt_reason_t reason;
 
-	lws_mqtt_str_t s_temp;
+	aws_lws_mqtt_str_t s_temp;
 
 	uint8_t fixed_seen[4];
 	uint8_t props_seen[8];
@@ -294,7 +294,7 @@ typedef struct lws_mqtt_parser_st {
 	uint8_t flag_prop_multi:1;
 	uint8_t flag_server:1;
 
-} lws_mqtt_parser_t;
+} aws_lws_mqtt_parser_t;
 
 typedef enum {
 	LMVTR_VALID				=  0,
@@ -304,17 +304,17 @@ typedef enum {
 	LMVTR_FAILED_OVERSIZE			= -1,
 	LMVTR_FAILED_WILDCARD_FORMAT		= -2,
 	LMVTR_FAILED_SHADOW_FORMAT		= -3,
-} lws_mqtt_validate_topic_return_t;
+} aws_lws_mqtt_validate_topic_return_t;
 
 typedef enum {
 	LMMTR_TOPIC_NOMATCH			= 0,
 	LMMTR_TOPIC_MATCH			= 1,
 
 	LMMTR_TOPIC_MATCH_ERROR			= -1
-} lws_mqtt_match_topic_return_t;
+} aws_lws_mqtt_match_topic_return_t;
 
-typedef struct lws_mqtt_subs {
-	struct lws_mqtt_subs	*next;
+typedef struct aws_lws_mqtt_subs {
+	struct aws_lws_mqtt_subs	*next;
 
 	uint8_t			ref_count; /* number of children referencing */
 
@@ -324,40 +324,40 @@ typedef struct lws_mqtt_subs {
 
 	/* subscription name + NUL overallocated here */
 	char			topic[];
-} lws_mqtt_subs_t;
+} aws_lws_mqtt_subs_t;
 
-typedef struct lws_mqtts {
-	lws_mqtt_parser_t	par;
-	lwsgs_mqtt_states_t	estate;
-	struct lws_dll2		active_session_list_head;
-	struct lws_dll2		limbo_session_list_head;
-} lws_mqtts_t;
+typedef struct aws_lws_mqtts {
+	aws_lws_mqtt_parser_t	par;
+	aws_lwsgs_mqtt_states_t	estate;
+	struct aws_lws_dll2		active_session_list_head;
+	struct aws_lws_dll2		limbo_session_list_head;
+} aws_lws_mqtts_t;
 
-typedef struct lws_mqttc {
-	lws_mqtt_parser_t	par;
-	lwsgs_mqtt_states_t	estate;
-	struct lws_mqtt_str_st	*id;
-	struct lws_mqtt_str_st	*username;
-	struct lws_mqtt_str_st	*password;
+typedef struct aws_lws_mqttc {
+	aws_lws_mqtt_parser_t	par;
+	aws_lwsgs_mqtt_states_t	estate;
+	struct aws_lws_mqtt_str_st	*id;
+	struct aws_lws_mqtt_str_st	*username;
+	struct aws_lws_mqtt_str_st	*password;
 	struct {
-		struct lws_mqtt_str_st	*topic;
-		struct lws_mqtt_str_st	*message;
-		lws_mqtt_qos_levels_t qos;
+		struct aws_lws_mqtt_str_st	*topic;
+		struct aws_lws_mqtt_str_st	*message;
+		aws_lws_mqtt_qos_levels_t qos;
 		uint8_t		retain;
 	} will;
 	uint16_t		keep_alive_secs;
 	uint16_t			conn_flags;
 	uint8_t			aws_iot;
-} lws_mqttc_t;
+} aws_lws_mqttc_t;
 
 struct _lws_mqtt_related {
-	lws_mqttc_t		client;
-	lws_sorted_usec_list_t	sul_qos_puback_pubrec_wait; /* QoS1 puback or QoS2 pubrec wait TO */
-	lws_sorted_usec_list_t	sul_qos1_puback_wait; /* QoS1 puback wait TO */
-	lws_sorted_usec_list_t	sul_unsuback_wait; /* QoS1 unsuback wait TO */
-	lws_sorted_usec_list_t	sul_qos2_pubrec_wait; /* QoS2 pubrec wait TO */
-	struct lws		*wsi; /**< so sul can use lws_container_of */
-	lws_mqtt_subs_t		*subs_head; /**< Linked-list of heap-allocated subscription objects */
+	aws_lws_mqttc_t		client;
+	aws_lws_sorted_usec_list_t	sul_qos_puback_pubrec_wait; /* QoS1 puback or QoS2 pubrec wait TO */
+	aws_lws_sorted_usec_list_t	sul_qos1_puback_wait; /* QoS1 puback wait TO */
+	aws_lws_sorted_usec_list_t	sul_unsuback_wait; /* QoS1 unsuback wait TO */
+	aws_lws_sorted_usec_list_t	sul_qos2_pubrec_wait; /* QoS2 pubrec wait TO */
+	struct lws		*wsi; /**< so sul can use aws_lws_container_of */
+	aws_lws_mqtt_subs_t		*subs_head; /**< Linked-list of heap-allocated subscription objects */
 	void			*rx_cpkt_param;
 	uint16_t		pkt_id;
 	uint16_t		ack_pkt_id;
@@ -395,47 +395,47 @@ struct _lws_mqtt_related {
  * parsing temps for a session must live in the session object.
  */
 
-struct lws_mqtt_endpoint_st;
+struct aws_lws_mqtt_endpoint_st;
 
-typedef struct lws_mqtts_session_st {
-	struct lws_dll2 session_list;
+typedef struct aws_lws_mqtts_session_st {
+	struct aws_lws_dll2 session_list;
 
-} lws_mqtts_session_t;
+} aws_lws_mqtts_session_t;
 
 #define ctl_pkt_type(x) (x->packet_type_flags >> 4)
 
 
 void
-lws_mqttc_state_transition(lws_mqttc_t *ep, lwsgs_mqtt_states_t s);
+aws_lws_mqttc_state_transition(aws_lws_mqttc_t *ep, aws_lwsgs_mqtt_states_t s);
 
 int
-_lws_mqtt_rx_parser(struct lws *wsi, lws_mqtt_parser_t *par,
+_lws_mqtt_rx_parser(struct lws *wsi, aws_lws_mqtt_parser_t *par,
 		    const uint8_t *buf, size_t len);
 
 int
-lws_mqtt_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd,
+aws_lws_mqtt_client_socket_service(struct lws *wsi, struct aws_lws_pollfd *pollfd,
 			       struct lws *wsi_conn);
 
 int
-lws_create_client_mqtt_object(const struct lws_client_connect_info *i,
+aws_lws_create_client_mqtt_object(const struct aws_lws_client_connect_info *i,
 			      struct lws *wsi);
 
 struct lws *
-lws_mqtt_client_send_connect(struct lws *wsi);
+aws_lws_mqtt_client_send_connect(struct lws *wsi);
 
 struct lws *
-lws_mqtt_client_send_disconnect(struct lws *wsi);
+aws_lws_mqtt_client_send_disconnect(struct lws *wsi);
 
 int
-lws_mqtt_fill_fixed_header(uint8_t *p, lws_mqtt_control_packet_t ctrl_pkt_type,
-			   uint8_t dup, lws_mqtt_qos_levels_t qos,
+aws_lws_mqtt_fill_fixed_header(uint8_t *p, aws_lws_mqtt_control_packet_t ctrl_pkt_type,
+			   uint8_t dup, aws_lws_mqtt_qos_levels_t qos,
 			   uint8_t retain);
 
 struct lws *
-lws_wsi_mqtt_adopt(struct lws *parent_wsi, struct lws *wsi);
+aws_lws_wsi_mqtt_adopt(struct lws *parent_wsi, struct lws *wsi);
 
-lws_mqtt_subs_t *
-lws_mqtt_find_sub(struct _lws_mqtt_related *mqtt, const char *topic);
+aws_lws_mqtt_subs_t *
+aws_lws_mqtt_find_sub(struct _lws_mqtt_related *mqtt, const char *topic);
 
 #endif /* _PRIVATE_LIB_ROLES_MQTT */
 

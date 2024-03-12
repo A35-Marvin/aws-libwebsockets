@@ -1,6 +1,6 @@
 # lws minimal http client attach
 
-This demonstrates how other threads can reach out to an existing lws_context
+This demonstrates how other threads can reach out to an existing aws_lws_context
 and join its event loop cleanly and safely.
 
 ## build
@@ -17,7 +17,7 @@ Pthreads is required on your system.
  $ ./lws-minimal-http-client-attach
 [2019/12/31 18:30:49:3495] U: main: main thread tid 0x503e1c0
 [2019/12/31 18:30:50:3584] U: LWS minimal http client attach
-[2019/12/31 18:30:50:4002] U: lws_create: tid 0x5c41700
+[2019/12/31 18:30:50:4002] U: aws_lws_create: tid 0x5c41700
 [2019/12/31 18:30:50:5727] E: callback_ntpc: set up system ops for set_clock
 [2019/12/31 18:30:50:2110] N: callback_ntpc: Unix time: 1577817053
 [2019/12/31 18:30:50:2136] U: attach_callback: called from tid 0x5c41700

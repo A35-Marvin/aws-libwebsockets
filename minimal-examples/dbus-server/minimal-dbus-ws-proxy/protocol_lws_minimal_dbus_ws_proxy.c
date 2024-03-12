@@ -29,7 +29,7 @@
  * must not allocate in objects owned by the other world.  They must generate
  * their own objects in their world and use those for allocations and state.
  *
- * For example in the dbus-world there is a struct lws_dbus_ctx_wsproxy with
+ * For example in the dbus-world there is a struct aws_lws_dbus_ctx_wsproxy with
  * various state, but he is subject to deletion by events in dbus-world.  If
  * the ws-world stored things there, they are subject to going out of scope
  * at the whim of the dbus connection without the ws world hearing about it and
@@ -39,7 +39,7 @@
  * In this application there's a point of contact between the worlds, a ring
  * buffer allocated in ws world when the ws connection is established, and
  * deallocated when the ws connection is closed.  The DBUS world needs to put
- * things in this ringbuffer.  But the way lws_ring works, when the message
+ * things in this ringbuffer.  But the way aws_lws_ring works, when the message
  * allocated in DBUS world is queued on the ringbuffer, the ringbuffer itself
  * takes responsibility for deallocation.  So there is no problem.
  */
@@ -71,12 +71,12 @@ struct msg {
 };
 
 struct pss_dbus_proxy {
-	struct lws_ring *ring_out;
+	struct aws_lws_ring *ring_out;
 	uint32_t ring_out_tail;
 };
 
-struct lws_dbus_ctx_wsproxy {
-	struct lws_dbus_ctx ctx;
+struct aws_lws_dbus_ctx_wsproxy {
+	struct aws_lws_dbus_ctx ctx;
 
 	struct lws *cwsi;
 	struct vhd_dbus_proxy *vhd;
@@ -84,15 +84,15 @@ struct lws_dbus_ctx_wsproxy {
 };
 
 struct vhd_dbus_proxy {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
 
 	/*
 	 * Because the listener ctx is composed in the vhd, we can always get a
 	 * pointer to the outer vhd from a pointer to ctx_listener inside.
 	 */
-	struct lws_dbus_ctx ctx_listener;
-	struct lws_dbus_ctx_wsproxy dctx;
+	struct aws_lws_dbus_ctx ctx_listener;
+	struct aws_lws_dbus_ctx_wsproxy dctx;
 
 	const char *dbus_listen_ads;
 };
@@ -216,10 +216,10 @@ dmh_getall(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 static DBusHandlerResult
 dmh_connect(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 {
-	struct lws_dbus_ctx_wsproxy *wspctx = (struct lws_dbus_ctx_wsproxy *)d;
+	struct aws_lws_dbus_ctx_wsproxy *wspctx = (struct aws_lws_dbus_ctx_wsproxy *)d;
 	const char *prot = "", *ads = "", *path = "", *baduri = "Bad Uri",
 		   *connecting = "Connecting", *failed = "Failed", **pp;
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 	char host[128], uri_copy[512];
 	const char *uri, *subprotocol;
 	DBusError err;
@@ -240,12 +240,12 @@ dmh_connect(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 	strncpy(uri_copy, uri, sizeof(uri_copy) - 1);
 	uri_copy[sizeof(uri_copy) - 1] = '\0';
 
-	if (lws_parse_uri(uri_copy, &prot, &ads, &port, &path)) {
+	if (aws_lws_parse_uri(uri_copy, &prot, &ads, &port, &path)) {
 		pp = &baduri;
 		goto send_reply;
 	}
 
-	lws_snprintf(host, sizeof(host), "%s:%u", ads, port);
+	aws_lws_snprintf(host, sizeof(host), "%s:%u", ads, port);
 
 	memset(&i, 0, sizeof(i));
 
@@ -264,17 +264,17 @@ dmh_connect(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 	i.local_protocol_name = "lws-minimal-dbus-wsproxy";
 	i.pwsi = &wspctx->cwsi;
 
-	lwsl_user("%s: connecting to %s://%s:%d%s\n", __func__, prot,
+	aws_lwsl_user("%s: connecting to %s://%s:%d%s\n", __func__, prot,
 			i.address, i.port, i.path);
 
-	if (!lws_client_connect_via_info(&i)) {
-		lwsl_notice("%s: client connect failed\n", __func__);
+	if (!aws_lws_client_connect_via_info(&i)) {
+		aws_lwsl_notice("%s: client connect failed\n", __func__);
 		pp = &failed;
 		goto send_reply;
 	}
 
-	lws_set_opaque_parent_data(wspctx->cwsi, wspctx);
-	lwsl_notice("%s: client connecting...\n", __func__);
+	aws_lws_set_opaque_parent_data(wspctx->cwsi, wspctx);
+	aws_lwsl_notice("%s: client connecting...\n", __func__);
 	pp = &connecting;
 
 send_reply:
@@ -287,8 +287,8 @@ send_reply:
 static int
 issue_dbus_signal(struct lws *wsi, const char *signame, const char *string)
 {
-	struct lws_dbus_ctx_wsproxy *wspctx =
-			lws_get_opaque_parent_data(wsi);
+	struct aws_lws_dbus_ctx_wsproxy *wspctx =
+			aws_lws_get_opaque_parent_data(wsi);
 	DBusMessage *m;
 
 	if (!wspctx)
@@ -296,7 +296,7 @@ issue_dbus_signal(struct lws *wsi, const char *signame, const char *string)
 
 	m = dbus_message_new_signal(THIS_OBJECT, THIS_INTERFACE, signame);
 	if (!m) {
-		lwsl_err("%s: new signal failed\n", __func__);
+		aws_lwsl_err("%s: new signal failed\n", __func__);
 		return 1;
 	}
 
@@ -304,7 +304,7 @@ issue_dbus_signal(struct lws *wsi, const char *signame, const char *string)
 				    DBUS_TYPE_INVALID);
 
 	if (!dbus_connection_send(wspctx->ctx.conn, m, NULL))
-		lwsl_err("%s: unable to send\n", __func__);
+		aws_lwsl_err("%s: unable to send\n", __func__);
 
 	dbus_message_unref(m);
 
@@ -314,7 +314,7 @@ issue_dbus_signal(struct lws *wsi, const char *signame, const char *string)
 static DBusHandlerResult
 dmh_send(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 {
-	struct lws_dbus_ctx_wsproxy *wspctx = (struct lws_dbus_ctx_wsproxy *)d;
+	struct aws_lws_dbus_ctx_wsproxy *wspctx = (struct aws_lws_dbus_ctx_wsproxy *)d;
 	const char *payload;
 	struct msg amsg;
 	DBusError err;
@@ -339,14 +339,14 @@ dmh_send(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 
 	/*
 	 * we allocate on the ringbuffer in ws world, but responsibility for
-	 * freeing it is understood by lws_ring.
+	 * freeing it is understood by aws_lws_ring.
 	 */
 
 	amsg.len = strlen(payload);
 	/* notice we over-allocate by LWS_PRE */
 	amsg.payload = malloc(LWS_PRE + amsg.len);
 	if (!amsg.payload) {
-		lwsl_user("OOM: dropping\n");
+		aws_lwsl_user("OOM: dropping\n");
 		dbus_message_unref(*reply);
 		*reply = dbus_message_new_error(m, "Send Fail", "OOM");
 
@@ -357,24 +357,24 @@ dmh_send(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 	amsg.final = 1;
 
 	memcpy((char *)amsg.payload + LWS_PRE, payload, amsg.len);
-	if (!lws_ring_insert(wspctx->pss->ring_out, &amsg, 1)) {
+	if (!aws_lws_ring_insert(wspctx->pss->ring_out, &amsg, 1)) {
 		destroy_message(&amsg);
-		lwsl_user("Ring Full!\n");
+		aws_lwsl_user("Ring Full!\n");
 		dbus_message_unref(*reply);
 		*reply = dbus_message_new_error(m, "Send Fail", "Ring full");
 
 		return DBUS_HANDLER_RESULT_HANDLED;
 	}
 	if (wspctx->cwsi)
-		lws_callback_on_writable(wspctx->cwsi);
+		aws_lws_callback_on_writable(wspctx->cwsi);
 
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-struct lws_dbus_methods {
+struct aws_lws_dbus_methods {
 	const char *inter;
 	const char *call;
-	lws_dbus_message_handler handler;
+	aws_lws_dbus_message_handler handler;
 } meths[] = {
 	{ DBUS_INTERFACE_INTROSPECTABLE, "Introspect",	dmh_introspect	},
 	{ DBUS_INTERFACE_PROPERTIES,	 "Get",		dmh_get		},
@@ -386,14 +386,14 @@ struct lws_dbus_methods {
 static DBusHandlerResult
 server_message_handler(DBusConnection *conn, DBusMessage *message, void *data)
 {
-	struct lws_dbus_methods *mp = meths;
+	struct aws_lws_dbus_methods *mp = meths;
         DBusMessage *reply = NULL;
 	DBusHandlerResult result;
 	size_t n;
 
 	assert(data);
 
-	lwsl_info("%s: Got D-Bus request: %s.%s on %s\n", __func__,
+	aws_lwsl_info("%s: Got D-Bus request: %s.%s on %s\n", __func__,
 		dbus_message_get_interface(message),
 		dbus_message_get_member(message),
 		dbus_message_get_path(message));
@@ -426,15 +426,15 @@ static const DBusObjectPathVTable vtable = {
 };
 
 static void
-destroy_dbus_server_conn(struct lws_dbus_ctx_wsproxy *wsctx)
+destroy_dbus_server_conn(struct aws_lws_dbus_ctx_wsproxy *wsctx)
 {
 	if (!wsctx->ctx.conn)
 		return;
 
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 
 	dbus_connection_unregister_object_path(wsctx->ctx.conn, THIS_OBJECT);
-	lws_dll2_remove(&wsctx->ctx.next);
+	aws_lws_dll2_remove(&wsctx->ctx.next);
 	dbus_connection_unref(wsctx->ctx.conn);
 }
 
@@ -444,11 +444,11 @@ destroy_dbus_server_conn(struct lws_dbus_ctx_wsproxy *wsctx)
  */
 
 static void
-cb_closing(struct lws_dbus_ctx *ctx)
+cb_closing(struct aws_lws_dbus_ctx *ctx)
 {
-	struct lws_dbus_ctx_wsproxy *wspctx =
-			(struct lws_dbus_ctx_wsproxy *)ctx;
-	lwsl_err("%s: closing\n", __func__);
+	struct aws_lws_dbus_ctx_wsproxy *wspctx =
+			(struct aws_lws_dbus_ctx_wsproxy *)ctx;
+	aws_lwsl_err("%s: closing\n", __func__);
 
 	/*
 	 * We have to take care that the associated proxy wsi knows our
@@ -458,8 +458,8 @@ cb_closing(struct lws_dbus_ctx *ctx)
 	 */
 
 	if (wspctx->cwsi) {
-		lws_set_opaque_parent_data(wspctx->cwsi, NULL);
-		lws_set_timeout(wspctx->cwsi,
+		aws_lws_set_opaque_parent_data(wspctx->cwsi, NULL);
+		aws_lws_set_timeout(wspctx->cwsi,
 				PENDING_TIMEOUT_KILLED_BY_PROXY_CLIENT_CLOSE,
 				LWS_TO_KILL_ASYNC);
 	}
@@ -472,15 +472,15 @@ cb_closing(struct lws_dbus_ctx *ctx)
 static void
 new_conn(DBusServer *server, DBusConnection *conn, void *d)
 {
-	struct lws_dbus_ctx_wsproxy *conn_wspctx, /* the new conn context */
+	struct aws_lws_dbus_ctx_wsproxy *conn_wspctx, /* the new conn context */
 				    /* the listener context */
-				    *wspctx = (struct lws_dbus_ctx_wsproxy *)d;
-	struct vhd_dbus_proxy *vhd = lws_container_of(d,
+				    *wspctx = (struct aws_lws_dbus_ctx_wsproxy *)d;
+	struct vhd_dbus_proxy *vhd = aws_lws_container_of(d,
 					struct vhd_dbus_proxy, ctx_listener);
 
 	assert(vhd->vhost == wspctx->ctx.vh);
 
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 
 	conn_wspctx = malloc(sizeof(*conn_wspctx));
 	if (!conn_wspctx)
@@ -495,18 +495,18 @@ new_conn(DBusServer *server, DBusConnection *conn, void *d)
 
 	assert(conn_wspctx->vhd);
 
-	if (lws_dbus_connection_setup(&conn_wspctx->ctx, conn, cb_closing)) {
-		lwsl_err("%s: connection bind to lws failed\n", __func__);
+	if (aws_lws_dbus_connection_setup(&conn_wspctx->ctx, conn, cb_closing)) {
+		aws_lwsl_err("%s: connection bind to lws failed\n", __func__);
 		goto bail;
 	}
 
 	if (!dbus_connection_register_object_path(conn, THIS_OBJECT, &vtable,
 						  conn_wspctx)) {
-		lwsl_err("%s: Failed to register object path\n", __func__);
+		aws_lwsl_err("%s: Failed to register object path\n", __func__);
 		goto bail;
 	}
 
-	lws_dll2_add_head(&conn_wspctx->ctx.next, &wspctx->ctx.owner);
+	aws_lws_dll2_add_head(&conn_wspctx->ctx.next, &wspctx->ctx.owner);
 
 	/* we take on responsibility for explicit close / unref with this... */
 	dbus_connection_ref(conn);
@@ -535,7 +535,7 @@ create_dbus_listener(struct vhd_dbus_proxy *vhd, int tsi)
 
 	vhd->dctx.ctx.conn = dbus_bus_get(DBUS_BUS_SYSTEM, &e);
 	if (!vhd->dctx.ctx.conn) {
-		lwsl_notice("%s: Failed to get a session DBus connection: '%s'"
+		aws_lwsl_notice("%s: Failed to get a session DBus connection: '%s'"
 			    ", continuing with daemon listener only\n",
 			 __func__, e.message);
 		dbus_error_free(&e);
@@ -552,7 +552,7 @@ create_dbus_listener(struct vhd_dbus_proxy *vhd, int tsi)
 	if (dbus_bus_request_name(vhd->dctx.ctx.conn, THIS_BUSNAME,
 				  DBUS_NAME_FLAG_REPLACE_EXISTING, &e) !=
 					DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
-		lwsl_notice("%s: Failed to request name on bus: '%s',"
+		aws_lwsl_notice("%s: Failed to request name on bus: '%s',"
 			 " continuing with daemon listener only\n",
 			 __func__, e.message);
 		dbus_connection_unref(vhd->dctx.ctx.conn);
@@ -565,7 +565,7 @@ create_dbus_listener(struct vhd_dbus_proxy *vhd, int tsi)
 	if (!dbus_connection_register_object_path(vhd->dctx.ctx.conn,
 						  THIS_OBJECT, &vtable,
 						  &vhd->dctx)) {
-		lwsl_err("%s: Failed to register object path\n", __func__);
+		aws_lwsl_err("%s: Failed to register object path\n", __func__);
 		goto fail;
 	}
 
@@ -574,9 +574,9 @@ create_dbus_listener(struct vhd_dbus_proxy *vhd, int tsi)
 	 * timeout handling provided by lws
 	 */
 
-	if (lws_dbus_connection_setup(&vhd->dctx.ctx, vhd->dctx.ctx.conn,
+	if (aws_lws_dbus_connection_setup(&vhd->dctx.ctx, vhd->dctx.ctx.conn,
 				      cb_closing)) {
-		lwsl_err("%s: connection bind to lws failed\n", __func__);
+		aws_lwsl_err("%s: connection bind to lws failed\n", __func__);
 		goto fail;
 	}
 
@@ -585,15 +585,15 @@ daemon:
         vhd->ctx_listener.vh = vhd->vhost;
         vhd->ctx_listener.tsi = tsi;
 
-	if (!lws_dbus_server_listen(&vhd->ctx_listener, vhd->dbus_listen_ads,
+	if (!aws_lws_dbus_server_listen(&vhd->ctx_listener, vhd->dbus_listen_ads,
 				    &e, new_conn)) {
-		lwsl_err("%s: failed\n", __func__);
+		aws_lwsl_err("%s: failed\n", __func__);
 		dbus_error_free(&e);
 
 		return 1;
 	}
 
-	lwsl_notice("%s: created DBUS listener on %s\n", __func__,
+	aws_lwsl_notice("%s: created DBUS listener on %s\n", __func__,
 			vhd->dbus_listen_ads);
 
 	return 0;
@@ -610,15 +610,15 @@ destroy_dbus_server_listener(struct vhd_dbus_proxy *vhd)
 {
 	dbus_server_disconnect(vhd->ctx_listener.dbs);
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, rdt, nx,
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, rdt, nx,
 			vhd->ctx_listener.owner.head) {
-		struct lws_dbus_ctx *r = lws_container_of(rdt,
-						struct lws_dbus_ctx, next);
+		struct aws_lws_dbus_ctx *r = aws_lws_container_of(rdt,
+						struct aws_lws_dbus_ctx, next);
 
 		dbus_connection_close(r->conn);
 		dbus_connection_unref(r->conn);
 		free(r);
-	} lws_end_foreach_dll_safe(rdt, nx);
+	} aws_lws_end_foreach_dll_safe(rdt, nx);
 
 	if (vhd->dctx.ctx.conn)
 		dbus_connection_unref(vhd->dctx.ctx.conn);
@@ -630,35 +630,35 @@ destroy_dbus_server_listener(struct vhd_dbus_proxy *vhd)
  */
 
 static int
-callback_minimal_dbus_wsproxy(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal_dbus_wsproxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			      void *user, void *in, size_t len)
 {
 	struct pss_dbus_proxy *pss = (struct pss_dbus_proxy *)user;
 	struct vhd_dbus_proxy *vhd = (struct vhd_dbus_proxy *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-						 lws_get_protocol(wsi));
-	struct lws_dbus_ctx_wsproxy *wspctx;
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+						 aws_lws_get_protocol(wsi));
+	struct aws_lws_dbus_ctx_wsproxy *wspctx;
 	const struct msg *pmsg;
 	int flags, m;
 
 	switch (reason) {
 
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-					lws_get_protocol(wsi), sizeof(*vhd));
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi), sizeof(*vhd));
 		if (!vhd)
 			return -1;
 
-		vhd->context = lws_get_context(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 
-		if (lws_pvo_get_str(in, "ads", &vhd->dbus_listen_ads)) {
-			lwsl_err("%s: pvo 'ads' must be set\n", __func__);
+		if (aws_lws_pvo_get_str(in, "ads", &vhd->dbus_listen_ads)) {
+			aws_lwsl_err("%s: pvo 'ads' must be set\n", __func__);
 			return -1;
 		}
 
 		if (create_dbus_listener(vhd, 0)) {
-			lwsl_err("%s: create_dbus_listener failed\n", __func__);
+			aws_lwsl_err("%s: create_dbus_listener failed\n", __func__);
 			return -1;
 		}
 		break;
@@ -670,23 +670,23 @@ callback_minimal_dbus_wsproxy(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		lwsl_user("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
+		aws_lwsl_user("LWS_CALLBACK_CLIENT_ESTABLISHED\n");
 
 		/*
 		 * create the send ringbuffer now the ws connection is
 		 * established.
 		 */
 
-		wspctx = lws_get_opaque_parent_data(wsi);
+		wspctx = aws_lws_get_opaque_parent_data(wsi);
 		if (!wspctx)
 			break;
 
 		wspctx->pss = pss;
 		pss->ring_out_tail = 0;
-		pss->ring_out = lws_ring_create(sizeof(struct msg), 8,
+		pss->ring_out = aws_lws_ring_create(sizeof(struct msg), 8,
 						   destroy_message);
 		if (!pss->ring_out) {
-			lwsl_err("OOM\n");
+			aws_lwsl_err("OOM\n");
 			return -1;
 		}
 
@@ -695,47 +695,47 @@ callback_minimal_dbus_wsproxy(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
-		lwsl_user("LWS_CALLBACK_CLIENT_WRITEABLE:\n");
+		aws_lwsl_user("LWS_CALLBACK_CLIENT_WRITEABLE:\n");
 
-		pmsg = lws_ring_get_element(pss->ring_out, &pss->ring_out_tail);
+		pmsg = aws_lws_ring_get_element(pss->ring_out, &pss->ring_out_tail);
 		if (!pmsg) {
-			lwsl_user(" (nothing in ring)\n");
+			aws_lwsl_user(" (nothing in ring)\n");
 			break;
 		}
 
-		flags = lws_write_ws_flags(
+		flags = aws_lws_write_ws_flags(
 			    pmsg->binary ? LWS_WRITE_BINARY : LWS_WRITE_TEXT,
 			    pmsg->first, pmsg->final);
 
 		/* notice we allowed for LWS_PRE in the payload already */
-		m = lws_write(wsi, ((unsigned char *)pmsg->payload) + LWS_PRE,
+		m = aws_lws_write(wsi, ((unsigned char *)pmsg->payload) + LWS_PRE,
 			      pmsg->len, flags);
 		if (m < (int)pmsg->len) {
-			lwsl_err("ERROR %d writing to ws socket\n", m);
+			aws_lwsl_err("ERROR %d writing to ws socket\n", m);
 			return -1;
 		}
 
-		lwsl_user(" wrote %d: flags: 0x%x first: %d final %d\n",
+		aws_lwsl_user(" wrote %d: flags: 0x%x first: %d final %d\n",
 				m, flags, pmsg->first, pmsg->final);
 
-		lws_ring_consume_single_tail(pss->ring_out,
+		aws_lws_ring_consume_single_tail(pss->ring_out,
 					     &pss->ring_out_tail, 1);
 
 		/* more to do for us? */
-		if (lws_ring_get_element(pss->ring_out, &pss->ring_out_tail))
+		if (aws_lws_ring_get_element(pss->ring_out, &pss->ring_out_tail))
 			/* come back as soon as we can write more */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
 
-		lwsl_user("LWS_CALLBACK_CLIENT_RECEIVE: %4d "
+		aws_lwsl_user("LWS_CALLBACK_CLIENT_RECEIVE: %4d "
 			  "(rpp %5d, first %d, last %d, bin %d)\n",
-			  (int)len, (int)lws_remaining_packet_payload(wsi),
-			  lws_is_first_fragment(wsi),
-			  lws_is_final_fragment(wsi),
-			  lws_frame_is_binary(wsi));
+			  (int)len, (int)aws_lws_remaining_packet_payload(wsi),
+			  aws_lws_is_first_fragment(wsi),
+			  aws_lws_is_final_fragment(wsi),
+			  aws_lws_frame_is_binary(wsi));
 
 		{
 			char strbuf[256];
@@ -752,20 +752,20 @@ callback_minimal_dbus_wsproxy(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		issue_dbus_signal(wsi, "Status", "ws client connection error");
 		break;
 
 	case LWS_CALLBACK_CLIENT_CLOSED:
-		lwsl_err("LWS_CALLBACK_CLIENT_CLOSED ()\n");
+		aws_lwsl_err("LWS_CALLBACK_CLIENT_CLOSED ()\n");
 		issue_dbus_signal(wsi, "Status", "ws client connection closed");
 
 		/* destroy any ringbuffer and pending messages */
 
-		lws_ring_destroy(pss->ring_out);
+		aws_lws_ring_destroy(pss->ring_out);
 
-		wspctx = lws_get_opaque_parent_data(wsi);
+		wspctx = aws_lws_get_opaque_parent_data(wsi);
 		if (!wspctx)
 			break;
 

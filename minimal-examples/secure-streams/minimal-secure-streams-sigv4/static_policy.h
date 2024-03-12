@@ -9,7 +9,7 @@
 #endif
 
 
-static const lws_ss_metadata_t _md_s3PutObj_xacl = {
+static const aws_lws_ss_metadata_t _md_s3PutObj_xacl = {
 	.name = "xacl",
 	.value__may_own_heap = (void *)"x-amz-acl:",
 	.value_length = 0xa,
@@ -76,7 +76,7 @@ _md_s3PutObj_region = {
 static const uint32_t _rbo_bo_0[] = {
  100,  200,  300,  500,  1000, 
 };
-static const lws_retry_bo_t _rbo_0 = {
+static const aws_lws_retry_bo_t _rbo_0 = {
 	.retry_ms_table = _rbo_bo_0,
 	.retry_ms_table_count = 5,
 	.conceal_count = 5,
@@ -198,7 +198,7 @@ static const uint8_t _ss_der_baltimore_cybertrust_root[] = {
 	/* 0x370 */ 0xE7, 0x81, 0x1D, 0x19, 0xC3, 0x24, 0x42, 0xEA, 
 	/* 0x378 */ 0x63, 0x39, 0xA9, 
 };
-static const lws_ss_x509_t _ss_x509_baltimore_cybertrust_root = {
+static const aws_lws_ss_x509_t _ss_x509_baltimore_cybertrust_root = {
 	.vhost_name = "baltimore_cybertrust_root",
 	.ca_der = _ss_der_baltimore_cybertrust_root,
 	.ca_der_len = 891,
@@ -310,7 +310,7 @@ static const uint8_t _ss_der_amazon_root_ca_1[] = {
 	/* 0x338 */ 0x6C, 0x1B, 0x8A, 0xB9, 0x59, 0x33, 0xF8, 0xEB, 
 	/* 0x340 */ 0xC4, 0x90, 0xBE, 0xF1, 0xB9, 
 };
-static const lws_ss_x509_t _ss_x509_amazon_root_ca_1 = {
+static const aws_lws_ss_x509_t _ss_x509_amazon_root_ca_1 = {
 	.vhost_name = "amazon_root_ca_1",
 	.ca_der = _ss_der_amazon_root_ca_1,
 	.ca_der_len = 837,
@@ -444,12 +444,12 @@ static const uint8_t _ss_der_starfield_services_root_ca[] = {
 	/* 0x3e8 */ 0x71, 0xDA, 0x20, 0xFC, 0xC1, 0x4A, 0x50, 0x8D, 
 	/* 0x3f0 */ 0xB1, 0x28, 0xBA, 
 };
-static const lws_ss_x509_t _ss_x509_starfield_services_root_ca = {
+static const aws_lws_ss_x509_t _ss_x509_starfield_services_root_ca = {
 	.vhost_name = "starfield_services_root_ca",
 	.ca_der = _ss_der_starfield_services_root_ca,
 	.ca_der_len = 1011,
 };
-static const lws_ss_trust_store_t _ss_ts_s3_root_cert = {
+static const aws_lws_ss_trust_store_t _ss_ts_s3_root_cert = {
 	.name = "s3-root-cert",
 	.count = 3,
 	.ssx509 = {
@@ -459,7 +459,7 @@ static const lws_ss_trust_store_t _ss_ts_s3_root_cert = {
 	}
 };
 
-static const lws_ss_auth_t _ssau_sigv4_br = {
+static const aws_lws_ss_auth_t _ssau_sigv4_br = {
 	.name = "sigv4_br",
 	.type= "sigv4",
 	.streamtype = "(null)",
@@ -467,7 +467,7 @@ static const lws_ss_auth_t _ssau_sigv4_br = {
 };
 
 
-static const lws_ss_policy_t _ssp_s3PutObj = {
+static const aws_lws_ss_policy_t _ssp_s3PutObj = {
 	.streamtype = "s3PutObj",
 	.endpoint = "${s3bucket}.s3.amazonaws.com",
 	.auth = &_ssau_sigv4_br,

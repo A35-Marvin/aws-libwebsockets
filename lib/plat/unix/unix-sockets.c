@@ -49,9 +49,9 @@
 #include <netinet/ip.h>
 
 int
-lws_send_pipe_choked(struct lws *wsi)
+aws_lws_send_pipe_choked(struct lws *wsi)
 {
-	struct lws_pollfd fds;
+	struct aws_lws_pollfd fds;
 	struct lws *wsi_eff;
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
@@ -60,7 +60,7 @@ lws_send_pipe_choked(struct lws *wsi)
 #endif
 
 #if defined(LWS_WITH_HTTP2)
-	wsi_eff = lws_get_network_wsi(wsi);
+	wsi_eff = aws_lws_get_network_wsi(wsi);
 #else
 	wsi_eff = wsi;
 #endif
@@ -69,7 +69,7 @@ lws_send_pipe_choked(struct lws *wsi)
 	wsi_eff->could_have_pending = 0;
 
 	/* treat the fact we got a truncated send pending as if we're choked */
-	if (lws_has_buffered_out(wsi_eff)
+	if (aws_lws_has_buffered_out(wsi_eff)
 #if defined(LWS_WITH_HTTP_STREAM_COMPRESSION)
 	    ||wsi->http.comp_ctx.buflist_comp ||
 	    wsi->http.comp_ctx.may_have_more
@@ -93,13 +93,13 @@ lws_send_pipe_choked(struct lws *wsi)
 }
 
 int
-lws_plat_set_nonblocking(lws_sockfd_type fd)
+aws_lws_plat_set_nonblocking(aws_lws_sockfd_type fd)
 {
 	return fcntl(fd, F_SETFL, O_NONBLOCK) < 0;
 }
 
 int
-lws_plat_set_socket_options(struct lws_vhost *vhost, int fd, int unix_skt)
+aws_lws_plat_set_socket_options(struct aws_lws_vhost *vhost, int fd, int unix_skt)
 {
 	int optval = 1;
 	socklen_t optlen = sizeof(optval);
@@ -160,10 +160,10 @@ lws_plat_set_socket_options(struct lws_vhost *vhost, int fd, int unix_skt)
 
 #if defined(SO_BINDTODEVICE)
 	if (!unix_skt && vhost->bind_iface && vhost->iface) {
-		lwsl_info("binding listen skt to %s using SO_BINDTODEVICE\n", vhost->iface);
+		aws_lwsl_info("binding listen skt to %s using SO_BINDTODEVICE\n", vhost->iface);
 		if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, vhost->iface,
 				(socklen_t)strlen(vhost->iface)) < 0) {
-			lwsl_warn("Failed to bind to device %s\n", vhost->iface);
+			aws_lwsl_warn("Failed to bind to device %s\n", vhost->iface);
 			return 1;
 		}
 	}
@@ -187,7 +187,7 @@ lws_plat_set_socket_options(struct lws_vhost *vhost, int fd, int unix_skt)
 		return 1;
 #endif
 
-	return lws_plat_set_nonblocking(fd);
+	return aws_lws_plat_set_nonblocking(fd);
 }
 
 static const int ip_opt_lws_flags[] = {
@@ -212,7 +212,7 @@ static const char *ip_opt_names[] = {
 #endif
 
 int
-lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
+aws_lws_plat_set_socket_options_ip(aws_lws_sockfd_type fd, uint8_t pri, int aws_lws_flags)
 {
 	int optval = (int)pri, ret = 0, n;
 	socklen_t optlen = sizeof(optval);
@@ -225,7 +225,7 @@ lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
 	optval = 1;
 	if (setsockopt(fd, IPPROTO_TCP, TCP_FASTOPEN_CONNECT, (void *)&optval,
 		       sizeof(optval)))
-		lwsl_warn("%s: FASTOPEN_CONNECT failed\n", __func__);
+		aws_lwsl_warn("%s: FASTOPEN_CONNECT failed\n", __func__);
 	optval = (int)pri;
 #endif
 #endif
@@ -245,17 +245,17 @@ lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
 				(const void *)&optval, optlen) < 0) {
 #if !defined(LWS_WITH_NO_LOGS)
 			en = errno;
-			lwsl_warn("%s: unable to set socket pri %d: errno %d\n",
+			aws_lwsl_warn("%s: unable to set socket pri %d: errno %d\n",
 				  __func__, (int)pri, en);
 #endif
 			ret = 1;
 		} else
-			lwsl_notice("%s: set pri %u\n", __func__, pri);
+			aws_lwsl_notice("%s: set pri %u\n", __func__, pri);
 	}
 #endif
 
 	for (n = 0; n < 4; n++) {
-		if (!(lws_flags & ip_opt_lws_flags[n]))
+		if (!(aws_lws_flags & ip_opt_lws_flags[n]))
 			continue;
 
 		optval = (int)ip_opt_val[n];
@@ -263,12 +263,12 @@ lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
 			       optlen) < 0) {
 #if !defined(LWS_WITH_NO_LOGS)
 			en = errno;
-			lwsl_warn("%s: unable to set %s: errno %d\n", __func__,
+			aws_lwsl_warn("%s: unable to set %s: errno %d\n", __func__,
 				  ip_opt_names[n], en);
 #endif
 			ret = 1;
 		} else
-			lwsl_notice("%s: set ip flag %s\n", __func__,
+			aws_lwsl_notice("%s: set ip flag %s\n", __func__,
 				    ip_opt_names[n]);
 	}
 
@@ -286,7 +286,7 @@ enum {
 };
 
 int
-lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
+aws_lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 		    size_t addrlen)
 {
 	int rc = LWS_ITOSA_NOT_EXIST;
@@ -301,7 +301,7 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 #endif
 
 	if (getifaddrs(&ifr)) {
-		lwsl_err("%s: unable to getifaddrs: errno %d\n", __func__, errno);
+		aws_lwsl_err("%s: unable to getifaddrs: errno %d\n", __func__, errno);
 
 		return LWS_ITOSA_USABLE;
 	}
@@ -309,7 +309,7 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 		if (!ifc->ifa_addr || !ifc->ifa_name)
 			continue;
 
-		lwsl_debug(" interface %s vs %s (fam %d) ipv6 %d\n",
+		aws_lwsl_debug(" interface %s vs %s (fam %d) ipv6 %d\n",
 			   ifc->ifa_name, ifname,
 			   ifc->ifa_addr->sa_family, ipv6);
 
@@ -341,7 +341,7 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 				memcpy(&addr6->sin6_addr.s6_addr[12],
 				       &((struct sockaddr_in *)ifc->ifa_addr)->sin_addr,
 							sizeof(struct in_addr));
-				lwsl_debug("%s: uplevelling ipv4 bind to ipv6\n", __func__);
+				aws_lwsl_debug("%s: uplevelling ipv4 bind to ipv6\n", __func__);
 				break;
 			}
 
@@ -378,7 +378,7 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 	freeifaddrs(ifr);
 
 	if (rc &&
-	    !lws_sa46_parse_numeric_address(ifname, (lws_sockaddr46 *)addr))
+	    !aws_lws_sa46_parse_numeric_address(ifname, (aws_lws_sockaddr46 *)addr))
 		rc = LWS_ITOSA_USABLE;
 
 	return rc;
@@ -386,25 +386,25 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 
 
 const char *
-lws_plat_inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
+aws_lws_plat_inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
 {
 	return inet_ntop(af, src, dst, cnt);
 }
 
 int
-lws_plat_inet_pton(int af, const char *src, void *dst)
+aws_lws_plat_inet_pton(int af, const char *src, void *dst)
 {
 	return inet_pton(af, src, dst);
 }
 
 int
-lws_plat_ifname_to_hwaddr(int fd, const char *ifname, uint8_t *hwaddr, int len)
+aws_lws_plat_ifname_to_hwaddr(int fd, const char *ifname, uint8_t *hwaddr, int len)
 {
 #if defined(__linux__)
 	struct ifreq i;
 
 	memset(&i, 0, sizeof(i));
-	lws_strncpy(i.ifr_name, ifname, sizeof(i.ifr_name));
+	aws_lws_strncpy(i.ifr_name, ifname, sizeof(i.ifr_name));
 
 	if (ioctl(fd, SIOCGIFHWADDR, &i) < 0)
 		return -1;
@@ -413,14 +413,14 @@ lws_plat_ifname_to_hwaddr(int fd, const char *ifname, uint8_t *hwaddr, int len)
 
 	return 6;
 #else
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 #endif
 }
 
 int
-lws_plat_rawudp_broadcast(uint8_t *p, const uint8_t *canned, size_t canned_len,
+aws_lws_plat_rawudp_broadcast(uint8_t *p, const uint8_t *canned, size_t canned_len,
 			  size_t n, int fd, const char *iface)
 {
 #if defined(__linux__)
@@ -453,23 +453,23 @@ lws_plat_rawudp_broadcast(uint8_t *p, const uint8_t *canned, size_t canned_len,
 
 	return (int)sendto(fd, p, n, 0, (struct sockaddr *)&sll, sizeof(sll));
 #else
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 #endif
 }
 
 int
-lws_plat_if_up(const char *ifname, int fd, int up)
+aws_lws_plat_if_up(const char *ifname, int fd, int up)
 {
 #if defined(__linux__)
 	struct ifreq ifr;
 
 	memset(&ifr, 0, sizeof(ifr));
-	lws_strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
+	aws_lws_strncpy(ifr.ifr_name, ifname, IFNAMSIZ);
 
 	if (ioctl(fd, SIOCGIFFLAGS, &ifr) < 0) {
-		lwsl_err("%s: SIOCGIFFLAGS fail\n", __func__);
+		aws_lwsl_err("%s: SIOCGIFFLAGS fail\n", __func__);
 		return 1;
 	}
 
@@ -479,43 +479,43 @@ lws_plat_if_up(const char *ifname, int fd, int up)
 		ifr.ifr_flags &= ~IFF_UP;
 
 	if (ioctl(fd, SIOCSIFFLAGS, &ifr) < 0) {
-		lwsl_err("%s: SIOCSIFFLAGS fail\n", __func__);
+		aws_lwsl_err("%s: SIOCSIFFLAGS fail\n", __func__);
 		return 1;
 	}
 
 	return 0;
 #else
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 #endif
 }
 
 int
-lws_plat_BINDTODEVICE(lws_sockfd_type fd, const char *ifname)
+aws_lws_plat_BINDTODEVICE(aws_lws_sockfd_type fd, const char *ifname)
 {
 #if defined(__linux__)
 	struct ifreq i;
 
 	memset(&i, 0, sizeof(i));
 	i.ifr_addr.sa_family = AF_INET;
-	lws_strncpy(i.ifr_ifrn.ifrn_name, ifname,
+	aws_lws_strncpy(i.ifr_ifrn.ifrn_name, ifname,
 		    sizeof(i.ifr_ifrn.ifrn_name));
 	if (setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, &i, sizeof(i)) < 0) {
-		lwsl_notice("%s: failed %d\n", __func__, LWS_ERRNO);
+		aws_lwsl_notice("%s: failed %d\n", __func__, LWS_ERRNO);
 		return 1;
 	}
 
 	return 0;
 #else
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 #endif
 }
 
 int
-lws_plat_ifconfig(int fd, lws_dhcpc_ifstate_t *is)
+aws_lws_plat_ifconfig(int fd, aws_lws_dhcpc_ifstate_t *is)
 {
 #if defined(__linux__)
 	struct rtentry route;
@@ -524,13 +524,13 @@ lws_plat_ifconfig(int fd, lws_dhcpc_ifstate_t *is)
 	memset(&ifr, 0, sizeof(ifr));
 	memset(&route, 0, sizeof(route));
 
-	lws_strncpy(ifr.ifr_name, is->ifname, IFNAMSIZ);
+	aws_lws_strncpy(ifr.ifr_name, is->ifname, IFNAMSIZ);
 
-	lws_plat_if_up(is->ifname, fd, 0);
+	aws_lws_plat_if_up(is->ifname, fd, 0);
 
 	memcpy(&ifr.ifr_addr, &is->sa46[LWSDH_SA46_IP], sizeof(struct sockaddr));
 	if (ioctl(fd, SIOCSIFADDR, &ifr) < 0) {
-		lwsl_err("%s: SIOCSIFADDR fail\n", __func__);
+		aws_lwsl_err("%s: SIOCSIFADDR fail\n", __func__);
 		return 1;
 	}
 
@@ -542,11 +542,11 @@ lws_plat_ifconfig(int fd, lws_dhcpc_ifstate_t *is)
 		sin.sin_addr.s_addr = *(uint32_t *)&is->nums[LWSDH_IPV4_SUBNET_MASK];
 		memcpy(&ifr.ifr_addr, &sin, sizeof(struct sockaddr));
 		if (ioctl(fd, SIOCSIFNETMASK, &ifr) < 0) {
-			lwsl_err("%s: SIOCSIFNETMASK fail\n", __func__);
+			aws_lwsl_err("%s: SIOCSIFNETMASK fail\n", __func__);
 			return 1;
 		}
 
-		lws_plat_if_up(is->ifname, fd, 1);
+		aws_lws_plat_if_up(is->ifname, fd, 1);
 
 		memcpy(&route.rt_gateway,
 		       &is->sa46[LWSDH_SA46_IPV4_ROUTER].sa4,
@@ -561,32 +561,32 @@ lws_plat_ifconfig(int fd, lws_dhcpc_ifstate_t *is)
 		route.rt_dev = (char *)is->ifname;
 
 		if (ioctl(fd, SIOCADDRT, &route) < 0) {
-			lwsl_err("%s: SIOCADDRT 0x%x fail: %d\n", __func__,
+			aws_lwsl_err("%s: SIOCADDRT 0x%x fail: %d\n", __func__,
 				(unsigned int)htonl(*(uint32_t *)&is->
 					sa46[LWSDH_SA46_IPV4_ROUTER].
 						sa4.sin_addr.s_addr), LWS_ERRNO);
 			return 1;
 		}
 	} else
-		lws_plat_if_up(is->ifname, fd, 1);
+		aws_lws_plat_if_up(is->ifname, fd, 1);
 
 	return 0;
 #else
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 #endif
 }
 
 int
-lws_plat_vhost_tls_client_ctx_init(struct lws_vhost *vhost)
+aws_lws_plat_vhost_tls_client_ctx_init(struct aws_lws_vhost *vhost)
 {
 	return 0;
 }
 
 #if defined(LWS_WITH_MBEDTLS)
 int
-lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
+aws_lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
 {
 	int fd = ((mbedtls_net_context *) ctx)->MBEDTLS_PRIVATE(fd);
 	int ret;
@@ -611,7 +611,7 @@ lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
 }
 
 int
-lws_plat_mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
+aws_lws_plat_mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
 {
 	int fd = ((mbedtls_net_context *) ctx)->MBEDTLS_PRIVATE(fd);
 	int ret;

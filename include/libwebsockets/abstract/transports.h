@@ -26,36 +26,36 @@
  * Abstract transport ops
  */
 
-typedef struct lws_abs_transport {
+typedef struct aws_lws_abs_transport {
 	const char *name;
 	int alloc;
 
-	int (*create)(lws_abs_t *abs);
-	void (*destroy)(lws_abs_transport_inst_t **d);
+	int (*create)(aws_lws_abs_t *abs);
+	void (*destroy)(aws_lws_abs_transport_inst_t **d);
 
 	/* check if the transport settings for these connections are the same */
-	int (*compare)(lws_abs_t *abs1, lws_abs_t *abs2);
+	int (*compare)(aws_lws_abs_t *abs1, aws_lws_abs_t *abs2);
 
 	/* events the abstract protocol invokes (handled by transport) */
 
-	int (*tx)(lws_abs_transport_inst_t *d, uint8_t *buf, size_t len);
-	int (*client_conn)(const lws_abs_t *abs);
-	int (*close)(lws_abs_transport_inst_t *d);
-	int (*ask_for_writeable)(lws_abs_transport_inst_t *d);
-	int (*set_timeout)(lws_abs_transport_inst_t *d, int reason, int secs);
-	int (*state)(lws_abs_transport_inst_t *d);
-} lws_abs_transport_t;
+	int (*tx)(aws_lws_abs_transport_inst_t *d, uint8_t *buf, size_t len);
+	int (*client_conn)(const aws_lws_abs_t *abs);
+	int (*close)(aws_lws_abs_transport_inst_t *d);
+	int (*ask_for_writeable)(aws_lws_abs_transport_inst_t *d);
+	int (*set_timeout)(aws_lws_abs_transport_inst_t *d, int reason, int secs);
+	int (*state)(aws_lws_abs_transport_inst_t *d);
+} aws_lws_abs_transport_t;
 
 /**
- * lws_abs_protocol_get_by_name() - returns a pointer to the named protocol ops
+ * aws_lws_abs_protocol_get_by_name() - returns a pointer to the named protocol ops
  *
  * \param name: the name of the abstract protocol
  *
  * Returns a pointer to the named protocol ops struct if available, otherwise
  * NULL.
  */
-LWS_VISIBLE LWS_EXTERN const lws_abs_transport_t *
-lws_abs_transport_get_by_name(const char *name);
+LWS_VISIBLE LWS_EXTERN const aws_lws_abs_transport_t *
+aws_lws_abs_transport_get_by_name(const char *name);
 
 /*
  * bring in public api pieces from transports

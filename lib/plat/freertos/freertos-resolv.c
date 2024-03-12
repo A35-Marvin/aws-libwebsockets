@@ -25,11 +25,11 @@
 #include "private-lib-core.h"
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
-lws_async_dns_server_check_t
-lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
+aws_lws_async_dns_server_check_t
+aws_lws_plat_asyncdns_init(struct aws_lws_context *context, aws_lws_sockaddr46 *sa46)
 {
 	uint32_t ipv4;
-	lws_async_dns_server_check_t s = LADNS_CONF_SERVER_CHANGED;
+	aws_lws_async_dns_server_check_t s = LADNS_CONF_SERVER_CHANGED;
 
 	FreeRTOS_GetAddressConfiguration(NULL, NULL, NULL, &ipv4);
 
@@ -44,9 +44,9 @@ lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
 #endif
 
 int
-lws_plat_ntpclient_config(struct lws_context *context)
+aws_lws_plat_ntpclient_config(struct aws_lws_context *context)
 {
-	lws_system_blob_heap_append(lws_system_get_blob(context,
+	aws_lws_system_blob_heap_append(aws_lws_system_get_blob(context,
 				    LWS_SYSBLOB_TYPE_NTP_SERVER, 0),
 				    (const uint8_t *)"pool.ntp.org", 13);
 

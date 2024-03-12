@@ -24,18 +24,18 @@
 
 #include "private-lib-core.h"
 
-int lws_plat_apply_FD_CLOEXEC(int n)
+int aws_lws_plat_apply_FD_CLOEXEC(int n)
 {
 	return 0;
 }
 
 
-lws_fop_fd_t IRAM_ATTR
-_lws_plat_file_open(const struct lws_plat_file_ops *fops, const char *filename,
-		    const char *vpath, lws_fop_flags_t *flags)
+aws_lws_fop_fd_t IRAM_ATTR
+_lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
+		    const char *vpath, aws_lws_fop_flags_t *flags)
 {
 	struct stat stat_buf;
-	lws_fop_fd_t fop_fd;
+	aws_lws_fop_fd_t fop_fd;
 	int ret = open(filename, *flags, 0664);
 
 	if (ret < 0)
@@ -44,7 +44,7 @@ _lws_plat_file_open(const struct lws_plat_file_ops *fops, const char *filename,
 	if (fstat(ret, &stat_buf) < 0)
 		goto bail;
 
-	fop_fd = lws_malloc(sizeof(*fop_fd), "fops open");
+	fop_fd = aws_lws_malloc(sizeof(*fop_fd), "fops open");
 	if (!fop_fd)
 		goto bail;
 
@@ -64,25 +64,25 @@ bail:
 }
 
 int IRAM_ATTR
-_lws_plat_file_close(lws_fop_fd_t *fops_fd)
+_lws_plat_file_close(aws_lws_fop_fd_t *fops_fd)
 {
 	int fd = (*fops_fd)->fd;
 
-	lws_free(*fops_fd);
+	aws_lws_free(*fops_fd);
 	*fops_fd = NULL;
 
 	return close(fd);
 }
 
-lws_fileofs_t IRAM_ATTR
-_lws_plat_file_seek_cur(lws_fop_fd_t fops_fd, lws_fileofs_t offset)
+aws_lws_fileofs_t IRAM_ATTR
+_lws_plat_file_seek_cur(aws_lws_fop_fd_t fops_fd, aws_lws_fileofs_t offset)
 {
 	return lseek(fops_fd->fd, offset, SEEK_CUR);
 }
 
 int IRAM_ATTR
-_lws_plat_file_read(lws_fop_fd_t fops_fd, lws_filepos_t *amount,
-		    uint8_t *buf, lws_filepos_t len)
+_lws_plat_file_read(aws_lws_fop_fd_t fops_fd, aws_lws_filepos_t *amount,
+		    uint8_t *buf, aws_lws_filepos_t len)
 {
 	long n;
 
@@ -98,8 +98,8 @@ _lws_plat_file_read(lws_fop_fd_t fops_fd, lws_filepos_t *amount,
 }
 
 int IRAM_ATTR
-_lws_plat_file_write(lws_fop_fd_t fops_fd, lws_filepos_t *amount,
-		     uint8_t *buf, lws_filepos_t len)
+_lws_plat_file_write(aws_lws_fop_fd_t fops_fd, aws_lws_filepos_t *amount,
+		     uint8_t *buf, aws_lws_filepos_t len)
 {
 	long n;
 
@@ -116,13 +116,13 @@ _lws_plat_file_write(lws_fop_fd_t fops_fd, lws_filepos_t *amount,
 
 #if defined(LWS_AMAZON_RTOS)
 int
-lws_find_string_in_file(const char *filename, const char *string, int stringlen)
+aws_lws_find_string_in_file(const char *filename, const char *string, int stringlen)
 {
     return 0;
 }
 #else
 int
-lws_find_string_in_file(const char *filename, const char *string, int stringlen)
+aws_lws_find_string_in_file(const char *filename, const char *string, int stringlen)
 {
 	nvs_handle nvh;
 	size_t s;
@@ -154,13 +154,13 @@ lws_find_string_in_file(const char *filename, const char *string, int stringlen)
 
 #if !defined(LWS_AMAZON_RTOS)
 int
-lws_plat_write_file(const char *filename, void *buf, size_t len)
+aws_lws_plat_write_file(const char *filename, void *buf, size_t len)
 {
 	nvs_handle nvh;
 	int n;
 
 	if (nvs_open("lws-station", NVS_READWRITE, &nvh)) {
-		lwsl_notice("%s: failed to open nvs\n", __func__);
+		aws_lwsl_notice("%s: failed to open nvs\n", __func__);
 		return -1;
 	}
 
@@ -170,7 +170,7 @@ lws_plat_write_file(const char *filename, void *buf, size_t len)
 
 	nvs_close(nvh);
 
-	lwsl_notice("%s: wrote %s (%d)\n", __func__, filename, n);
+	aws_lwsl_notice("%s: wrote %s (%d)\n", __func__, filename, n);
 
 	return n;
 }
@@ -178,7 +178,7 @@ lws_plat_write_file(const char *filename, void *buf, size_t len)
 /* we write vhostname.cert.pem and vhostname.key.pem, 0 return means OK */
 
 int
-lws_plat_write_cert(struct lws_vhost *vhost, int is_key, int fd, void *buf,
+aws_lws_plat_write_cert(struct aws_lws_vhost *vhost, int is_key, int fd, void *buf,
 			size_t len)
 {
 	const char *name = vhost->tls.alloc_cert_path;
@@ -186,18 +186,18 @@ lws_plat_write_cert(struct lws_vhost *vhost, int is_key, int fd, void *buf,
 	if (is_key)
 		name = vhost->tls.key_path;
 
-	return lws_plat_write_file(name, buf, len) < 0;
+	return aws_lws_plat_write_file(name, buf, len) < 0;
 }
 
 int
-lws_plat_read_file(const char *filename, void *buf, size_t len)
+aws_lws_plat_read_file(const char *filename, void *buf, size_t len)
 {
 	nvs_handle nvh;
 	size_t s = 0;
 	int n = 0;
 
 	if (nvs_open("lws-station", NVS_READWRITE, &nvh)) {
-		lwsl_notice("%s: failed to open nvs\n", __func__);
+		aws_lwsl_notice("%s: failed to open nvs\n", __func__);
 		return 1;
 	}
 
@@ -211,7 +211,7 @@ lws_plat_read_file(const char *filename, void *buf, size_t len)
 
 	nvs_close(nvh);
 
-	lwsl_notice("%s: read %s (%d)\n", __func__, filename, (int)s);
+	aws_lwsl_notice("%s: read %s (%d)\n", __func__, filename, (int)s);
 
 	if (n)
 		return -1;

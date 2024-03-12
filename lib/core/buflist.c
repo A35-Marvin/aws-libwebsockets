@@ -28,13 +28,13 @@
 #include <sys/types.h>
 #endif
 
-/* lws_buflist */
+/* aws_lws_buflist */
 
 int
-lws_buflist_append_segment(struct lws_buflist **head, const uint8_t *buf,
+aws_lws_buflist_append_segment(struct aws_lws_buflist **head, const uint8_t *buf,
 			   size_t len)
 {
-	struct lws_buflist *nbuf;
+	struct aws_lws_buflist *nbuf;
 	int first = !*head;
 	void *p = *head;
 	int sanity = 1024;
@@ -45,24 +45,24 @@ lws_buflist_append_segment(struct lws_buflist **head, const uint8_t *buf,
 	/* append at the tail */
 	while (*head) {
 		if (!--sanity) {
-			lwsl_err("%s: buflist reached sanity limit\n", __func__);
+			aws_lwsl_err("%s: buflist reached sanity limit\n", __func__);
 			return -1;
 		}
 		if (*head == (*head)->next) {
-			lwsl_err("%s: corrupt list points to self\n", __func__);
+			aws_lwsl_err("%s: corrupt list points to self\n", __func__);
 			return -1;
 		}
 		head = &((*head)->next);
 	}
 
 	(void)p;
-	lwsl_info("%s: len %u first %d %p\n", __func__, (unsigned int)len,
+	aws_lwsl_info("%s: len %u first %d %p\n", __func__, (unsigned int)len,
 					      first, p);
 
-	nbuf = (struct lws_buflist *)lws_malloc(sizeof(struct lws_buflist) +
+	nbuf = (struct aws_lws_buflist *)aws_lws_malloc(sizeof(struct aws_lws_buflist) +
 						len + LWS_PRE + 1, __func__);
 	if (!nbuf) {
-		lwsl_err("%s: OOM\n", __func__);
+		aws_lwsl_err("%s: OOM\n", __func__);
 		return -1;
 	}
 
@@ -80,28 +80,28 @@ lws_buflist_append_segment(struct lws_buflist **head, const uint8_t *buf,
 }
 
 static int
-lws_buflist_destroy_segment(struct lws_buflist **head)
+aws_lws_buflist_destroy_segment(struct aws_lws_buflist **head)
 {
-	struct lws_buflist *old = *head;
+	struct aws_lws_buflist *old = *head;
 
 	assert(*head);
 	*head = old->next;
 	old->next = NULL;
 	old->pos = old->len = 0;
-	lws_free(old);
+	aws_lws_free(old);
 
 	return !*head; /* returns 1 if last segment just destroyed */
 }
 
 void
-lws_buflist_destroy_all_segments(struct lws_buflist **head)
+aws_lws_buflist_destroy_all_segments(struct aws_lws_buflist **head)
 {
-	struct lws_buflist *p = *head, *p1;
+	struct aws_lws_buflist *p = *head, *p1;
 
 	while (p) {
 		p1 = p->next;
 		p->next = NULL;
-		lws_free(p);
+		aws_lws_free(p);
 		p = p1;
 	}
 
@@ -109,9 +109,9 @@ lws_buflist_destroy_all_segments(struct lws_buflist **head)
 }
 
 size_t
-lws_buflist_next_segment_len(struct lws_buflist **head, uint8_t **buf)
+aws_lws_buflist_next_segment_len(struct aws_lws_buflist **head, uint8_t **buf)
 {
-	struct lws_buflist *b = (*head);
+	struct aws_lws_buflist *b = (*head);
 
 	if (buf)
 		*buf = NULL;
@@ -120,7 +120,7 @@ lws_buflist_next_segment_len(struct lws_buflist **head, uint8_t **buf)
 		return 0;	/* there is no next segment len */
 
 	if (!b->len && b->next)
-		if (lws_buflist_destroy_segment(head))
+		if (aws_lws_buflist_destroy_segment(head))
 			return 0;
 
 	b = (*head);
@@ -136,9 +136,9 @@ lws_buflist_next_segment_len(struct lws_buflist **head, uint8_t **buf)
 }
 
 size_t
-lws_buflist_use_segment(struct lws_buflist **head, size_t len)
+aws_lws_buflist_use_segment(struct aws_lws_buflist **head, size_t len)
 {
-	struct lws_buflist *b = (*head);
+	struct aws_lws_buflist *b = (*head);
 
 	assert(b);
 	assert(len);
@@ -151,17 +151,17 @@ lws_buflist_use_segment(struct lws_buflist **head, size_t len)
 	if (b->pos < b->len)
 		return (unsigned int)(b->len - b->pos);
 
-	if (lws_buflist_destroy_segment(head))
+	if (aws_lws_buflist_destroy_segment(head))
 		/* last segment was just destroyed */
 		return 0;
 
-	return lws_buflist_next_segment_len(head, NULL);
+	return aws_lws_buflist_next_segment_len(head, NULL);
 }
 
 size_t
-lws_buflist_total_len(struct lws_buflist **head)
+aws_lws_buflist_total_len(struct aws_lws_buflist **head)
 {
-	struct lws_buflist *p = *head;
+	struct aws_lws_buflist *p = *head;
 	size_t size = 0;
 
 	while (p) {
@@ -173,10 +173,10 @@ lws_buflist_total_len(struct lws_buflist **head)
 }
 
 int
-lws_buflist_linear_copy(struct lws_buflist **head, size_t ofs, uint8_t *buf,
+aws_lws_buflist_linear_copy(struct aws_lws_buflist **head, size_t ofs, uint8_t *buf,
 			size_t len)
 {
-	struct lws_buflist *p = *head;
+	struct aws_lws_buflist *p = *head;
 	uint8_t *obuf = buf;
 	size_t s;
 
@@ -194,11 +194,11 @@ lws_buflist_linear_copy(struct lws_buflist **head, size_t ofs, uint8_t *buf,
 		p = p->next;
 	}
 
-	return lws_ptr_diff(buf, obuf);
+	return aws_lws_ptr_diff(buf, obuf);
 }
 
 int
-lws_buflist_linear_use(struct lws_buflist **head, uint8_t *buf, size_t len)
+aws_lws_buflist_linear_use(struct aws_lws_buflist **head, uint8_t *buf, size_t len)
 {
 	uint8_t *obuf = buf;
 	size_t s;
@@ -211,14 +211,14 @@ lws_buflist_linear_use(struct lws_buflist **head, uint8_t *buf, size_t len)
 			    LWS_PRE + (*head)->pos, s);
 		len -= s;
 		buf += s;
-		lws_buflist_use_segment(head, s);
+		aws_lws_buflist_use_segment(head, s);
 	}
 
-	return lws_ptr_diff(buf, obuf);
+	return aws_lws_ptr_diff(buf, obuf);
 }
 
 int
-lws_buflist_fragment_use(struct lws_buflist **head, uint8_t *buf,
+aws_lws_buflist_fragment_use(struct aws_lws_buflist **head, uint8_t *buf,
 			 size_t len, char *frag_first, char *frag_fin)
 {
 	uint8_t *obuf = buf;
@@ -240,23 +240,23 @@ lws_buflist_fragment_use(struct lws_buflist **head, uint8_t *buf,
 	memcpy(buf, ((uint8_t *)((*head) + 1)) + LWS_PRE + (*head)->pos, s);
 	len -= s;
 	buf += s;
-	lws_buflist_use_segment(head, s);
+	aws_lws_buflist_use_segment(head, s);
 
-	return lws_ptr_diff(buf, obuf);
+	return aws_lws_ptr_diff(buf, obuf);
 }
 
 #if defined(_DEBUG)
 void
-lws_buflist_describe(struct lws_buflist **head, void *id, const char *reason)
+aws_lws_buflist_describe(struct aws_lws_buflist **head, void *id, const char *reason)
 {
-	struct lws_buflist *old;
+	struct aws_lws_buflist *old;
 	int n = 0;
 
 	if (*head == NULL)
-		lwsl_notice("%p: %s: buflist empty\n", id, reason);
+		aws_lwsl_notice("%p: %s: buflist empty\n", id, reason);
 
 	while (*head) {
-		lwsl_notice("%p: %s: %d: %llu / %llu (%llu left)\n", id,
+		aws_lwsl_notice("%p: %s: %d: %llu / %llu (%llu left)\n", id,
 			    reason, n,
 			    (unsigned long long)(*head)->pos,
 			    (unsigned long long)(*head)->len,
@@ -264,7 +264,7 @@ lws_buflist_describe(struct lws_buflist **head, void *id, const char *reason)
 		old = *head;
 		head = &((*head)->next);
 		if (*head == old) {
-			lwsl_err("%s: next points to self\n", __func__);
+			aws_lwsl_err("%s: next points to self\n", __func__);
 			break;
 		}
 		n++;

@@ -78,14 +78,14 @@
  *
  *  - clean style and indenting
  *  - convert to single operation
- *  - export as lws_
+ *  - export as aws_lws_
  */
 
 #include <string.h>
 #include <stdint.h>
 
 void
-lws_singles2halfp(uint16_t *hp, uint32_t x)
+aws_lws_singles2halfp(uint16_t *hp, uint32_t x)
 {
 	uint32_t xs, xe, xm;
 	uint16_t hs, he, hm;
@@ -161,7 +161,7 @@ lws_singles2halfp(uint16_t *hp, uint32_t x)
 }
 
 void
-lws_halfp2singles(uint32_t *xp, uint16_t h)
+aws_lws_halfp2singles(uint32_t *xp, uint16_t h)
 {
 	uint16_t hs, he, hm;
 	uint32_t xs, xe, xm;

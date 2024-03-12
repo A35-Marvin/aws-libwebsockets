@@ -35,14 +35,14 @@ static const char *const s =
 		"JanFebMarAprMayJunJulAugSepOctNovDecMonTueWedThuFriSatSun";
 
 static int
-lws_http_date_render(char *buf, size_t len, const struct tm *tm)
+aws_lws_http_date_render(char *buf, size_t len, const struct tm *tm)
 {
 	const char *w = s + 36 + (3 * tm->tm_wday), *m = s + (3 * tm->tm_mon);
 
 	if (len < 29)
 		return -1;
 
-	lws_snprintf(buf, len, "%c%c%c, %02d %c%c%c %d %02d:%02d:%02d GMT",
+	aws_lws_snprintf(buf, len, "%c%c%c, %02d %c%c%c %d %02d:%02d:%02d GMT",
 		     w[0], w[1], w[2], tm->tm_mday, m[0], m[1], m[2],
 		     1900 + tm->tm_year, tm->tm_hour, tm->tm_min, tm->tm_sec);
 
@@ -51,7 +51,7 @@ lws_http_date_render(char *buf, size_t len, const struct tm *tm)
 
 
 int
-lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t)
+aws_lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t)
 {
 #if defined(LWS_HAVE_GMTIME_R)
 	struct tm tmp;
@@ -62,14 +62,14 @@ lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t)
 	if (!tm)
 		return -1;
 
-	if (lws_http_date_render(buf, len, tm))
+	if (aws_lws_http_date_render(buf, len, tm))
 		return -1;
 
 	return 0;
 }
 
 static int
-lws_http_date_parse(const char *b, size_t len, struct tm *tm)
+aws_lws_http_date_parse(const char *b, size_t len, struct tm *tm)
 {
 	int n;
 
@@ -132,11 +132,11 @@ lws_http_date_parse(const char *b, size_t len, struct tm *tm)
 }
 
 int
-lws_http_date_parse_unix(const char *b, size_t len, time_t *t)
+aws_lws_http_date_parse_unix(const char *b, size_t len, time_t *t)
 {
 	struct tm tm;
 
-	if (lws_http_date_parse(b, len, &tm))
+	if (aws_lws_http_date_parse(b, len, &tm))
 		return -1;
 
 #if defined(WIN32)
@@ -156,11 +156,11 @@ lws_http_date_parse_unix(const char *b, size_t len, time_t *t)
 #if defined(LWS_WITH_CLIENT)
 
 int
-lws_http_check_retry_after(struct lws *wsi, lws_usec_t *us_interval_in_out)
+aws_lws_http_check_retry_after(struct lws *wsi, aws_lws_usec_t *us_interval_in_out)
 {
-	size_t len = (unsigned int)lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_RETRY_AFTER);
-	char *p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_RETRY_AFTER);
-	lws_usec_t u;
+	size_t len = (unsigned int)aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_RETRY_AFTER);
+	char *p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_RETRY_AFTER);
+	aws_lws_usec_t u;
 	time_t t, td;
 
 	if (!p)
@@ -176,10 +176,10 @@ lws_http_check_retry_after(struct lws *wsi, lws_usec_t *us_interval_in_out)
 	 */
 
 	if (len < 9)
-		u = ((lws_usec_t)(time_t)atoi(p)) * LWS_USEC_PER_SEC;
+		u = ((aws_lws_usec_t)(time_t)atoi(p)) * LWS_USEC_PER_SEC;
 	else {
 
-		if (lws_http_date_parse_unix(p, len, &t))
+		if (aws_lws_http_date_parse_unix(p, len, &t))
 			return 1;
 
 		/*
@@ -189,11 +189,11 @@ lws_http_check_retry_after(struct lws *wsi, lws_usec_t *us_interval_in_out)
 		 */
 
 		time(&td);
-		len = (unsigned int)lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_DATE);
+		len = (unsigned int)aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_DATE);
 		if (len) {
-			p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_DATE);
+			p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_DATE);
 			/* if this fails, it leaves td as client time */
-			(void)lws_http_date_parse_unix(p, len, &td);
+			(void)aws_lws_http_date_parse_unix(p, len, &td);
 		}
 
 		if (td >= t)
@@ -204,7 +204,7 @@ lws_http_check_retry_after(struct lws *wsi, lws_usec_t *us_interval_in_out)
 			 */
 			return 1;
 
-		u = ((lws_usec_t)(t - td)) * LWS_USEC_PER_SEC;
+		u = ((aws_lws_usec_t)(t - td)) * LWS_USEC_PER_SEC;
 	}
 
 	/*

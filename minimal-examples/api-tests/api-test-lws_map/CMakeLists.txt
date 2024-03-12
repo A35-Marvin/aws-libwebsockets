@@ -1,4 +1,4 @@
-project(lws-api-test-lws_map C)
+project(lws-api-test-aws_lws_map C)
 cmake_minimum_required(VERSION 2.8.12)
 find_package(libwebsockets CONFIG REQUIRED)
 list(APPEND CMAKE_MODULE_PATH ${LWS_CMAKE_DIR})
@@ -6,7 +6,7 @@ include(CheckCSourceCompiles)
 
 
 	add_executable(${PROJECT_NAME} main.c)
-	add_test(NAME api-test-lws_map COMMAND lws-api-test-lws_map)
+	add_test(NAME api-test-aws_lws_map COMMAND lws-api-test-aws_lws_map)
 
 	if (websockets_shared)
 		target_link_libraries(${PROJECT_NAME} websockets_shared ${LIBWEBSOCKETS_DEP_LIBS})

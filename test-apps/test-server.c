@@ -36,14 +36,14 @@ int max_poll_elements;
 int debug_level = LLL_USER | 7;
 
 #if defined(LWS_WITH_EXTERNAL_POLL)
-struct lws_pollfd *pollfds;
+struct aws_lws_pollfd *pollfds;
 int *fd_lookup;
 int count_pollfds;
 #endif
 volatile int force_exit = 0, dynamic_vhost_enable = 0;
-struct lws_vhost *dynamic_vhost;
-struct lws_context *context;
-struct lws_plat_file_ops fops_plat;
+struct aws_lws_vhost *dynamic_vhost;
+struct aws_lws_context *context;
+struct aws_lws_plat_file_ops fops_plat;
 static int test_options;
 
 /* http server gets files from this path */
@@ -67,8 +67,8 @@ char crl_path[1024] = "";
 #include "../plugins/protocol_post_demo.c"
 
 #if defined(LWS_WITH_EXTERNAL_POLL)
-static struct lws_pollfd *
-ext_find_fd(lws_sockfd_type fd)
+static struct aws_lws_pollfd *
+ext_find_fd(aws_lws_sockfd_type fd)
 {
 	int n;
 
@@ -81,13 +81,13 @@ ext_find_fd(lws_sockfd_type fd)
 #endif
 
 static int
-lws_callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+aws_lws_callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		  void *in, size_t len)
 {
 	const unsigned char *c;
 #if defined(LWS_WITH_EXTERNAL_POLL)
-	struct lws_pollargs *pa;
-	struct lws_pollfd *pfd;
+	struct aws_lws_pollargs *pa;
+	struct aws_lws_pollfd *pfd;
 #endif
 	char buf[1024];
 	int n = 0, hlen;
@@ -95,11 +95,11 @@ lws_callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	switch (reason) {
 #if defined(LWS_WITH_EXTERNAL_POLL)
 	case LWS_CALLBACK_ADD_POLL_FD:
-		pa = (struct lws_pollargs *)in;
-		lwsl_debug("%s: ADD fd %d, ev %d\n", __func__, pa->fd, pa->events);
+		pa = (struct aws_lws_pollargs *)in;
+		aws_lwsl_debug("%s: ADD fd %d, ev %d\n", __func__, pa->fd, pa->events);
 		pfd = ext_find_fd(pa->fd);
 		if (pfd) {
-			lwsl_notice("%s: ADD fd %d already in ext table\n",
+			aws_lwsl_notice("%s: ADD fd %d already in ext table\n",
 					__func__, pa->fd);
 		} else {
 			pfd = ext_find_fd(LWS_SOCK_INVALID);
@@ -113,19 +113,19 @@ lws_callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		count_pollfds = (int)((pfd - pollfds) + 1);
 		break;
 	case LWS_CALLBACK_DEL_POLL_FD:
-		pa = (struct lws_pollargs *)in;
-		lwsl_debug("%s: DEL fd %d\n", __func__, pa->fd);
+		pa = (struct aws_lws_pollargs *)in;
+		aws_lwsl_debug("%s: DEL fd %d\n", __func__, pa->fd);
 		pfd = ext_find_fd(pa->fd);
 		if (!pfd)
 			return -1;
 		pfd->fd = LWS_SOCK_INVALID;
 		break;
 	case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
-		pa = (struct lws_pollargs *)in;
-		lwsl_debug("%s: CH fd %d\n", __func__, pa->fd);
+		pa = (struct aws_lws_pollargs *)in;
+		aws_lwsl_debug("%s: CH fd %d\n", __func__, pa->fd);
 		pfd = ext_find_fd(pa->fd);
 		if (!pfd) {
-			lwsl_err("%s: unknown fd %d\n", __func__, pa->fd);
+			aws_lwsl_err("%s: unknown fd %d\n", __func__, pa->fd);
 			return -1;
 		}
 		pfd->events = (short)pa->events;
@@ -138,19 +138,19 @@ lws_callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		/* dump the headers */
 
 		do {
-			c = lws_token_to_string((enum lws_token_indexes)n);
+			c = aws_lws_token_to_string((enum aws_lws_token_indexes)n);
 			if (!c) {
 				n++;
 				continue;
 			}
 
-			hlen = lws_hdr_total_length(wsi, (enum lws_token_indexes)n);
+			hlen = aws_lws_hdr_total_length(wsi, (enum aws_lws_token_indexes)n);
 			if (!hlen || hlen > (int)sizeof(buf) - 1) {
 				n++;
 				continue;
 			}
 
-			if (lws_hdr_copy(wsi, buf, sizeof buf, (enum lws_token_indexes)n) < 0)
+			if (aws_lws_hdr_copy(wsi, buf, sizeof buf, (enum aws_lws_token_indexes)n) < 0)
 				fprintf(stderr, "    %s (too big)\n", (char *)c);
 			else {
 				buf[sizeof(buf) - 1] = '\0';
@@ -163,15 +163,15 @@ lws_callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		/* dump the individual URI Arg parameters */
 
 		n = 0;
-		while (lws_hdr_copy_fragment(wsi, buf, sizeof(buf),
+		while (aws_lws_hdr_copy_fragment(wsi, buf, sizeof(buf),
 					     WSI_TOKEN_HTTP_URI_ARGS, n) > 0) {
-			lwsl_notice("URI Arg %d: %s\n", ++n, buf);
+			aws_lwsl_notice("URI Arg %d: %s\n", ++n, buf);
 		}
 
-		if (lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, NULL))
+		if (aws_lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, NULL))
 			return -1;
 
-		if (lws_http_transaction_completed(wsi))
+		if (aws_lws_http_transaction_completed(wsi))
 			return -1;
 
 		return 0;
@@ -179,15 +179,15 @@ lws_callback_http(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
 /* list of supported protocols and callbacks */
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	/* first protocol must always be HTTP handler */
 
-	{ "http-only", lws_callback_http, 0, 0, 0, NULL, 0 },
+	{ "http-only", aws_lws_callback_http, 0, 0, 0, NULL, 0 },
 #if defined(LWS_ROLE_WS)
 	LWS_PLUGIN_PROTOCOL_DUMB_INCREMENT,
 	LWS_PLUGIN_PROTOCOL_MIRROR,
@@ -202,22 +202,22 @@ static struct lws_protocols protocols[] = {
  * to do any of this unless you have a reason (eg, want to serve
  * compressed files without decompressing the whole archive)
  */
-static lws_fop_fd_t
-test_server_fops_open(const struct lws_plat_file_ops *fops,
+static aws_lws_fop_fd_t
+test_server_fops_open(const struct aws_lws_plat_file_ops *fops,
 		     const char *vfs_path, const char *vpath,
-		     lws_fop_flags_t *flags)
+		     aws_lws_fop_flags_t *flags)
 {
-	lws_fop_fd_t fop_fd;
+	aws_lws_fop_fd_t fop_fd;
 
 	/* call through to original platform implementation */
 	fop_fd = fops_plat.open(fops, vfs_path, vpath, flags);
 
 	if (fop_fd)
-		lwsl_info("%s: opening %s, ret %p, len %lu\n", __func__,
+		aws_lwsl_info("%s: opening %s, ret %p, len %lu\n", __func__,
 				vfs_path, fop_fd,
-				(long)lws_vfs_get_length(fop_fd));
+				(long)aws_lws_vfs_get_length(fop_fd));
 	else
-		lwsl_info("%s: open %s failed\n", __func__, vfs_path);
+		aws_lwsl_info("%s: open %s failed\n", __func__, vfs_path);
 
 	return fop_fd;
 }
@@ -233,21 +233,21 @@ void sighandler(int sig)
 		 * port + 1
 		 */
 		dynamic_vhost_enable ^= 1;
-		lws_cancel_service(context);
-		lwsl_notice("SIGUSR1: dynamic_vhost_enable: %d\n",
+		aws_lws_cancel_service(context);
+		aws_lwsl_notice("SIGUSR1: dynamic_vhost_enable: %d\n",
 				dynamic_vhost_enable);
 		return;
 	}
 #endif
 	force_exit = 1;
-	lws_cancel_service(context);
+	aws_lws_cancel_service(context);
 }
 
 #if defined(LWS_ROLE_WS) && !defined(LWS_WITHOUT_EXTENSIONS)
-static const struct lws_extension exts[] = {
+static const struct aws_lws_extension exts[] = {
 	{
 		"permessage-deflate",
-		lws_extension_callback_pm_deflate,
+		aws_lws_extension_callback_pm_deflate,
 		"permessage-deflate"
 	},
 	{ NULL, NULL, NULL /* terminator */ }
@@ -260,7 +260,7 @@ static const struct lws_extension exts[] = {
  * stuff from here is autoserved by the library
  */
 
-static const struct lws_http_mount mount_ziptest_uncomm = {
+static const struct aws_lws_http_mount mount_ziptest_uncomm = {
 	NULL,			/* linked-list pointer to next*/
 	"/uncommziptest",		/* mountpoint in URL namespace on this vhost */
 	LOCAL_RESOURCE_PATH"/candide-uncompressed.zip",	/* handler */
@@ -279,7 +279,7 @@ static const struct lws_http_mount mount_ziptest_uncomm = {
 	14,			/* strlen("/ziptest"), ie length of the mountpoint */
 	NULL,
 }, mount_ziptest = {
-	(struct lws_http_mount *)&mount_ziptest_uncomm,			/* linked-list pointer to next*/
+	(struct aws_lws_http_mount *)&mount_ziptest_uncomm,			/* linked-list pointer to next*/
 	"/ziptest",		/* mountpoint in URL namespace on this vhost */
 	LOCAL_RESOURCE_PATH"/candide.zip",	/* handler */
 	NULL,	/* default filename if none given */
@@ -297,7 +297,7 @@ static const struct lws_http_mount mount_ziptest_uncomm = {
 	8,			/* strlen("/ziptest"), ie length of the mountpoint */
 	NULL,
 }, mount_post = {
-	(struct lws_http_mount *)&mount_ziptest, /* linked-list pointer to next*/
+	(struct aws_lws_http_mount *)&mount_ziptest, /* linked-list pointer to next*/
 	"/formtest",		/* mountpoint in URL namespace on this vhost */
 	"protocol-post-demo",	/* handler */
 	NULL,	/* default filename if none given */
@@ -335,7 +335,7 @@ static const struct lws_http_mount mount_ziptest_uncomm = {
 };
 
 
-static const struct lws_protocol_vhost_options pvo_options = {
+static const struct aws_lws_protocol_vhost_options pvo_options = {
 	NULL,
 	NULL,
 	"options",		/* pvo name */
@@ -349,7 +349,7 @@ static const struct lws_protocol_vhost_options pvo_options = {
  * pvos are not instantiated on the vhost then.
  */
 
-static const struct lws_protocol_vhost_options
+static const struct aws_lws_protocol_vhost_options
 	pvo3 = {
 		NULL,				/* "next" pvo linked-list */
 		NULL,
@@ -412,8 +412,8 @@ sigterm_catch(int sig)
 
 int main(int argc, char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_vhost *vhost;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_vhost *vhost;
 	char interface_name[128] = "";
 	const char *iface = NULL;
 	char cert_path[1024] = "";
@@ -482,11 +482,11 @@ int main(int argc, char **argv)
 			info.port = atoi(optarg);
 			break;
 		case 'i':
-			lws_strncpy(interface_name, optarg, sizeof interface_name);
+			aws_lws_strncpy(interface_name, optarg, sizeof interface_name);
 			iface = interface_name;
 			break;
 		case 'U':
-			lws_strncpy(interface_name, optarg, sizeof interface_name);
+			aws_lws_strncpy(interface_name, optarg, sizeof interface_name);
 			iface = interface_name;
 			opts |= LWS_SERVER_OPTION_UNIX_SOCK;
 			break;
@@ -501,16 +501,16 @@ int main(int argc, char **argv)
 			close_testing = 1;
 			fprintf(stderr, " Close testing mode -- closes on "
 					   "client after 50 dumb increments"
-					   "and suppresses lws_mirror spam\n");
+					   "and suppresses aws_lws_mirror spam\n");
 			break;
 		case 'C':
-			lws_strncpy(cert_path, optarg, sizeof(cert_path));
+			aws_lws_strncpy(cert_path, optarg, sizeof(cert_path));
 			break;
 		case 'K':
-			lws_strncpy(key_path, optarg, sizeof(key_path));
+			aws_lws_strncpy(key_path, optarg, sizeof(key_path));
 			break;
 		case 'A':
-			lws_strncpy(ca_path, optarg, sizeof(ca_path));
+			aws_lws_strncpy(ca_path, optarg, sizeof(ca_path));
 			break;
 #if defined(LWS_WITH_TLS)
 		case 'v':
@@ -520,7 +520,7 @@ int main(int argc, char **argv)
 
 #if defined(LWS_HAVE_SSL_CTX_set1_param)
 		case 'R':
-			lws_strncpy(crl_path, optarg, sizeof(crl_path));
+			aws_lws_strncpy(crl_path, optarg, sizeof(crl_path));
 			break;
 #endif
 #endif
@@ -534,11 +534,11 @@ int main(int argc, char **argv)
 
 #if !defined(LWS_NO_DAEMONIZE) && !defined(WIN32)
 	/*
-	 * normally lock path would be /var/lock/lwsts or similar, to
+	 * normally lock path would be /var/lock/aws_lwsts or similar, to
 	 * simplify getting started without having to take care about
-	 * permissions or running as root, set to /tmp/.lwsts-lock
+	 * permissions or running as root, set to /tmp/.aws_lwsts-lock
 	 */
-	if (daemonize && lws_daemonize("/tmp/.lwsts-lock")) {
+	if (daemonize && aws_lws_daemonize("/tmp/.aws_lwsts-lock")) {
 		fprintf(stderr, "Failed to daemonize\n");
 		return 10;
 	}
@@ -552,10 +552,10 @@ int main(int argc, char **argv)
 #endif
 
 	/* tell the library what debug level to emit and to send it to stderr */
-	lws_set_log_level(debug_level, NULL);
+	aws_lws_set_log_level(debug_level, NULL);
 
-	lwsl_notice("libwebsockets test server - license MIT\n");
-	lwsl_notice("(C) Copyright 2010-2018 Andy Green <andy@warmcat.com>\n");
+	aws_lwsl_notice("libwebsockets test server - license MIT\n");
+	aws_lwsl_notice("(C) Copyright 2010-2018 Andy Green <andy@warmcat.com>\n");
 
 	printf("Using resource path \"%s\"\n", resource_path);
 #if defined(LWS_WITH_EXTERNAL_POLL)
@@ -564,10 +564,10 @@ int main(int argc, char **argv)
 #else
 	max_poll_elements = sysconf(_SC_OPEN_MAX);
 #endif
-	pollfds = malloc((unsigned int)max_poll_elements * sizeof (struct lws_pollfd));
+	pollfds = malloc((unsigned int)max_poll_elements * sizeof (struct aws_lws_pollfd));
 	fd_lookup = malloc((unsigned int)max_poll_elements * sizeof (int));
 	if (pollfds == NULL || fd_lookup == NULL) {
-		lwsl_err("Out of memory pollfds=%d\n", max_poll_elements);
+		aws_lwsl_err("Out of memory pollfds=%d\n", max_poll_elements);
 		return -1;
 	}
 	for (n = 0; n < max_poll_elements; n++)
@@ -584,14 +584,14 @@ int main(int argc, char **argv)
 
 	if (use_ssl) {
 		if (strlen(resource_path) > sizeof(cert_path) - 32) {
-			lwsl_err("resource path too long\n");
+			aws_lwsl_err("resource path too long\n");
 			return -1;
 		}
 		if (!cert_path[0])
 			sprintf(cert_path, "%s/libwebsockets-test-server.pem",
 								resource_path);
 		if (strlen(resource_path) > sizeof(key_path) - 32) {
-			lwsl_err("resource path too long\n");
+			aws_lwsl_err("resource path too long\n");
 			return -1;
 		}
 		if (!key_path[0])
@@ -637,17 +637,17 @@ int main(int argc, char **argv)
 		/* redirect guys coming on http */
 		info.options |= LWS_SERVER_OPTION_REDIRECT_HTTP_TO_HTTPS;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (context == NULL) {
-		lwsl_err("libwebsocket init failed\n");
+		aws_lwsl_err("libwebsocket init failed\n");
 		return -1;
 	}
 
 	info.pvo = &pvo;
 
-	vhost = lws_create_vhost(context, &info);
+	vhost = aws_lws_create_vhost(context, &info);
 	if (!vhost) {
-		lwsl_err("vhost creation failed\n");
+		aws_lwsl_err("vhost creation failed\n");
 		return -1;
 	}
 
@@ -660,7 +660,7 @@ int main(int argc, char **argv)
 	info.port++;
 
 #if defined(LWS_WITH_CLIENT) && defined(LWS_WITH_TLS)
-	lws_init_vhost_client_ssl(&info, vhost);
+	aws_lws_init_vhost_client_ssl(&info, vhost);
 #endif
 
 	/* this shows how to override the lws file operations.	You don't need
@@ -668,9 +668,9 @@ int main(int argc, char **argv)
 	 * compressed files without decompressing the whole archive)
 	 */
 	/* stash original platform fops */
-	fops_plat = *(lws_get_fops(context));
+	fops_plat = *(aws_lws_get_fops(context));
 	/* override the active fops */
-	lws_get_fops(context)->open = test_server_fops_open;
+	aws_lws_get_fops(context)->open = test_server_fops_open;
 
 	n = 0;
 	while (n >= 0 && !force_exit) {
@@ -691,7 +691,7 @@ int main(int argc, char **argv)
 		 */
 
 		/* if needed, force-service wsis that may not have read all input */
-		n = lws_service_adjust_timeout(context, 5000, 0);
+		n = aws_lws_service_adjust_timeout(context, 5000, 0);
 
 		n = poll(pollfds, (nfds_t)count_pollfds, n);
 		if (n < 0)
@@ -705,12 +705,12 @@ int main(int argc, char **argv)
 					* match anything under libwebsockets
 					* control
 					*/
-					if (lws_service_fd(context,
+					if (aws_lws_service_fd(context,
 							   &pollfds[n]) < 0)
 						goto done;
 		}
 
-		lws_service_tsi(context, -1, 0);
+		aws_lws_service_tsi(context, -1, 0);
 #else
 		/*
 		 * If libwebsockets sockets are all we care about,
@@ -718,16 +718,16 @@ int main(int argc, char **argv)
 		 * and looping through finding who needed service.
 		 */
 
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 #endif
 
 		if (dynamic_vhost_enable && !dynamic_vhost) {
-			lwsl_notice("creating dynamic vhost...\n");
-			dynamic_vhost = lws_create_vhost(context, &info);
+			aws_lwsl_notice("creating dynamic vhost...\n");
+			dynamic_vhost = aws_lws_create_vhost(context, &info);
 		} else
 			if (!dynamic_vhost_enable && dynamic_vhost) {
-				lwsl_notice("destroying dynamic vhost...\n");
-				lws_vhost_destroy(dynamic_vhost);
+				aws_lwsl_notice("destroying dynamic vhost...\n");
+				aws_lws_vhost_destroy(dynamic_vhost);
 				dynamic_vhost = NULL;
 			}
 
@@ -737,9 +737,9 @@ int main(int argc, char **argv)
 done:
 #endif
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_notice("libwebsockets-test-server exited cleanly\n");
+	aws_lwsl_notice("libwebsockets-test-server exited cleanly\n");
 
 	return 0;
 }

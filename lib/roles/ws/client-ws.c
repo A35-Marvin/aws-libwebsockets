@@ -43,15 +43,15 @@ strtolower(char *s)
 }
 
 int
-lws_create_client_ws_object(const struct lws_client_connect_info *i,
+aws_lws_create_client_ws_object(const struct aws_lws_client_connect_info *i,
 			    struct lws *wsi)
 {
 	int v = SPEC_LATEST_SUPPORTED;
 
 	/* allocate the ws struct for the wsi */
-	wsi->ws = lws_zalloc(sizeof(*wsi->ws), "client ws struct");
+	wsi->ws = aws_lws_zalloc(sizeof(*wsi->ws), "client ws struct");
 	if (!wsi->ws) {
-		lwsl_wsi_notice(wsi, "OOM");
+		aws_lwsl_wsi_notice(wsi, "OOM");
 		return 1;
 	}
 
@@ -67,24 +67,24 @@ lws_create_client_ws_object(const struct lws_client_connect_info *i,
 
 #if defined(LWS_WITH_CLIENT)
 int
-lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
+aws_lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
 {
 	unsigned char *bufin = *buf;
 
-	if ((lwsi_state(wsi) != LRS_WAITING_PROXY_REPLY) &&
-	    (lwsi_state(wsi) != LRS_H1C_ISSUE_HANDSHAKE) &&
-	    (lwsi_state(wsi) != LRS_WAITING_SERVER_REPLY) &&
-	    !lwsi_role_client(wsi))
+	if ((aws_lwsi_state(wsi) != LRS_WAITING_PROXY_REPLY) &&
+	    (aws_lwsi_state(wsi) != LRS_H1C_ISSUE_HANDSHAKE) &&
+	    (aws_lwsi_state(wsi) != LRS_WAITING_SERVER_REPLY) &&
+	    !aws_lwsi_role_client(wsi))
 		return 0;
 
-	lwsl_wsi_debug(wsi, "hs client feels it has %d in", (int)len);
+	aws_lwsl_wsi_debug(wsi, "hs client feels it has %d in", (int)len);
 
 	while (len) {
 		/*
 		 * we were accepting input but now we stopped doing so
 		 */
-		if (lws_is_flowcontrolled(wsi)) {
-			lwsl_wsi_debug(wsi, "caching %ld", (long)len);
+		if (aws_lws_is_flowcontrolled(wsi)) {
+			aws_lwsl_wsi_debug(wsi, "caching %ld", (long)len);
 			/*
 			 * Since we cached the remaining available input, we
 			 * can say we "consumed" it.
@@ -94,7 +94,7 @@ lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
 			 * effectively "putting it back in the cache", we have
 			 * to place it at the cache head, not the tail as usual.
 			 */
-			if (lws_rxflow_cache(wsi, *buf, 0, len) ==
+			if (aws_lws_rxflow_cache(wsi, *buf, 0, len) ==
 							LWSRXFC_TRIMMED) {
 				/*
 				 * we dealt with it by trimming the existing
@@ -103,7 +103,7 @@ lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
 				 * indicate we didn't use anything to the caller
 				 * so he doesn't do any consumed processing
 				 */
-				lwsl_wsi_info(wsi, "trimming inside rxflow cache");
+				aws_lwsl_wsi_info(wsi, "trimming inside rxflow cache");
 				*buf = bufin;
 			} else
 				*buf += len;
@@ -114,11 +114,11 @@ lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
 		if (wsi->ws->rx_draining_ext) {
 			int m;
 
-			lwsl_wsi_info(wsi, "draining ext");
-			if (lwsi_role_client(wsi))
-				m = lws_ws_client_rx_sm(wsi, 0);
+			aws_lwsl_wsi_info(wsi, "draining ext");
+			if (aws_lwsi_role_client(wsi))
+				m = aws_lws_ws_client_rx_sm(wsi, 0);
 			else
-				m = lws_ws_rx_sm(wsi, 0, 0);
+				m = aws_lws_ws_rx_sm(wsi, 0, 0);
 			if (m < 0)
 				return -1;
 			continue;
@@ -129,40 +129,40 @@ lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len)
 		 * happened to *buf
 		 */
 
-		if (lws_ws_client_rx_sm(wsi, *(*buf)++)) {
-			lwsl_wsi_info(wsi, "client_rx_sm exited, DROPPING %d",
+		if (aws_lws_ws_client_rx_sm(wsi, *(*buf)++)) {
+			aws_lwsl_wsi_info(wsi, "client_rx_sm exited, DROPPING %d",
 				      (int)len);
 			return -1;
 		}
 		len--;
 	}
-	// lwsl_wsi_notice(wsi, "finished with %ld", (long)len);
+	// aws_lwsl_wsi_notice(wsi, "finished with %ld", (long)len);
 
 	return 0;
 }
 #endif
 
 char *
-lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1)
+aws_lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1)
 {
 	char buf[128], hash[20], key_b64[40];
 	int n;
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	const struct lws_extension *ext;
+	const struct aws_lws_extension *ext;
 	int ext_count = 0;
 #endif
 
 	/*
 	 * create the random key
 	 */
-	if (lws_get_random(wsi->a.context, hash, 16) != 16) {
-		lwsl_wsi_err(wsi, "Unable to read from random dev %s",
+	if (aws_lws_get_random(wsi->a.context, hash, 16) != 16) {
+		aws_lwsl_wsi_err(wsi, "Unable to read from random dev %s",
 			 SYSTEM_RANDOM_FILEPATH);
 		return NULL;
 	}
 
 	/* coverity[tainted_scalar] */
-	lws_b64_encode_string(hash, 16, key_b64, sizeof(key_b64));
+	aws_lws_b64_encode_string(hash, 16, key_b64, sizeof(key_b64));
 
 	p += sprintf(p, "Upgrade: websocket\x0d\x0a"
 			"Connection: %sUpgrade\x0d\x0a"
@@ -170,9 +170,9 @@ lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1)
 	strcpy(p, key_b64);
 	p += strlen(key_b64);
 	p += sprintf(p, "\x0d\x0a");
-	if (lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_SENT_PROTOCOLS))
+	if (aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_SENT_PROTOCOLS))
 		p += sprintf(p, "Sec-WebSocket-Protocol: %s\x0d\x0a",
-		     lws_hdr_simple_ptr(wsi,
+		     aws_lws_hdr_simple_ptr(wsi,
 				     _WSI_TOKEN_CLIENT_SENT_PROTOCOLS));
 
 	/* tell the server what extensions we could support */
@@ -221,9 +221,9 @@ lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1)
 	n = sprintf(buf, "%s258EAFA5-E914-47DA-95CA-C5AB0DC85B11",
 			  key_b64);
 
-	lws_SHA1((unsigned char *)buf, (unsigned int)n, (unsigned char *)hash);
+	aws_lws_SHA1((unsigned char *)buf, (unsigned int)n, (unsigned char *)hash);
 
-	lws_b64_encode_string(hash, 20,
+	aws_lws_b64_encode_string(hash, 20,
 		  wsi->http.ah->initial_handshake_hash_base64,
 		  sizeof(wsi->http.ah->initial_handshake_hash_base64));
 
@@ -231,19 +231,19 @@ lws_generate_client_ws_handshake(struct lws *wsi, char *p, const char *conn1)
 }
 
 int
-lws_client_ws_upgrade(struct lws *wsi, const char **cce)
+aws_lws_client_ws_upgrade(struct lws *wsi, const char **cce)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_tokenize ts;
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_tokenize ts;
 	int n, len, okay = 0;
-	lws_tokenize_elem e;
+	aws_lws_tokenize_elem e;
 	char *p, buf[64];
 	const char *pc;
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	char *sb = (char *)&pt->serv_buf[0];
-	const struct lws_ext_options *opts;
-	const struct lws_extension *ext;
+	const struct aws_lws_ext_options *opts;
+	const struct aws_lws_extension *ext;
 	char ext_name[128];
 	const char *c, *a;
 	int more = 1;
@@ -251,55 +251,55 @@ lws_client_ws_upgrade(struct lws *wsi, const char **cce)
 #endif
 
 	if (wsi->client_mux_substream) {/* !!! client ws-over-h2 not there yet */
-		lwsl_wsi_warn(wsi, "client ws-over-h2 upgrade not supported yet");
+		aws_lwsl_wsi_warn(wsi, "client ws-over-h2 upgrade not supported yet");
 		*cce = "HS: h2 / ws upgrade unsupported";
 		goto bail3;
 	}
 
 	if (wsi->http.ah->http_response == 401) {
-		lwsl_wsi_warn(wsi, "got bad HTTP response '%d'",
+		aws_lwsl_wsi_warn(wsi, "got bad HTTP response '%d'",
 			      wsi->http.ah->http_response);
 		*cce = "HS: ws upgrade unauthorized";
 		goto bail3;
 	}
 
 	if (wsi->http.ah->http_response != 101) {
-		lwsl_wsi_warn(wsi, "got bad HTTP response '%d'",
+		aws_lwsl_wsi_warn(wsi, "got bad HTTP response '%d'",
 			      wsi->http.ah->http_response);
 		*cce = "HS: ws upgrade response not 101";
 		goto bail3;
 	}
 
-	if (lws_hdr_total_length(wsi, WSI_TOKEN_ACCEPT) == 0) {
-		lwsl_wsi_info(wsi, "no ACCEPT");
+	if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_ACCEPT) == 0) {
+		aws_lwsl_wsi_info(wsi, "no ACCEPT");
 		*cce = "HS: ACCEPT missing";
 		goto bail3;
 	}
 
-	p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_UPGRADE);
+	p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_UPGRADE);
 	if (!p) {
-		lwsl_wsi_info(wsi, "no UPGRADE");
+		aws_lwsl_wsi_info(wsi, "no UPGRADE");
 		*cce = "HS: UPGRADE missing";
 		goto bail3;
 	}
 	strtolower(p);
 	if (strcmp(p, "websocket")) {
-		lwsl_wsi_warn(wsi, "got bad Upgrade header '%s'", p);
+		aws_lwsl_wsi_warn(wsi, "got bad Upgrade header '%s'", p);
 		*cce = "HS: Upgrade to something other than websocket";
 		goto bail3;
 	}
 
 	/* connection: must have "upgrade" */
 
-	lws_tokenize_init(&ts, buf, LWS_TOKENIZE_F_COMMA_SEP_LIST |
+	aws_lws_tokenize_init(&ts, buf, LWS_TOKENIZE_F_COMMA_SEP_LIST |
 				    LWS_TOKENIZE_F_MINUS_NONTERM);
-	n = lws_hdr_copy(wsi, buf, sizeof(buf) - 1, WSI_TOKEN_CONNECTION);
+	n = aws_lws_hdr_copy(wsi, buf, sizeof(buf) - 1, WSI_TOKEN_CONNECTION);
 	if (n <= 0) /* won't fit, or absent */
 		goto bad_conn_format;
 	ts.len = (unsigned int)n;
 
 	do {
-		e = lws_tokenize(&ts);
+		e = aws_lws_tokenize(&ts);
 		switch (e) {
 		case LWS_TOKZE_TOKEN:
 			if (!strncasecmp(ts.token, "upgrade", ts.token_len))
@@ -311,18 +311,18 @@ lws_client_ws_upgrade(struct lws *wsi, const char **cce)
 
 		default: /* includes ENDED found by the tokenizer itself */
 bad_conn_format:
-			lwsl_wsi_info(wsi, "malformed connection '%s'", buf);
+			aws_lwsl_wsi_info(wsi, "malformed connection '%s'", buf);
 			*cce = "HS: UPGRADE malformed";
 			goto bail3;
 		}
 	} while (e > 0);
 
-	pc = lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_SENT_PROTOCOLS);
+	pc = aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_SENT_PROTOCOLS);
 #if defined(_DEBUG)
 	if (!pc)
-		lwsl_wsi_parser(wsi, "lws_client_int_s_hs: no protocol list");
+		aws_lwsl_wsi_parser(wsi, "aws_lws_client_int_s_hs: no protocol list");
 	else
-		lwsl_wsi_parser(wsi, "lws_client_int_s_hs: protocol list '%s'", pc);
+		aws_lwsl_wsi_parser(wsi, "aws_lws_client_int_s_hs: protocol list '%s'", pc);
 #endif
 
 	/*
@@ -330,9 +330,9 @@ bad_conn_format:
 	 * of protocols we offered
 	 */
 
-	len = lws_hdr_total_length(wsi, WSI_TOKEN_PROTOCOL);
+	len = aws_lws_hdr_total_length(wsi, WSI_TOKEN_PROTOCOL);
 	if (!len) {
-		lwsl_wsi_info(wsi, "WSI_TOKEN_PROTOCOL is null");
+		aws_lwsl_wsi_info(wsi, "WSI_TOKEN_PROTOCOL is null");
 		/*
 		 * no protocol name to work from, if we don't already have one
 		 * default to first protocol
@@ -350,7 +350,7 @@ bad_conn_format:
 		goto check_extensions;
 	}
 
-	p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_PROTOCOL);
+	p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_PROTOCOL);
 	len = (int)strlen(p);
 
 	while (pc && *pc && !okay) {
@@ -366,7 +366,7 @@ bad_conn_format:
 	}
 
 	if (!okay) {
-		lwsl_wsi_info(wsi, "got bad protocol %s", p);
+		aws_lwsl_wsi_info(wsi, "got bad protocol %s", p);
 		*cce = "HS: PROTOCOL malformed";
 		goto bail2;
 	}
@@ -374,7 +374,7 @@ bad_conn_format:
 identify_protocol:
 
 #if defined(LWS_WITH_HTTP_PROXY)
-	lws_strncpy(wsi->ws->actual_protocol, p,
+	aws_lws_strncpy(wsi->ws->actual_protocol, p,
 		    sizeof(wsi->ws->actual_protocol));
 #endif
 
@@ -383,7 +383,7 @@ identify_protocol:
 	 */
 	n = 0;
 	/* keep client connection pre-bound protocol */
-	if (!lwsi_role_client(wsi))
+	if (!aws_lwsi_role_client(wsi))
 		wsi->a.protocol = NULL;
 
 	while (n < wsi->a.vhost->count_protocols) {
@@ -397,8 +397,8 @@ identify_protocol:
 
 	if (n == wsi->a.vhost->count_protocols) { /* no match */
 		/* if server, that's already fatal */
-		if (!lwsi_role_client(wsi)) {
-			lwsl_wsi_info(wsi, "fail protocol %s", p);
+		if (!aws_lwsi_role_client(wsi)) {
+			aws_lwsl_wsi_info(wsi, "fail protocol %s", p);
 			*cce = "HS: Cannot match protocol";
 			goto bail2;
 		}
@@ -417,16 +417,16 @@ identify_protocol:
 
 		if (!wsi->a.vhost->protocols[n].callback) {
 			if (wsi->a.protocol)
-				lwsl_wsi_err(wsi, "Failed to match protocol %s",
+				aws_lwsl_wsi_err(wsi, "Failed to match protocol %s",
 						wsi->a.protocol->name);
 			else
-				lwsl_wsi_err(wsi, "No protocol on client");
+				aws_lwsl_wsi_err(wsi, "No protocol on client");
 			*cce = "ws protocol no match";
 			goto bail2;
 		}
 	}
 
-	lwsl_wsi_debug(wsi, "Selected protocol %s", wsi->a.protocol ?
+	aws_lwsl_wsi_debug(wsi, "Selected protocol %s", wsi->a.protocol ?
 					     wsi->a.protocol->name : "no pcol");
 
 check_extensions:
@@ -438,13 +438,13 @@ check_extensions:
 	 * X <-> pAn <-> pB
 	 */
 
-	lws_same_vh_protocol_insert(wsi, n);
+	aws_lws_same_vh_protocol_insert(wsi, n);
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 	/* instantiate the accepted extensions */
 
-	if (!lws_hdr_total_length(wsi, WSI_TOKEN_EXTENSIONS)) {
-		lwsl_wsi_ext(wsi, "no client extensions allowed by server");
+	if (!aws_lws_hdr_total_length(wsi, WSI_TOKEN_EXTENSIONS)) {
+		aws_lwsl_wsi_ext(wsi, "no client extensions allowed by server");
 		goto check_accept;
 	}
 
@@ -453,9 +453,9 @@ check_extensions:
 	 * and go through matching them or identifying bogons
 	 */
 
-	if (lws_hdr_copy(wsi, sb, (int)context->pt_serv_buf_size,
+	if (aws_lws_hdr_copy(wsi, sb, (int)context->pt_serv_buf_size,
 			 WSI_TOKEN_EXTENSIONS) < 0) {
-		lwsl_wsi_warn(wsi, "ext list from server failed to copy");
+		aws_lwsl_wsi_warn(wsi, "ext list from server failed to copy");
 		*cce = "HS: EXT: list too big";
 		goto bail2;
 	}
@@ -494,7 +494,7 @@ check_extensions:
 
 		/* check we actually support it */
 
-		lwsl_wsi_notice(wsi, "checking client ext %s", ext_name);
+		aws_lwsl_wsi_notice(wsi, "checking client ext %s", ext_name);
 
 		n = 0;
 		ext = wsi->a.vhost->ws.extensions;
@@ -505,7 +505,7 @@ check_extensions:
 			}
 
 			n = 1;
-			lwsl_wsi_notice(wsi, "instantiating client ext %s", ext_name);
+			aws_lwsl_wsi_notice(wsi, "instantiating client ext %s", ext_name);
 
 			/* instantiate the extension on this conn */
 
@@ -513,12 +513,12 @@ check_extensions:
 
 			/* allow him to construct his ext instance */
 
-			if (ext->callback(lws_get_context(wsi), ext, wsi,
+			if (ext->callback(aws_lws_get_context(wsi), ext, wsi,
 				   LWS_EXT_CB_CLIENT_CONSTRUCT,
 				   (void *)&wsi->ws->act_ext_user[
 				                        wsi->ws->count_act_ext],
 				   (void *)&opts, 0)) {
-				lwsl_wsi_info(wsi, " ext %s failed construction",
+				aws_lwsl_wsi_info(wsi, " ext %s failed construction",
 					  ext_name);
 				ext++;
 				continue;
@@ -538,12 +538,12 @@ check_extensions:
 			}
 
 			if (ext_name[0] &&
-			    lws_ext_parse_options(ext, wsi,
+			    aws_lws_ext_parse_options(ext, wsi,
 					          wsi->ws->act_ext_user[
 						        wsi->ws->count_act_ext],
 					          opts, ext_name,
 						  (int)strlen(ext_name))) {
-				lwsl_wsi_err(wsi, "unable to parse user defaults '%s'",
+				aws_lwsl_wsi_err(wsi, "unable to parse user defaults '%s'",
 					     ext_name);
 				*cce = "HS: EXT: failed parsing defaults";
 				goto bail2;
@@ -552,20 +552,20 @@ check_extensions:
 			/*
 			 * give the extension the server options
 			 */
-			if (a && lws_ext_parse_options(ext, wsi,
+			if (a && aws_lws_ext_parse_options(ext, wsi,
 					wsi->ws->act_ext_user[
 					                wsi->ws->count_act_ext],
-					opts, a, lws_ptr_diff(c, a))) {
-				lwsl_wsi_err(wsi, "unable to parse remote def '%s'", a);
+					opts, a, aws_lws_ptr_diff(c, a))) {
+				aws_lwsl_wsi_err(wsi, "unable to parse remote def '%s'", a);
 				*cce = "HS: EXT: failed parsing options";
 				goto bail2;
 			}
 
-			if (ext->callback(lws_get_context(wsi), ext, wsi,
+			if (ext->callback(aws_lws_get_context(wsi), ext, wsi,
 					LWS_EXT_CB_OPTION_CONFIRM,
 				      wsi->ws->act_ext_user[wsi->ws->count_act_ext],
 				      NULL, 0)) {
-				lwsl_wsi_err(wsi, "ext %s rejects server options %s",
+				aws_lwsl_wsi_err(wsi, "ext %s rejects server options %s",
 					     ext->name, a);
 				*cce = "HS: EXT: Rejects server options";
 				goto bail2;
@@ -577,7 +577,7 @@ check_extensions:
 		}
 
 		if (n == 0) {
-			lwsl_wsi_warn(wsi, "Unknown ext '%s'!", ext_name);
+			aws_lwsl_wsi_warn(wsi, "Unknown ext '%s'!", ext_name);
 			*cce = "HS: EXT: unknown ext";
 			goto bail2;
 		}
@@ -593,17 +593,17 @@ check_accept:
 	 * Confirm his accept token is the one we precomputed
 	 */
 
-	p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_ACCEPT);
+	p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_ACCEPT);
 	if (strcmp(p, wsi->http.ah->initial_handshake_hash_base64)) {
-		lwsl_wsi_warn(wsi, "lws_client_int_s_hs: accept '%s' wrong vs '%s'", p,
+		aws_lwsl_wsi_warn(wsi, "aws_lws_client_int_s_hs: accept '%s' wrong vs '%s'", p,
 				  wsi->http.ah->initial_handshake_hash_base64);
 		*cce = "HS: Accept hash wrong";
 		goto bail2;
 	}
 
 	/* allocate the per-connection user memory (if any) */
-	if (lws_ensure_user_space(wsi)) {
-		lwsl_wsi_err(wsi, "Problem allocating wsi user mem");
+	if (aws_lws_ensure_user_space(wsi)) {
+		aws_lwsl_wsi_err(wsi, "Problem allocating wsi user mem");
 		*cce = "HS: OOM";
 		goto bail2;
 	}
@@ -620,13 +620,13 @@ check_accept:
 	}
 
 	/* clear his proxy connection timeout */
-	lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+	aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
 
 	/* free up his parsing allocations */
-	lws_header_table_detach(wsi, 0);
+	aws_lws_header_table_detach(wsi, 0);
 
-	lws_role_transition(wsi, LWSIFR_CLIENT, LRS_ESTABLISHED, &role_ops_ws);
-	lws_validity_confirmed(wsi);
+	aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_ESTABLISHED, &role_ops_ws);
+	aws_lws_validity_confirmed(wsi);
 
 	wsi->rxflow_change_to = LWS_RXFLOW_ALLOW;
 
@@ -639,16 +639,16 @@ check_accept:
 	if (!n)
 		n = (int)context->pt_serv_buf_size;
 	n += LWS_PRE;
-	wsi->ws->rx_ubuf = lws_malloc((unsigned int)n + 4 /* 0x0000ffff zlib */,
+	wsi->ws->rx_ubuf = aws_lws_malloc((unsigned int)n + 4 /* 0x0000ffff zlib */,
 				"client frame buffer");
 	if (!wsi->ws->rx_ubuf) {
-		lwsl_wsi_err(wsi, "OOM allocating rx buffer %d", n);
+		aws_lwsl_wsi_err(wsi, "OOM allocating rx buffer %d", n);
 		*cce = "HS: OOM";
 		goto bail2;
 	}
 	wsi->ws->rx_ubuf_alloc = (unsigned int)n;
 
-	lwsl_wsi_debug(wsi, "handshake OK for protocol %s", wsi->a.protocol->name);
+	aws_lwsl_wsi_debug(wsi, "handshake OK for protocol %s", wsi->a.protocol->name);
 
 	/* call him back to inform him he is up */
 

@@ -81,9 +81,9 @@
 #include <sys/stat.h>
 
 struct per_vhost_data__raw_test {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 	char fifo_path[100];
 	int fifo;
 	char zero_length_read;
@@ -96,40 +96,40 @@ struct per_session_data__raw_test {
 };
 
 static int
-callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_raw_test(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		  void *in, size_t len)
 {
 	struct per_session_data__raw_test *pss =
 			(struct per_session_data__raw_test *)user;
 	struct per_vhost_data__raw_test *vhd =
 			(struct per_vhost_data__raw_test *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					lws_get_protocol(wsi));
-	lws_sock_file_fd_type u;
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi));
+	aws_lws_sock_file_fd_type u;
 
 	(void)pss;
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__raw_test));
 		if (!vhd)
 			return 0;
-		vhd->context = lws_get_context(wsi);
-		vhd->protocol = lws_get_protocol(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->protocol = aws_lws_get_protocol(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 		{
-			const struct lws_protocol_vhost_options *pvo =
-				(const struct lws_protocol_vhost_options *)in;
+			const struct aws_lws_protocol_vhost_options *pvo =
+				(const struct aws_lws_protocol_vhost_options *)in;
 			while (pvo) {
 				if (!strcmp(pvo->name, "fifo-path"))
-					lws_strncpy(vhd->fifo_path, pvo->value,
+					aws_lws_strncpy(vhd->fifo_path, pvo->value,
 							sizeof(vhd->fifo_path));
 				pvo = pvo->next;
 			}
 			if (vhd->fifo_path[0] == '\0') {
-				lwsl_warn("%s: Missing pvo \"fifo-path\", "
+				aws_lwsl_warn("%s: Missing pvo \"fifo-path\", "
 					 "raw file fd testing disabled\n",
 					 __func__);
 				break;
@@ -137,22 +137,22 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		}
 		unlink(vhd->fifo_path);
 		if (mkfifo(vhd->fifo_path, 0666)) {
-			lwsl_err("mkfifo failed\n");
+			aws_lwsl_err("mkfifo failed\n");
 			return 1;
 		}
-		vhd->fifo = lws_open(vhd->fifo_path, O_NONBLOCK | O_RDONLY);
+		vhd->fifo = aws_lws_open(vhd->fifo_path, O_NONBLOCK | O_RDONLY);
 		if (vhd->fifo == -1) {
-			lwsl_err("opening fifo failed\n");
+			aws_lwsl_err("opening fifo failed\n");
 			unlink(vhd->fifo_path);
 			return 1;
 		}
-		lwsl_notice("FIFO %s created\n", vhd->fifo_path);
+		aws_lwsl_notice("FIFO %s created\n", vhd->fifo_path);
 		u.filefd = vhd->fifo;
-		if (!lws_adopt_descriptor_vhost(vhd->vhost,
+		if (!aws_lws_adopt_descriptor_vhost(vhd->vhost,
 						LWS_ADOPT_RAW_FILE_DESC, u,
 						"protocol-lws-raw-test",
 						NULL)) {
-			lwsl_err("Failed to adopt fifo descriptor\n");
+			aws_lwsl_err("Failed to adopt fifo descriptor\n");
 			close(vhd->fifo);
 			unlink(vhd->fifo_path);
 			return 1;
@@ -174,19 +174,19 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	 */
 
 	case LWS_CALLBACK_RAW_ADOPT_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_ADOPT_FILE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_ADOPT_FILE\n");
 		break;
 
 
 	case LWS_CALLBACK_RAW_RX_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_RX_FILE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_RX_FILE\n");
 		{
 			char buf[256];
 			int n;
 			
 			n = (int)read(vhd->fifo, buf, sizeof(buf) - 1);
 			if (n < 0) {
-				lwsl_err("FIFO read failed\n");
+				aws_lwsl_err("FIFO read failed\n");
 				return 1;
 			}
 			/*
@@ -206,30 +206,30 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 				return 1;
 			}
 			buf[n] = '\0';
-			lwsl_info("read %d\n", n);
+			aws_lwsl_info("read %d\n", n);
 			puts(buf);
 		}
 		break;
 
 	case LWS_CALLBACK_RAW_CLOSE_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_CLOSE_FILE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_CLOSE_FILE\n");
 		if (vhd->zero_length_read) {
 			vhd->zero_length_read = 0;
 			close(vhd->fifo);
 			/* the wsi that adopted the fifo file is closing...
 			 * reopen the fifo and readopt
 			 */
-			vhd->fifo = lws_open(vhd->fifo_path,
+			vhd->fifo = aws_lws_open(vhd->fifo_path,
 					     O_NONBLOCK | O_RDONLY);
 			if (vhd->fifo == -1) {
-				lwsl_err("opening fifo failed\n");
+				aws_lwsl_err("opening fifo failed\n");
 				return 1;
 			}
-			lwsl_notice("FIFO %s reopened\n", vhd->fifo_path);
+			aws_lwsl_notice("FIFO %s reopened\n", vhd->fifo_path);
 			u.filefd = vhd->fifo;
-			if (!lws_adopt_descriptor_vhost(vhd->vhost, 0, u,
+			if (!aws_lws_adopt_descriptor_vhost(vhd->vhost, 0, u,
 					"protocol-lws-raw-test", NULL)) {
-				lwsl_err("Failed to adopt fifo descriptor\n");
+				aws_lwsl_err("Failed to adopt fifo descriptor\n");
 				close(vhd->fifo);
 				return 1;
 			}
@@ -237,7 +237,7 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 
 	case LWS_CALLBACK_RAW_WRITEABLE_FILE:
-		lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE_FILE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE_FILE\n");
 		break;
 
 	/*
@@ -245,25 +245,25 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	 */
 
 	case LWS_CALLBACK_RAW_ADOPT:
-		lwsl_notice("LWS_CALLBACK_RAW_ADOPT\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_ADOPT\n");
 		break;
 
 	case LWS_CALLBACK_RAW_RX:
-		lwsl_notice("LWS_CALLBACK_RAW_RX %ld\n", (long)len);
+		aws_lwsl_notice("LWS_CALLBACK_RAW_RX %ld\n", (long)len);
 		if (len > sizeof(pss->buf))
 			len = sizeof(pss->buf);
 		memcpy(pss->buf, in, len);
 		pss->len = (int)len;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_RAW_CLOSE:
-		lwsl_notice("LWS_CALLBACK_RAW_CLOSE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_CLOSE\n");
 		break;
 
 	case LWS_CALLBACK_RAW_WRITEABLE:
-		lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE\n");
-		lws_write(wsi, pss->buf, (size_t)pss->len, LWS_WRITE_HTTP);
+		aws_lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE\n");
+		aws_lws_write(wsi, pss->buf, (size_t)pss->len, LWS_WRITE_HTTP);
 		break;
 
 	default:
@@ -283,20 +283,20 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 #if !defined (LWS_PLUGIN_STATIC)
 		
-LWS_VISIBLE const struct lws_protocols lws_raw_test_protocols[] = {
+LWS_VISIBLE const struct aws_lws_protocols aws_lws_raw_test_protocols[] = {
 	LWS_PLUGIN_PROTOCOL_RAW_TEST
 };
 
-LWS_VISIBLE const lws_plugin_protocol_t lws_raw_test = {
+LWS_VISIBLE const aws_lws_plugin_protocol_t aws_lws_raw_test = {
 	.hdr = {
 		"lws raw test",
-		"lws_protocol_plugin",
+		"aws_lws_protocol_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},
 
-	.protocols = lws_raw_test_protocols,
-	.count_protocols = LWS_ARRAY_SIZE(lws_raw_test_protocols),
+	.protocols = aws_lws_raw_test_protocols,
+	.count_protocols = LWS_ARRAY_SIZE(aws_lws_raw_test_protocols),
 	.extensions = NULL,
 	.count_extensions = 0,
 };

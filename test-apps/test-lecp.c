@@ -61,7 +61,7 @@ cb(struct lecp_ctx *ctx, char reason)
 		*p++ = ' ';
 	*p = '\0';
 
-	lwsl_notice("%s%s: path %s match %d statckp %d\r\n", buf,
+	aws_lwsl_notice("%s%s: path %s match %d statckp %d\r\n", buf,
 			reason_names[(unsigned int)(reason) &
 			             (LEJP_FLAG_CB_IS_VALUE - 1)], ctx->path,
 			ctx->path_match, ctx->pst[ctx->pst_sp].ppos);
@@ -70,14 +70,14 @@ cb(struct lecp_ctx *ctx, char reason)
 
 		switch (reason) {
 		case LECPCB_VAL_NUM_UINT:
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					  "   value %llu ",
 					  (unsigned long long)ctx->item.u.u64);
 			break;
 		case LECPCB_VAL_STR_START:
 		case LECPCB_VAL_STR_CHUNK:
 		case LECPCB_VAL_STR_END:
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					  "   value '%s' ", ctx->buf);
 			break;
 
@@ -85,11 +85,11 @@ cb(struct lecp_ctx *ctx, char reason)
 		case LECPCB_VAL_BLOB_CHUNK:
 		case LECPCB_VAL_BLOB_END:
 			if (ctx->npos)
-				lwsl_hexdump_notice(ctx->buf, (size_t)ctx->npos);
+				aws_lwsl_hexdump_notice(ctx->buf, (size_t)ctx->npos);
 			break;
 
 		case LECPCB_VAL_NUM_INT:
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					  "   value %lld ",
 					  (long long)ctx->item.u.i64);
 			break;
@@ -99,7 +99,7 @@ cb(struct lecp_ctx *ctx, char reason)
 			break;
 
 		case LECPCB_VAL_SIMPLE:
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					  "   simple %llu ",
 					  (unsigned long long)ctx->item.u.u64);
 			break;
@@ -107,13 +107,13 @@ cb(struct lecp_ctx *ctx, char reason)
 		if (ctx->ipos) {
 			int n;
 
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "(array indexes: ");
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "(array indexes: ");
 			for (n = 0; n < ctx->ipos; n++)
-				p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "%d ", ctx->i[n]);
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), ") ");
+				p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "%d ", ctx->i[n]);
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), ") ");
 		}
 
-		lwsl_notice("%s \r\n", buf);
+		aws_lwsl_notice("%s \r\n", buf);
 
 		(void)reason_names; /* NO_LOGS... */
 		return 0;
@@ -121,13 +121,13 @@ cb(struct lecp_ctx *ctx, char reason)
 
 	switch (reason) {
 	case LECPCB_COMPLETE:
-		lwsl_notice("%sParsing Completed (LEJPCB_COMPLETE)\n", buf);
+		aws_lwsl_notice("%sParsing Completed (LEJPCB_COMPLETE)\n", buf);
 		break;
 	case LECPCB_PAIR_NAME:
-		lwsl_notice("%spath: '%s' (LEJPCB_PAIR_NAME)\n", buf, ctx->path);
+		aws_lwsl_notice("%spath: '%s' (LEJPCB_PAIR_NAME)\n", buf, ctx->path);
 		break;
 	case LECPCB_TAG_START:
-		lwsl_notice("LECPCB_TAG_START: %llu\r\n", (unsigned long long)ctx->item.u.u64);
+		aws_lwsl_notice("LECPCB_TAG_START: %llu\r\n", (unsigned long long)ctx->item.u.u64);
 		return 0;
 	}
 
@@ -141,10 +141,10 @@ main(int argc, char *argv[])
 	struct lecp_ctx ctx;
 	char buf[128];
 
-	lws_set_log_level(7, NULL);
+	aws_lws_set_log_level(7, NULL);
 
-	lwsl_notice("libwebsockets-test-lecp  (C) 2017 - 2021 andy@warmcat.com\n");
-	lwsl_notice("  usage: cat my.cbor | libwebsockets-test-lecp\n\n");
+	aws_lwsl_notice("libwebsockets-test-lecp  (C) 2017 - 2021 andy@warmcat.com\n");
+	aws_lwsl_notice("  usage: cat my.cbor | libwebsockets-test-lecp\n\n");
 
 	lecp_construct(&ctx, cb, NULL, tok, LWS_ARRAY_SIZE(tok));
 
@@ -157,11 +157,11 @@ main(int argc, char *argv[])
 
 		m = lecp_parse(&ctx, (uint8_t *)buf, (size_t)n);
 		if (m < 0 && m != LEJP_CONTINUE) {
-			lwsl_err("parse failed %d\n", m);
+			aws_lwsl_err("parse failed %d\n", m);
 			goto bail;
 		}
 	}
-	lwsl_notice("okay (%d)\n", m);
+	aws_lwsl_notice("okay (%d)\n", m);
 	ret = 0;
 bail:
 	lecp_destruct(&ctx);

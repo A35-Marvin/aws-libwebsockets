@@ -43,7 +43,7 @@ set and lws can sort it out.
 
 ```
 $ cat sign1_pass01.sig | ./lws-crypto-cose-sign -k set1.cks
-[2021/07/26 05:41:29:1663] N: lws_create_context: LWS: 4.2.99-v4.2.0-133-g300f3f3250, NET CLI SRV H1 H2 WS ConMon IPV6-on
+[2021/07/26 05:41:29:1663] N: aws_lws_create_context: LWS: 4.2.99-v4.2.0-133-g300f3f3250, NET CLI SRV H1 H2 WS ConMon IPV6-on
 [2021/07/26 05:41:29:3892] N: results count 1
 [2021/07/26 05:41:29:3901] N: result: 0 (alg ES256, kid 3131)
 [2021/07/26 05:41:29:4168] N: main: PASS
@@ -58,7 +58,7 @@ signature, that must be given at validation too.
 
 ```
 $cat sign1_pass02.sig | ./lws-crypto-cose-sign -k set1.cks --extra 11aa22bb33cc44dd55006699
-[2021/07/26 05:55:50:9103] N: lws_create_context: LWS: 4.2.99-v4.2.0-133-g300f3f3250, NET CLI SRV H1 H2 WS ConMon IPV6-on
+[2021/07/26 05:55:50:9103] N: aws_lws_create_context: LWS: 4.2.99-v4.2.0-133-g300f3f3250, NET CLI SRV H1 H2 WS ConMon IPV6-on
 [2021/07/26 05:55:50:9381] N: 12
 [2021/07/26 05:55:51:0924] N: 
 [2021/07/26 05:55:51:0939] N: 0000: 11 AA 22 BB 33 CC 44 DD 55 00 66 99                ..".3.D.U.f.    

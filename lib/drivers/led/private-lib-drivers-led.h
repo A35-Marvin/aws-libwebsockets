@@ -22,18 +22,18 @@
  * IN THE SOFTWARE.
  */
 
-typedef struct lws_led_state
+typedef struct aws_lws_led_state
 {
 #if defined(LWS_PLAT_TIMER_TYPE)
 	LWS_PLAT_TIMER_TYPE			timer;
 #endif
 
-	lws_led_gpio_controller_t		*controller;
+	aws_lws_led_gpio_controller_t		*controller;
 	int					timer_refcount;
-} lws_led_state_t;
+} aws_lws_led_state_t;
 
 void
-lws_seq_timer_handle(lws_led_state_t *lcs);
+aws_lws_seq_timer_handle(aws_lws_led_state_t *lcs);
 
 int
-lws_led_gpio_lookup(const struct lws_led_ops *lo, const char *name);
+aws_lws_led_gpio_lookup(const struct aws_lws_led_ops *lo, const char *name);

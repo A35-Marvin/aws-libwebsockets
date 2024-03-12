@@ -24,17 +24,17 @@
 
 /*! \defgroup client Client related functions
  * ##Client releated functions
- * \ingroup lwsapi
+ * \ingroup aws_lwsapi
  *
  * */
 ///@{
 
-/** enum lws_client_connect_ssl_connection_flags - flags that may be used
- * with struct lws_client_connect_info ssl_connection member to control if
+/** enum aws_lws_client_connect_ssl_connection_flags - flags that may be used
+ * with struct aws_lws_client_connect_info ssl_connection member to control if
  * and how SSL checks apply to the client connection being created
  */
 
-enum lws_client_connect_ssl_connection_flags {
+enum aws_lws_client_connect_ssl_connection_flags {
 	LCCSCF_USE_SSL 				= (1 << 0),
 	LCCSCF_ALLOW_SELFSIGNED			= (1 << 1),
 	LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK	= (1 << 2),
@@ -101,11 +101,11 @@ enum lws_client_connect_ssl_connection_flags {
 	 * http cookies in a Netscape Cookie Jar on this connection */
 };
 
-/** struct lws_client_connect_info - parameters to connect with when using
- *				    lws_client_connect_via_info() */
+/** struct aws_lws_client_connect_info - parameters to connect with when using
+ *				    aws_lws_client_connect_via_info() */
 
-struct lws_client_connect_info {
-	struct lws_context *context;
+struct aws_lws_client_connect_info {
+	struct aws_lws_context *context;
 	/**< lws context to create connection in */
 	const char *address;
 	/**< remote address to connect to */
@@ -142,7 +142,7 @@ struct lws_client_connect_info {
 	 * text/html content-encoding, it's replaced with uri_replace_to */
 	const char *uri_replace_to;
 	/**< see uri_replace_from */
-	struct lws_vhost *vhost;
+	struct aws_lws_vhost *vhost;
 	/**< vhost to bind to (used to determine related SSL_CTX) */
 	struct lws **pwsi;
 	/**< if not NULL, store the new wsi here early in the connection
@@ -172,19 +172,19 @@ struct lws_client_connect_info {
 	 *           tokens
 	 */
 
-	struct lws_sequencer *seq;
-	/**< NULL, or an lws_seq_t that wants to be given messages about
+	struct aws_lws_sequencer *seq;
+	/**< NULL, or an aws_lws_seq_t that wants to be given messages about
 	 * this wsi's lifecycle as it connects, errors or closes.
 	 */
 
 	void *opaque_user_data;
 	/**< This data has no meaning to lws but is applied to the client wsi
-	 *   and can be retrieved by user code with lws_get_opaque_user_data().
+	 *   and can be retrieved by user code with aws_lws_get_opaque_user_data().
 	 *   It's also provided with sequencer messages if the wsi is bound to
-	 *   an lws_seq_t.
+	 *   an aws_lws_seq_t.
 	 */
 
-	const lws_retry_bo_t *retry_and_idle_policy;
+	const aws_lws_retry_bo_t *retry_and_idle_policy;
 	/**< optional retry and idle policy to apply to this connection.
 	 *   Currently only the idle parts are applied to the connection.
 	 */
@@ -195,7 +195,7 @@ struct lws_client_connect_info {
 	 */
 
 	uint8_t		sys_tls_client_cert;
-	/**< 0 means no client cert.  1+ means apply lws_system client cert 0+
+	/**< 0 means no client cert.  1+ means apply aws_lws_system client cert 0+
 	 * to the client connection.
 	 */
 
@@ -207,13 +207,13 @@ struct lws_client_connect_info {
 	 */
 
 #if defined(LWS_ROLE_MQTT)
-	const lws_mqtt_client_connect_param_t *mqtt_cp;
+	const aws_lws_mqtt_client_connect_param_t *mqtt_cp;
 #else
 	void		*mqtt_cp;
 #endif
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	lws_fi_ctx_t				fic;
+	aws_lws_fi_ctx_t				fic;
 	/**< Attach external Fault Injection context to the client wsi,
 	 * hierarchy is wsi -> vhost -> context */
 #endif
@@ -229,8 +229,8 @@ struct lws_client_connect_info {
 	 * connection to the same endpoint turns up.
 	 */
 
-	lws_log_cx_t				*log_cx;
-	/**< NULL to use lws_context log context, else a pointer to a log
+	aws_lws_log_cx_t				*log_cx;
+	/**< NULL to use aws_lws_context log context, else a pointer to a log
 	 * context template to take a copy of for this wsi.  Used to isolate
 	 * wsi-specific logs into their own stream or file.
 	 */
@@ -247,17 +247,17 @@ struct lws_client_connect_info {
 };
 
 /**
- * lws_client_connect_via_info() - Connect to another websocket server
- * \param ccinfo: pointer to lws_client_connect_info struct
+ * aws_lws_client_connect_via_info() - Connect to another websocket server
+ * \param ccinfo: pointer to aws_lws_client_connect_info struct
  *
  *	This function creates a connection to a remote server using the
  *	information provided in ccinfo.
  */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_client_connect_via_info(const struct lws_client_connect_info *ccinfo);
+aws_lws_client_connect_via_info(const struct aws_lws_client_connect_info *ccinfo);
 
 /**
- * lws_init_vhost_client_ssl() - also enable client SSL on an existing vhost
+ * aws_lws_init_vhost_client_ssl() - also enable client SSL on an existing vhost
  *
  * \param info: client ssl related info
  * \param vhost: which vhost to initialize client ssl operations on
@@ -278,14 +278,14 @@ lws_client_connect_via_info(const struct lws_client_connect_info *ccinfo);
  *
  * You must create your vhost explicitly if you want to use this, so you have
  * a pointer to the vhost.  Create the context first with the option flag
- * LWS_SERVER_OPTION_EXPLICIT_VHOSTS and then call lws_create_vhost() with
+ * LWS_SERVER_OPTION_EXPLICIT_VHOSTS and then call aws_lws_create_vhost() with
  * the same info struct.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_init_vhost_client_ssl(const struct lws_context_creation_info *info,
-			  struct lws_vhost *vhost);
+aws_lws_init_vhost_client_ssl(const struct aws_lws_context_creation_info *info,
+			  struct aws_lws_vhost *vhost);
 /**
- * lws_http_client_read() - consume waiting received http client data
+ * aws_lws_http_client_read() - consume waiting received http client data
  *
  * \param wsi: client connection
  * \param buf: pointer to buffer pointer - fill with pointer to your buffer
@@ -305,10 +305,10 @@ lws_init_vhost_client_ssl(const struct lws_context_creation_info *info,
  * as there are chunks or partial chunks in the buffer.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_client_read(struct lws *wsi, char **buf, int *len);
+aws_lws_http_client_read(struct lws *wsi, char **buf, int *len);
 
 /**
- * lws_http_client_http_response() - get last HTTP response code
+ * aws_lws_http_client_http_response() - get last HTTP response code
  *
  * \param wsi: client connection
  *
@@ -320,10 +320,10 @@ lws_http_client_read(struct lws *wsi, char **buf, int *len);
  * headers is freed and this value is lost.
  */
 LWS_VISIBLE LWS_EXTERN unsigned int
-lws_http_client_http_response(struct lws *wsi);
+aws_lws_http_client_http_response(struct lws *wsi);
 
 /**
- * lws_tls_client_vhost_extra_cert_mem() - add more certs to vh client tls ctx
+ * aws_lws_tls_client_vhost_extra_cert_mem() - add more certs to vh client tls ctx
  *
  * \param vh: the vhost to give more client certs to
  * \param der: pointer to der format additional cert
@@ -334,11 +334,11 @@ lws_http_client_http_response(struct lws *wsi);
  * of the vhost, for use with validating the incoming server cert(s).
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_client_vhost_extra_cert_mem(struct lws_vhost *vh,
+aws_lws_tls_client_vhost_extra_cert_mem(struct aws_lws_vhost *vh,
 		const uint8_t *der, size_t der_len);
 
 /**
- * lws_client_http_body_pending() - control if client connection needs to send body
+ * aws_lws_client_http_body_pending() - control if client connection needs to send body
  *
  * \param wsi: client connection
  * \param something_left_to_send: nonzero if need to send more body, 0 (default)
@@ -348,19 +348,19 @@ lws_tls_client_vhost_extra_cert_mem(struct lws_vhost *vh,
  * when you set the related http headers in
  * LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER callback you should also call
  * this API with something_left_to_send nonzero, and call
- * lws_callback_on_writable(wsi);
+ * aws_lws_callback_on_writable(wsi);
  *
  * After sending the headers, lws will call your callback with
  * LWS_CALLBACK_CLIENT_HTTP_WRITEABLE reason when writable.  You can send the
- * next part of the http body payload, calling lws_callback_on_writable(wsi);
- * if there is more to come, or lws_client_http_body_pending(wsi, 0); to
+ * next part of the http body payload, calling aws_lws_callback_on_writable(wsi);
+ * if there is more to come, or aws_lws_client_http_body_pending(wsi, 0); to
  * let lws know the last part is sent and the connection can move on.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_client_http_body_pending(struct lws *wsi, int something_left_to_send);
+aws_lws_client_http_body_pending(struct lws *wsi, int something_left_to_send);
 
 /**
- * lws_client_http_multipart() - issue appropriate multipart header or trailer
+ * aws_lws_client_http_multipart() - issue appropriate multipart header or trailer
  *
  * \param wsi: client connection
  * \param name: multipart header name field, or NULL if end of multipart
@@ -374,12 +374,12 @@ lws_client_http_body_pending(struct lws *wsi, int something_left_to_send);
  * Returns 0 if OK or nonzero if couldn't fit in buffer
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_client_http_multipart(struct lws *wsi, const char *name,
+aws_lws_client_http_multipart(struct lws *wsi, const char *name,
 			  const char *filename, const char *content_type,
 			  char **p, char *end);
 
 /**
- * lws_http_basic_auth_gen() - helper to encode client basic auth string
+ * aws_lws_http_basic_auth_gen() - helper to encode client basic auth string
  *
  * \param user: user name
  * \param pw: password
@@ -391,10 +391,10 @@ lws_client_http_multipart(struct lws *wsi, const char *name,
  * "Basic QWxhZGRpbjpPcGVuU2VzYW1l".
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t len);
+aws_lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t len);
 
 /**
- * lws_tls_session_is_reused() - returns nonzero if tls session was cached
+ * aws_lws_tls_session_is_reused() - returns nonzero if tls session was cached
  *
  * \param wsi: the wsi
  *
@@ -408,6 +408,6 @@ lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t len)
  * it'a mainly useful for stats and testing.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_session_is_reused(struct lws *wsi);
+aws_lws_tls_session_is_reused(struct lws *wsi);
 
 ///@}

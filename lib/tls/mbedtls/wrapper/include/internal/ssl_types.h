@@ -232,7 +232,7 @@ struct ssl_st
     int (*verify_callback) (SSL *, mbedtls_x509_crt *);
 
 #if defined(LWS_WITH_TLS_JIT_TRUST)
-    lws_tls_kid_chain_t		kid_chain;
+    aws_lws_tls_kid_chain_t		kid_chain;
 #endif
 
     int rwstate;

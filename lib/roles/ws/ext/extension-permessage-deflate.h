@@ -44,7 +44,7 @@ enum arg_indexes {
 	PMD_ARG_COUNT
 };
 
-struct lws_ext_pm_deflate_priv {
+struct aws_lws_ext_pm_deflate_priv {
 	z_stream rx;
 	z_stream tx;
 

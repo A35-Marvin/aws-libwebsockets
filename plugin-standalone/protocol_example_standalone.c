@@ -36,9 +36,9 @@
 
 struct per_vhost_data__dumb_increment {
 	uv_timer_t timeout_watcher;
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 };
 
 struct per_session_data__dumb_increment {
@@ -52,34 +52,34 @@ uv_timeout_cb_dumb_increment(uv_timer_t *w
 #endif
 )
 {
-	struct per_vhost_data__dumb_increment *vhd = lws_container_of(w,
+	struct per_vhost_data__dumb_increment *vhd = aws_lws_container_of(w,
 			struct per_vhost_data__dumb_increment, timeout_watcher);
-	lws_callback_on_writable_all_protocol_vhost(vhd->vhost, vhd->protocol);
+	aws_lws_callback_on_writable_all_protocol_vhost(vhd->vhost, vhd->protocol);
 }
 
 static int
-callback_dumb_increment(struct lws *wsi, enum lws_callback_reasons reason,
+callback_dumb_increment(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__dumb_increment *pss =
 			(struct per_session_data__dumb_increment *)user;
 	struct per_vhost_data__dumb_increment *vhd =
 			(struct per_vhost_data__dumb_increment *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					lws_get_protocol(wsi));
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi));
 	unsigned char buf[LWS_PRE + 512];
 	unsigned char *p = &buf[LWS_PRE];
 	int n, m;
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__dumb_increment));
-		vhd->context = lws_get_context(wsi);
-		vhd->protocol = lws_get_protocol(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
-		uv_timer_init(lws_uv_getloop(vhd->context, 0),
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->protocol = aws_lws_get_protocol(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
+		uv_timer_init(aws_lws_uv_getloop(vhd->context, 0),
 			      &vhd->timeout_watcher);
 		uv_timer_start(&vhd->timeout_watcher,
 			       uv_timeout_cb_dumb_increment, 50, 50);
@@ -97,9 +97,9 @@ callback_dumb_increment(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
 		n = sprintf((char *)p, "%d", pss->number++);
-		m = lws_write(wsi, p, n, LWS_WRITE_TEXT);
+		m = aws_lws_write(wsi, p, n, LWS_WRITE_TEXT);
 		if (m < n) {
-			lwsl_err("ERROR %d writing to di socket\n", n);
+			aws_lwsl_err("ERROR %d writing to di socket\n", n);
 			return -1;
 		}
 		break;
@@ -110,8 +110,8 @@ callback_dumb_increment(struct lws *wsi, enum lws_callback_reasons reason,
 		if (strcmp((const char *)in, "reset\n") == 0)
 			pss->number = 0;
 		if (strcmp((const char *)in, "closeme\n") == 0) {
-			lwsl_notice("dumb_inc: closing as requested\n");
-			lws_close_reason(wsi, LWS_CLOSE_STATUS_GOINGAWAY,
+			aws_lwsl_notice("dumb_inc: closing as requested\n");
+			aws_lws_close_reason(wsi, LWS_CLOSE_STATUS_GOINGAWAY,
 					 (unsigned char *)"seeya", 5);
 			return -1;
 		}
@@ -124,7 +124,7 @@ callback_dumb_increment(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"example-standalone-protocol",
 		callback_dumb_increment,
@@ -133,10 +133,10 @@ static const struct lws_protocols protocols[] = {
 	},
 };
 
-LWS_VISIBLE const lws_plugin_protocol_t protocol_example_standalone = {
+LWS_VISIBLE const aws_lws_plugin_protocol_t protocol_example_standalone = {
 	.hdr = {
 		"standalone",
-		"lws_protocol_plugin",
+		"aws_lws_protocol_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},

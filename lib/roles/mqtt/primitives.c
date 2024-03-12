@@ -40,7 +40,7 @@
  */
 
 int
-lws_mqtt_vbi_encode(uint32_t value, void *buf)
+aws_lws_mqtt_vbi_encode(uint32_t value, void *buf)
 {
 	uint8_t *p = (uint8_t *)buf, b;
 
@@ -58,11 +58,11 @@ lws_mqtt_vbi_encode(uint32_t value, void *buf)
 			*p++ = b;
 	} while (value);
 
-	return lws_ptr_diff(p, (uint8_t *)buf);
+	return aws_lws_ptr_diff(p, (uint8_t *)buf);
 }
 
 void
-lws_mqtt_vbi_init(lws_mqtt_vbi *vbi)
+aws_lws_mqtt_vbi_init(aws_lws_mqtt_vbi *vbi)
 {
 	vbi->value = 0;
 	vbi->consumed = 0;
@@ -70,7 +70,7 @@ lws_mqtt_vbi_init(lws_mqtt_vbi *vbi)
 }
 
 void
-lws_mqtt_2byte_init(lws_mqtt_vbi *vbi)
+aws_lws_mqtt_2byte_init(aws_lws_mqtt_vbi *vbi)
 {
 	vbi->value = 0;
 	vbi->consumed = 0;
@@ -78,19 +78,19 @@ lws_mqtt_2byte_init(lws_mqtt_vbi *vbi)
 }
 
 void
-lws_mqtt_4byte_init(lws_mqtt_vbi *vbi)
+aws_lws_mqtt_4byte_init(aws_lws_mqtt_vbi *vbi)
 {
 	vbi->value = 0;
 	vbi->consumed = 0;
 	vbi->budget = 4;
 }
 
-lws_mqtt_stateful_primitive_return_t
-lws_mqtt_vbi_r(lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len)
+aws_lws_mqtt_stateful_primitive_return_t
+aws_lws_mqtt_vbi_r(aws_lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len)
 {
 	uint8_t multiplier = 0;
 	if (!vbi->budget) {
-		lwsl_info("%s: bad vbi\n", __func__);
+		aws_lwsl_info("%s: bad vbi\n", __func__);
 
 		return LMSPR_FAILED_ALREADY_COMPLETED;
 	}
@@ -107,7 +107,7 @@ lws_mqtt_vbi_r(lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len)
 	}
 
 	if (!vbi->budget) { /* should have ended on b7 = 0 and exited then... */
-		lwsl_info("%s: bad vbi\n", __func__);
+		aws_lwsl_info("%s: bad vbi\n", __func__);
 
 		return LMSPR_FAILED_FORMAT;
 	}
@@ -115,8 +115,8 @@ lws_mqtt_vbi_r(lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len)
 	return LMSPR_NEED_MORE;
 }
 
-lws_mqtt_stateful_primitive_return_t
-lws_mqtt_mb_parse(lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len)
+aws_lws_mqtt_stateful_primitive_return_t
+aws_lws_mqtt_mb_parse(aws_lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len)
 {
 	if (!vbi->budget)
 		return LMSPR_FAILED_ALREADY_COMPLETED;
@@ -143,7 +143,7 @@ lws_mqtt_mb_parse(lws_mqtt_vbi *vbi, const uint8_t **in, size_t *len)
  */
 
 void
-lws_mqtt_str_init(lws_mqtt_str_t *s, uint8_t *buf, uint16_t lim, char nf)
+aws_lws_mqtt_str_init(aws_lws_mqtt_str_t *s, uint8_t *buf, uint16_t lim, char nf)
 {
 	s->len = 0;	/* at COMPLETED, consumed count is s->len + 2 */
 	s->pos = 0;
@@ -153,10 +153,10 @@ lws_mqtt_str_init(lws_mqtt_str_t *s, uint8_t *buf, uint16_t lim, char nf)
 	s->needs_freeing = nf;
 }
 
-lws_mqtt_str_t *
-lws_mqtt_str_create(uint16_t lim)
+aws_lws_mqtt_str_t *
+aws_lws_mqtt_str_create(uint16_t lim)
 {
-	lws_mqtt_str_t *s = lws_malloc(sizeof(*s) + lim + 1, __func__);
+	aws_lws_mqtt_str_t *s = aws_lws_malloc(sizeof(*s) + lim + 1, __func__);
 
 	if (!s)
 		return NULL;
@@ -171,15 +171,15 @@ lws_mqtt_str_create(uint16_t lim)
 	return s;
 }
 
-lws_mqtt_str_t *
-lws_mqtt_str_create_init(uint8_t *buf, uint16_t len, uint16_t lim)
+aws_lws_mqtt_str_t *
+aws_lws_mqtt_str_create_init(uint8_t *buf, uint16_t len, uint16_t lim)
 {
-	lws_mqtt_str_t *s;
+	aws_lws_mqtt_str_t *s;
 
 	if (!lim)
 		lim = len;
 
-	s = lws_mqtt_str_create(lim);
+	s = aws_lws_mqtt_str_create(lim);
 
 	if (!s)
 		return NULL;
@@ -193,19 +193,19 @@ lws_mqtt_str_create_init(uint8_t *buf, uint16_t len, uint16_t lim)
 }
 
 
-lws_mqtt_str_t *
-lws_mqtt_str_create_cstr_dup(const char *buf, uint16_t lim)
+aws_lws_mqtt_str_t *
+aws_lws_mqtt_str_create_cstr_dup(const char *buf, uint16_t lim)
 {
 	size_t len = strlen(buf);
 
 	if (!lim)
 		lim = (uint16_t)len;
 
-	return lws_mqtt_str_create_init((uint8_t *)buf, (uint16_t)len, lim);
+	return aws_lws_mqtt_str_create_init((uint8_t *)buf, (uint16_t)len, lim);
 }
 
 uint8_t *
-lws_mqtt_str_next(lws_mqtt_str_t *s, uint16_t *budget)
+aws_lws_mqtt_str_next(aws_lws_mqtt_str_t *s, uint16_t *budget)
 {
 	if (budget)
 		*budget = (uint16_t)(s->limit - s->pos);
@@ -214,10 +214,10 @@ lws_mqtt_str_next(lws_mqtt_str_t *s, uint16_t *budget)
 }
 
 int
-lws_mqtt_str_advance(lws_mqtt_str_t *s, int n)
+aws_lws_mqtt_str_advance(aws_lws_mqtt_str_t *s, int n)
 {
 	if (n > s->limit - s->pos) {
-		lwsl_err("%s: attempted overflow %d vs %d\n", __func__,
+		aws_lwsl_err("%s: attempted overflow %d vs %d\n", __func__,
 			 n, s->limit - s->pos);
 		return 1;
 	}
@@ -229,25 +229,25 @@ lws_mqtt_str_advance(lws_mqtt_str_t *s, int n)
 }
 
 void
-lws_mqtt_str_free(lws_mqtt_str_t **ps)
+aws_lws_mqtt_str_free(aws_lws_mqtt_str_t **ps)
 {
-	lws_mqtt_str_t *s = *ps;
+	aws_lws_mqtt_str_t *s = *ps;
 
 	if (!s || !s->needs_freeing)
 		return;
 
 	/* buf may be independently allocated or allocated along with the
-	 * lws_mqtt_str_t at the end... if so the whole lws_mqtt_str_t is freed.
+	 * aws_lws_mqtt_str_t at the end... if so the whole aws_lws_mqtt_str_t is freed.
 	 */
 
 	if (s->buf != (uint8_t *)&s[1])
-		lws_free_set_NULL(s->buf);
+		aws_lws_free_set_NULL(s->buf);
 	else
-		lws_free_set_NULL(*ps);
+		aws_lws_free_set_NULL(*ps);
 }
 
 /*
- * Parses and allocates for lws_mqtt_str_t in a fragmentation-immune, but
+ * Parses and allocates for aws_lws_mqtt_str_t in a fragmentation-immune, but
  * efficient for bulk data way.
  *
  * Returns: LMSPR_NEED_MORE if needs more data,
@@ -256,11 +256,11 @@ lws_mqtt_str_free(lws_mqtt_str_t **ps)
  * *len is reduced by, and *in is advanced by, the amount of data actually used,
  * except in error case
  *
- * lws_mqtt_str_free() must be called after calling this successfully
+ * aws_lws_mqtt_str_free() must be called after calling this successfully
  * or not.
  */
-lws_mqtt_stateful_primitive_return_t
-lws_mqtt_str_parse(lws_mqtt_str_t *s, const uint8_t **in, size_t *len)
+aws_lws_mqtt_stateful_primitive_return_t
+aws_lws_mqtt_str_parse(aws_lws_mqtt_str_t *s, const uint8_t **in, size_t *len)
 {
 	const uint8_t *oin = *in;
 
@@ -280,7 +280,7 @@ lws_mqtt_str_parse(lws_mqtt_str_t *s, const uint8_t **in, size_t *len)
 				return LMSPR_COMPLETED;
 
 			if (!s->buf) {
-				s->buf = lws_malloc(s->len, __func__);
+				s->buf = aws_lws_malloc(s->len, __func__);
 				if (!s->buf)
 					return LMSPR_FAILED_OOM;
 
@@ -307,8 +307,8 @@ lws_mqtt_str_parse(lws_mqtt_str_t *s, const uint8_t **in, size_t *len)
 }
 
 int
-lws_mqtt_bindata_cmp(const lws_mqtt_str_t *bd1,
-		     const lws_mqtt_str_t *bd2)
+aws_lws_mqtt_bindata_cmp(const aws_lws_mqtt_str_t *bd1,
+		     const aws_lws_mqtt_str_t *bd2)
 {
 	if (bd1->len != bd2->len)
 		return 1;

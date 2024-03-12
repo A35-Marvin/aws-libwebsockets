@@ -27,12 +27,12 @@
 
 /* requires context->lock */
 static void
-__lws_peer_remove_from_peer_wait_list(struct lws_context *context,
-				      struct lws_peer *peer)
+__lws_peer_remove_from_peer_wait_list(struct aws_lws_context *context,
+				      struct aws_lws_peer *peer)
 {
-	struct lws_peer *df;
+	struct aws_lws_peer *df;
 
-	lws_start_foreach_llp(struct lws_peer **, p, context->peer_wait_list) {
+	aws_lws_start_foreach_llp(struct aws_lws_peer **, p, context->peer_wait_list) {
 		if (*p == peer) {
 			df = *p;
 
@@ -40,29 +40,29 @@ __lws_peer_remove_from_peer_wait_list(struct lws_context *context,
 			df->peer_wait_list = NULL;
 
 			if (!context->peer_wait_list)
-				lws_sul_cancel(&context->pt[0].sul_peer_limits);
+				aws_lws_sul_cancel(&context->pt[0].sul_peer_limits);
 
 			return;
 		}
-	} lws_end_foreach_llp(p, peer_wait_list);
+	} aws_lws_end_foreach_llp(p, peer_wait_list);
 }
 
 void
-lws_sul_peer_limits_cb(lws_sorted_usec_list_t *sul)
+aws_lws_sul_peer_limits_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context_per_thread *pt = lws_container_of(sul,
-			struct lws_context_per_thread, sul_peer_limits);
+	struct aws_lws_context_per_thread *pt = aws_lws_container_of(sul,
+			struct aws_lws_context_per_thread, sul_peer_limits);
 
-	lws_peer_cull_peer_wait_list(pt->context);
+	aws_lws_peer_cull_peer_wait_list(pt->context);
 
-	lws_sul_schedule(pt->context, 0, &pt->context->pt[0].sul_peer_limits,
-			 lws_sul_peer_limits_cb, 10 * LWS_US_PER_SEC);
+	aws_lws_sul_schedule(pt->context, 0, &pt->context->pt[0].sul_peer_limits,
+			 aws_lws_sul_peer_limits_cb, 10 * LWS_US_PER_SEC);
 }
 
 /* requires context->lock */
 static void
-__lws_peer_add_to_peer_wait_list(struct lws_context *context,
-				 struct lws_peer *peer)
+__lws_peer_add_to_peer_wait_list(struct aws_lws_context *context,
+				 struct aws_lws_peer *peer)
 {
 	__lws_peer_remove_from_peer_wait_list(context, peer);
 
@@ -70,17 +70,17 @@ __lws_peer_add_to_peer_wait_list(struct lws_context *context,
 	context->peer_wait_list = peer;
 
 	if (!context->pt[0].sul_peer_limits.list.owner)
-		lws_sul_schedule(context, 0, &context->pt[0].sul_peer_limits,
-				lws_sul_peer_limits_cb, 10 * LWS_US_PER_SEC);
+		aws_lws_sul_schedule(context, 0, &context->pt[0].sul_peer_limits,
+				aws_lws_sul_peer_limits_cb, 10 * LWS_US_PER_SEC);
 }
 
 
-struct lws_peer *
-lws_get_or_create_peer(struct lws_vhost *vhost, lws_sockfd_type sockfd)
+struct aws_lws_peer *
+aws_lws_get_or_create_peer(struct aws_lws_vhost *vhost, aws_lws_sockfd_type sockfd)
 {
-	struct lws_context *context = vhost->context;
-	struct lws_peer *peer;
-	lws_sockaddr46 sa46;
+	struct aws_lws_context *context = vhost->context;
+	struct aws_lws_peer *peer;
+	aws_lws_sockaddr46 sa46;
 	socklen_t rlen = 0;
 	uint32_t hash = 0;
 	uint8_t *q8;
@@ -115,9 +115,9 @@ lws_get_or_create_peer(struct lws_vhost *vhost, lws_sockfd_type sockfd)
 
 	hash = hash % context->pl_hash_elements;
 
-	lws_context_lock(context, "peer search"); /* <======================= */
+	aws_lws_context_lock(context, "peer search"); /* <======================= */
 
-	lws_start_foreach_ll(struct lws_peer *, peerx,
+	aws_lws_start_foreach_ll(struct aws_lws_peer *, peerx,
 			     context->pl_hash_table[hash]) {
 		if (peerx->sa46.sa4.sin_family == sa46.sa4.sin_family) {
 #if defined(LWS_WITH_IPV6)
@@ -130,19 +130,19 @@ lws_get_or_create_peer(struct lws_vhost *vhost, lws_sockfd_type sockfd)
 #if defined(LWS_WITH_IPV6)
 hit:
 #endif
-				lws_context_unlock(context); /* === */
+				aws_lws_context_unlock(context); /* === */
 
 				return peerx;
 			}
 		}
-	} lws_end_foreach_ll(peerx, next);
+	} aws_lws_end_foreach_ll(peerx, next);
 
-	lwsl_info("%s: creating new peer\n", __func__);
+	aws_lwsl_info("%s: creating new peer\n", __func__);
 
-	peer = lws_zalloc(sizeof(*peer), "peer");
+	peer = aws_lws_zalloc(sizeof(*peer), "peer");
 	if (!peer) {
-		lws_context_unlock(context); /* === */
-		lwsl_err("%s: OOM for new peer\n", __func__);
+		aws_lws_context_unlock(context); /* === */
+		aws_lwsl_err("%s: OOM for new peer\n", __func__);
 		return NULL;
 	}
 
@@ -159,34 +159,34 @@ hit:
 	time(&peer->time_closed_all);
 	__lws_peer_add_to_peer_wait_list(context, peer);
 
-	lws_context_unlock(context); /* ====================================> */
+	aws_lws_context_unlock(context); /* ====================================> */
 
 	return peer;
 }
 
 /* requires context->lock */
 static int
-__lws_peer_destroy(struct lws_context *context, struct lws_peer *peer)
+__lws_peer_destroy(struct aws_lws_context *context, struct aws_lws_peer *peer)
 {
-	lws_start_foreach_llp(struct lws_peer **, p,
+	aws_lws_start_foreach_llp(struct aws_lws_peer **, p,
 			      context->pl_hash_table[peer->hash]) {
 		if (*p == peer) {
-			struct lws_peer *df = *p;
+			struct aws_lws_peer *df = *p;
 			*p = df->next;
-			lws_free(df);
+			aws_lws_free(df);
 			context->count_peers--;
 
 			return 0;
 		}
-	} lws_end_foreach_llp(p, next);
+	} aws_lws_end_foreach_llp(p, next);
 
 	return 1;
 }
 
 void
-lws_peer_cull_peer_wait_list(struct lws_context *context)
+aws_lws_peer_cull_peer_wait_list(struct aws_lws_context *context)
 {
-	struct lws_peer *df;
+	struct aws_lws_peer *df;
 	time_t t;
 
 	time(&t);
@@ -194,11 +194,11 @@ lws_peer_cull_peer_wait_list(struct lws_context *context)
 	if (context->next_cull && t < context->next_cull)
 		return;
 
-	lws_context_lock(context, "peer cull"); /* <========================= */
+	aws_lws_context_lock(context, "peer cull"); /* <========================= */
 
 	context->next_cull = t + 5;
 
-	lws_start_foreach_llp(struct lws_peer **, p, context->peer_wait_list) {
+	aws_lws_start_foreach_llp(struct aws_lws_peer **, p, context->peer_wait_list) {
 		if (t - (*p)->time_closed_all > 10) {
 			df = *p;
 
@@ -209,31 +209,31 @@ lws_peer_cull_peer_wait_list(struct lws_context *context)
 			__lws_peer_destroy(context, df);
 			continue; /* we already point to next, if any */
 		}
-	} lws_end_foreach_llp(p, peer_wait_list);
+	} aws_lws_end_foreach_llp(p, peer_wait_list);
 
-	lws_context_unlock(context); /* ====================================> */
+	aws_lws_context_unlock(context); /* ====================================> */
 }
 
 void
-lws_peer_add_wsi(struct lws_context *context, struct lws_peer *peer,
+aws_lws_peer_add_wsi(struct aws_lws_context *context, struct aws_lws_peer *peer,
 		 struct lws *wsi)
 {
 	if (!peer)
 		return;
 
-	lws_context_lock(context, "peer add"); /* <========================== */
+	aws_lws_context_lock(context, "peer add"); /* <========================== */
 
 	peer->count_wsi++;
 	wsi->peer = peer;
 	__lws_peer_remove_from_peer_wait_list(context, peer);
 
-	lws_context_unlock(context); /* ====================================> */
+	aws_lws_context_unlock(context); /* ====================================> */
 }
 
 void
-lws_peer_dump_from_wsi(struct lws *wsi)
+aws_lws_peer_dump_from_wsi(struct lws *wsi)
 {
-	struct lws_peer *peer;
+	struct aws_lws_peer *peer;
 
 	if (!wsi || !wsi->peer)
 		return;
@@ -241,26 +241,26 @@ lws_peer_dump_from_wsi(struct lws *wsi)
 	peer = wsi->peer;
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-	lwsl_notice("%s: %s: created %llu: wsi: %d/%d, ah %d/%d\n",
-			__func__, lws_wsi_tag(wsi),
+	aws_lwsl_notice("%s: %s: created %llu: wsi: %d/%d, ah %d/%d\n",
+			__func__, aws_lws_wsi_tag(wsi),
 			(unsigned long long)peer->time_created,
 			peer->count_wsi, peer->total_wsi,
 			peer->http.count_ah, peer->http.total_ah);
 #else
-	lwsl_notice("%s: %s: created %llu: wsi: %d/%d\n", __func__,
-			lws_wsi_tag(wsi),
+	aws_lwsl_notice("%s: %s: created %llu: wsi: %d/%d\n", __func__,
+			aws_lws_wsi_tag(wsi),
 			(unsigned long long)peer->time_created,
 			peer->count_wsi, peer->total_wsi);
 #endif
 }
 
 void
-lws_peer_track_wsi_close(struct lws_context *context, struct lws_peer *peer)
+aws_lws_peer_track_wsi_close(struct aws_lws_context *context, struct aws_lws_peer *peer)
 {
 	if (!peer)
 		return;
 
-	lws_context_lock(context, "peer wsi close"); /* <==================== */
+	aws_lws_context_lock(context, "peer wsi close"); /* <==================== */
 
 	assert(peer->count_wsi);
 	peer->count_wsi--;
@@ -282,20 +282,20 @@ lws_peer_track_wsi_close(struct lws_context *context, struct lws_peer *peer)
 		__lws_peer_add_to_peer_wait_list(context, peer);
 	}
 
-	lws_context_unlock(context); /* ====================================> */
+	aws_lws_context_unlock(context); /* ====================================> */
 }
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 int
-lws_peer_confirm_ah_attach_ok(struct lws_context *context,
-			      struct lws_peer *peer)
+aws_lws_peer_confirm_ah_attach_ok(struct aws_lws_context *context,
+			      struct aws_lws_peer *peer)
 {
 	if (!peer)
 		return 0;
 
 	if (context->ip_limit_ah &&
 	    peer->http.count_ah >= context->ip_limit_ah) {
-		lwsl_info("peer reached ah limit %d, deferring\n",
+		aws_lwsl_info("peer reached ah limit %d, deferring\n",
 				context->ip_limit_ah);
 
 		return 1;
@@ -305,14 +305,14 @@ lws_peer_confirm_ah_attach_ok(struct lws_context *context,
 }
 
 void
-lws_peer_track_ah_detach(struct lws_context *context, struct lws_peer *peer)
+aws_lws_peer_track_ah_detach(struct aws_lws_context *context, struct aws_lws_peer *peer)
 {
 	if (!peer)
 		return;
 
-	lws_context_lock(context, "peer ah detach"); /* <==================== */
+	aws_lws_context_lock(context, "peer ah detach"); /* <==================== */
 	assert(peer->http.count_ah);
 	peer->http.count_ah--;
-	lws_context_unlock(context); /* ====================================> */
+	aws_lws_context_unlock(context); /* ====================================> */
 }
 #endif

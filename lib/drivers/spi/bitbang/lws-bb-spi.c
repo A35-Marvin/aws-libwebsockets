@@ -24,9 +24,9 @@
 #include <libwebsockets.h>
 
 int
-lws_bb_spi_init(const lws_spi_ops_t *octx)
+aws_lws_bb_spi_init(const aws_lws_spi_ops_t *octx)
 {
-	lws_bb_spi_t *ctx = (lws_bb_spi_t *)octx;
+	aws_lws_bb_spi_t *ctx = (aws_lws_bb_spi_t *)octx;
 	int n;
 
 	for (n = 0; n < LWS_SPI_BB_MAX_CH; n++) {
@@ -48,7 +48,7 @@ lws_bb_spi_init(const lws_spi_ops_t *octx)
 /* if active, prepare DnC before this and call separately for Cmd / Data */
 
 static void
-lws_bb_spi_write(lws_bb_spi_t *ctx, const uint8_t *buf, size_t len)
+aws_lws_bb_spi_write(aws_lws_bb_spi_t *ctx, const uint8_t *buf, size_t len)
 {
 	uint8_t u, inv = !!(ctx->bb_ops.bus_mode & LWSSPIMODE_CPOL);
 
@@ -72,7 +72,7 @@ lws_bb_spi_write(lws_bb_spi_t *ctx, const uint8_t *buf, size_t len)
 }
 
 static void
-lws_bb_spi_read(lws_bb_spi_t *ctx, uint8_t *buf, size_t len)
+aws_lws_bb_spi_read(aws_lws_bb_spi_t *ctx, uint8_t *buf, size_t len)
 {
 	uint8_t u = 0;
 	uint8_t inv = !!(ctx->bb_ops.bus_mode & LWSSPIMODE_CPOL);
@@ -93,9 +93,9 @@ lws_bb_spi_read(lws_bb_spi_t *ctx, uint8_t *buf, size_t len)
 }
 
 int
-lws_bb_spi_queue(const lws_spi_ops_t *octx, const lws_spi_desc_t *desc)
+aws_lws_bb_spi_queue(const aws_lws_spi_ops_t *octx, const aws_lws_spi_desc_t *desc)
 {
-	lws_bb_spi_t *ctx = (lws_bb_spi_t *)octx;
+	aws_lws_bb_spi_t *ctx = (aws_lws_bb_spi_t *)octx;
 	const uint8_t *src = desc->src;
 
 	/* clock to idle */
@@ -105,17 +105,17 @@ lws_bb_spi_queue(const lws_spi_ops_t *octx, const lws_spi_desc_t *desc)
 
 	if (desc->count_cmd) {
 		ctx->gpio->set(ctx->ncmd[desc->channel], 0);
-		lws_bb_spi_write(ctx, src, desc->count_cmd);
+		aws_lws_bb_spi_write(ctx, src, desc->count_cmd);
 		ctx->gpio->set(ctx->ncmd[desc->channel], 1);
 
 		src += desc->count_cmd;
 	}
 
 	if (desc->count_write)
-		lws_bb_spi_write(ctx, desc->data, desc->count_write);
+		aws_lws_bb_spi_write(ctx, desc->data, desc->count_write);
 
 	if (desc->count_read)
-		lws_bb_spi_read(ctx, desc->dest, desc->count_read);
+		aws_lws_bb_spi_read(ctx, desc->dest, desc->count_read);
 
 	/* disable nCS */
 	ctx->gpio->set(ctx->ncs[desc->channel], 1);

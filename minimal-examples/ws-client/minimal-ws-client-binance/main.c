@@ -29,8 +29,8 @@ typedef struct range {
  */
 
 static struct my_conn {
-	lws_sorted_usec_list_t	sul;	     /* schedule connection retry */
-	lws_sorted_usec_list_t	sul_hz;	     /* 1hz summary */
+	aws_lws_sorted_usec_list_t	sul;	     /* schedule connection retry */
+	aws_lws_sorted_usec_list_t	sul_hz;	     /* 1hz summary */
 
 	range_t			e_lat_range;
 	range_t			price_range;
@@ -39,7 +39,7 @@ static struct my_conn {
 	uint16_t		retry_count; /* count of consequetive retries */
 } mco;
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 static int interrupted;
 
 #if defined(LWS_WITH_MBEDTLS) || defined(USE_WOLFSSL)
@@ -78,7 +78,7 @@ static const char * const ca_pem_digicert_global_root =
 
 static const uint32_t backoff_ms[] = { 1000, 2000, 3000, 4000, 5000 };
 
-static const lws_retry_bo_t retry = {
+static const aws_lws_retry_bo_t retry = {
 	.retry_ms_table			= backoff_ms,
 	.retry_ms_table_count		= LWS_ARRAY_SIZE(backoff_ms),
 	.conceal_count			= LWS_ARRAY_SIZE(backoff_ms),
@@ -103,10 +103,10 @@ static const lws_retry_bo_t retry = {
  * reducing the colesced records to ~1.2KB.
  */
 
-static const struct lws_extension extensions[] = {
+static const struct aws_lws_extension extensions[] = {
 	{
 		"permessage-deflate",
-		lws_extension_callback_pm_deflate,
+		aws_lws_extension_callback_pm_deflate,
 		"permessage-deflate"
 		 "; client_no_context_takeover"
 		 "; client_max_window_bits"
@@ -118,10 +118,10 @@ static const struct lws_extension extensions[] = {
  */
 
 static void
-connect_client(lws_sorted_usec_list_t *sul)
+connect_client(aws_lws_sorted_usec_list_t *sul)
 {
-	struct my_conn *mco = lws_container_of(sul, struct my_conn, sul);
-	struct lws_client_connect_info i;
+	struct my_conn *mco = aws_lws_container_of(sul, struct my_conn, sul);
+	struct aws_lws_client_connect_info i;
 
 	memset(&i, 0, sizeof(i));
 
@@ -139,15 +139,15 @@ connect_client(lws_sorted_usec_list_t *sul)
 	i.retry_and_idle_policy = &retry;
 	i.userdata = mco;
 
-	if (!lws_client_connect_via_info(&i))
+	if (!aws_lws_client_connect_via_info(&i))
 		/*
 		 * Failed... schedule a retry... we can't use the _retry_wsi()
 		 * convenience wrapper api here because no valid wsi at this
 		 * point.
 		 */
-		if (lws_retry_sul_schedule(context, 0, sul, &retry,
+		if (aws_lws_retry_sul_schedule(context, 0, sul, &retry,
 					   connect_client, &mco->retry_count)) {
-			lwsl_err("%s: connection attempts exhausted\n", __func__);
+			aws_lwsl_err("%s: connection attempts exhausted\n", __func__);
 			interrupted = 1;
 		}
 }
@@ -167,23 +167,23 @@ get_us_timeofday(void)
 
 	gettimeofday(&tv, NULL);
 
-	return (uint64_t)((lws_usec_t)tv.tv_sec * LWS_US_PER_SEC) + (uint64_t)tv.tv_usec;
+	return (uint64_t)((aws_lws_usec_t)tv.tv_sec * LWS_US_PER_SEC) + (uint64_t)tv.tv_usec;
 }
 
 static void
-sul_hz_cb(lws_sorted_usec_list_t *sul)
+sul_hz_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct my_conn *mco = lws_container_of(sul, struct my_conn, sul_hz);
+	struct my_conn *mco = aws_lws_container_of(sul, struct my_conn, sul_hz);
 
 	/*
 	 * We are called once a second to dump statistics on the connection
 	 */
 
-	lws_sul_schedule(lws_get_context(mco->wsi), 0, &mco->sul_hz,
+	aws_lws_sul_schedule(aws_lws_get_context(mco->wsi), 0, &mco->sul_hz,
 			 sul_hz_cb, LWS_US_PER_SEC);
 
 	if (mco->price_range.samples)
-		lwsl_notice("%s: price: min: %llu¢, max: %llu¢, avg: %llu¢, "
+		aws_lwsl_notice("%s: price: min: %llu¢, max: %llu¢, avg: %llu¢, "
 			    "(%d prices/s)\n",
 			    __func__,
 			    (unsigned long long)mco->price_range.lowest,
@@ -191,7 +191,7 @@ sul_hz_cb(lws_sorted_usec_list_t *sul)
 			    (unsigned long long)(mco->price_range.sum / mco->price_range.samples),
 			    mco->price_range.samples);
 	if (mco->e_lat_range.samples)
-		lwsl_notice("%s: elatency: min: %llums, max: %llums, "
+		aws_lwsl_notice("%s: elatency: min: %llums, max: %llums, "
 			    "avg: %llums, (%d msg/s)\n", __func__,
 			    (unsigned long long)mco->e_lat_range.lowest / 1000,
 			    (unsigned long long)mco->e_lat_range.highest / 1000,
@@ -217,7 +217,7 @@ pennies(const char *s)
 }
 
 static int
-callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		 void *user, void *in, size_t len)
 {
 	struct my_conn *mco = (struct my_conn *)user;
@@ -230,7 +230,7 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 	switch (reason) {
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		goto do_retry;
 		break;
@@ -240,11 +240,11 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		 * The messages are a few 100 bytes of JSON each
 		 */
 
-		// lwsl_hexdump_notice(in, len);
+		// aws_lwsl_hexdump_notice(in, len);
 
 		now_us = (uint64_t)get_us_timeofday();
 
-		p = lws_json_simple_find((const char *)in, len,
+		p = aws_lws_json_simple_find((const char *)in, len,
 					 "\"depthUpdate\"", &alen);
 		/*
 		 * Only the JSON with depthUpdate init has the numbers we care
@@ -253,12 +253,12 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		if (!p)
 			break;
 
-		p = lws_json_simple_find((const char *)in, len, "\"E\":", &alen);
+		p = aws_lws_json_simple_find((const char *)in, len, "\"E\":", &alen);
 		if (!p) {
-			lwsl_err("%s: no E JSON\n", __func__);
+			aws_lwsl_err("%s: no E JSON\n", __func__);
 			break;
 		}
-		lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
+		aws_lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
 		latency_us = now_us -
 				((uint64_t)atoll(numbuf) * LWS_US_PER_MS);
 
@@ -270,10 +270,10 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		mco->e_lat_range.sum += latency_us;
 		mco->e_lat_range.samples++;
 
-		p = lws_json_simple_find((const char *)in, len,
+		p = aws_lws_json_simple_find((const char *)in, len,
 					 "\"a\":[[\"", &alen);
 		if (p) {
-			lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
+			aws_lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
 			price = pennies(numbuf);
 
 			if (price < mco->price_range.lowest)
@@ -287,8 +287,8 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		lwsl_user("%s: established\n", __func__);
-		lws_sul_schedule(lws_get_context(wsi), 0, &mco->sul_hz,
+		aws_lwsl_user("%s: established\n", __func__);
+		aws_lws_sul_schedule(aws_lws_get_context(wsi), 0, &mco->sul_hz,
 				 sul_hz_cb, LWS_US_PER_SEC);
 		mco->wsi = wsi;
 		range_reset(&mco->e_lat_range);
@@ -296,14 +296,14 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_CLIENT_CLOSED:
-		lws_sul_cancel(&mco->sul_hz);
+		aws_lws_sul_cancel(&mco->sul_hz);
 		goto do_retry;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 
 do_retry:
 	/*
@@ -316,16 +316,16 @@ do_retry:
 	 * elements in the backoff table, it will never give up and keep
 	 * retrying at the last backoff delay plus the random jitter amount.
 	 */
-	if (lws_retry_sul_schedule_retry_wsi(wsi, &mco->sul, connect_client,
+	if (aws_lws_retry_sul_schedule_retry_wsi(wsi, &mco->sul, connect_client,
 					     &mco->retry_count)) {
-		lwsl_err("%s: connection attempts exhausted\n", __func__);
+		aws_lwsl_err("%s: connection attempts exhausted\n", __func__);
 		interrupted = 1;
 	}
 
 	return 0;
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{ "lws-minimal-client", callback_minimal, 0, 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -338,14 +338,14 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS minimal binance client\n");
+	aws_lwsl_user("LWS minimal binance client\n");
 
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 	info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
@@ -362,20 +362,20 @@ int main(int argc, const char **argv)
 	info.client_ssl_ca_mem_len = (unsigned int)strlen(ca_pem_digicert_global_root);
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	/* schedule the first client connection attempt to happen immediately */
-	lws_sul_schedule(context, 0, &mco.sul, connect_client, 1);
+	aws_lws_sul_schedule(context, 0, &mco.sul, connect_client, 1);
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
-	lwsl_user("Completed\n");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed\n");
 
 	return 0;
 }

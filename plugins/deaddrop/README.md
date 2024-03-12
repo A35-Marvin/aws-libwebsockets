@@ -37,7 +37,7 @@ be protected from snooping by tls.
 See ./minimal-examples/http-server/minimal-example-http-server-deaddrop for
 how to use the plugin directly with C.
 
-## Using with lwsws / lejp-conf
+## Using with aws_lwsws / lejp-conf
 
 As a plugin, you can configure the mounts and pvos per-vhost easily in JSON.
 

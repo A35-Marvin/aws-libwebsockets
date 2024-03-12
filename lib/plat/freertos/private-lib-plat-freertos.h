@@ -73,11 +73,11 @@ gai_strerror(int);
 #include <errno.h>
 #endif
 
-typedef SemaphoreHandle_t lws_mutex_t;
-#define lws_mutex_init(x)	x = xSemaphoreCreateMutex()
-#define lws_mutex_destroy(x)	vSemaphoreDelete(x)
-#define lws_mutex_lock(x)	(!xSemaphoreTake(x, portMAX_DELAY)) /*0 = OK */
-#define lws_mutex_unlock(x)	xSemaphoreGive(x)
+typedef SemaphoreHandle_t aws_lws_mutex_t;
+#define aws_lws_mutex_init(x)	x = xSemaphoreCreateMutex()
+#define aws_lws_mutex_destroy(x)	vSemaphoreDelete(x)
+#define aws_lws_mutex_lock(x)	(!xSemaphoreTake(x, portMAX_DELAY)) /*0 = OK */
+#define aws_lws_mutex_unlock(x)	xSemaphoreGive(x)
 
 #include <lwip/sockets.h>
 
@@ -96,7 +96,7 @@ typedef SemaphoreHandle_t lws_mutex_t;
  #define LWS_EADDRINUSE EADDRINUSE
  #define LWS_ECONNABORTED ECONNABORTED
 
- #define lws_set_blocking_send(wsi)
+ #define aws_lws_set_blocking_send(wsi)
 
  #ifndef LWS_NO_FORK
   #ifdef LWS_HAVE_SYS_PRCTL_H
@@ -109,16 +109,16 @@ typedef SemaphoreHandle_t lws_mutex_t;
 #endif
 
 #define compatible_close(x) close(x)
-#define lws_plat_socket_offset() LWIP_SOCKET_OFFSET
-#define wsi_from_fd(A,B)  A->lws_lookup[B - lws_plat_socket_offset()]
+#define aws_lws_plat_socket_offset() LWIP_SOCKET_OFFSET
+#define wsi_from_fd(A,B)  A->aws_lws_lookup[B - aws_lws_plat_socket_offset()]
 
-struct lws_context;
+struct aws_lws_context;
 struct lws;
 
 int
-insert_wsi(const struct lws_context *context, struct lws *wsi);
+insert_wsi(const struct aws_lws_context *context, struct lws *wsi);
 
-#define delete_from_fd(A,B) A->lws_lookup[B - lws_plat_socket_offset()] = 0
+#define delete_from_fd(A,B) A->aws_lws_lookup[B - aws_lws_plat_socket_offset()] = 0
 
 #define LWS_PLAT_TIMER_TYPE		TimerHandle_t
 #define LWS_PLAT_TIMER_CB(name, var)	void name(TimerHandle_t var)

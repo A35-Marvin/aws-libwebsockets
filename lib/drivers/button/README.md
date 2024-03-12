@@ -47,31 +47,31 @@ button names, and also optionally the classification regime for that button.
 Then the button controller definition which points back to the button map.
 
 ```
-static const lws_button_map_t bcm[] = {
+static const aws_lws_button_map_t bcm[] = {
 	{
 		.gpio			= GPIO_NUM_0,
 		.smd_interaction_name	= "user"
 	},
 };
 
-static const lws_button_controller_t bc = {
+static const aws_lws_button_controller_t bc = {
 	.smd_bc_name			= "bc",
-	.gpio_ops			= &lws_gpio_plat,
+	.gpio_ops			= &aws_lws_gpio_plat,
 	.button_map			= &bcm[0],
 	.active_state_bitmap		= 0,
 	.count_buttons			= LWS_ARRAY_SIZE(bcm),
 };
 
-	struct lws_button_state *bcs;
+	struct aws_lws_button_state *bcs;
 
-	bcs = lws_button_controller_create(context, &bc);
+	bcs = aws_lws_button_controller_create(context, &bc);
 	if (!bcs) {
-		lwsl_err("%s: could not create buttons\n", __func__);
+		aws_lwsl_err("%s: could not create buttons\n", __func__);
 		goto spin;
 	}
 ```
 
-That is all that is needed for init, button events will be issued on lws_smd
+That is all that is needed for init, button events will be issued on aws_lws_smd
 when buttons are pressed.
 
 ### Regime settings
@@ -88,7 +88,7 @@ ms_doubleclick_grace|120ms|The time allowed after a click to see if a second, do
 ms_repeat_down|0 / disabled|If held down, interval at which to issue `stilldown` events
 flags|LWSBTNRGMFLAG_CLASSIFY_DOUBLECLICK|Control which classifications can apply
 
-### lws_smd System Message Distribution Events
+### aws_lws_smd System Message Distribution Events
 
 The button controller emits system messages of class `LWSSMDCL_INTERACTION`,
 using a JSON formatted payload
@@ -131,13 +131,13 @@ the regime structure and the regime structure chosen per-button.
 Typically user code is interested in, eg, a high level classification of what
 the button is doing, eg, a "click" event on a specific button.  Rather than
 perform a JSON parse, these events can be processed as strings cheaply using
-`lws_json_simple_strcmp()`, it's dumb enough to be cheap but smart enough to
+`aws_lws_json_simple_strcmp()`, it's dumb enough to be cheap but smart enough to
 understand enough JSON semantics to be accurate, while retaining the ability to
 change and extend the JSON, eg
 
 ```
-	if (!lws_json_simple_strcmp(buf, len, "\"src\":", "bc/user")) {
-		if (!lws_json_simple_strcmp(buf, len, "\"event\":", "click")) {
+	if (!aws_lws_json_simple_strcmp(buf, len, "\"src\":", "bc/user")) {
+		if (!aws_lws_json_simple_strcmp(buf, len, "\"event\":", "click")) {
 			...
 		}
 		...

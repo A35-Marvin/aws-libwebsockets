@@ -22,7 +22,7 @@ See ./READMEs/README.event-libs.md for more details.
 
 Despite it may be more work, lws event lib implementations must support
 "foreign" loops cleanly, that is integration with an already-existing loop and
-the ability to destroy the lws_context without stopping or leaving the foreign
+the ability to destroy the aws_lws_context without stopping or leaving the foreign
 loop in any different state than when lws found it.  For most loops this is
 fairly simple, but with libuv async close, it required refcounting lws libuv
 handles and deferring the actual destroy until they were all really closed.
@@ -43,7 +43,7 @@ referenced.
 
 ### Event loop ops struct
 
-The event lib support is defined by `struct lws_event_loop_ops` in
+The event lib support is defined by `struct aws_lws_event_loop_ops` in
 `lib/event-libs/private-lib-event-libs.h`,
 each event lib support instantiates one of these and fills in the appropriate
 ops callbacks to perform its job.  By convention that lives in
@@ -70,7 +70,7 @@ used for plugin mode, like this...
 
 ```
 #if defined(LWS_WITH_EVLIB_PLUGINS) && defined(LWS_WITH_EVENT_LIBS)
-static const struct lws_evlib_map {
+static const struct aws_lws_evlib_map {
 	uint64_t	flag;
 	const char	*name;
 } map[] = {
@@ -85,8 +85,8 @@ and for backwards compatibility add a stanza to the built-in checks like this
 
 ```
 #if defined(LWS_WITH_LIBUV)
-	if (lws_check_opt(info->options, LWS_SERVER_OPTION_LIBUV)) {
-		extern const lws_plugin_evlib_t evlib_uv;
+	if (aws_lws_check_opt(info->options, LWS_SERVER_OPTION_LIBUV)) {
+		extern const aws_lws_plugin_evlib_t evlib_uv;
 		plev = &evlib_uv;
 	}
 #endif
@@ -102,13 +102,13 @@ wsi, pt, vhost and context levels, eg, the libuv event lib support need to
 add its own assets in the perthread struct, it declares in its private....h
 
 ```
-struct lws_pt_eventlibs_libuv {
+struct aws_lws_pt_eventlibs_libuv {
 	uv_loop_t *io_loop;
-	struct lws_context_per_thread *pt;
+	struct aws_lws_context_per_thread *pt;
 	uv_signal_t signals[8];
 	uv_timer_t sultimer;
 	uv_idle_t idle;
-	struct lws_signal_watcher_libuv w_sigint;
+	struct aws_lws_signal_watcher_libuv w_sigint;
 };
 ```
 
@@ -117,10 +117,10 @@ four entries to export the sizes of these event-lib specific objects
 
 ```
 ...
-	/* evlib_size_ctx */	sizeof(struct lws_context_eventlibs_libuv),
-	/* evlib_size_pt */	sizeof(struct lws_pt_eventlibs_libuv),
+	/* evlib_size_ctx */	sizeof(struct aws_lws_context_eventlibs_libuv),
+	/* evlib_size_pt */	sizeof(struct aws_lws_pt_eventlibs_libuv),
 	/* evlib_size_vh */	0,
-	/* evlib_size_wsi */	sizeof(struct lws_io_watcher_libuv),
+	/* evlib_size_wsi */	sizeof(struct aws_lws_io_watcher_libuv),
 };
 ```
 
@@ -145,12 +145,12 @@ runtime, all of these objects are guaranteed to have the right size object at
 ### Enabling event lib adoption
 
 You need to add a `LWS_SERVER_OPTION...` flag as necessary in `./lib/libwebsockets.h`
-`enum lws_context_options`, and follow the existing code in `lws_create_context()`
+`enum aws_lws_context_options`, and follow the existing code in `aws_lws_create_context()`
 to convert the flag into binding your ops struct to the context.
 
 ### Implementation of the event lib bindings
 
-Study eg libuv implementation, using the available ops in the struct lws_event_loop_ops
+Study eg libuv implementation, using the available ops in the struct aws_lws_event_loop_ops
 as a guide.
 
 ### Destruction
@@ -163,7 +163,7 @@ Don't add special exports... we tried that, it's a huge mess.  The same user
 code should be able work with any of the event loops including poll.
 
 The solution we found was hide the different processing necessary for the
-different cases in `lws_destroy_context()`.  To help with that there are event
+different cases in `aws_lws_destroy_context()`.  To help with that there are event
 lib ops available that will be called at two different places in the context
 destroy processing.
 

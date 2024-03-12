@@ -23,14 +23,14 @@
  *
  *
  *  Either the libc getaddrinfo() or ASYNC_DNS provides a chain of addrinfo,
- *  we use lws_sort_dns() to convert it to an lws_dll2 of lws_dns_sort_t, after
+ *  we use aws_lws_sort_dns() to convert it to an aws_lws_dll2 of aws_lws_dns_sort_t, after
  *  which the addrinfo results are freed.
  *
  *  If the system has no routing table info (from, eg, NETLINK), then that's
  *  it the sorted results are bound to the wsi and used.
  *
  *  If the system has routing table info, we study the routing table and the
- *  DNS results in order to sort the lws_dns_sort_t result linked-list into
+ *  DNS results in order to sort the aws_lws_dns_sort_t result linked-list into
  *  most desirable at the head, and strip results we can't see a way to route.
  */
 
@@ -83,7 +83,7 @@ static const uint8_t frac[] = {
 static const struct score_policy {
 	uint8_t			ma_ofs;
 	uint8_t			prefix;
-	lws_dns_score_t		score;
+	aws_lws_dns_score_t		score;
 } rfc6724_policy[] = {
 
 	{  0,	128,	{  50,  0 } },		/* ::1/128 */
@@ -105,7 +105,7 @@ static const struct score_policy {
 };
 
 static int
-lws_ipv6_prefix_match_len(const struct sockaddr_in6 *a,
+aws_lws_ipv6_prefix_match_len(const struct sockaddr_in6 *a,
 			  const struct sockaddr_in6 *b)
 {
 	const uint8_t *ads_a = (uint8_t *)&a->sin6_addr,
@@ -134,7 +134,7 @@ lws_ipv6_prefix_match_len(const struct sockaddr_in6 *a,
 }
 
 static int
-lws_ipv6_unicast_scope(const struct sockaddr_in6 *sa)
+aws_lws_ipv6_unicast_scope(const struct sockaddr_in6 *sa)
 {
 	uint64_t *u;
 
@@ -146,7 +146,7 @@ lws_ipv6_unicast_scope(const struct sockaddr_in6 *sa)
 }
 
 static int
-lws_sort_dns_scope(lws_sockaddr46 *sa46)
+aws_lws_sort_dns_scope(aws_lws_sockaddr46 *sa46)
 {
 	if (sa46->sa4.sin_family == AF_INET) {
 		uint8_t *p = (uint8_t *)&sa46->sa4.sin_addr;
@@ -159,15 +159,15 @@ lws_sort_dns_scope(lws_sockaddr46 *sa46)
 		return 0xe; /* global */
 	}
 
-	return lws_ipv6_unicast_scope(&sa46->sa6);
+	return aws_lws_ipv6_unicast_scope(&sa46->sa6);
 }
 
 static int
-lws_sort_dns_classify(lws_sockaddr46 *sa46, lws_dns_score_t *score)
+aws_lws_sort_dns_classify(aws_lws_sockaddr46 *sa46, aws_lws_dns_score_t *score)
 {
 	const struct score_policy *pol = rfc6724_policy;
 	const uint8_t *p, *po;
-	lws_sockaddr46 s;
+	aws_lws_sockaddr46 s;
 	int n, m;
 
 	memset(score, 0, sizeof(*score));
@@ -175,7 +175,7 @@ lws_sort_dns_classify(lws_sockaddr46 *sa46, lws_dns_score_t *score)
 	if (sa46->sa4.sin_family == AF_INET) {
 		memset(&s, 0, sizeof(s));
 		s.sa6.sin6_family = AF_INET6;
-		lws_4to6((uint8_t *)s.sa6.sin6_addr.s6_addr,
+		aws_lws_4to6((uint8_t *)s.sa6.sin6_addr.s6_addr,
 			 (const uint8_t *)&sa46->sa4.sin_addr);
 
 		/* use the v6 version of the v4 address */
@@ -213,7 +213,7 @@ enum {
 
 /* ifa is laid out with types for ipv4, if it's AF_INET6 case to sockaddr_in6 */
 #define to_v6_sa(x) ((struct sockaddr_in6 *)x)
-#define to_sa46_sa(x) ((lws_sockaddr46 *)x)
+#define to_sa46_sa(x) ((aws_lws_sockaddr46 *)x)
 
 /*
  * The source address selection algorithm produces as output a single
@@ -227,14 +227,14 @@ enum {
  */
 
 static int
-lws_sort_dns_scomp(struct lws_context_per_thread *pt, const lws_route_t *sa,
-		   const lws_route_t *sb, const struct sockaddr_in6 *dst)
+aws_lws_sort_dns_scomp(struct aws_lws_context_per_thread *pt, const aws_lws_route_t *sa,
+		   const aws_lws_route_t *sb, const struct sockaddr_in6 *dst)
 {
 	const struct sockaddr_in6 *sa6 = to_v6_sa(&sa->dest),
 				  *sb6 = to_v6_sa(&sb->dest);
-	lws_dns_score_t scorea, scoreb, scoredst;
+	aws_lws_dns_score_t scorea, scoreb, scoredst;
 	int scopea, scopeb, scoped, mla, mlb;
-	lws_route_t *rd;
+	aws_lws_route_t *rd;
 
 	if (!sa->dest.sa4.sin_family)
 		sa6 = to_v6_sa(&sa->gateway);
@@ -267,9 +267,9 @@ lws_sort_dns_scomp(struct lws_context_per_thread *pt, const lws_route_t *sa,
 	 * prefer SA and otherwise prefer SB.
 	 */
 
-	scopea = lws_sort_dns_scope(to_sa46_sa(sa6));
-	scopeb = lws_sort_dns_scope(to_sa46_sa(sb6));
-	scoped = lws_sort_dns_scope(to_sa46_sa(dst));
+	scopea = aws_lws_sort_dns_scope(to_sa46_sa(sa6));
+	scopeb = aws_lws_sort_dns_scope(to_sa46_sa(sb6));
+	scoped = aws_lws_sort_dns_scope(to_sa46_sa(dst));
 
 	if (scopea < scopeb)
 		return scopea < scoped ? SAS_PREFER_B : SAS_PREFER_A;
@@ -321,7 +321,7 @@ lws_sort_dns_scomp(struct lws_context_per_thread *pt, const lws_route_t *sa,
 	 * prefer SB.
 	 */
 
-	rd = _lws_route_est_outgoing(pt, (lws_sockaddr46 *)dst);
+	rd = _lws_route_est_outgoing(pt, (aws_lws_sockaddr46 *)dst);
 	if (rd) {
 		if (rd->if_idx == sa->if_idx)
 			return SAS_PREFER_A;
@@ -336,9 +336,9 @@ lws_sort_dns_scomp(struct lws_context_per_thread *pt, const lws_route_t *sa,
 	 * prefer SB.
 	 */
 
-	lws_sort_dns_classify(to_sa46_sa(sa6), &scorea);
-	lws_sort_dns_classify(to_sa46_sa(sb6), &scoreb);
-	lws_sort_dns_classify(to_sa46_sa(dst), &scoredst);
+	aws_lws_sort_dns_classify(to_sa46_sa(sa6), &scorea);
+	aws_lws_sort_dns_classify(to_sa46_sa(sb6), &scoreb);
+	aws_lws_sort_dns_classify(to_sa46_sa(dst), &scoredst);
 
 	if (scorea.label == scoredst.label && scoreb.label != scoredst.label)
 		return SAS_PREFER_A;
@@ -367,8 +367,8 @@ lws_sort_dns_scomp(struct lws_context_per_thread *pt, const lws_route_t *sa,
 	 * prefer SB.
 	 */
 
-	mla = lws_ipv6_prefix_match_len(sa6, dst);
-	mlb = lws_ipv6_prefix_match_len(sb6, dst);
+	mla = aws_lws_ipv6_prefix_match_len(sa6, dst);
+	mlb = aws_lws_ipv6_prefix_match_len(sb6, dst);
 
 	if (mla > mlb)
 		return SAS_PREFER_A;
@@ -384,12 +384,12 @@ lws_sort_dns_scomp(struct lws_context_per_thread *pt, const lws_route_t *sa,
  */
 
 static int
-lws_sort_dns_dcomp(const lws_dns_sort_t *da, const lws_dns_sort_t *db)
+aws_lws_sort_dns_dcomp(const aws_lws_dns_sort_t *da, const aws_lws_dns_sort_t *db)
 {
 	int scopea, scopeb, scope_srca, scope_srcb, cpla, cplb;
 	const uint8_t *da_ads = (const uint8_t *)&da->dest.sa6.sin6_addr,
 		      *db_ads = (const uint8_t *)&db->dest.sa6.sin6_addr;
-	lws_dns_score_t score_srca, score_srcb;
+	aws_lws_dns_score_t score_srca, score_srcb;
 
 	/*
 	 * Rule 1: Avoid unusable destinations
@@ -405,10 +405,10 @@ lws_sort_dns_dcomp(const lws_dns_sort_t *da, const lws_dns_sort_t *db)
 	 * Scope(DB) = Scope(Source(DB)), then prefer DB.
 	 */
 
-	scopea = lws_ipv6_unicast_scope(to_v6_sa(&da->dest));
-	scopeb = lws_ipv6_unicast_scope(to_v6_sa(&db));
-	scope_srca = lws_ipv6_unicast_scope(to_v6_sa(&da->source));
-	scope_srcb = lws_ipv6_unicast_scope(to_v6_sa(&db->source));
+	scopea = aws_lws_ipv6_unicast_scope(to_v6_sa(&da->dest));
+	scopeb = aws_lws_ipv6_unicast_scope(to_v6_sa(&db));
+	scope_srca = aws_lws_ipv6_unicast_scope(to_v6_sa(&da->source));
+	scope_srcb = aws_lws_ipv6_unicast_scope(to_v6_sa(&db->source));
 
 	if (scopea == scope_srca && scopeb != scope_srcb)
 		return SAS_PREFER_A;
@@ -470,8 +470,8 @@ lws_sort_dns_dcomp(const lws_dns_sort_t *da, const lws_dns_sort_t *db)
 	if (!db->source)
 		return SAS_PREFER_A;
 
-	lws_sort_dns_classify(&da->source->dest, &score_srca);
-	lws_sort_dns_classify(&db->source->dest, &score_srcb);
+	aws_lws_sort_dns_classify(&da->source->dest, &score_srca);
+	aws_lws_sort_dns_classify(&db->source->dest, &score_srcb);
 
 	if (score_srca.label == da->score.label &&
 	    score_srcb.label != db->score.label)
@@ -527,8 +527,8 @@ lws_sort_dns_dcomp(const lws_dns_sort_t *da, const lws_dns_sort_t *db)
 	 * then prefer DB.
 	 */
 
-	cpla = lws_ipv6_prefix_match_len(&da->source->dest.sa6, &da->dest.sa6);
-	cplb = lws_ipv6_prefix_match_len(&db->source->dest.sa6, &db->dest.sa6);
+	cpla = aws_lws_ipv6_prefix_match_len(&da->source->dest.sa6, &da->dest.sa6);
+	cplb = aws_lws_ipv6_prefix_match_len(&db->source->dest.sa6, &db->dest.sa6);
 
 	if (cpla > cplb)
 		return SAS_PREFER_A;
@@ -544,12 +544,12 @@ lws_sort_dns_dcomp(const lws_dns_sort_t *da, const lws_dns_sort_t *db)
 }
 
 static int
-lws_sort_dns_compare(const lws_dll2_t *a, const lws_dll2_t *b)
+aws_lws_sort_dns_compare(const aws_lws_dll2_t *a, const aws_lws_dll2_t *b)
 {
-	const lws_dns_sort_t *sa = lws_container_of(a, lws_dns_sort_t, list),
-			     *sb = lws_container_of(b, lws_dns_sort_t, list);
+	const aws_lws_dns_sort_t *sa = aws_lws_container_of(a, aws_lws_dns_sort_t, list),
+			     *sb = aws_lws_container_of(b, aws_lws_dns_sort_t, list);
 
-	return lws_sort_dns_dcomp(sa, sb);
+	return aws_lws_sort_dns_dcomp(sa, sb);
 }
 
 #endif /* ipv6 + netlink */
@@ -557,43 +557,43 @@ lws_sort_dns_compare(const lws_dll2_t *a, const lws_dll2_t *b)
 #if defined(_DEBUG)
 
 static void
-lws_sort_dns_dump(struct lws *wsi)
+aws_lws_sort_dns_dump(struct lws *wsi)
 {
 	int n = 1;
 
 	(void)n; /* nologs */
 
-	if (!lws_dll2_get_head(&wsi->dns_sorted_list))
-		lwsl_wsi_notice(wsi, "empty");
+	if (!aws_lws_dll2_get_head(&wsi->dns_sorted_list))
+		aws_lwsl_wsi_notice(wsi, "empty");
 
-	lws_start_foreach_dll(struct lws_dll2 *, d,
-			      lws_dll2_get_head(&wsi->dns_sorted_list)) {
-		lws_dns_sort_t *s = lws_container_of(d, lws_dns_sort_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+			      aws_lws_dll2_get_head(&wsi->dns_sorted_list)) {
+		aws_lws_dns_sort_t *s = aws_lws_container_of(d, aws_lws_dns_sort_t, list);
 		char dest[48], gw[48];
 
-		lws_sa46_write_numeric_address(&s->dest, dest, sizeof(dest));
-		lws_sa46_write_numeric_address(&s->gateway, gw, sizeof(gw));
+		aws_lws_sa46_write_numeric_address(&s->dest, dest, sizeof(dest));
+		aws_lws_sa46_write_numeric_address(&s->gateway, gw, sizeof(gw));
 
-		lwsl_wsi_info(wsi, "%d: (%d)%s, gw (%d)%s, idi: %d, "
+		aws_lwsl_wsi_info(wsi, "%d: (%d)%s, gw (%d)%s, idi: %d, "
 				"lbl: %d, prec: %d", n++,
 			    s->dest.sa4.sin_family, dest,
 			    s->gateway.sa4.sin_family, gw,
 			    s->if_idx, s->score.label, s->score.precedence);
 
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 }
 
 #endif
 
 int
-lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
+aws_lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
 {
 #if defined(LWS_WITH_NETLINK)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 #endif
 	const struct addrinfo *ai = result;
 
-	lwsl_wsi_info(wsi, "sort_dns: %p", result);
+	aws_lwsl_wsi_info(wsi, "sort_dns: %p", result);
 
 	/*
 	 * We're going to take the dns results and produce our own linked-list
@@ -601,13 +601,13 @@ lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
 	 * possibly filtered.
 	 *
 	 * First let's just convert the addrinfo list into our expanded
-	 * lws_dns_sort_t list, we can discard the addrinfo list then
+	 * aws_lws_dns_sort_t list, we can discard the addrinfo list then
 	 */
 
 	while (ai) {
 #if defined(LWS_WITH_NETLINK) || \
 	(defined(LWS_WITH_NETLINK) && defined(LWS_WITH_IPV6))
-		lws_route_t
+		aws_lws_route_t
 #if defined(LWS_WITH_NETLINK)
 			*estr = NULL
 #endif
@@ -616,26 +616,26 @@ lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
 #endif
 		;
 #endif
-		lws_dns_sort_t *ds;
+		aws_lws_dns_sort_t *ds;
 		char afip[48];
 
 		/*
 		 * Only transfer address families we can cope with
 		 */
-		if ((int)ai->ai_addrlen > (int)sizeof(lws_sockaddr46) ||
+		if ((int)ai->ai_addrlen > (int)sizeof(aws_lws_sockaddr46) ||
 		    (ai->ai_family != AF_INET && ai->ai_family != AF_INET6))
 			goto next;
 
-		ds = lws_zalloc(sizeof(*ds), __func__);
+		ds = aws_lws_zalloc(sizeof(*ds), __func__);
 		if (!ds)
 			return 1;
 
 		memcpy(&ds->dest, ai->ai_addr, (size_t)ai->ai_addrlen);
 		ds->dest.sa4.sin_family = (sa_family_t)ai->ai_family;
 
-		lws_sa46_write_numeric_address(&ds->dest, afip, sizeof(afip));
+		aws_lws_sa46_write_numeric_address(&ds->dest, afip, sizeof(afip));
 
-		lwsl_wsi_info(wsi, "unsorted entry (af %d) %s",
+		aws_lwsl_wsi_info(wsi, "unsorted entry (af %d) %s",
 				   ds->dest.sa4.sin_family, afip);
 
 #if defined(LWS_WITH_NETLINK)
@@ -650,8 +650,8 @@ lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
 
 			estr = _lws_route_est_outgoing(pt, &ds->dest);
 			if (!estr) {
-				lws_free(ds);
-				lwsl_wsi_notice(wsi, "%s has no route out\n",
+				aws_lws_free(ds);
+				aws_lwsl_wsi_notice(wsi, "%s has no route out\n",
 						afip);
 				/*
 				 * There's no outbound route for this, it's
@@ -697,14 +697,14 @@ lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
 			 * promote v4 -> v6 address using ::ffff:xx:yy
 			 */
 
-			lwsl_wsi_info(wsi, "promoting v4->v6");
+			aws_lwsl_wsi_info(wsi, "promoting v4->v6");
 
-			lws_sa46_4to6(&ds->dest,
+			aws_lws_sa46_4to6(&ds->dest,
 				      (uint8_t *)&ds->dest.sa4.sin_addr, 0);
 		}
 
 		/* first, classify this destination ads */
-		lws_sort_dns_classify(&ds->dest, &ds->score);
+		aws_lws_sort_dns_classify(&ds->dest, &ds->score);
 
 		/*
 		 * RFC6724 Section 5: Source Address Selection
@@ -714,31 +714,31 @@ lws_sort_dns(struct lws *wsi, const struct addrinfo *result)
 		 * address
 		 */
 
-		lws_start_foreach_dll(struct lws_dll2 *, d,
-				      lws_dll2_get_head(&pt->context->routing_table)) {
-			lws_route_t *r = lws_container_of(d, lws_route_t, list);
+		aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+				      aws_lws_dll2_get_head(&pt->context->routing_table)) {
+			aws_lws_route_t *r = aws_lws_container_of(d, aws_lws_route_t, list);
 
 			/* gateway routes are skipped here */
 
 			if (ds->dest.sa6.sin6_family == AF_INET6 &&
 			    r->dest.sa4.sin_family == AF_INET6 && (!bestsrc ||
-			    lws_sort_dns_scomp(pt, bestsrc, r, &ds->dest.sa6) ==
+			    aws_lws_sort_dns_scomp(pt, bestsrc, r, &ds->dest.sa6) ==
 							    SAS_PREFER_B))
 				bestsrc = r;
 
-		} lws_end_foreach_dll(d);
+		} aws_lws_end_foreach_dll(d);
 
 		/* bestsrc is the best source route, or NULL if none */
 
 		if (!bestsrc && pt->context->routing_table.count) {
 			/* drop it, no usable source route */
-			lws_free(ds);
+			aws_lws_free(ds);
 			goto next;
 		}
 
 just_add:
 		if (!bestsrc) {
-			lws_dll2_add_tail(&ds->list, &wsi->dns_sorted_list);
+			aws_lws_dll2_add_tail(&ds->list, &wsi->dns_sorted_list);
 			goto next;
 		}
 
@@ -751,8 +751,8 @@ just_add:
 		 * its preferability, so the head entry is the most preferred
 		 */
 
-		lws_dll2_add_sorted(&ds->list, &wsi->dns_sorted_list,
-				    lws_sort_dns_compare);
+		aws_lws_dll2_add_sorted(&ds->list, &wsi->dns_sorted_list,
+				    aws_lws_sort_dns_compare);
 #else
 		/*
 		 * We don't have the routing table + source address details in
@@ -760,18 +760,18 @@ just_add:
 		 * order of the addrinfo results
 		 */
 
-		lws_dll2_add_tail(&ds->list, &wsi->dns_sorted_list);
+		aws_lws_dll2_add_tail(&ds->list, &wsi->dns_sorted_list);
 #endif
 
 next:
 		ai = ai->ai_next;
 	}
 
-	//lwsl_notice("%s: sorted table: %d\n", __func__,
+	//aws_lwsl_notice("%s: sorted table: %d\n", __func__,
 	//		wsi->dns_sorted_list.count);
 
 #if defined(_DEBUG)
-	lws_sort_dns_dump(wsi);
+	aws_lws_sort_dns_dump(wsi);
 #endif
 
 	return !wsi->dns_sorted_list.count;

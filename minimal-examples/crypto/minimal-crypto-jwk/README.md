@@ -39,7 +39,7 @@ For legibility the example uses -c, however this
  $ ./lws-crypto-jwk -t EC -v P-256 --key-ops "sign verify" --public mykey.pub
 [2018/12/18 20:19:29:6972] USER: LWS JWK example
 [2018/12/18 20:19:29:7200] NOTICE: Creating Vhost 'default' (serving disabled), 1 protocols, IPv6 off
-[2018/12/18 20:19:29:7251] NOTICE: lws_jwk_generate: generating ECDSA key on curve P-256
+[2018/12/18 20:19:29:7251] NOTICE: aws_lws_jwk_generate: generating ECDSA key on curve P-256
 {"crv":"P-256","d":"eMKM_S4BTL2aiebZLqvxglufV2YX4b3_32DesgEUOaM","key_ops":["sign","verify"],"kty":"EC","x":"OWauiGGtJ60ZegtqlwETQlmO1exTZdWbT2VbUs4a1hg","y":"g_eNOlqPecbguVQArL6Fd4T5xZthBgipNCBypXubPos"}
 ```
 

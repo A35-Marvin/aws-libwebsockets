@@ -14,7 +14,7 @@
 		replace(/%/g, "&#37;");
 	}
 
-	function lws_urlencode(s)
+	function aws_lws_urlencode(s)
 	{
 		return encodeURI(s).replace(/@/g, "%40");
 	}
@@ -109,7 +109,7 @@
 		if (file.size > server_max_size)
 			return;
 
-		fetch("upload/" + lws_urlencode(file.name), {
+		fetch("upload/" + aws_lws_urlencode(file.name), {
 			method: "POST",
 			body: formData
 		})
@@ -117,7 +117,7 @@
 			var us = e.url.split("/"), ul = us[us.length - 1], n;
 
 			for (n = 0; n < t.rows.length; n++)
-				if (ul === lws_urlencode(
+				if (ul === aws_lws_urlencode(
 					      t.rows[n].cells[2].textContent)) {
 					if (e.ok === true) {
 						t.deleteRow(n);
@@ -134,7 +134,7 @@
 			var us = e.url.split("/"), ul = us[us.length - 1], n;
 
 			for (n = 0; n < t.rows.length; n++)
-				if (ul === lws_urlencode(
+				if (ul === aws_lws_urlencode(
 					  t.rows[n].cells[2].textContent)) {
 					t.rows[n].cells[0] = "FAIL";
 					break;
@@ -260,12 +260,12 @@
 					if (j.files[n].yours === 1)
 						s += "<img id=\"d" + n +
 					  "\" class=\"delbtn\" file=\"" +
-						lws_urlencode(san(j.files[n].name)) + "\">";
+						aws_lws_urlencode(san(j.files[n].name)) + "\">";
 					else
 						s += " ";
 
 					s += "</td><td class=\"ogn\"><a href=\"get/" +
-					lws_urlencode(san(j.files[n].name)) +
+					aws_lws_urlencode(san(j.files[n].name)) +
 					  "\" download>" +
 					san(j.files[n].name) + "</a></td></tr>";
 				}

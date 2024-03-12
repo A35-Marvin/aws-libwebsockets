@@ -26,12 +26,12 @@
 #define LWS_PLUGIN_STATIC
 #include "../plugins/raw-proxy/protocol_lws_raw_proxy.c"
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	LWS_PLUGIN_PROTOCOL_RAW_PROXY,
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -58,14 +58,14 @@ void sigint_handler(int sig)
 	interrupted = 1;
 }
 
-static struct lws_protocol_vhost_options pvo1 = {
+static struct aws_lws_protocol_vhost_options pvo1 = {
         NULL,
         NULL,
         "onward",		/* pvo name */
         "ipv4:127.0.0.1:22"	/* pvo value */
 };
 
-static const struct lws_protocol_vhost_options pvo = {
+static const struct aws_lws_protocol_vhost_options pvo = {
         NULL,           	/* "next" pvo linked-list */
         &pvo1,			/* "child" pvo linked-list */
         "raw-proxy",		/* protocol name we belong to on this vhost */
@@ -76,21 +76,21 @@ static const struct lws_protocol_vhost_options pvo = {
 int main(int argc, const char **argv)
 {
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	char outward[256];
 	const char *p;
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal raw proxy fallback | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal raw proxy fallback | visit http://localhost:7681\n");
 
-	if ((p = lws_cmdline_option(argc, argv, "-r"))) {
-		lws_strncpy(outward, p, sizeof(outward));
+	if ((p = aws_lws_cmdline_option(argc, argv, "-r"))) {
+		aws_lws_strncpy(outward, p, sizeof(outward));
 		pvo1.value = outward;
 	}
 
@@ -107,30 +107,30 @@ int main(int argc, const char **argv)
 	info.listen_accept_protocol = "raw-proxy";
 
 #if defined(LWS_WITH_TLS)
-	if (lws_cmdline_option(argc, argv, "-s")) {
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
 				LWS_SERVER_OPTION_ALLOW_NON_SSL_ON_SSL_PORT;
 		info.ssl_cert_filepath = "localhost-100y.cert";
 		info.ssl_private_key_filepath = "localhost-100y.key";
 
-		if (lws_cmdline_option(argc, argv, "-u"))
+		if (aws_lws_cmdline_option(argc, argv, "-u"))
 			info.options |= LWS_SERVER_OPTION_REDIRECT_HTTP_TO_HTTPS;
 
-		if (lws_cmdline_option(argc, argv, "-h"))
+		if (aws_lws_cmdline_option(argc, argv, "-h"))
 			info.options |= LWS_SERVER_OPTION_ALLOW_HTTP_ON_HTTPS_LISTENER;
 	}
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

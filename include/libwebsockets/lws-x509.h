@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  */
 
-enum lws_tls_cert_info {
+enum aws_lws_tls_cert_info {
 	LWS_TLS_CERT_INFO_VALIDITY_FROM,
 	/**< fills .time with the time_t the cert validity started from */
 	LWS_TLS_CERT_INFO_VALIDITY_TO,
@@ -57,7 +57,7 @@ enum lws_tls_cert_info {
 	/**< If the cert has one, the cert's subject key ID */
 };
 
-union lws_tls_cert_info_results {
+union aws_lws_tls_cert_info_results {
 	unsigned int verified;
 	time_t time;
 	unsigned int usage;
@@ -69,33 +69,33 @@ union lws_tls_cert_info_results {
 		 * len parameter.  Eg
 		 *
 		 * char big[1024];
-		 * union lws_tls_cert_info_results *buf =
-		 * 	(union lws_tls_cert_info_results *)big;
+		 * union aws_lws_tls_cert_info_results *buf =
+		 * 	(union aws_lws_tls_cert_info_results *)big;
 		 *
-		 * lws_tls_peer_cert_info(wsi, type, buf, sizeof(big) -
+		 * aws_lws_tls_peer_cert_info(wsi, type, buf, sizeof(big) -
 		 *			  sizeof(*buf) + sizeof(buf->ns.name));
 		 */
 		char name[64];
 	} ns;
 };
 
-struct lws_x509_cert;
-struct lws_jwk;
+struct aws_lws_x509_cert;
+struct aws_lws_jwk;
 
 /**
- * lws_x509_create() - Allocate an lws_x509_cert object
+ * aws_lws_x509_create() - Allocate an aws_lws_x509_cert object
  *
- * \param x509: pointer to lws_x509_cert pointer to be set to allocated object
+ * \param x509: pointer to aws_lws_x509_cert pointer to be set to allocated object
  *
- * Allocates an lws_x509_cert object and set *x509 to point to it.
+ * Allocates an aws_lws_x509_cert object and set *x509 to point to it.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_x509_create(struct lws_x509_cert **x509);
+aws_lws_x509_create(struct aws_lws_x509_cert **x509);
 
 /**
- * lws_x509_parse_from_pem() - Read one or more x509 certs in PEM format from memory
+ * aws_lws_x509_parse_from_pem() - Read one or more x509 certs in PEM format from memory
  *
- * \param x509: pointer to lws_x509_cert object
+ * \param x509: pointer to aws_lws_x509_cert object
  * \param pem: pointer to PEM format content
  * \param len: length of PEM format content
  *
@@ -109,13 +109,13 @@ lws_x509_create(struct lws_x509_cert **x509);
  * Returns 0 if all went OK, or nonzero for failure.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len);
+aws_lws_x509_parse_from_pem(struct aws_lws_x509_cert *x509, const void *pem, size_t len);
 
 /**
- * lws_x509_verify() - Validate signing relationship between one or more certs
+ * aws_lws_x509_verify() - Validate signing relationship between one or more certs
  *		       and a trusted CA cert
  *
- * \param x509: pointer to lws_x509_cert object, may contain multiple
+ * \param x509: pointer to aws_lws_x509_cert object, may contain multiple
  * \param trusted: a single, trusted cert object that we are checking for
  * \param common_name: NULL, or required CN (Common Name) of \p x509
  *
@@ -124,14 +124,14 @@ lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len)
  * the case.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
+aws_lws_x509_verify(struct aws_lws_x509_cert *x509, struct aws_lws_x509_cert *trusted,
 		const char *common_name);
 
 /**
- * lws_x509_public_to_jwk() - Copy the public key out of a cert and into a JWK
+ * aws_lws_x509_public_to_jwk() - Copy the public key out of a cert and into a JWK
  *
  * \param jwk: pointer to the jwk to initialize and set to the public key
- * \param x509: pointer to lws_x509_cert object that has the public key
+ * \param x509: pointer to aws_lws_x509_cert object that has the public key
  * \param curves: NULL to disallow EC, else a comma-separated list of valid
  *		  curves using the JWA naming, eg, "P-256,P-384,P-521".
  * \param rsabits: minimum number of RSA bits required in the cert if RSA
@@ -141,14 +141,14 @@ lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
  * EC JWK depending on what the cert had.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
+aws_lws_x509_public_to_jwk(struct aws_lws_jwk *jwk, struct aws_lws_x509_cert *x509,
 		       const char *curves, int rsabits);
 
 /**
- * lws_x509_jwk_privkey_pem() - Copy a private key PEM into a jwk that has the
+ * aws_lws_x509_jwk_privkey_pem() - Copy a private key PEM into a jwk that has the
  *				public part already
  *
- * \param cx: lws_context (for random)
+ * \param cx: aws_lws_context (for random)
  * \param jwk: pointer to the jwk to initialize and set to the public key
  * \param pem: pointer to PEM private key in memory
  * \param len: length of PEM private key in memory
@@ -164,32 +164,32 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
  * The caller should take care to zero down passphrase if used.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
+aws_lws_x509_jwk_privkey_pem(struct aws_lws_context *cx, struct aws_lws_jwk *jwk,
 			 void *pem, size_t len, const char *passphrase);
 
 /**
- * lws_x509_destroy() - Destroy a previously allocated lws_x509_cert object
+ * aws_lws_x509_destroy() - Destroy a previously allocated aws_lws_x509_cert object
  *
- * \param x509: pointer to lws_x509_cert pointer
+ * \param x509: pointer to aws_lws_x509_cert pointer
  *
- * Deallocates an lws_x509_cert object and sets its pointer to NULL.
+ * Deallocates an aws_lws_x509_cert object and sets its pointer to NULL.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_x509_destroy(struct lws_x509_cert **x509);
+aws_lws_x509_destroy(struct aws_lws_x509_cert **x509);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_x509_info(struct lws_x509_cert *x509, enum lws_tls_cert_info type,
-	      union lws_tls_cert_info_results *buf, size_t len);
+aws_lws_x509_info(struct aws_lws_x509_cert *x509, enum aws_lws_tls_cert_info type,
+	      union aws_lws_tls_cert_info_results *buf, size_t len);
 
 /**
- * lws_tls_peer_cert_info() - get information from the peer's TLS cert
+ * aws_lws_tls_peer_cert_info() - get information from the peer's TLS cert
  *
  * \param wsi: the connection to query
  * \param type: one of LWS_TLS_CERT_INFO_
  * \param buf: pointer to union to take result
  * \param len: when result is a string, the true length of buf->ns.name[]
  *
- * lws_tls_peer_cert_info() lets you get hold of information from the peer
+ * aws_lws_tls_peer_cert_info() lets you get hold of information from the peer
  * certificate.
  *
  * Return 0 if there is a result in \p buf, or nonzero indicating there was no
@@ -199,18 +199,18 @@ lws_x509_info(struct lws_x509_cert *x509, enum lws_tls_cert_info type,
  * mbedTLS.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
-		       union lws_tls_cert_info_results *buf, size_t len);
+aws_lws_tls_peer_cert_info(struct lws *wsi, enum aws_lws_tls_cert_info type,
+		       union aws_lws_tls_cert_info_results *buf, size_t len);
 
 /**
- * lws_tls_vhost_cert_info() - get information from the vhost's own TLS cert
+ * aws_lws_tls_vhost_cert_info() - get information from the vhost's own TLS cert
  *
  * \param vhost: the vhost to query
  * \param type: one of LWS_TLS_CERT_INFO_
  * \param buf: pointer to union to take result
  * \param len: when result is a string, the true length of buf->ns.name[]
  *
- * lws_tls_vhost_cert_info() lets you get hold of information from the vhost
+ * aws_lws_tls_vhost_cert_info() lets you get hold of information from the vhost
  * certificate.
  *
  * Return 0 if there is a result in \p buf, or nonzero indicating there was no
@@ -220,11 +220,11 @@ lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
  * mbedTLS.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_vhost_cert_info(struct lws_vhost *vhost, enum lws_tls_cert_info type,
-		        union lws_tls_cert_info_results *buf, size_t len);
+aws_lws_tls_vhost_cert_info(struct aws_lws_vhost *vhost, enum aws_lws_tls_cert_info type,
+		        union aws_lws_tls_cert_info_results *buf, size_t len);
 
 /**
- * lws_tls_acme_sni_cert_create() - creates a temp selfsigned cert
+ * aws_lws_tls_acme_sni_cert_create() - creates a temp selfsigned cert
  *				    and attaches to a vhost
  *
  * \param vhost: the vhost to acquire the selfsigned cert
@@ -238,13 +238,13 @@ lws_tls_vhost_cert_info(struct lws_vhost *vhost, enum lws_tls_cert_info type,
  * On success, any allocations are destroyed at vhost destruction automatically.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
+aws_lws_tls_acme_sni_cert_create(struct aws_lws_vhost *vhost, const char *san_a,
 			     const char *san_b);
 
 /**
- * lws_tls_acme_sni_csr_create() - creates a CSR and related private key PEM
+ * aws_lws_tls_acme_sni_csr_create() - creates a CSR and related private key PEM
  *
- * \param context: lws_context used for random
+ * \param context: aws_lws_context used for random
  * \param elements: array of LWS_TLS_REQ_ELEMENT_COUNT const char *
  * \param csr: buffer that will get the b64URL(ASN-1 CSR)
  * \param csr_len: max length of the csr buffer
@@ -264,14 +264,14 @@ lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
  * Returns 0 on success or nonzero for failure.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
+aws_lws_tls_acme_sni_csr_create(struct aws_lws_context *context, const char *elements[],
 			    uint8_t *csr, size_t csr_len, char **privkey_pem,
 			    size_t *privkey_len);
 
 /**
- * lws_tls_cert_updated() - update every vhost using the given cert path
+ * aws_lws_tls_cert_updated() - update every vhost using the given cert path
  *
- * \param context: our lws_context
+ * \param context: our aws_lws_context
  * \param certpath: the filepath to the certificate
  * \param keypath: the filepath to the private key of the certificate
  * \param mem_cert: copy of the cert in memory
@@ -286,7 +286,7 @@ lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
  * Returns 0 on success or nonzero for failure.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_cert_updated(struct lws_context *context, const char *certpath,
+aws_lws_tls_cert_updated(struct aws_lws_context *context, const char *certpath,
 		     const char *keypath,
 		     const char *mem_cert, size_t len_mem_cert,
 		     const char *mem_privkey, size_t len_mem_privkey);

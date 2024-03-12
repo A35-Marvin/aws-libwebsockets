@@ -25,26 +25,26 @@
 #include "drivers/led/private-lib-drivers-led.h"
 
 #if defined(LWS_PLAT_TIMER_CB)
-static LWS_PLAT_TIMER_CB(lws_led_timer_cb, th)
+static LWS_PLAT_TIMER_CB(aws_lws_led_timer_cb, th)
 {
-	lws_led_state_t *lcs = LWS_PLAT_TIMER_CB_GET_OPAQUE(th);
+	aws_lws_led_state_t *lcs = LWS_PLAT_TIMER_CB_GET_OPAQUE(th);
 
-	lws_seq_timer_handle(lcs);
+	aws_lws_seq_timer_handle(lcs);
 }
 #endif
 
-struct lws_led_state *
-lws_led_gpio_create(const lws_led_ops_t *led_ops)
+struct aws_lws_led_state *
+aws_lws_led_gpio_create(const aws_lws_led_ops_t *led_ops)
 {
-	lws_led_gpio_controller_t *lgc = (lws_led_gpio_controller_t *)led_ops;
+	aws_lws_led_gpio_controller_t *lgc = (aws_lws_led_gpio_controller_t *)led_ops;
 	/*
 	 * We allocate the main state object, and a 3 x seq dynamic footprint
 	 * for each led, since it may be sequencing the transition between two
 	 * other sequences.
 	 */
 
-	lws_led_state_t *lcs = lws_zalloc(sizeof(lws_led_state_t) +
-				(lgc->count_leds * sizeof(lws_led_state_chs_t)),
+	aws_lws_led_state_t *lcs = aws_lws_zalloc(sizeof(aws_lws_led_state_t) +
+				(lgc->count_leds * sizeof(aws_lws_led_state_chs_t)),
 				__func__);
 	int n;
 
@@ -56,13 +56,13 @@ lws_led_gpio_create(const lws_led_ops_t *led_ops)
 #if defined(LWS_PLAT_TIMER_CREATE)
 	lcs->timer = LWS_PLAT_TIMER_CREATE("leds",
 			LWS_LED_SEQUENCER_UPDATE_INTERVAL_MS, 1, lcs,
-				  (TimerCallbackFunction_t)lws_led_timer_cb);
+				  (TimerCallbackFunction_t)aws_lws_led_timer_cb);
 	if (!lcs->timer)
 		return NULL;
 #endif
 
 	for (n = 0; n < lgc->count_leds; n++) {
-		const lws_led_gpio_map_t *map = &lgc->led_map[n];
+		const aws_lws_led_gpio_map_t *map = &lgc->led_map[n];
 
 		if (map->pwm_ops) {
 			lgc->gpio_ops->mode(map->gpio, LWSGGPIO_FL_READ);
@@ -78,18 +78,18 @@ lws_led_gpio_create(const lws_led_ops_t *led_ops)
 }
 
 void
-lws_led_gpio_destroy(struct lws_led_state *lcs)
+aws_lws_led_gpio_destroy(struct aws_lws_led_state *lcs)
 {
 #if defined(LWS_PLAT_TIMER_DELETE)
 	LWS_PLAT_TIMER_DELETE(&lcs->timer);
 #endif
-	lws_free(lcs);
+	aws_lws_free(lcs);
 }
 
 int
-lws_led_gpio_lookup(const struct lws_led_ops *lo, const char *name)
+aws_lws_led_gpio_lookup(const struct aws_lws_led_ops *lo, const char *name)
 {
-	const lws_led_gpio_controller_t *lgc = (lws_led_gpio_controller_t *)lo;
+	const aws_lws_led_gpio_controller_t *lgc = (aws_lws_led_gpio_controller_t *)lo;
 	int n;
 
 	for (n = 0; n < lgc->count_leds; n++)
@@ -100,12 +100,12 @@ lws_led_gpio_lookup(const struct lws_led_ops *lo, const char *name)
 }
 
 void
-lws_led_gpio_intensity(const struct lws_led_ops *lo, const char *name,
-		       lws_led_intensity_t inten)
+aws_lws_led_gpio_intensity(const struct aws_lws_led_ops *lo, const char *name,
+		       aws_lws_led_intensity_t inten)
 {
-	const lws_led_gpio_controller_t *lgc = (lws_led_gpio_controller_t *)lo;
-	int idx = lws_led_gpio_lookup(lo, name);
-	const lws_led_gpio_map_t *map;
+	const aws_lws_led_gpio_controller_t *lgc = (aws_lws_led_gpio_controller_t *)lo;
+	int idx = aws_lws_led_gpio_lookup(lo, name);
+	const aws_lws_led_gpio_map_t *map;
 
 	if (idx < 0)
 		return;

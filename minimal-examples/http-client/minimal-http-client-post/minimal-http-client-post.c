@@ -25,7 +25,7 @@ struct pss {
 };
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;
@@ -37,11 +37,11 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		bad = 1;
 		if (++completed == count_clients)
-			lws_cancel_service(lws_get_context(wsi));
+			aws_lws_cancel_service(aws_lws_get_context(wsi));
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
@@ -51,31 +51,31 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 				bad |= status != 200;
 				if (++completed == count_clients)
 					/* abort poll wait */
-					lws_cancel_service(lws_get_context(wsi));
+					aws_lws_cancel_service(aws_lws_get_context(wsi));
 			}
 		break;
 
 	/* ...callbacks related to receiving the result... */
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
-		status = (int)lws_http_client_http_response(wsi);
-		lwsl_user("Connected with server response: %d\n", status);
+		status = (int)aws_lws_http_client_http_response(wsi);
+		aws_lwsl_user("Connected with server response: %d\n", status);
 		break;
 
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
-		lwsl_hexdump_notice(in, len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_hexdump_notice(in, len);
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP:
 		n = sizeof(buf) - LWS_PRE;
-		if (lws_http_client_read(wsi, &p, &n) < 0)
+		if (aws_lws_http_client_read(wsi, &p, &n) < 0)
 			return -1;
 
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
+		aws_lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
 		bad |= status != 200;
 		/*
 		 * Do this to mark us as having processed the completion
@@ -87,7 +87,7 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 				client_wsi[n] = NULL;
 		if (++completed == count_clients)
 			/* abort poll wait */
-			lws_cancel_service(lws_get_context(wsi));
+			aws_lws_cancel_service(aws_lws_get_context(wsi));
 		break;
 
 	/* ...callbacks related to generating the POST... */
@@ -96,18 +96,18 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		/*
 		 * Tell lws we are going to send the body next...
 		 */
-		if (!lws_http_is_redirected_to_get(wsi)) {
-			lwsl_user("%s: doing POST flow\n", __func__);
-			lws_client_http_body_pending(wsi, 1);
-			lws_callback_on_writable(wsi);
+		if (!aws_lws_http_is_redirected_to_get(wsi)) {
+			aws_lwsl_user("%s: doing POST flow\n", __func__);
+			aws_lws_client_http_body_pending(wsi, 1);
+			aws_lws_callback_on_writable(wsi);
 		} else
-			lwsl_user("%s: doing GET flow\n", __func__);
+			aws_lwsl_user("%s: doing GET flow\n", __func__);
 		break;
 
 	case LWS_CALLBACK_CLIENT_HTTP_WRITEABLE:
-		if (lws_http_is_redirected_to_get(wsi))
+		if (aws_lws_http_is_redirected_to_get(wsi))
 			break;
-		lwsl_user("LWS_CALLBACK_CLIENT_HTTP_WRITEABLE\n");
+		aws_lwsl_user("LWS_CALLBACK_CLIENT_HTTP_WRITEABLE\n");
 		n = LWS_WRITE_HTTP;
 
 		/*
@@ -119,26 +119,26 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 		switch (pss->body_part++) {
 		case 0:
-			if (lws_client_http_multipart(wsi, "text", NULL, NULL,
+			if (aws_lws_client_http_multipart(wsi, "text", NULL, NULL,
 						      &p, end))
 				return -1;
 			/* notice every usage of the boundary starts with -- */
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "my text field\xd\xa");
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "my text field\xd\xa");
 			break;
 		case 1:
-			if (lws_client_http_multipart(wsi, "file", "myfile.txt",
+			if (aws_lws_client_http_multipart(wsi, "file", "myfile.txt",
 						      "text/plain", &p, end))
 				return -1;
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					"This is the contents of the "
 					"uploaded file.\xd\xa"
 					"\xd\xa");
 			break;
 		case 2:
-			if (lws_client_http_multipart(wsi, NULL, NULL, NULL,
+			if (aws_lws_client_http_multipart(wsi, NULL, NULL, NULL,
 						      &p, end))
 				return -1;
-			lws_client_http_body_pending(wsi, 0);
+			aws_lws_client_http_body_pending(wsi, 0);
 			 /* necessary to support H2, it means we will write no
 			  * more on this stream */
 			n = LWS_WRITE_HTTP_FINAL;
@@ -152,12 +152,12 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			return 0;
 		}
 
-		if (lws_write(wsi, (uint8_t *)start, lws_ptr_diff_size_t(p, start), (enum lws_write_protocol)n)
-				!= lws_ptr_diff(p, start))
+		if (aws_lws_write(wsi, (uint8_t *)start, aws_lws_ptr_diff_size_t(p, start), (enum aws_lws_write_protocol)n)
+				!= aws_lws_ptr_diff(p, start))
 			return 1;
 
 		if (n != LWS_WRITE_HTTP_FINAL)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 
 		return 0;
 
@@ -165,10 +165,10 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"http",
 		callback_http,
@@ -186,19 +186,19 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_client_connect_info i;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_client_connect_info i;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
-	lwsl_user("LWS minimal http client - POST [-d<verbosity>] [-l] [--h1]\n");
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lwsl_user("LWS minimal http client - POST [-d<verbosity>] [-l] [--h1]\n");
 
-	if (lws_cmdline_option(argc, argv, "-m"))
+	if (aws_lws_cmdline_option(argc, argv, "-m"))
 		count_clients = LWS_ARRAY_SIZE(client_wsi);
 
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -218,13 +218,13 @@ int main(int argc, const char **argv)
 	 * OpenSSL uses the system trust store.  mbedTLS has to be told which
 	 * CA to trust explicitly.
 	 */
-	if (!lws_cmdline_option(argc, argv, "-l"))
+	if (!aws_lws_cmdline_option(argc, argv, "-l"))
 		info.client_ssl_ca_filepath = "./libwebsockets.org.cer";
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -232,7 +232,7 @@ int main(int argc, const char **argv)
 	i.context = context;
 	i.ssl_connection = LCCSCF_USE_SSL | LCCSCF_HTTP_MULTIPART_MIME;
 
-	if (lws_cmdline_option(argc, argv, "-l")) {
+	if (aws_lws_cmdline_option(argc, argv, "-l")) {
 		i.port = 7681;
 		i.address = "localhost";
 		i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
@@ -243,10 +243,10 @@ int main(int argc, const char **argv)
 		i.path = "/testserver/formtest";
 	}
 
-	if (lws_cmdline_option(argc, argv, "--form1"))
+	if (aws_lws_cmdline_option(argc, argv, "--form1"))
 		i.path = "/form1";
 
-	if ((p = lws_cmdline_option(argc, argv, "--port")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--port")))
 		i.port = atoi(p);
 
 	i.host = i.address;
@@ -254,24 +254,24 @@ int main(int argc, const char **argv)
 	i.method = "POST";
 
 	/* force h1 even if h2 available */
-	if (lws_cmdline_option(argc, argv, "--h1"))
+	if (aws_lws_cmdline_option(argc, argv, "--h1"))
 		i.alpn = "http/1.1";
 
 	i.protocol = protocols[0].name;
 
 	for (n = 0; n < count_clients; n++) {
 		i.pwsi = &client_wsi[n];
-		lwsl_notice("%s: connecting to %s:%d\n", __func__,
+		aws_lwsl_notice("%s: connecting to %s:%d\n", __func__,
 			    i.address, i.port);
-		if (!lws_client_connect_via_info(&i))
+		if (!aws_lws_client_connect_via_info(&i))
 			completed++;
 	}
 
 	while (n >= 0 && completed != count_clients && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

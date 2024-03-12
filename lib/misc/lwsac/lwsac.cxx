@@ -31,9 +31,9 @@ void
 lssAc::start(bool atomic)
 {
 	if (atomic && ac->next) {
-		struct lwsac *ac2 = NULL, *i;
-		size_t total = (size_t)lwsac_total_alloc(ac);
-		uint8_t *p = (uint8_t *)lwsac_use(&ac2, total, total);
+		struct aws_lwsac *ac2 = NULL, *i;
+		size_t total = (size_t)aws_lwsac_total_alloc(ac);
+		uint8_t *p = (uint8_t *)aws_lwsac_use(&ac2, total, total);
 
 		/*
 		 * He wants a single linear buffer, and we have more than one
@@ -43,13 +43,13 @@ lssAc::start(bool atomic)
 
 		i = ac;
 		while (i) {
-			size_t bl = lwsac_get_tail_pos(i) -
-						lwsac_sizeof(i == ac);
-			memcpy(p, (uint8_t *)i + lwsac_sizeof(i == ac), bl);
+			size_t bl = aws_lwsac_get_tail_pos(i) -
+						aws_lwsac_sizeof(i == ac);
+			memcpy(p, (uint8_t *)i + aws_lwsac_sizeof(i == ac), bl);
 			p += bl;
 		}
 
-		lwsac_free(&ac);
+		aws_lwsac_free(&ac);
 		ac = ac2;
 	}
 
@@ -62,8 +62,8 @@ lssAc::get(lssbuf_t *lb)
 	if (!ac)
 		return 1;
 
-	lb->buf = (uint8_t *)iter + lwsac_sizeof(iter == ac);
-	lb->len = lwsac_get_tail_pos(iter) - lwsac_sizeof(iter == ac);
+	lb->buf = (uint8_t *)iter + aws_lwsac_sizeof(iter == ac);
+	lb->len = aws_lwsac_get_tail_pos(iter) - aws_lwsac_sizeof(iter == ac);
 	iter = iter->next;
 
 	return 0;
@@ -72,7 +72,7 @@ lssAc::get(lssbuf_t *lb)
 void
 lssAc::append(lssbuf_t *lb)
 {
-	uint8_t *p = (uint8_t *)lwsac_use(&ac, lb->len, lb->len);
+	uint8_t *p = (uint8_t *)aws_lwsac_use(&ac, lb->len, lb->len);
 
 	if (!p)
 		throw lssException("oom");

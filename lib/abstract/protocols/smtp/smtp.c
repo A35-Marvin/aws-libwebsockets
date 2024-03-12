@@ -25,8 +25,8 @@
 #include "private-lib-core.h"
 #include "private-lib-abstract.h"
 
-/** enum lwsgs_smtp_states - where we are in SMTP protocol sequence */
-typedef enum lwsgs_smtp_states {
+/** enum aws_lwsgs_smtp_states - where we are in SMTP protocol sequence */
+typedef enum aws_lwsgs_smtp_states {
 	LGSSMTP_IDLE,		/**< awaiting new email */
 	LGSSMTP_CONNECTING,	/**< opening tcp connection to MTA */
 	LGSSMTP_CONNECTED,	/**< tcp connection to MTA is connected */
@@ -47,19 +47,19 @@ typedef enum lwsgs_smtp_states {
 	LGSSMTP_SENT_QUIT,	/**< sent the session quit */
 
 	/* (server sends, eg, "221 Bye" and closes the connection) */
-} lwsgs_smtp_states_t;
+} aws_lwsgs_smtp_states_t;
 
 /** abstract protocol instance data */
 
-typedef struct lws_smtp_client_protocol {
-	const struct lws_abs	*abs;
-	lwsgs_smtp_states_t	estate;
+typedef struct aws_lws_smtp_client_protocol {
+	const struct aws_lws_abs	*abs;
+	aws_lwsgs_smtp_states_t	estate;
 
-	lws_smtp_email_t	*e;	/* the email we are trying to send */
+	aws_lws_smtp_email_t	*e;	/* the email we are trying to send */
 	const char		*helo;
 
 	unsigned char		send_pending:1;
-} lws_smtpcp_t;
+} aws_lws_smtpcp_t;
 
 static const short retcodes[] = {
 	0,	/* idle */
@@ -74,26 +74,26 @@ static const short retcodes[] = {
 };
 
 static void
-lws_smtpc_state_transition(lws_smtpcp_t *c, lwsgs_smtp_states_t s)
+aws_lws_smtpc_state_transition(aws_lws_smtpcp_t *c, aws_lwsgs_smtp_states_t s)
 {
-	lwsl_debug("%s: cli %p: state %d -> %d\n", __func__, c, c->estate, s);
+	aws_lwsl_debug("%s: cli %p: state %d -> %d\n", __func__, c, c->estate, s);
 	c->estate = s;
 }
 
-static lws_smtp_email_t *
-lws_smtpc_get_email(lws_smtpcp_t *c)
+static aws_lws_smtp_email_t *
+aws_lws_smtpc_get_email(aws_lws_smtpcp_t *c)
 {
-	const lws_token_map_t *tm;
+	const aws_lws_token_map_t *tm;
 
 	/* ... the email we want to send */
-	tm = lws_abs_get_token(c->abs->ap_tokens, LTMI_PSMTP_V_LWS_SMTP_EMAIL_T);
+	tm = aws_lws_abs_get_token(c->abs->ap_tokens, LTMI_PSMTP_V_LWS_SMTP_EMAIL_T);
 	if (!tm) {
 		assert(0);
 
 		return NULL;
 	}
 
-	return (lws_smtp_email_t *)tm->u.value;
+	return (aws_lws_smtp_email_t *)tm->u.value;
 }
 
 /*
@@ -106,14 +106,14 @@ lws_smtpc_get_email(lws_smtpcp_t *c)
  */
 
 static int
-lws_smtpc_email_disposition(lws_smtpcp_t *c, int disp, const void *buf,
+aws_lws_smtpc_email_disposition(aws_lws_smtpcp_t *c, int disp, const void *buf,
 			    size_t len)
 {
-	lws_smtpcp_t *ch;
-	lws_abs_t *ach;
-	lws_dll2_t *d;
+	aws_lws_smtpcp_t *ch;
+	aws_lws_abs_t *ach;
+	aws_lws_dll2_t *d;
 
-	lws_smtpc_state_transition(c, LGSSMTP_SENT_HELO);
+	aws_lws_smtpc_state_transition(c, LGSSMTP_SENT_HELO);
 
 	/* lifetime of the email object is handled by done callback */
 	c->e->done(c->e, c->e->data, disp, buf, len);
@@ -126,17 +126,17 @@ lws_smtpc_email_disposition(lws_smtpcp_t *c, int disp, const void *buf,
 
 	/* ... otherwise... do we have another queued? */
 
-	d = lws_dll2_get_tail(&c->abs->children_owner);
+	d = aws_lws_dll2_get_tail(&c->abs->children_owner);
 	if (!d)
 		return 0;
 
-	ach = lws_container_of(d, lws_abs_t, bound);
-	ch = (lws_smtpcp_t *)ach->api;
+	ach = aws_lws_container_of(d, aws_lws_abs_t, bound);
+	ch = (aws_lws_smtpcp_t *)ach->api;
 
-	c->e = lws_smtpc_get_email(ch);
+	c->e = aws_lws_smtpc_get_email(ch);
 
 	/* since we took it on, remove it from the queue */
-	lws_dll2_remove(d);
+	aws_lws_dll2_remove(d);
 
 	return 1;
 }
@@ -146,13 +146,13 @@ lws_smtpc_email_disposition(lws_smtpcp_t *c, int disp, const void *buf,
  */
 
 static int
-lws_smtpc_abs_accept(lws_abs_protocol_inst_t *api)
+aws_lws_smtpc_abs_accept(aws_lws_abs_protocol_inst_t *api)
 {
-	lws_smtpcp_t *c = (lws_smtpcp_t *)api;
+	aws_lws_smtpcp_t *c = (aws_lws_smtpcp_t *)api;
 
 	/* we have become connected in the tcp sense */
 
-	lws_smtpc_state_transition(c, LGSSMTP_CONNECTED);
+	aws_lws_smtpc_state_transition(c, LGSSMTP_CONNECTED);
 
 	/*
 	 * From the accept(), the next thing that should happen is the SMTP
@@ -167,15 +167,15 @@ lws_smtpc_abs_accept(lws_abs_protocol_inst_t *api)
 }
 
 static int
-lws_smtpc_abs_rx(lws_abs_protocol_inst_t *api, const uint8_t *buf, size_t len)
+aws_lws_smtpc_abs_rx(aws_lws_abs_protocol_inst_t *api, const uint8_t *buf, size_t len)
 {
-	lws_smtpcp_t *c = (lws_smtpcp_t *)api;
+	aws_lws_smtpcp_t *c = (aws_lws_smtpcp_t *)api;
 	char dotstar[96], at[5];
 	int n;
 
 	c->abs->at->set_timeout(c->abs->ati, NO_PENDING_TIMEOUT, 0);
 
-	lws_strncpy(at, (const char *)buf, sizeof(at));
+	aws_lws_strncpy(at, (const char *)buf, sizeof(at));
 	n = atoi(at);
 
 	switch (c->estate) {
@@ -187,8 +187,8 @@ lws_smtpc_abs_rx(lws_abs_protocol_inst_t *api, const uint8_t *buf, size_t len)
 			 * (and anything queued on it)
 			 */
 
-			lws_strnncpy(dotstar, (const char *)buf, len, sizeof(dotstar));
-			lwsl_err("%s: server: %s\n", __func__, dotstar);
+			aws_lws_strnncpy(dotstar, (const char *)buf, len, sizeof(dotstar));
+			aws_lwsl_err("%s: server: %s\n", __func__, dotstar);
 
 			return 1;
 		}
@@ -199,7 +199,7 @@ lws_smtpc_abs_rx(lws_abs_protocol_inst_t *api, const uint8_t *buf, size_t len)
 		 * We finished one way or another... let's prepare to send a
 		 * new one... or wait until server hangs up on us
 		 */
-		if (!lws_smtpc_email_disposition(c,
+		if (!aws_lws_smtpc_email_disposition(c,
 					n == 250 ? LWS_SMTP_DISPOSITION_SENT :
 						   LWS_SMTP_DISPOSITION_FAILED,
 					"destroyed", 0))
@@ -208,18 +208,18 @@ lws_smtpc_abs_rx(lws_abs_protocol_inst_t *api, const uint8_t *buf, size_t len)
 		break; /* ask to send */
 
 	case LGSSMTP_SENT_QUIT:
-		lwsl_debug("%s: done\n", __func__);
-		lws_smtpc_state_transition(c, LGSSMTP_IDLE);
+		aws_lwsl_debug("%s: done\n", __func__);
+		aws_lws_smtpc_state_transition(c, LGSSMTP_IDLE);
 
 		return 1;
 
 	default:
 		if (n != retcodes[c->estate]) {
-			lws_strnncpy(dotstar, buf, len, sizeof(dotstar));
-			lwsl_notice("%s: bad response: %d (state %d) %s\n",
+			aws_lws_strnncpy(dotstar, buf, len, sizeof(dotstar));
+			aws_lwsl_notice("%s: bad response: %d (state %d) %s\n",
 				    __func__, n, c->estate, dotstar);
 
-			lws_smtpc_email_disposition(c,
+			aws_lws_smtpc_email_disposition(c,
 					LWS_SMTP_DISPOSITION_FAILED, buf, len);
 
 			return 0;
@@ -234,10 +234,10 @@ lws_smtpc_abs_rx(lws_abs_protocol_inst_t *api, const uint8_t *buf, size_t len)
 }
 
 static int
-lws_smtpc_abs_writeable(lws_abs_protocol_inst_t *api, size_t budget)
+aws_lws_smtpc_abs_writeable(aws_lws_abs_protocol_inst_t *api, size_t budget)
 {
 	char b[256 + LWS_PRE], *p = b + LWS_PRE;
-	lws_smtpcp_t *c = (lws_smtpcp_t *)api;
+	aws_lws_smtpcp_t *c = (aws_lws_smtpcp_t *)api;
 	int n;
 
 	if (!c->send_pending || !c->e)
@@ -245,40 +245,40 @@ lws_smtpc_abs_writeable(lws_abs_protocol_inst_t *api, size_t budget)
 
 	c->send_pending = 0;
 
-	lwsl_debug("%s: writing response for state %d\n", __func__, c->estate);
+	aws_lwsl_debug("%s: writing response for state %d\n", __func__, c->estate);
 
 	switch (c->estate) {
 	case LGSSMTP_CONNECTED:
-		n = lws_snprintf(p, sizeof(b) - LWS_PRE, "HELO %s\n", c->helo);
-		lws_smtpc_state_transition(c, LGSSMTP_SENT_HELO);
+		n = aws_lws_snprintf(p, sizeof(b) - LWS_PRE, "HELO %s\n", c->helo);
+		aws_lws_smtpc_state_transition(c, LGSSMTP_SENT_HELO);
 		break;
 
 	case LGSSMTP_SENT_HELO:
-		n = lws_snprintf(p, sizeof(b) - LWS_PRE, "MAIL FROM: <%s>\n",
+		n = aws_lws_snprintf(p, sizeof(b) - LWS_PRE, "MAIL FROM: <%s>\n",
 				 c->e->from);
-		lws_smtpc_state_transition(c, LGSSMTP_SENT_FROM);
+		aws_lws_smtpc_state_transition(c, LGSSMTP_SENT_FROM);
 		break;
 
 	case LGSSMTP_SENT_FROM:
-		n = lws_snprintf(p, sizeof(b) - LWS_PRE,
+		n = aws_lws_snprintf(p, sizeof(b) - LWS_PRE,
 				 "RCPT TO: <%s>\n", c->e->to);
-		lws_smtpc_state_transition(c, LGSSMTP_SENT_TO);
+		aws_lws_smtpc_state_transition(c, LGSSMTP_SENT_TO);
 		break;
 
 	case LGSSMTP_SENT_TO:
-		n = lws_snprintf(p, sizeof(b) - LWS_PRE, "DATA\n");
-		lws_smtpc_state_transition(c, LGSSMTP_SENT_DATA);
+		n = aws_lws_snprintf(p, sizeof(b) - LWS_PRE, "DATA\n");
+		aws_lws_smtpc_state_transition(c, LGSSMTP_SENT_DATA);
 		break;
 
 	case LGSSMTP_SENT_DATA:
 		p = (char *)&c->e[1];
 		n = strlen(p);
-		lws_smtpc_state_transition(c, LGSSMTP_SENT_BODY);
+		aws_lws_smtpc_state_transition(c, LGSSMTP_SENT_BODY);
 		break;
 
 	case LGSSMTP_SENT_BODY:
-		n = lws_snprintf(p, sizeof(b) - LWS_PRE, "quit\n");
-		lws_smtpc_state_transition(c, LGSSMTP_SENT_QUIT);
+		n = aws_lws_snprintf(p, sizeof(b) - LWS_PRE, "quit\n");
+		aws_lws_smtpc_state_transition(c, LGSSMTP_SENT_QUIT);
 		break;
 
 	case LGSSMTP_SENT_QUIT:
@@ -295,12 +295,12 @@ lws_smtpc_abs_writeable(lws_abs_protocol_inst_t *api, size_t budget)
 }
 
 static int
-lws_smtpc_abs_closed(lws_abs_protocol_inst_t *api)
+aws_lws_smtpc_abs_closed(aws_lws_abs_protocol_inst_t *api)
 {
-	lws_smtpcp_t *c = (lws_smtpcp_t *)api;
+	aws_lws_smtpcp_t *c = (aws_lws_smtpcp_t *)api;
 
 	if (c)
-		lws_smtpc_state_transition(c, LGSSMTP_IDLE);
+		aws_lws_smtpc_state_transition(c, LGSSMTP_IDLE);
 
 	return 0;
 }
@@ -311,16 +311,16 @@ lws_smtpc_abs_closed(lws_abs_protocol_inst_t *api)
  */
 
 static int
-lws_smtpc_create(const lws_abs_t *ai)
+aws_lws_smtpc_create(const aws_lws_abs_t *ai)
 {
-	lws_smtpcp_t *c = (lws_smtpcp_t *)ai->api;
+	aws_lws_smtpcp_t *c = (aws_lws_smtpcp_t *)ai->api;
 
 	memset(c, 0, sizeof(*c));
 
 	c->abs = ai;
-	c->e = lws_smtpc_get_email(c);
+	c->e = aws_lws_smtpc_get_email(c);
 
-	lws_smtpc_state_transition(c, lws_dll2_is_detached(&ai->bound) ?
+	aws_lws_smtpc_state_transition(c, aws_lws_dll2_is_detached(&ai->bound) ?
 					LGSSMTP_CONNECTING : LGSSMTP_IDLE);
 
 	/* If we are initiating the transport, we will get an accept() next...
@@ -334,49 +334,49 @@ lws_smtpc_create(const lws_abs_t *ai)
 }
 
 static void
-lws_smtpc_destroy(lws_abs_protocol_inst_t **_c)
+aws_lws_smtpc_destroy(aws_lws_abs_protocol_inst_t **_c)
 {
-	lws_smtpcp_t *c = (lws_smtpcp_t *)*_c;
+	aws_lws_smtpcp_t *c = (aws_lws_smtpcp_t *)*_c;
 
 	if (!c)
 		return;
 
 	/* so if we are still holding on to c->e, we have failed to send it */
 	if (c->e)
-		lws_smtpc_email_disposition(c,
+		aws_lws_smtpc_email_disposition(c,
 			LWS_SMTP_DISPOSITION_FAILED_DESTROY, "destroyed", 0);
 
 	*_c = NULL;
 }
 
 static int
-lws_smtpc_compare(lws_abs_t *abs1, lws_abs_t *abs2)
+aws_lws_smtpc_compare(aws_lws_abs_t *abs1, aws_lws_abs_t *abs2)
 {
 	return 0;
 }
 
 static int
-lws_smtpc_child_bind(lws_abs_t *abs)
+aws_lws_smtpc_child_bind(aws_lws_abs_t *abs)
 {
 	return 0;
 }
 
 /* events the transport invokes (handled by abstract protocol) */
 
-const lws_abs_protocol_t lws_abs_protocol_smtp = {
+const aws_lws_abs_protocol_t aws_lws_abs_protocol_smtp = {
 	.name		= "smtp",
-	.alloc		= sizeof(lws_smtpcp_t),
+	.alloc		= sizeof(aws_lws_smtpcp_t),
 	.flags		= LWSABSPR_FLAG_PIPELINE,
 
-	.create		= lws_smtpc_create,
-	.destroy	= lws_smtpc_destroy,
-	.compare	= lws_smtpc_compare,
+	.create		= aws_lws_smtpc_create,
+	.destroy	= aws_lws_smtpc_destroy,
+	.compare	= aws_lws_smtpc_compare,
 
-	.accept		= lws_smtpc_abs_accept,
-	.rx		= lws_smtpc_abs_rx,
-	.writeable	= lws_smtpc_abs_writeable,
-	.closed		= lws_smtpc_abs_closed,
+	.accept		= aws_lws_smtpc_abs_accept,
+	.rx		= aws_lws_smtpc_abs_rx,
+	.writeable	= aws_lws_smtpc_abs_writeable,
+	.closed		= aws_lws_smtpc_abs_closed,
 	.heartbeat	= NULL,
 
-	.child_bind	= lws_smtpc_child_bind,
+	.child_bind	= aws_lws_smtpc_child_bind,
 };

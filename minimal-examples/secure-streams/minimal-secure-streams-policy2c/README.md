@@ -31,7 +31,7 @@ $ cat mypolicy.json | lws-minimal-secure-streams-policy2c
 static const uint32_t _rbo_bo_0[] = {
  1000,  2000,  3000,  5000,  10000, 
 };
-static const lws_retry_bo_t _rbo_0 = {
+static const aws_lws_retry_bo_t _rbo_0 = {
 	.retry_ms_table = _rbo_bo_0,
 	.retry_ms_table_count = 5,
 	.conceal_count = 5,

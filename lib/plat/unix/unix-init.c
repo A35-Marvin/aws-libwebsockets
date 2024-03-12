@@ -37,11 +37,11 @@
 
 #if defined(LWS_WITH_NETWORK)
 static void
-lws_sul_plat_unix(lws_sorted_usec_list_t *sul)
+aws_lws_sul_plat_unix(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context_per_thread *pt =
-		lws_container_of(sul, struct lws_context_per_thread, sul_plat);
-	struct lws_context *context = pt->context;
+	struct aws_lws_context_per_thread *pt =
+		aws_lws_container_of(sul, struct aws_lws_context_per_thread, sul_plat);
+	struct aws_lws_context *context = pt->context;
 	int n = 0, m = 0;
 
 #if !defined(LWS_NO_DAEMONIZE)
@@ -55,26 +55,26 @@ lws_sul_plat_unix(lws_sorted_usec_list_t *sul)
 		m = m | (int)pt->fds_count;
 
 	if (context->deprecated && !m) {
-		lwsl_notice("%s: ending deprecated context\n", __func__);
+		aws_lwsl_notice("%s: ending deprecated context\n", __func__);
 		kill(getpid(), SIGINT);
 		return;
 	}
 
 #if defined(LWS_WITH_SERVER)
-	lws_context_lock(context, "periodic checks");
-	lws_start_foreach_llp(struct lws_vhost **, pv,
+	aws_lws_context_lock(context, "periodic checks");
+	aws_lws_start_foreach_llp(struct aws_lws_vhost **, pv,
 			      context->no_listener_vhost_list) {
-		struct lws_vhost *v = *pv;
-		lwsl_debug("deferred iface: checking if on vh %s\n", (*pv)->name);
+		struct aws_lws_vhost *v = *pv;
+		aws_lwsl_debug("deferred iface: checking if on vh %s\n", (*pv)->name);
 		if (_lws_vhost_init_server(NULL, *pv) == 0) {
 			/* became happy */
-			lwsl_notice("vh %s: became connected\n", v->name);
+			aws_lwsl_notice("vh %s: became connected\n", v->name);
 			*pv = v->no_listener_vhost_list;
 			v->no_listener_vhost_list = NULL;
 			break;
 		}
-	} lws_end_foreach_llp(pv, no_listener_vhost_list);
-	lws_context_unlock(context);
+	} aws_lws_end_foreach_llp(pv, no_listener_vhost_list);
+	aws_lws_context_unlock(context);
 #endif
 
 	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
@@ -84,11 +84,11 @@ lws_sul_plat_unix(lws_sorted_usec_list_t *sul)
 
 #if defined(LWS_WITH_PLUGINS)
 static int
-protocol_plugin_cb(struct lws_plugin *pin, void *each_user)
+protocol_plugin_cb(struct aws_lws_plugin *pin, void *each_user)
 {
-	struct lws_context *context = (struct lws_context *)each_user;
-	const lws_plugin_protocol_t *plpr =
-			(const lws_plugin_protocol_t *)pin->hdr;
+	struct aws_lws_context *context = (struct aws_lws_context *)each_user;
+	const aws_lws_plugin_protocol_t *plpr =
+			(const aws_lws_plugin_protocol_t *)pin->hdr;
 
 	context->plugin_protocol_count = (short)(context->plugin_protocol_count +
 						 plpr->count_protocols);
@@ -100,8 +100,8 @@ protocol_plugin_cb(struct lws_plugin *pin, void *each_user)
 #endif
 
 int
-lws_plat_init(struct lws_context *context,
-	      const struct lws_context_creation_info *info)
+aws_lws_plat_init(struct aws_lws_context *context,
+	      const struct aws_lws_context_creation_info *info)
 {
 	int fd;
 #if defined(LWS_WITH_NETWORK)
@@ -127,11 +127,11 @@ lws_plat_init(struct lws_context *context,
 	 * expected to use and searches through it to manipulate it.
 	 */
 
-	context->lws_lookup = lws_zalloc(sizeof(struct lws *) *
-					 context->max_fds, "lws_lookup");
+	context->aws_lws_lookup = aws_lws_zalloc(sizeof(struct lws *) *
+					 context->max_fds, "aws_lws_lookup");
 
-	if (!context->lws_lookup) {
-		lwsl_cx_err(context, "OOM on alloc lws_lookup array for %d conn",
+	if (!context->aws_lws_lookup) {
+		aws_lwsl_cx_err(context, "OOM on alloc aws_lws_lookup array for %d conn",
 			 context->max_fds);
 		return 1;
 	}
@@ -147,33 +147,33 @@ lws_plat_init(struct lws_context *context,
 		n = mbedtls_ctr_drbg_seed(&context->mcdc, mbedtls_entropy_func,
 					  &context->mec, NULL, 0);
 		if (n)
-			lwsl_err("%s: mbedtls_ctr_drbg_seed() returned 0x%x\n",
+			aws_lwsl_err("%s: mbedtls_ctr_drbg_seed() returned 0x%x\n",
 				 __func__, n);
 #if 0
 		else {
 			uint8_t rtest[16];
-			lwsl_notice("%s: started drbg\n", __func__);
+			aws_lwsl_notice("%s: started drbg\n", __func__);
 			if (mbedtls_ctr_drbg_random(&context->mcdc, rtest,
 							sizeof(rtest)))
-				lwsl_err("%s: get random failed\n", __func__);
+				aws_lwsl_err("%s: get random failed\n", __func__);
 			else
-				lwsl_hexdump_notice(rtest, sizeof(rtest));
+				aws_lwsl_hexdump_notice(rtest, sizeof(rtest));
 		}
 #endif
 	}
 #endif
 
-	lwsl_cx_info(context, " mem: platform fd map: %5lu B",
+	aws_lwsl_cx_info(context, " mem: platform fd map: %5lu B",
 		    (unsigned long)(sizeof(struct lws *) * context->max_fds));
 #endif
 #if defined(LWS_WITH_FILE_OPS)
-	fd = lws_open(SYSTEM_RANDOM_FILEPATH, O_RDONLY);
+	fd = aws_lws_open(SYSTEM_RANDOM_FILEPATH, O_RDONLY);
 #else
 	fd = open(SYSTEM_RANDOM_FILEPATH, O_RDONLY);
 #endif
 	context->fd_random = fd;
 	if (context->fd_random < 0) {
-		lwsl_err("Unable to open random device %s %d, errno %d\n",
+		aws_lwsl_err("Unable to open random device %s %d, errno %d\n",
 			 SYSTEM_RANDOM_FILEPATH, context->fd_random, errno);
 		return 1;
 	}
@@ -185,15 +185,15 @@ lws_plat_init(struct lws_context *context,
 		if (ld_env) {
 			const char *pp[2] = { ld_env, NULL };
 
-			lws_plugins_init(&context->plugin_list, pp,
-					 "lws_protocol_plugin", NULL,
+			aws_lws_plugins_init(&context->plugin_list, pp,
+					 "aws_lws_protocol_plugin", NULL,
 					 protocol_plugin_cb, context);
 		}
 
 		if (info->plugin_dirs)
-			lws_plugins_init(&context->plugin_list,
+			aws_lws_plugins_init(&context->plugin_list,
 					 info->plugin_dirs,
-					 "lws_protocol_plugin", NULL,
+					 "aws_lws_protocol_plugin", NULL,
 					 protocol_plugin_cb, context);
 	}
 #endif
@@ -202,7 +202,7 @@ lws_plat_init(struct lws_context *context,
 #if defined(LWS_WITH_NETWORK)
 	/* we only need to do this on pt[0] */
 
-	context->pt[0].sul_plat.cb = lws_sul_plat_unix;
+	context->pt[0].sul_plat.cb = aws_lws_sul_plat_unix;
 	__lws_sul_insert_us(&context->pt[0].pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &context->pt[0].sul_plat, 30 * LWS_US_PER_SEC);
 #endif
@@ -211,7 +211,7 @@ lws_plat_init(struct lws_context *context,
 }
 
 int
-lws_plat_context_early_init(void)
+aws_lws_plat_context_early_init(void)
 {
 #if !defined(LWS_AVOID_SIGPIPE_IGN)
 	signal(SIGPIPE, SIG_IGN);
@@ -221,23 +221,23 @@ lws_plat_context_early_init(void)
 }
 
 void
-lws_plat_context_early_destroy(struct lws_context *context)
+aws_lws_plat_context_early_destroy(struct aws_lws_context *context)
 {
 }
 
 void
-lws_plat_context_late_destroy(struct lws_context *context)
+aws_lws_plat_context_late_destroy(struct aws_lws_context *context)
 {
 #if defined(LWS_WITH_PLUGINS)
 	if (context->plugin_list)
-		lws_plugins_destroy(&context->plugin_list, NULL, NULL);
+		aws_lws_plugins_destroy(&context->plugin_list, NULL, NULL);
 #endif
 #if defined(LWS_WITH_NETWORK)
-	if (context->lws_lookup)
-		lws_free_set_NULL(context->lws_lookup);
+	if (context->aws_lws_lookup)
+		aws_lws_free_set_NULL(context->aws_lws_lookup);
 #endif
 	if (!context->fd_random)
-		lwsl_err("ZERO RANDOM FD\n");
+		aws_lwsl_err("ZERO RANDOM FD\n");
 	if (context->fd_random != LWS_INVALID_FILE)
 		close(context->fd_random);
 }

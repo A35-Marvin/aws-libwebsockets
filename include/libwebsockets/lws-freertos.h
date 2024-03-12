@@ -24,8 +24,8 @@
  * This is included from libwebsockets.h if LWS_PLAT_FREERTOS
  */
 
-typedef int lws_sockfd_type;
-typedef int lws_filefd_type;
+typedef int aws_lws_sockfd_type;
+typedef int aws_lws_filefd_type;
 
 #if defined(LWS_AMAZON_RTOS)
 #include <FreeRTOS.h>
@@ -45,7 +45,7 @@ typedef int lws_filefd_type;
 #if !defined(POLLIN) && !defined(POLLOUT)
 
 struct pollfd {
-	lws_sockfd_type fd; /**< fd related to */
+	aws_lws_sockfd_type fd; /**< fd related to */
 	short events; /**< which POLL... events to respond to */
 	short revents; /**< which POLL... events occurred */
 };
@@ -76,7 +76,7 @@ struct pollfd {
 #include "lwip/netdb.h"
 #if defined(LWS_WITH_DRIVERS)
 #include "libwebsockets/lws-gpio.h"
-extern const lws_gpio_ops_t lws_gpio_plat;
+extern const aws_lws_gpio_ops_t aws_lws_gpio_plat;
 #endif
 #endif
 

@@ -45,14 +45,14 @@ static uint32_t default_backoff_table[] = { 1000, 3000, 9000, 17000 };
 #endif
 
 /**
- * lws_get_library_version: get version and git hash library built from
+ * aws_lws_get_library_version: get version and git hash library built from
  *
  *	returns a const char * to a string like "1.1 178d78c"
  *	representing the library version followed by the git head hash it
  *	was built from
  */
 const char *
-lws_get_library_version(void)
+aws_lws_get_library_version(void)
 {
 	return library_version;
 }
@@ -85,15 +85,15 @@ static const char * system_state_names[] = {
  */
 
 static int
-lws_state_notify_protocol_init(struct lws_state_manager *mgr,
-			       struct lws_state_notify_link *link, int current,
+aws_lws_state_notify_protocol_init(struct aws_lws_state_manager *mgr,
+			       struct aws_lws_state_notify_link *link, int current,
 			       int target)
 {
-	struct lws_context *context = lws_container_of(mgr, struct lws_context,
+	struct aws_lws_context *context = aws_lws_container_of(mgr, struct aws_lws_context,
 						       mgr_system);
 #if defined(LWS_WITH_SECURE_STREAMS) && \
     defined(LWS_WITH_SECURE_STREAMS_SYS_AUTH_API_AMAZON_COM)
-	lws_system_blob_t *ab0, *ab1;
+	aws_lws_system_blob_t *ab0, *ab1;
 #endif
 	int n;
 
@@ -103,7 +103,7 @@ lws_state_notify_protocol_init(struct lws_state_manager *mgr,
 	 */
 
 	for (n = 0; n < context->count_threads; n++)
-		lws_system_do_attach(&context->pt[n]);
+		aws_lws_system_do_attach(&context->pt[n]);
 
 #if defined(LWS_WITH_SYS_DHCP_CLIENT)
 	if (target == LWS_SYSTATE_DHCP) {
@@ -112,15 +112,15 @@ lws_state_notify_protocol_init(struct lws_state_manager *mgr,
 		 * configured for operation with DHCP
 		 */
 
-		if (!lws_dhcpc_status(context, NULL))
+		if (!aws_lws_dhcpc_status(context, NULL))
 			return 1;
 	}
 #endif
 
 #if defined(LWS_WITH_SYS_NTPCLIENT)
 	if (target == LWS_SYSTATE_TIME_VALID &&
-	    lws_now_secs() < 1594017754) /* 06:42 Mon Jul 6 2020 UTC */ {
-		lws_ntpc_trigger(context);
+	    aws_lws_now_secs() < 1594017754) /* 06:42 Mon Jul 6 2020 UTC */ {
+		aws_lws_ntpc_trigger(context);
 
 		return 1;
 	}
@@ -138,7 +138,7 @@ lws_state_notify_protocol_init(struct lws_state_manager *mgr,
 	if (target == LWS_SYSTATE_IFACE_COLDPLUG &&
 	    context->netlink &&
 	    !context->nl_initial_done) {
-		lwsl_cx_info(context, "waiting for netlink coldplug");
+		aws_lwsl_cx_info(context, "waiting for netlink coldplug");
 
 		return 1;
 	}
@@ -152,20 +152,20 @@ lws_state_notify_protocol_init(struct lws_state_manager *mgr,
 	 * If root token is empty, skip too.
 	 */
 
-	ab0 = lws_system_get_blob(context, LWS_SYSBLOB_TYPE_AUTH, 0);
-	ab1 = lws_system_get_blob(context, LWS_SYSBLOB_TYPE_AUTH, 1);
+	ab0 = aws_lws_system_get_blob(context, LWS_SYSBLOB_TYPE_AUTH, 0);
+	ab1 = aws_lws_system_get_blob(context, LWS_SYSBLOB_TYPE_AUTH, 1);
 
 	if (target == LWS_SYSTATE_AUTH1 &&
 	    context->pss_policies && ab0 && ab1 &&
-	    !lws_system_blob_get_size(ab0) &&
-	    lws_system_blob_get_size(ab1)) {
-		lwsl_cx_info(context,
+	    !aws_lws_system_blob_get_size(ab0) &&
+	    aws_lws_system_blob_get_size(ab1)) {
+		aws_lwsl_cx_info(context,
 			     "AUTH1 state triggering api.amazon.com auth");
 		/*
 		 * Start trying to acquire it if it's not already in progress
 		 * returns nonzero if we determine it's not needed
 		 */
-		if (!lws_ss_sys_auth_api_amazon_com(context))
+		if (!aws_lws_ss_sys_auth_api_amazon_com(context))
 			return 1;
 	}
 #endif
@@ -176,7 +176,7 @@ lws_state_notify_protocol_init(struct lws_state_manager *mgr,
 	 * See if we should do the SS Captive Portal Detection
 	 */
 	if (target == LWS_SYSTATE_CPD_PRE_TIME) {
-		if (lws_system_cpd_state_get(context) == LWS_CPD_INTERNET_OK)
+		if (aws_lws_system_cpd_state_get(context) == LWS_CPD_INTERNET_OK)
 			return 0; /* allow it */
 
 		/*
@@ -198,12 +198,12 @@ lws_state_notify_protocol_init(struct lws_state_manager *mgr,
 		if (context->hss_fetch_policy)
 			return 1;
 
-		lwsl_cx_debug(context, "starting policy fetch");
+		aws_lwsl_cx_debug(context, "starting policy fetch");
 		/*
 		 * Start trying to acquire it if it's not already in progress
 		 * returns nonzero if we determine it's not needed
 		 */
-		if (!lws_ss_sys_fetch_policy(context))
+		if (!aws_lws_ss_sys_fetch_policy(context))
 			/* we have it */
 			return 0;
 
@@ -222,66 +222,66 @@ lws_state_notify_protocol_init(struct lws_state_manager *mgr,
 	if (target != LWS_SYSTATE_POLICY_VALID)
 		return 0;
 
-	lwsl_cx_info(context, "doing protocol init on POLICY_VALID\n");
+	aws_lwsl_cx_info(context, "doing protocol init on POLICY_VALID\n");
 
-	return lws_protocol_init(context);
+	return aws_lws_protocol_init(context);
 }
 
 static void
-lws_context_creation_completion_cb(lws_sorted_usec_list_t *sul)
+aws_lws_context_creation_completion_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context *context = lws_container_of(sul, struct lws_context,
+	struct aws_lws_context *context = aws_lws_container_of(sul, struct aws_lws_context,
 						       sul_system_state);
 
 	/* if nothing is there to intercept anything, go all the way */
-	lws_state_transition_steps(&context->mgr_system,
+	aws_lws_state_transition_steps(&context->mgr_system,
 				   LWS_SYSTATE_OPERATIONAL);
 }
 #endif /* WITH_SYS_STATE */
 
 #if defined(LWS_WITH_SYS_SMD)
 static int
-lws_system_smd_cb(void *opaque, lws_smd_class_t _class, lws_usec_t timestamp,
+aws_lws_system_smd_cb(void *opaque, aws_lws_smd_class_t _class, aws_lws_usec_t timestamp,
 		  void *buf, size_t len)
 {
-	struct lws_context *cx = (struct lws_context *)opaque;
+	struct aws_lws_context *cx = (struct aws_lws_context *)opaque;
 
 	if (_class != LWSSMDCL_NETWORK)
 		return 0;
 
 	/* something external requested CPD check */
 
-	if (!lws_json_simple_strcmp(buf, len, "\"trigger\":", "cpdcheck"))
-		lws_system_cpd_start(cx);
+	if (!aws_lws_json_simple_strcmp(buf, len, "\"trigger\":", "cpdcheck"))
+		aws_lws_system_cpd_start(cx);
 	else
 		/*
 		 * IP acquisition on any interface triggers captive portal
 		 * check on default route
 		 */
-		if (!lws_json_simple_strcmp(buf, len, "\"type\":", "ipacq"))
-			lws_system_cpd_start(cx);
+		if (!aws_lws_json_simple_strcmp(buf, len, "\"type\":", "ipacq"))
+			aws_lws_system_cpd_start(cx);
 
 #if defined(LWS_WITH_SYS_NTPCLIENT)
 	/*
 	 * Captive portal detect showing internet workable triggers NTP Client
 	 */
-	if (!lws_json_simple_strcmp(buf, len, "\"type\":", "cps") &&
-	    !lws_json_simple_strcmp(buf, len, "\"result\":", "OK") &&
-	    lws_now_secs() < 1594017754) /* 06:42 Mon Jul 6 2020 UTC */
-		lws_ntpc_trigger(cx);
+	if (!aws_lws_json_simple_strcmp(buf, len, "\"type\":", "cps") &&
+	    !aws_lws_json_simple_strcmp(buf, len, "\"result\":", "OK") &&
+	    aws_lws_now_secs() < 1594017754) /* 06:42 Mon Jul 6 2020 UTC */
+		aws_lws_ntpc_trigger(cx);
 #endif
 
 #if defined(LWS_WITH_SYS_DHCP_CLIENT) && 0
 	/*
 	 * Any network interface linkup triggers DHCP
 	 */
-	if (!lws_json_simple_strcmp(buf, len, "\"type\":", "linkup"))
-		lws_ntpc_trigger(cx);
+	if (!aws_lws_json_simple_strcmp(buf, len, "\"type\":", "linkup"))
+		aws_lws_ntpc_trigger(cx);
 
 #endif
 
 #if defined(LWS_WITH_DRIVERS) && defined(LWS_WITH_NETWORK)
-	lws_netdev_smd_cb(opaque, _class, timestamp, buf, len);
+	aws_lws_netdev_smd_cb(opaque, _class, timestamp, buf, len);
 #endif
 
 	return 0;
@@ -351,7 +351,7 @@ static const char * const opts_str =
 #endif
 
 #if defined(LWS_WITH_EVLIB_PLUGINS) && defined(LWS_WITH_EVENT_LIBS)
-static const struct lws_evlib_map {
+static const struct aws_lws_evlib_map {
 	uint64_t	flag;
 	const char	*name;
 } map[] = {
@@ -369,26 +369,26 @@ static const char * const dlist[] = {
 };
 #endif
 
-struct lws_context *
-lws_create_context(const struct lws_context_creation_info *info)
+struct aws_lws_context *
+aws_lws_create_context(const struct aws_lws_context_creation_info *info)
 {
-	struct lws_context *context = NULL;
+	struct aws_lws_context *context = NULL;
 #if !defined(LWS_WITH_NO_LOGS)
 	const char *s = "IPv6-absent";
 #endif
 #if defined(LWS_WITH_FILE_OPS)
-	struct lws_plat_file_ops *prev;
+	struct aws_lws_plat_file_ops *prev;
 #endif
 #ifndef LWS_NO_DAEMONIZE
 	pid_t pid_daemon = get_daemonize_pid();
 #endif
 #if defined(LWS_WITH_NETWORK)
-	const lws_plugin_evlib_t *plev = NULL;
+	const aws_lws_plugin_evlib_t *plev = NULL;
 	unsigned short count_threads = 1;
 	uint8_t *u;
 	uint16_t us_wait_resolution = 0;
 #if defined(LWS_WITH_CACHE_NSCOOKIEJAR) && defined(LWS_WITH_CLIENT)
-	struct lws_cache_creation_info ci;
+	struct aws_lws_cache_creation_info ci;
 #endif
 
 #if defined(__ANDROID__)
@@ -401,13 +401,13 @@ lws_create_context(const struct lws_context_creation_info *info)
 #else
 		s1 = 4096,
 #endif
-		size = sizeof(struct lws_context);
+		size = sizeof(struct aws_lws_context);
 #endif
 
 	int n;
 	unsigned int lpf = info->fd_limit_per_thread;
 #if defined(LWS_WITH_EVLIB_PLUGINS) && defined(LWS_WITH_EVENT_LIBS)
-	struct lws_plugin		*evlib_plugin_list = NULL;
+	struct aws_lws_plugin		*evlib_plugin_list = NULL;
 #if defined(_DEBUG) && !defined(LWS_WITH_NO_LOGS)
 	char		*ld_env;
 #endif
@@ -417,7 +417,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 #endif
 
 
-	if (lws_fi(&info->fic, "ctx_createfail1"))
+	if (aws_lws_fi(&info->fic, "ctx_createfail1"))
 		goto early_bail;
 
 	if (lpf) {
@@ -434,13 +434,13 @@ lws_create_context(const struct lws_context_creation_info *info)
 	}
 
 #if defined(LWS_WITH_IPV6) && !defined(LWS_WITH_NO_LOGS)
-	if (!lws_check_opt(info->options, LWS_SERVER_OPTION_DISABLE_IPV6))
+	if (!aws_lws_check_opt(info->options, LWS_SERVER_OPTION_DISABLE_IPV6))
 		s = "IPV6-on";
 	else
 		s = "IPV6-off";
 #endif
 
-	if (lws_plat_context_early_init())
+	if (aws_lws_plat_context_early_init())
 		goto early_bail;
 
 #if defined(LWS_WITH_NETWORK)
@@ -465,7 +465,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 	}
 #if defined(LWS_WITH_POLL)
 	else {
-		extern const lws_plugin_evlib_t evlib_poll;
+		extern const aws_lws_plugin_evlib_t evlib_poll;
 		plev = &evlib_poll;
 #if !defined(LWS_PLAT_FREERTOS)
 		/*
@@ -488,23 +488,23 @@ lws_create_context(const struct lws_context_creation_info *info)
 
 #if defined(_DEBUG) && !defined(LWS_WITH_NO_LOGS)
 	ld_env = getenv("LD_LIBRARY_PATH");
-	lwsl_info("%s: ev lib path %s, '%s'\n", __func__,
+	aws_lwsl_info("%s: ev lib path %s, '%s'\n", __func__,
 			LWS_INSTALL_LIBDIR, ld_env);
 #endif
 
 	for (n = 0; n < (int)LWS_ARRAY_SIZE(map); n++) {
 		char ok = 0;
 
-		if (!lws_check_opt(info->options, map[n].flag))
+		if (!aws_lws_check_opt(info->options, map[n].flag))
 			continue;
 
-		if (!lws_plugins_init(&evlib_plugin_list,
-				     dlist, "lws_evlib_plugin",
+		if (!aws_lws_plugins_init(&evlib_plugin_list,
+				     dlist, "aws_lws_evlib_plugin",
 				     map[n].name, NULL, NULL))
 			ok = 1;
 
-		if (!ok || lws_fi(&info->fic, "ctx_createfail_plugin_init")) {
-			lwsl_err("%s: failed to load %s\n", __func__,
+		if (!ok || aws_lws_fi(&info->fic, "ctx_createfail_plugin_init")) {
+			aws_lwsl_err("%s: failed to load %s\n", __func__,
 					map[n].name);
 			goto bail;
 		}
@@ -515,13 +515,13 @@ lws_create_context(const struct lws_context_creation_info *info)
 #endif
 
 		if (!evlib_plugin_list ||
-		    lws_fi(&info->fic, "ctx_createfail_evlib_plugin")) {
-			lwsl_err("%s: unable to load evlib plugin %s\n",
+		    aws_lws_fi(&info->fic, "ctx_createfail_evlib_plugin")) {
+			aws_lwsl_err("%s: unable to load evlib plugin %s\n",
 					__func__, map[n].name);
 
 			goto bail;
 		}
-		plev = (const lws_plugin_evlib_t *)evlib_plugin_list->hdr;
+		plev = (const aws_lws_plugin_evlib_t *)evlib_plugin_list->hdr;
 		break;
 	}
 #else
@@ -540,8 +540,8 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 */
 
 #if defined(LWS_WITH_LIBUV)
-	if (lws_check_opt(info->options, LWS_SERVER_OPTION_LIBUV)) {
-		extern const lws_plugin_evlib_t evlib_uv;
+	if (aws_lws_check_opt(info->options, LWS_SERVER_OPTION_LIBUV)) {
+		extern const aws_lws_plugin_evlib_t evlib_uv;
 		plev = &evlib_uv;
 		fatal_exit_defer = !!info->foreign_loops;
 		us_wait_resolution = 0;
@@ -549,40 +549,40 @@ lws_create_context(const struct lws_context_creation_info *info)
 #endif
 
 #if defined(LWS_WITH_LIBEVENT)
-	if (lws_check_opt(info->options, LWS_SERVER_OPTION_LIBEVENT)) {
-		extern const lws_plugin_evlib_t evlib_event;
+	if (aws_lws_check_opt(info->options, LWS_SERVER_OPTION_LIBEVENT)) {
+		extern const aws_lws_plugin_evlib_t evlib_event;
 		plev = &evlib_event;
 		us_wait_resolution = 0;
 	}
 #endif
 
 #if defined(LWS_WITH_GLIB)
-	if (lws_check_opt(info->options, LWS_SERVER_OPTION_GLIB)) {
-		extern const lws_plugin_evlib_t evlib_glib;
+	if (aws_lws_check_opt(info->options, LWS_SERVER_OPTION_GLIB)) {
+		extern const aws_lws_plugin_evlib_t evlib_glib;
 		plev = &evlib_glib;
 		us_wait_resolution = 0;
 	}
 #endif
 
 #if defined(LWS_WITH_LIBEV)
-	if (lws_check_opt(info->options, LWS_SERVER_OPTION_LIBEV)) {
-		extern const lws_plugin_evlib_t evlib_ev;
+	if (aws_lws_check_opt(info->options, LWS_SERVER_OPTION_LIBEV)) {
+		extern const aws_lws_plugin_evlib_t evlib_ev;
 		plev = &evlib_ev;
 		us_wait_resolution = 0;
 	}
 #endif
 
 #if defined(LWS_WITH_SDEVENT)
-    if (lws_check_opt(info->options, LWS_SERVER_OPTION_SDEVENT)) {
-        extern const lws_plugin_evlib_t evlib_sd;
+    if (aws_lws_check_opt(info->options, LWS_SERVER_OPTION_SDEVENT)) {
+        extern const aws_lws_plugin_evlib_t evlib_sd;
         plev = &evlib_sd;
         us_wait_resolution = 0;
     }
 #endif
 
 #if defined(LWS_WITH_ULOOP)
-    if (lws_check_opt(info->options, LWS_SERVER_OPTION_ULOOP)) {
-        extern const lws_plugin_evlib_t evlib_uloop;
+    if (aws_lws_check_opt(info->options, LWS_SERVER_OPTION_ULOOP)) {
+        extern const aws_lws_plugin_evlib_t evlib_uloop;
         plev = &evlib_uloop;
         us_wait_resolution = 0;
     }
@@ -592,7 +592,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 
 #endif /* not with ev plugins */
 
-	if (!plev || lws_fi(&info->fic, "ctx_createfail_evlib_sel"))
+	if (!plev || aws_lws_fi(&info->fic, "ctx_createfail_evlib_sel"))
 		goto fail_event_libs;
 
 #if defined(LWS_WITH_NETWORK)
@@ -600,12 +600,12 @@ lws_create_context(const struct lws_context_creation_info *info)
 		(count_threads * (size_t)plev->ops->evlib_size_pt) /* the pt evlib priv */;
 #endif
 
-	context = lws_zalloc(size, "context");
-	if (!context || lws_fi(&info->fic, "ctx_createfail_oom_ctx")) {
+	context = aws_lws_zalloc(size, "context");
+	if (!context || aws_lws_fi(&info->fic, "ctx_createfail_oom_ctx")) {
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-		lws_free(context);
+		aws_lws_free(context);
 #endif
-		lwsl_err("OOM");
+		aws_lwsl_err("OOM");
 		goto early_bail;
 	}
 
@@ -614,14 +614,14 @@ lws_create_context(const struct lws_context_creation_info *info)
 	context->us_wait_resolution = us_wait_resolution;
 #if defined(LWS_WITH_TLS_JIT_TRUST)
 	{
-		struct lws_cache_creation_info ci;
+		struct aws_lws_cache_creation_info ci;
 
 		memset(&ci, 0, sizeof(ci));
 		ci.cx = context;
-		ci.ops = &lws_cache_ops_heap;
+		ci.ops = &aws_lws_cache_ops_heap;
 		ci.name = "jitt";
 		ci.max_footprint = info->jitt_cache_max_footprint;
-		context->trust_cache = lws_cache_create(&ci);
+		context->trust_cache = aws_lws_cache_create(&ci);
 	}
 #endif
 #endif
@@ -645,7 +645,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 		context->log_cx = info->log_cx;
 	else
 		context->log_cx = &log_cx;
-	lwsl_refcount_cx(context->log_cx, 1);
+	aws_lwsl_refcount_cx(context->log_cx, 1);
 
 	context->system_ops = info->system_ops;
 	context->pt_serv_buf_size = (unsigned int)s1;
@@ -659,10 +659,10 @@ lws_create_context(const struct lws_context_creation_info *info)
 	context->fic.name = "ctx";
 	if (info->fic.fi_owner.count)
 		/*
-		 * This moves all the lws_fi_t from info->fi to the context fi,
+		 * This moves all the aws_lws_fi_t from info->fi to the context fi,
 		 * leaving it empty, so no injection added to default vhost
 		 */
-		lws_fi_import(&context->fic, &info->fic);
+		aws_lws_fi_import(&context->fic, &info->fic);
 #endif
 
 
@@ -719,53 +719,53 @@ lws_create_context(const struct lws_context_creation_info *info)
 	context->metrics_policies = info->metrics_policies;
 	context->metrics_prefix = info->metrics_prefix;
 
-	context->mt_service = lws_metric_create(context,
+	context->mt_service = aws_lws_metric_create(context,
 					LWSMTFL_REPORT_DUTY_WALLCLOCK_US |
 					LWSMTFL_REPORT_ONLY_GO, "cpu.svc");
 
 #if defined(LWS_WITH_CLIENT)
 
-	context->mt_conn_dns = lws_metric_create(context,
+	context->mt_conn_dns = aws_lws_metric_create(context,
 						 LWSMTFL_REPORT_MEAN |
 						 LWSMTFL_REPORT_DUTY_WALLCLOCK_US,
 						 "n.cn.dns");
-	context->mt_conn_tcp = lws_metric_create(context,
+	context->mt_conn_tcp = aws_lws_metric_create(context,
 						 LWSMTFL_REPORT_MEAN |
 						 LWSMTFL_REPORT_DUTY_WALLCLOCK_US,
 						 "n.cn.tcp");
-	context->mt_conn_tls = lws_metric_create(context,
+	context->mt_conn_tls = aws_lws_metric_create(context,
 						 LWSMTFL_REPORT_MEAN |
 						 LWSMTFL_REPORT_DUTY_WALLCLOCK_US,
 						 "n.cn.tls");
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-	context->mt_http_txn = lws_metric_create(context,
+	context->mt_http_txn = aws_lws_metric_create(context,
 						 LWSMTFL_REPORT_MEAN |
 						 LWSMTFL_REPORT_DUTY_WALLCLOCK_US,
 						 "n.http.txn");
 #endif
 
-	context->mth_conn_failures = lws_metric_create(context,
+	context->mth_conn_failures = aws_lws_metric_create(context,
 					LWSMTFL_REPORT_HIST, "n.cn.failures");
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
-	context->mt_adns_cache = lws_metric_create(context,
+	context->mt_adns_cache = aws_lws_metric_create(context,
 						   LWSMTFL_REPORT_MEAN |
 						   LWSMTFL_REPORT_DUTY_WALLCLOCK_US,
 						   "n.cn.adns");
 #endif
 #if defined(LWS_WITH_SECURE_STREAMS)
-	context->mth_ss_conn = lws_metric_create(context, LWSMTFL_REPORT_HIST,
+	context->mth_ss_conn = aws_lws_metric_create(context, LWSMTFL_REPORT_HIST,
 						 "n.ss.conn");
 #endif
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
-	context->mt_ss_cliprox_conn = lws_metric_create(context,
+	context->mt_ss_cliprox_conn = aws_lws_metric_create(context,
 			LWSMTFL_REPORT_HIST,
 							"n.ss.cliprox.conn");
-	context->mt_ss_cliprox_paylat = lws_metric_create(context,
+	context->mt_ss_cliprox_paylat = aws_lws_metric_create(context,
 							  LWSMTFL_REPORT_MEAN |
 							  LWSMTFL_REPORT_DUTY_WALLCLOCK_US,
 							  "n.ss.cliprox.paylat");
-	context->mt_ss_proxcli_paylat = lws_metric_create(context,
+	context->mt_ss_proxcli_paylat = aws_lws_metric_create(context,
 							  LWSMTFL_REPORT_MEAN |
 							  LWSMTFL_REPORT_DUTY_WALLCLOCK_US,
 							  "n.ss.proxcli.paylat");
@@ -774,7 +774,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 #endif /* network + metrics + client */
 
 #if defined(LWS_WITH_SERVER)
-	context->mth_srv = lws_metric_create(context,
+	context->mth_srv = aws_lws_metric_create(context,
 					     LWSMTFL_REPORT_HIST, "n.srv");
 #endif /* network + metrics + server */
 
@@ -782,9 +782,9 @@ lws_create_context(const struct lws_context_creation_info *info)
 
 #endif /* network */
 
-	lwsl_cx_notice(context, "LWS: %s, %s%s", library_version, opts_str, s);
+	aws_lwsl_cx_notice(context, "LWS: %s, %s%s", library_version, opts_str, s);
 #if defined(LWS_WITH_NETWORK)
-	lwsl_cx_info(context, "Event loop: %s", plev->ops->name);
+	aws_lwsl_cx_info(context, "Event loop: %s", plev->ops->name);
 #endif
 
 	/*
@@ -817,7 +817,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 	context->ss_proxy_port = info->ss_proxy_port;
 	context->ss_proxy_address = info->ss_proxy_address;
 	if (context->ss_proxy_bind && context->ss_proxy_address)
-		lwsl_cx_notice(context, "ss proxy bind '%s', port %d, ads '%s'",
+		aws_lwsl_cx_notice(context, "ss proxy bind '%s', port %d, ads '%s'",
 			context->ss_proxy_bind, context->ss_proxy_port,
 			context->ss_proxy_address);
 #endif
@@ -828,7 +828,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 
 #if defined(LWS_ROLE_WS) && defined(LWS_WITHOUT_EXTENSIONS)
         if (info->extensions)
-                lwsl_cx_warn(context, "WITHOUT_EXTENSIONS but exts ptr set");
+                aws_lwsl_cx_warn(context, "WITHOUT_EXTENSIONS but exts ptr set");
 #endif
 #endif /* network */
 
@@ -842,8 +842,8 @@ lws_create_context(const struct lws_context_creation_info *info)
 #endif
 
 	/* if he gave us names, set the uid / gid */
-	if (lws_plat_drop_app_privileges(context, 0) ||
-	    lws_fi(&context->fic, "ctx_createfail_privdrop"))
+	if (aws_lws_plat_drop_app_privileges(context, 0) ||
+	    aws_lws_fi(&context->fic, "ctx_createfail_privdrop"))
 		goto free_context_fail2;
 
 #if defined(LWS_WITH_TLS) && defined(LWS_WITH_NETWORK)
@@ -857,7 +857,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 #endif
 
 #if LWS_MAX_SMP > 1
-	lws_mutex_refcount_init(&context->mr);
+	aws_lws_mutex_refcount_init(&context->mr);
 #endif
 
 #if defined(LWS_PLAT_FREERTOS)
@@ -887,13 +887,13 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 */
 
 	context->fops = &context->fops_platform;
-	prev = (struct lws_plat_file_ops *)context->fops;
+	prev = (struct aws_lws_plat_file_ops *)context->fops;
 
 #if defined(LWS_WITH_ZIP_FOPS)
 	/* make a soft copy so we can set .next */
 	context->fops_zip = fops_zip;
 	prev->next = &context->fops_zip;
-	prev = (struct lws_plat_file_ops *)prev->next;
+	prev = (struct aws_lws_plat_file_ops *)prev->next;
 #endif
 
 	/* if user provided fops, tack them on the end of the list */
@@ -908,7 +908,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 		context->external_baggage_free_on_destroy =
 			info->external_baggage_free_on_destroy;
 #if defined(LWS_WITH_NETWORK)
-	context->time_up = lws_now_usecs();
+	context->time_up = aws_lws_now_usecs();
 #endif
 	context->pcontext_finalize = info->pcontext;
 
@@ -939,14 +939,14 @@ lws_create_context(const struct lws_context_creation_info *info)
 #ifndef LWS_NO_DAEMONIZE
 	if (pid_daemon) {
 		context->started_with_parent = pid_daemon;
-		lwsl_cx_info(context, " Started with daemon pid %u",
+		aws_lwsl_cx_info(context, " Started with daemon pid %u",
 				(unsigned int)pid_daemon);
 	}
 #endif
 #if defined(__ANDROID__)
 	n = getrlimit(RLIMIT_NOFILE, &rt);
 	if (n == -1) {
-		lwsl_cx_err(context, "Get RLIMIT_NOFILE failed!");
+		aws_lwsl_cx_err(context, "Get RLIMIT_NOFILE failed!");
 
 		goto free_context_fail2;
 	}
@@ -961,15 +961,15 @@ lws_create_context(const struct lws_context_creation_info *info)
 		context->max_fds = 2560;
 
 		if (l > 10000000)
-			lwsl_cx_warn(context, "unreasonable ulimit -n workaround");
+			aws_lwsl_cx_warn(context, "unreasonable ulimit -n workaround");
 		else
 			if (l != -1l)
 				context->max_fds = (unsigned int)l;
 	}
 #endif
 	if ((int)context->max_fds < 0 ||
-	     lws_fi(&context->fic, "ctx_createfail_maxfds")) {
-		lwsl_cx_err(context, "problem getting process max files");
+	     aws_lws_fi(&context->fic, "ctx_createfail_maxfds")) {
+		aws_lwsl_cx_err(context, "problem getting process max files");
 
 		goto free_context_fail2;
 	}
@@ -1005,7 +1005,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 			if (ar->alpn) {
 				if (!first)
 					*p++ = ',';
-				p += lws_snprintf(p, (unsigned int)(
+				p += aws_lws_snprintf(p, (unsigned int)(
 					(context->tls.alpn_discovered +
 					sizeof(context->tls.alpn_discovered) -
 					2) - p), "%s", ar->alpn);
@@ -1052,23 +1052,23 @@ lws_create_context(const struct lws_context_creation_info *info)
 							context->count_threads;
 
 #if defined(LWS_WITH_SYS_SMD)
-	lws_mutex_init(context->smd.lock_messages);
-	lws_mutex_init(context->smd.lock_peers);
+	aws_lws_mutex_init(context->smd.lock_messages);
+	aws_lws_mutex_init(context->smd.lock_peers);
 
-	/* lws_system smd participant */
+	/* aws_lws_system smd participant */
 
-	if (!lws_smd_register(context, context, 0, LWSSMDCL_NETWORK,
-			      lws_system_smd_cb)) {
-		lwsl_cx_err(context, "early smd register failed");
+	if (!aws_lws_smd_register(context, context, 0, LWSSMDCL_NETWORK,
+			      aws_lws_system_smd_cb)) {
+		aws_lwsl_cx_err(context, "early smd register failed");
 	}
 
 	/* user smd participant */
 
 	if (info->early_smd_cb &&
-	    !lws_smd_register(context, info->early_smd_opaque, 0,
+	    !aws_lws_smd_register(context, info->early_smd_opaque, 0,
 			      info->early_smd_class_filter,
 			      info->early_smd_cb)) {
-		lwsl_cx_err(context, "early smd register failed");
+		aws_lwsl_cx_err(context, "early smd register failed");
 	}
 #endif
 
@@ -1124,21 +1124,21 @@ lws_create_context(const struct lws_context_creation_info *info)
 		context->pt[n].http.ah_list = NULL;
 		context->pt[n].http.ah_pool_length = 0;
 #endif
-		lws_pt_mutex_init(&context->pt[n]);
+		aws_lws_pt_mutex_init(&context->pt[n]);
 #if defined(LWS_WITH_SEQUENCER)
-		lws_seq_pt_init(&context->pt[n]);
+		aws_lws_seq_pt_init(&context->pt[n]);
 #endif
 
 #if defined(LWS_WITH_CGI)
-		if (lws_rops_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy))
-			(lws_rops_func_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy)).
+		if (aws_lws_rops_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy))
+			(aws_lws_rops_func_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy)).
 				pt_init_destroy(context, info,
 						&context->pt[n], 0);
 #endif
 	}
 
 	if (!info->ka_interval && info->ka_time > 0) {
-		lwsl_cx_err(context, "info->ka_interval can't be 0 if ka_time used");
+		aws_lwsl_cx_err(context, "info->ka_interval can't be 0 if ka_time used");
 		goto free_context_fail;
 	}
 
@@ -1150,7 +1150,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 
 	context->pl_hash_elements =
 		(context->count_threads * context->fd_limit_per_thread) / 16;
-	context->pl_hash_table = lws_zalloc(sizeof(struct lws_peer *) *
+	context->pl_hash_table = aws_lws_zalloc(sizeof(struct aws_lws_peer *) *
 			context->pl_hash_elements, "peer limits hash table");
 
 	context->ip_limit_ah = info->ip_limit_ah;
@@ -1162,30 +1162,30 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 * fds table contains pollfd structs for as many pollfds as we can
 	 * handle... spread across as many service threads as we have going
 	 */
-	n = (int)(sizeof(struct lws_pollfd) * context->count_threads *
+	n = (int)(sizeof(struct aws_lws_pollfd) * context->count_threads *
 	    context->fd_limit_per_thread);
-	context->pt[0].fds = lws_zalloc((unsigned int)n, "fds table");
+	context->pt[0].fds = aws_lws_zalloc((unsigned int)n, "fds table");
 	if (context->pt[0].fds == NULL ||
-	    lws_fi(&context->fic, "ctx_createfail_oom_fds")) {
+	    aws_lws_fi(&context->fic, "ctx_createfail_oom_fds")) {
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-		lws_free(context->pt[0].fds);
+		aws_lws_free(context->pt[0].fds);
 #endif
-		lwsl_cx_err(context, "OOM allocating %d fds\n", context->max_fds);
+		aws_lwsl_cx_err(context, "OOM allocating %d fds\n", context->max_fds);
 		goto free_context_fail;
 	}
 #endif
 
-	lwsl_cx_info(context, "ctx: %5luB (%ld ctx + pt(%ld thr x %d)), "
+	aws_lwsl_cx_info(context, "ctx: %5luB (%ld ctx + pt(%ld thr x %d)), "
 		  "pt-fds: %d, fdmap: %d",
-		  (long)sizeof(struct lws_context) +
+		  (long)sizeof(struct aws_lws_context) +
 		  (context->count_threads * context->pt_serv_buf_size),
-		  (long)sizeof(struct lws_context),
+		  (long)sizeof(struct aws_lws_context),
 		  (long)context->count_threads,
 		  context->pt_serv_buf_size,
 		  context->fd_limit_per_thread, n);
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-	lwsl_cx_info(context, " http: ah_data: %u, ah: %lu, max count %u",
+	aws_lwsl_cx_info(context, " http: ah_data: %u, ah: %lu, max count %u",
 		    context->max_http_header_data,
 		    (long)sizeof(struct allocated_headers),
 		    context->max_http_header_pool);
@@ -1212,20 +1212,20 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 * loop and if libuv,  have to take care about how to unpick them...
 	 */
 
-	if (lws_plat_init(context, info) ||
-	    lws_fi(&context->fic, "ctx_createfail_plat_init"))
+	if (aws_lws_plat_init(context, info) ||
+	    aws_lws_fi(&context->fic, "ctx_createfail_plat_init"))
 		goto bail_libuv_aware;
 
 #if defined(LWS_WITH_NETWORK)
 
-	if (lws_fi(&context->fic, "ctx_createfail_evlib_init"))
+	if (aws_lws_fi(&context->fic, "ctx_createfail_evlib_init"))
 		goto bail_libuv_aware;
 
 	if (context->event_loop_ops->init_context)
 		if (context->event_loop_ops->init_context(context, info))
 			goto bail_libuv_aware;
 
-	if (lws_fi(&context->fic, "ctx_createfail_evlib_pt"))
+	if (aws_lws_fi(&context->fic, "ctx_createfail_evlib_pt"))
 		goto bail_libuv_aware;
 
 	if (context->event_loop_ops->init_pt)
@@ -1239,30 +1239,30 @@ lws_create_context(const struct lws_context_creation_info *info)
 				goto bail_libuv_aware;
 		}
 
-	lws_context_lock(context, __func__);
+	aws_lws_context_lock(context, __func__);
 	n = __lws_create_event_pipes(context);
-	lws_context_unlock(context);
+	aws_lws_context_unlock(context);
 	if (n)
 		goto bail_libuv_aware;
 
 	for (n = 0; n < context->count_threads; n++) {
 		LWS_FOR_EVERY_AVAILABLE_ROLE_START(ar) {
-			if (lws_rops_fidx(ar, LWS_ROPS_pt_init_destroy))
-				(lws_rops_func_fidx(ar, LWS_ROPS_pt_init_destroy)).
+			if (aws_lws_rops_fidx(ar, LWS_ROPS_pt_init_destroy))
+				(aws_lws_rops_func_fidx(ar, LWS_ROPS_pt_init_destroy)).
 					pt_init_destroy(context, info,
 							&context->pt[n], 0);
 		} LWS_FOR_EVERY_AVAILABLE_ROLE_END;
 	}
 #endif
 
-	lws_context_init_ssl_library(context, info);
+	aws_lws_context_init_ssl_library(context, info);
 
 	context->user_space = info->user;
 
 #if defined(LWS_WITH_SERVER)
 	strcpy(context->canonical_hostname, "unknown");
 #if defined(LWS_WITH_NETWORK)
-	lws_server_get_canonical_hostname(context, info);
+	aws_lws_server_get_canonical_hostname(context, info);
 #endif
 #endif
 
@@ -1281,28 +1281,28 @@ lws_create_context(const struct lws_context_creation_info *info)
 		 * system vhost
 		 */
 
-		struct lws_context_creation_info ii;
-		const struct lws_protocols *pp[4];
-		struct lws_vhost *vh;
+		struct aws_lws_context_creation_info ii;
+		const struct aws_lws_protocols *pp[4];
+		struct aws_lws_vhost *vh;
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
-		extern const struct lws_protocols lws_async_dns_protocol;
+		extern const struct aws_lws_protocols aws_lws_async_dns_protocol;
 #endif
 #if defined(LWS_WITH_SYS_NTPCLIENT)
-		extern const struct lws_protocols lws_system_protocol_ntpc;
+		extern const struct aws_lws_protocols aws_lws_system_protocol_ntpc;
 #endif
 #if defined(LWS_WITH_SYS_DHCP_CLIENT)
-		extern const struct lws_protocols lws_system_protocol_dhcpc4;
+		extern const struct aws_lws_protocols aws_lws_system_protocol_dhcpc4;
 #endif
 
 		n = 0;
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
-		pp[n++] = &lws_async_dns_protocol;
+		pp[n++] = &aws_lws_async_dns_protocol;
 #endif
 #if defined(LWS_WITH_SYS_NTPCLIENT)
-		pp[n++] = &lws_system_protocol_ntpc;
+		pp[n++] = &aws_lws_system_protocol_ntpc;
 #endif
 #if defined(LWS_WITH_SYS_DHCP_CLIENT)
-		pp[n++] = &lws_system_protocol_dhcpc4;
+		pp[n++] = &aws_lws_system_protocol_dhcpc4;
 #endif
 		pp[n] = NULL;
 
@@ -1311,24 +1311,24 @@ lws_create_context(const struct lws_context_creation_info *info)
 		ii.pprotocols = pp;
 		ii.port = CONTEXT_PORT_NO_LISTEN;
 
-		if (lws_fi(&context->fic, "ctx_createfail_sys_vh"))
+		if (aws_lws_fi(&context->fic, "ctx_createfail_sys_vh"))
 			vh = NULL;
 		else
-			vh = lws_create_vhost(context, &ii);
+			vh = aws_lws_create_vhost(context, &ii);
 		if (!vh) {
-			lwsl_cx_err(context, "failed to create system vhost");
+			aws_lwsl_cx_err(context, "failed to create system vhost");
 			goto bail_libuv_aware;
 		}
 
 		context->vhost_system = vh;
 
-		if (lws_protocol_init_vhost(vh, NULL) ||
-		    lws_fi(&context->fic, "ctx_createfail_sys_vh_init")) {
-			lwsl_cx_err(context, "failed to init system vhost");
+		if (aws_lws_protocol_init_vhost(vh, NULL) ||
+		    aws_lws_fi(&context->fic, "ctx_createfail_sys_vh_init")) {
+			aws_lwsl_cx_err(context, "failed to init system vhost");
 			goto bail_libuv_aware;
 		}
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
-		lws_async_dns_init(context);
+		aws_lws_async_dns_init(context);
 			//goto bail_libuv_aware;
 #endif
 	}
@@ -1337,7 +1337,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 
 #if defined(LWS_WITH_SYS_STATE)
 	/*
-	 * init the lws_state mgr for the system state
+	 * init the aws_lws_state mgr for the system state
 	 */
 
 	context->mgr_system.state_names		= system_state_names;
@@ -1350,9 +1350,9 @@ lws_create_context(const struct lws_context_creation_info *info)
 #endif
 
 	context->protocols_notify.name		= "prot_init";
-	context->protocols_notify.notify_cb	= lws_state_notify_protocol_init;
+	context->protocols_notify.notify_cb	= aws_lws_state_notify_protocol_init;
 
-	lws_state_reg_notifier(&context->mgr_system, &context->protocols_notify);
+	aws_lws_state_reg_notifier(&context->mgr_system, &context->protocols_notify);
 
 	/*
 	 * insert user notifiers here so they can participate with vetoing us
@@ -1360,7 +1360,7 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 * reaching 'operational', before we returned from context creation.
 	 */
 
-	lws_state_reg_notifier_list(&context->mgr_system,
+	aws_lws_state_reg_notifier_list(&context->mgr_system,
 				    info->register_notifier_list);
 #endif
 
@@ -1368,13 +1368,13 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 * if he's not saying he'll make his own vhosts later then act
 	 * compatibly and make a default vhost using the data in the info
 	 */
-	if (!lws_check_opt(info->options, LWS_SERVER_OPTION_EXPLICIT_VHOSTS)) {
-		if (!lws_create_vhost(context, info) ||
-		    lws_fi(&context->fic, "ctx_createfail_def_vh")) {
-			lwsl_cx_err(context, "Failed to create default vhost");
+	if (!aws_lws_check_opt(info->options, LWS_SERVER_OPTION_EXPLICIT_VHOSTS)) {
+		if (!aws_lws_create_vhost(context, info) ||
+		    aws_lws_fi(&context->fic, "ctx_createfail_def_vh")) {
+			aws_lwsl_cx_err(context, "Failed to create default vhost");
 
 #if defined(LWS_WITH_PEER_LIMITS)
-			lws_free_set_NULL(context->pl_hash_table);
+			aws_lws_free_set_NULL(context->pl_hash_table);
 #endif
 			goto bail;
 		}
@@ -1385,24 +1385,24 @@ lws_create_context(const struct lws_context_creation_info *info)
 		memset(&ci, 0, sizeof(ci));
 
 		ci.cx			   = context;
-		ci.ops			   = &lws_cache_ops_nscookiejar;
+		ci.ops			   = &aws_lws_cache_ops_nscookiejar;
 		ci.name			   = "NSC";
 		ci.u.nscookiejar.filepath  = info->http_nsc_filepath;
 
-		context->nsc = lws_cache_create(&ci);
+		context->nsc = aws_lws_cache_create(&ci);
 		if (!context->nsc)
 			goto bail;
 
-		ci.ops			  = &lws_cache_ops_heap;
+		ci.ops			  = &aws_lws_cache_ops_heap;
 		ci.name			  = "L1";
 		ci.parent		  = context->nsc;
 		ci.max_footprint	  = info->http_nsc_heap_max_footprint;
 		ci.max_items		  = info->http_nsc_heap_max_items;
 		ci.max_payload		  = info->http_nsc_heap_max_payload;
 
-		context->l1 = lws_cache_create(&ci);
+		context->l1 = aws_lws_cache_create(&ci);
 		if (!context->l1) {
-			lwsl_cx_err(context, "Failed to init cookiejar");
+			aws_lwsl_cx_err(context, "Failed to init cookiejar");
 			goto bail;
 		}
 	}
@@ -1416,29 +1416,29 @@ lws_create_context(const struct lws_context_creation_info *info)
 		 * You must create your context with the explicit vhosts flag
 		 * in order to use secure streams
 		 */
-		assert(lws_check_opt(info->options,
+		assert(aws_lws_check_opt(info->options,
 		       LWS_SERVER_OPTION_EXPLICIT_VHOSTS));
 
-		if (lws_ss_policy_parse_begin(context, 0) ||
-		    lws_fi(&context->fic, "ctx_createfail_ss_pol1")) {
+		if (aws_lws_ss_policy_parse_begin(context, 0) ||
+		    aws_lws_fi(&context->fic, "ctx_createfail_ss_pol1")) {
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-			lws_ss_policy_parse_abandon(context);
+			aws_lws_ss_policy_parse_abandon(context);
 #endif
 			goto bail_libuv_aware;
 		}
 
-		n = lws_ss_policy_parse(context,
+		n = aws_lws_ss_policy_parse(context,
 					(uint8_t *)context->pss_policies_json,
 					strlen(context->pss_policies_json));
 		if ((n != LEJP_CONTINUE && n < 0) ||
-		    lws_fi(&context->fic, "ctx_createfail_ss_pol2")) {
-			lws_ss_policy_parse_abandon(context);
+		    aws_lws_fi(&context->fic, "ctx_createfail_ss_pol2")) {
+			aws_lws_ss_policy_parse_abandon(context);
 			goto bail_libuv_aware;
 		}
 
-		if (lws_ss_policy_set(context, "hardcoded") ||
-		    lws_fi(&context->fic, "ctx_createfail_ss_pol3")) {
-			lwsl_cx_err(context, "policy set failed");
+		if (aws_lws_ss_policy_set(context, "hardcoded") ||
+		    aws_lws_fi(&context->fic, "ctx_createfail_ss_pol3")) {
+			aws_lwsl_cx_err(context, "policy set failed");
 			goto bail_libuv_aware;
 		}
 	}
@@ -1446,18 +1446,18 @@ lws_create_context(const struct lws_context_creation_info *info)
 	if (context->pss_policies) {
 		/* user code set the policy objects directly, no parsing step */
 
-		if (lws_ss_policy_set(context, "hardcoded") ||
-		    lws_fi(&context->fic, "ctx_createfail_ss_pol3")) {
-			lwsl_cx_err(context, "policy set failed");
+		if (aws_lws_ss_policy_set(context, "hardcoded") ||
+		    aws_lws_fi(&context->fic, "ctx_createfail_ss_pol3")) {
+			aws_lwsl_cx_err(context, "policy set failed");
 			goto bail_libuv_aware;
 		}
 	}
 #endif
 #endif
 
-	lws_context_init_extensions(info, context);
+	aws_lws_context_init_extensions(info, context);
 
-	lwsl_cx_info(context, " mem: per-conn:        %5lu bytes + protocol rx buf",
+	aws_lwsl_cx_info(context, " mem: per-conn:        %5lu bytes + protocol rx buf",
 		    (unsigned long)sizeof(struct lws));
 
 	/*
@@ -1465,9 +1465,9 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 * to listen on port < 1023 we would have needed root, but now we are
 	 * listening, we don't want the power for anything else
 	 */
-	if (!lws_check_opt(info->options, LWS_SERVER_OPTION_EXPLICIT_VHOSTS))
-		if (lws_plat_drop_app_privileges(context, 1) ||
-		    lws_fi(&context->fic, "ctx_createfail_privdrop"))
+	if (!aws_lws_check_opt(info->options, LWS_SERVER_OPTION_EXPLICIT_VHOSTS))
+		if (aws_lws_plat_drop_app_privileges(context, 1) ||
+		    aws_lws_fi(&context->fic, "ctx_createfail_privdrop"))
 			goto bail_libuv_aware;
 
 #if defined(LWS_WITH_SYS_STATE)
@@ -1480,31 +1480,31 @@ lws_create_context(const struct lws_context_creation_info *info)
 	 * We set up a sul to come back immediately and do the state change.
 	 */
 
-	lws_sul_schedule(context, 0, &context->sul_system_state,
-			 lws_context_creation_completion_cb, 1);
+	aws_lws_sul_schedule(context, 0, &context->sul_system_state,
+			 aws_lws_context_creation_completion_cb, 1);
 #endif
 
 	/* expedite post-context init (eg, protocols) */
-	lws_cancel_service(context);
+	aws_lws_cancel_service(context);
 #endif
 
 	return context;
 
 early_bail:
-	lws_fi_destroy(&info->fic);
+	aws_lws_fi_destroy(&info->fic);
 
 	return NULL;
 
 #if defined(LWS_WITH_NETWORK)
 bail:
-	lws_fi_destroy(&info->fic);
-	lws_context_destroy(context);
+	aws_lws_fi_destroy(&info->fic);
+	aws_lws_context_destroy(context);
 
 	return NULL;
 #endif
 
 bail_libuv_aware:
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 #if defined(LWS_WITH_LIBUV)
 	return fatal_exit_defer ? context : NULL;
 #else
@@ -1514,7 +1514,7 @@ bail_libuv_aware:
 #if defined(LWS_WITH_NETWORK)
 fail_event_libs:
 	if (context)
-	lwsl_cx_err(context, "Requested event library support not configured");
+	aws_lwsl_cx_err(context, "Requested event library support not configured");
 #endif
 
 #if defined(LWS_WITH_NETWORK)
@@ -1528,14 +1528,14 @@ free_context_fail:
 free_context_fail2:
 	if (context) {
 #if defined(LWS_WITH_SYS_METRICS)
-		lws_metrics_destroy(context);
+		aws_lws_metrics_destroy(context);
 #endif
-		lws_fi_destroy(&context->fic);
+		aws_lws_fi_destroy(&context->fic);
 	}
-	lws_fi_destroy(&info->fic);
+	aws_lws_fi_destroy(&info->fic);
 	if (context) {
-		lwsl_refcount_cx(context->log_cx, -1);
-		lws_free(context);
+		aws_lwsl_refcount_cx(context->log_cx, -1);
+		aws_lws_free(context);
 	}
 
 	return NULL;
@@ -1543,40 +1543,40 @@ free_context_fail2:
 
 #if defined(LWS_WITH_NETWORK)
 int
-lws_system_cpd_start(struct lws_context *cx)
+aws_lws_system_cpd_start(struct aws_lws_context *cx)
 {
 	cx->captive_portal_detect = LWS_CPD_UNKNOWN;
 
 	/* if there's a platform implementation, use it */
 
-	if (lws_system_get_ops(cx) &&
-	    lws_system_get_ops(cx)->captive_portal_detect_request)
-		return lws_system_get_ops(cx)->captive_portal_detect_request(cx);
+	if (aws_lws_system_get_ops(cx) &&
+	    aws_lws_system_get_ops(cx)->captive_portal_detect_request)
+		return aws_lws_system_get_ops(cx)->captive_portal_detect_request(cx);
 
 #if defined(LWS_WITH_SECURE_STREAMS)
 	/*
 	 * Otherwise try to use SS "captive_portal_detect" if that's enabled
 	 */
-	return lws_ss_sys_cpd(cx);
+	return aws_lws_ss_sys_cpd(cx);
 #else
 	return 0;
 #endif
 }
 
 static void
-lws_system_deferred_cb(lws_sorted_usec_list_t *sul)
+aws_lws_system_deferred_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context *cx =
-		     lws_container_of(sul, struct lws_context, sul_cpd_defer);
+	struct aws_lws_context *cx =
+		     aws_lws_container_of(sul, struct aws_lws_context, sul_cpd_defer);
 
-	lws_system_cpd_start(cx);
+	aws_lws_system_cpd_start(cx);
 }
 
 void
-lws_system_cpd_start_defer(struct lws_context *cx, lws_usec_t defer_us)
+aws_lws_system_cpd_start_defer(struct aws_lws_context *cx, aws_lws_usec_t defer_us)
 {
-	lws_sul_schedule(cx, 0, &cx->sul_cpd_defer,
-			 lws_system_deferred_cb, defer_us);
+	aws_lws_sul_schedule(cx, 0, &cx->sul_cpd_defer,
+			 aws_lws_system_deferred_cb, defer_us);
 }
 
 #if (defined(LWS_WITH_SYS_STATE) && defined(LWS_WITH_SYS_SMD)) || !defined(LWS_WITH_NO_LOGS)
@@ -1584,41 +1584,41 @@ static const char *cname[] = { "Unknown", "OK", "Captive", "No internet" };
 #endif
 
 void
-lws_system_cpd_set(struct lws_context *cx, lws_cpd_result_t result)
+aws_lws_system_cpd_set(struct aws_lws_context *cx, aws_lws_cpd_result_t result)
 {
 	if (cx->captive_portal_detect != LWS_CPD_UNKNOWN)
 		return;
 
 #if !defined(LWS_WITH_NO_LOGS)
-	lwsl_cx_notice(cx, "setting CPD result %s", cname[result]);
+	aws_lwsl_cx_notice(cx, "setting CPD result %s", cname[result]);
 #endif
 
 	cx->captive_portal_detect = (uint8_t)result;
 
 #if defined(LWS_WITH_SYS_STATE)
 #if defined(LWS_WITH_SYS_SMD)
-	lws_smd_msg_printf(cx, LWSSMDCL_NETWORK,
+	aws_lws_smd_msg_printf(cx, LWSSMDCL_NETWORK,
 			   "{\"type\":\"cpd\",\"result\":\"%s\"}",
 			   cname[cx->captive_portal_detect]);
 #endif
 
 	/* if nothing is there to intercept anything, go all the way */
 	if (cx->mgr_system.state != LWS_SYSTATE_POLICY_INVALID)
-		lws_state_transition_steps(&cx->mgr_system,
+		aws_lws_state_transition_steps(&cx->mgr_system,
 					   LWS_SYSTATE_OPERATIONAL);
 #endif
 }
 
-lws_cpd_result_t
-lws_system_cpd_state_get(struct lws_context *cx)
+aws_lws_cpd_result_t
+aws_lws_system_cpd_state_get(struct aws_lws_context *cx)
 {
-	return (lws_cpd_result_t)cx->captive_portal_detect;
+	return (aws_lws_cpd_result_t)cx->captive_portal_detect;
 }
 
 #endif
 
 int
-lws_context_is_deprecated(struct lws_context *cx)
+aws_lws_context_is_deprecated(struct aws_lws_context *cx)
 {
 	return cx->deprecated;
 }
@@ -1627,52 +1627,52 @@ lws_context_is_deprecated(struct lws_context *cx)
  * When using an event loop, the context destruction is in three separate
  * parts.  This is to cover both internal and foreign event loops cleanly.
  *
- *  - lws_context_destroy() simply starts a soft close of all wsi and
+ *  - aws_lws_context_destroy() simply starts a soft close of all wsi and
  *     related allocations.  The event loop continues.
  *
  *     As the closes complete in the event loop, reference counting is used
  *     to determine when everything is closed.  It then calls
- *     lws_context_destroy2().
+ *     aws_lws_context_destroy2().
  *
- *  - lws_context_destroy2() cleans up the rest of the higher-level logical
+ *  - aws_lws_context_destroy2() cleans up the rest of the higher-level logical
  *     lws pieces like vhosts.  If the loop was foreign, it then proceeds to
- *     lws_context_destroy3().  If it the loop is internal, it stops the
- *     internal loops and waits for lws_context_destroy() to be called again
+ *     aws_lws_context_destroy3().  If it the loop is internal, it stops the
+ *     internal loops and waits for aws_lws_context_destroy() to be called again
  *     outside the event loop (since we cannot destroy the loop from
- *     within the loop).  That will cause lws_context_destroy3() to run
+ *     within the loop).  That will cause aws_lws_context_destroy3() to run
  *     directly.
  *
- *  - lws_context_destroy3() destroys any internal event loops and then
+ *  - aws_lws_context_destroy3() destroys any internal event loops and then
  *     destroys the context itself, setting what was info.pcontext to NULL.
  */
 
 
 #if defined(LWS_WITH_NETWORK)
 static void
-lws_pt_destroy(struct lws_context_per_thread *pt)
+aws_lws_pt_destroy(struct aws_lws_context_per_thread *pt)
 {
-	volatile struct lws_foreign_thread_pollfd *ftp, *next;
-	volatile struct lws_context_per_thread *vpt;
+	volatile struct aws_lws_foreign_thread_pollfd *ftp, *next;
+	volatile struct aws_lws_context_per_thread *vpt;
 #if defined(LWS_WITH_CGI)
-	lws_ctx_t ctx = pt->context;
+	aws_lws_ctx_t ctx = pt->context;
 
-		if (lws_rops_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy))
-			(lws_rops_func_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy)).
+		if (aws_lws_rops_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy))
+			(aws_lws_rops_func_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy)).
 				pt_init_destroy(ctx, NULL, pt, 1);
 #endif
-	vpt = (volatile struct lws_context_per_thread *)pt;
+	vpt = (volatile struct aws_lws_context_per_thread *)pt;
 	ftp = vpt->foreign_pfd_list;
 	while (ftp) {
 		next = ftp->next;
-		lws_free((void *)ftp);
+		aws_lws_free((void *)ftp);
 		ftp = next;
 	}
 	vpt->foreign_pfd_list = NULL;
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 
 	if (pt->pipe_wsi) {
-		lws_destroy_event_pipe(pt->pipe_wsi);
+		aws_lws_destroy_event_pipe(pt->pipe_wsi);
 		pt->pipe_wsi = NULL;
 	}
 
@@ -1686,18 +1686,18 @@ lws_pt_destroy(struct lws_context_per_thread *pt)
 		memset(&wsi, 0, sizeof(wsi));
 		wsi.a.context = pt->context;
 		wsi.tsi = (char)pt->tid;
-		lws_plat_pipe_close(&wsi);
+		aws_lws_plat_pipe_close(&wsi);
 	}
 
 #if defined(LWS_WITH_SECURE_STREAMS)
-	lws_dll2_foreach_safe(&pt->ss_owner, NULL, lws_ss_destroy_dll);
+	aws_lws_dll2_foreach_safe(&pt->ss_owner, NULL, aws_lws_ss_destroy_dll);
 
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API) && defined(LWS_WITH_CLIENT)
-	lws_dll2_foreach_safe(&pt->ss_client_owner, NULL, lws_sspc_destroy_dll);
+	aws_lws_dll2_foreach_safe(&pt->ss_client_owner, NULL, aws_lws_sspc_destroy_dll);
 #endif
 
 #if defined(LWS_WITH_SEQUENCER)
-	lws_seq_destroy_all_on_pt(pt);
+	aws_lws_seq_destroy_all_on_pt(pt);
 #endif
 
 
@@ -1708,7 +1708,7 @@ lws_pt_destroy(struct lws_context_per_thread *pt)
 
 #endif
 
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 	pt->pipe_wsi = NULL;
 
 }
@@ -1718,7 +1718,7 @@ lws_pt_destroy(struct lws_context_per_thread *pt)
  * Context destruction is now a state machine that's aware of SMP pts and
  * various event lib approaches.
  *
- * lws_context_destroy() expects to be called at the end of the user code's
+ * aws_lws_context_destroy() expects to be called at the end of the user code's
  * usage of it.  But it can also be called non-finally, as a way to stop
  * service and exit the outer user service loop, and then complete in the
  * final call.
@@ -1745,18 +1745,18 @@ lws_pt_destroy(struct lws_context_per_thread *pt)
  * 	- finalize pt destruction
  *	- if foreign loops, set state to LWSCD_FINALIZATION and exit
  *
- * LWSCD_FINALIZATION: come back here at final lws_destroy_context() call
+ * LWSCD_FINALIZATION: come back here at final aws_lws_destroy_context() call
  *	- destroy sundries
  *	- destroy and free the actual context
  */
 
 void
-lws_context_destroy(struct lws_context *context)
+aws_lws_context_destroy(struct aws_lws_context *context)
 {
-	struct lws_context **pcontext_finalize;
+	struct aws_lws_context **pcontext_finalize;
 #if defined(LWS_WITH_NETWORK)
-	struct lws_context_per_thread *pt;
-	struct lws_vhost *vh = NULL, *vh1;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_vhost *vh = NULL, *vh1;
 	int alive = 0, deferred_pt = 0;
 #endif
 #if defined(LWS_WITH_PEER_LIMITS)
@@ -1769,10 +1769,10 @@ lws_context_destroy(struct lws_context *context)
 
 	pcontext_finalize = context->pcontext_finalize;
 
-	lws_context_lock(context, __func__);
+	aws_lws_context_lock(context, __func__);
 	context->inside_context_destroy = 1;
 
-	lwsl_cx_info(context, "destroy_state %d", context->destroy_state);
+	aws_lwsl_cx_info(context, "destroy_state %d", context->destroy_state);
 
 	switch (context->destroy_state) {
 	case LWSCD_NO_DESTROY:
@@ -1780,7 +1780,7 @@ lws_context_destroy(struct lws_context *context)
 		 * We're getting started
 		 */
 
-		lwsl_cx_info(context, "starting context destroy flow");
+		aws_lwsl_cx_info(context, "starting context destroy flow");
 		context->being_destroyed = 1;
 
 #if defined(LWS_WITH_NETWORK)
@@ -1798,14 +1798,14 @@ lws_context_destroy(struct lws_context *context)
 			vh = context->vhost_list;
 
 		while (vh) {
-			lwsl_vhost_info(vh, "start close");
+			aws_lwsl_vhost_info(vh, "start close");
 			vh1 = vh->vhost_next;
-			lws_vhost_destroy1(vh);
+			aws_lws_vhost_destroy1(vh);
 			vh = vh1;
 		}
 #endif
 
-		lws_plat_context_early_destroy(context);
+		aws_lws_plat_context_early_destroy(context);
 
 		context->service_no_longer_possible = 1;
 		context->requested_stop_internal_loops = 1;
@@ -1828,7 +1828,7 @@ lws_context_destroy(struct lws_context *context)
 
 		pt = context->pt;
 		for (n = 0; n < context->count_threads; n++) {
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 
 			/* evlib will realize it needs to destroy pt */
 			pt->destroy_self = 1;
@@ -1849,11 +1849,11 @@ lws_context_destroy(struct lws_context *context)
 
 				if (wsi) {
 
-					lwsl_cx_debug(context,
+					aws_lwsl_cx_debug(context,
 						"pt %d: closing wsi %p: role %s",
 						n, wsi, wsi->role_ops->name);
 
-					lws_close_free_wsi(wsi,
+					aws_lws_close_free_wsi(wsi,
 						LWS_CLOSE_STATUS_NOSTATUS_CONTEXT_DESTROY,
 						"ctx destroy"
 						/* no protocol close */);
@@ -1864,7 +1864,7 @@ lws_context_destroy(struct lws_context *context)
 			}
 
 #if defined(LWS_WITH_CGI)
-			(lws_rops_func_fidx(&role_ops_cgi,
+			(aws_lws_rops_func_fidx(&role_ops_cgi,
 					    LWS_ROPS_pt_init_destroy)).
 					    pt_init_destroy(context, NULL,
 							    pt, 1);
@@ -1876,21 +1876,21 @@ lws_context_destroy(struct lws_context *context)
 			 */
 
 			if (context->event_loop_ops->destroy_pt) {
-				lwsl_cx_info(context,
+				aws_lwsl_cx_info(context,
 					     "calling evlib destroy_pt %d\n", n);
 				context->event_loop_ops->destroy_pt(context, n);
 			}
 
 next:
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 
 			pt++;
 		}
 
 		if (deferred_pt) {
 			context->destroy_state = LWSCD_PT_WAS_DEFERRED;
-			lwsl_cx_notice(context, "destroy from inside service");
-			lws_cancel_service(context);
+			aws_lwsl_cx_notice(context, "destroy from inside service");
+			aws_lws_cancel_service(context);
 			goto bail;
 		}
 #endif
@@ -1917,7 +1917,7 @@ next:
 
 #if defined(LWS_WITH_NETWORK)
 		if (context->event_loop_ops->destroy_context1) {
-			lwsl_cx_info(context, "do evlib destroy_context1 and wait");
+			aws_lwsl_cx_info(context, "do evlib destroy_context1 and wait");
 			context->event_loop_ops->destroy_context1(context);
 
 			goto bail;
@@ -1928,12 +1928,12 @@ next:
 		 * now ourselves...
 		 */
 
-		lwsl_cx_info(context, "manually destroying pts");
+		aws_lwsl_cx_info(context, "manually destroying pts");
 
 		pt = context->pt;
 		for (n = 0; n < context->count_threads; n++, pt++) {
 			pt->event_loop_pt_unused = 1;
-			lws_pt_destroy(pt);
+			aws_lws_pt_destroy(pt);
 		}
 #endif
 		/* fallthru */
@@ -1947,7 +1947,7 @@ next:
 			    !context->pt[n].event_loop_pt_unused)
 				alive++;
 
-		lwsl_cx_info(context, "PT_WAIT_ALL_DESTROYED: %d alive", alive);
+		aws_lwsl_cx_info(context, "PT_WAIT_ALL_DESTROYED: %d alive", alive);
 
 		if (alive)
 			break;
@@ -1980,7 +1980,7 @@ next:
 		 */
 
 #if defined(LWS_WITH_SYS_STATE) && defined(LWS_WITH_NETWORK)
-	lws_state_transition(&context->mgr_system, LWS_SYSTATE_POLICY_INVALID);
+	aws_lws_state_transition(&context->mgr_system, LWS_SYSTATE_POLICY_INVALID);
 #endif
 
 #if defined(LWS_WITH_NETWORK)
@@ -1991,7 +1991,7 @@ next:
 		vh = context->vhost_list;
 		while (vh) {
 			vh1 = vh->vhost_next;
-		//	lwsl_vhost_debug(vh, "vh %s destroy2", vh->name);
+		//	aws_lwsl_vhost_debug(vh, "vh %s destroy2", vh->name);
 			__lws_vhost_destroy2(vh);
 			vh = vh1;
 		}
@@ -2004,40 +2004,40 @@ next:
 #endif
 
 #if defined(LWS_WITH_NETWORK)
-		lws_ssl_context_destroy(context);
+		aws_lws_ssl_context_destroy(context);
 #endif
-		lws_plat_context_late_destroy(context);
+		aws_lws_plat_context_late_destroy(context);
 
 #if defined(LWS_WITH_PEER_LIMITS)
 		for (nu = 0; nu < context->pl_hash_elements; nu++)	{
-			lws_start_foreach_llp(struct lws_peer **, peer,
+			aws_lws_start_foreach_llp(struct aws_lws_peer **, peer,
 					      context->pl_hash_table[nu]) {
-				struct lws_peer *df = *peer;
+				struct aws_lws_peer *df = *peer;
 				*peer = df->next;
-				lws_free(df);
+				aws_lws_free(df);
 				continue;
-			} lws_end_foreach_llp(peer, next);
+			} aws_lws_end_foreach_llp(peer, next);
 		}
-		lws_free(context->pl_hash_table);
+		aws_lws_free(context->pl_hash_table);
 #endif
 
 #if defined(LWS_WITH_NETWORK)
 
 		for (n = 0; n < context->count_threads; n++) {
-			struct lws_context_per_thread *pt = &context->pt[n];
+			struct aws_lws_context_per_thread *pt = &context->pt[n];
 
 			(void)pt;
 #if defined(LWS_WITH_SEQUENCER)
-			lws_seq_destroy_all_on_pt(pt);
+			aws_lws_seq_destroy_all_on_pt(pt);
 #endif
 			LWS_FOR_EVERY_AVAILABLE_ROLE_START(ar) {
-				if (lws_rops_fidx(ar, LWS_ROPS_pt_init_destroy))
-					(lws_rops_func_fidx(ar, LWS_ROPS_pt_init_destroy)).
+				if (aws_lws_rops_fidx(ar, LWS_ROPS_pt_init_destroy))
+					(aws_lws_rops_func_fidx(ar, LWS_ROPS_pt_init_destroy)).
 						pt_init_destroy(context, NULL, pt, 1);
 			} LWS_FOR_EVERY_AVAILABLE_ROLE_END;
 
 #if defined(LWS_WITH_CGI)
-			lws_rops_func_fidx(&role_ops_cgi,
+			aws_lws_rops_func_fidx(&role_ops_cgi,
 					   LWS_ROPS_pt_init_destroy).
 					        pt_init_destroy(context, NULL,
 					        		pt, 1);
@@ -2047,8 +2047,8 @@ next:
 			while (pt->http.ah_list)
 				_lws_destroy_ah(pt, pt->http.ah_list);
 #endif
-			lwsl_cx_info(context, "pt destroy %d", n);
-			lws_pt_destroy(pt);
+			aws_lwsl_cx_info(context, "pt destroy %d", n);
+			aws_lws_pt_destroy(pt);
 		}
 #endif /* NETWORK */
 
@@ -2059,7 +2059,7 @@ next:
 		if (context->pt[0].event_loop_foreign &&
 		    context->event_loop_ops->destroy_context1) {
 
-			lwsl_cx_info(context,
+			aws_lwsl_cx_info(context,
 				    "leaving final context destruction"
 					" for final call");
 			goto bail;
@@ -2067,7 +2067,7 @@ next:
 
 		if (context->event_loop_ops->destroy_context1 &&
 		    !context->pt[0].event_loop_foreign) {
-			lwsl_cx_notice(context, "waiting for internal loop exit");
+			aws_lwsl_cx_notice(context, "waiting for internal loop exit");
 
 			goto bail;
 		}
@@ -2077,7 +2077,7 @@ next:
 	case LWSCD_FINALIZATION:
 
 #if defined(LWS_WITH_SYS_METRICS)
-		lws_metrics_dump(context);
+		aws_lws_metrics_dump(context);
 #endif
 
 		context->evlib_finalize_destroy_after_int_loops_stop = 1;
@@ -2086,7 +2086,7 @@ next:
 		if (context->event_loop_ops->destroy_context2)
 			context->event_loop_ops->destroy_context2(context);
 #if defined(LWS_WITH_SYS_STATE)
-		lws_state_transition_steps(&context->mgr_system,
+		aws_lws_state_transition_steps(&context->mgr_system,
 					   LWS_SYSTATE_CONTEXT_DESTROYING);
 #endif
 		/*
@@ -2094,29 +2094,29 @@ next:
 		 */
 
 		for (n = 0; n < context->count_threads; n++) {
-			struct lws_context_per_thread *pt = &context->pt[n];
+			struct aws_lws_context_per_thread *pt = &context->pt[n];
 
 			/*
 			 * Destroy the pt-roles
 			 */
 
 			LWS_FOR_EVERY_AVAILABLE_ROLE_START(ar) {
-				if (lws_rops_fidx(ar, LWS_ROPS_pt_init_destroy))
-					(lws_rops_func_fidx(ar, LWS_ROPS_pt_init_destroy)).
+				if (aws_lws_rops_fidx(ar, LWS_ROPS_pt_init_destroy))
+					(aws_lws_rops_func_fidx(ar, LWS_ROPS_pt_init_destroy)).
 							pt_init_destroy(context, NULL, pt, 1);
 			} LWS_FOR_EVERY_AVAILABLE_ROLE_END;
 
 		#if defined(LWS_WITH_CGI)
-			lws_rops_func_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy).
+			aws_lws_rops_func_fidx(&role_ops_cgi, LWS_ROPS_pt_init_destroy).
 						pt_init_destroy(context, NULL, pt, 1);
 		#endif
 
-			lws_pt_mutex_destroy(pt);
+			aws_lws_pt_mutex_destroy(pt);
 			assert(!pt->is_destroyed);
 			pt->destroy_self = 0;
 			pt->is_destroyed = 1;
 
-			lwsl_cx_info(context, "pt %d fully destroyed",
+			aws_lwsl_cx_info(context, "pt %d fully destroyed",
 					(int)(pt - pt->context->pt));
 		}
 
@@ -2127,13 +2127,13 @@ next:
 		 */
 
 #if defined(LWS_WITH_TLS_JIT_TRUST)
-		lws_cache_destroy(&context->trust_cache);
-		lws_tls_jit_trust_inflight_destroy_all(context);
+		aws_lws_cache_destroy(&context->trust_cache);
+		aws_lws_tls_jit_trust_inflight_destroy_all(context);
 #endif
 
 #if defined(LWS_WITH_CACHE_NSCOOKIEJAR) && defined(LWS_WITH_CLIENT)
-		lws_cache_destroy(&context->nsc);
-		lws_cache_destroy(&context->l1);
+		aws_lws_cache_destroy(&context->nsc);
+		aws_lws_cache_destroy(&context->l1);
 #endif
 
 #if defined(LWS_WITH_SYS_SMD)
@@ -2141,16 +2141,16 @@ next:
 #endif
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
-		lws_async_dns_deinit(&context->async_dns);
+		aws_lws_async_dns_deinit(&context->async_dns);
 #endif
 #if defined(LWS_WITH_SYS_DHCP_CLIENT)
-		lws_dhcpc_remove(context, NULL);
+		aws_lws_dhcpc_remove(context, NULL);
 #endif
 
 		if (context->pt[0].fds)
-			lws_free_set_NULL(context->pt[0].fds);
+			aws_lws_free_set_NULL(context->pt[0].fds);
 #endif
-		lws_context_deinit_ssl_library(context);
+		aws_lws_context_deinit_ssl_library(context);
 
 #if defined(LWS_WITH_DETAILED_LATENCIES)
 		if (context->latencies_fd != -1)
@@ -2158,35 +2158,35 @@ next:
 #endif
 
 		for (n = 0; n < LWS_SYSBLOB_TYPE_COUNT; n++)
-			lws_system_blob_destroy(
-					lws_system_get_blob(context, (lws_system_blob_item_t)n, 0));
+			aws_lws_system_blob_destroy(
+					aws_lws_system_get_blob(context, (aws_lws_system_blob_item_t)n, 0));
 
 #if defined(LWS_WITH_NETWORK) && defined(LWS_WITH_SECURE_STREAMS) && \
 	!defined(LWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY)
 
 		while (context->server_der_list) {
-			struct lws_ss_x509 *x = context->server_der_list;
+			struct aws_lws_ss_x509 *x = context->server_der_list;
 
 			context->server_der_list = x->next;
-			lws_free((void *)x->ca_der);
+			aws_lws_free((void *)x->ca_der);
 		}
 
 		if (context->ac_policy)
-			lwsac_free(&context->ac_policy);
+			aws_lwsac_free(&context->ac_policy);
 #endif
 
 		/*
 		 * Context lock is about to go away
 		 */
 
-		lws_context_unlock(context);
+		aws_lws_context_unlock(context);
 
 #if LWS_MAX_SMP > 1
-		lws_mutex_refcount_destroy(&context->mr);
+		aws_lws_mutex_refcount_destroy(&context->mr);
 #endif
 
 #if defined(LWS_WITH_SYS_METRICS) && defined(LWS_WITH_NETWORK)
-		lws_metrics_destroy(context);
+		aws_lws_metrics_destroy(context);
 #endif
 
 		if (context->external_baggage_free_on_destroy)
@@ -2202,17 +2202,17 @@ next:
 
 #if defined(LWS_WITH_EVLIB_PLUGINS) && defined(LWS_WITH_EVENT_LIBS)
 		if (context->evlib_plugin_list)
-			lws_plugins_destroy(&context->evlib_plugin_list,
+			aws_lws_plugins_destroy(&context->evlib_plugin_list,
 					    NULL, NULL);
 #endif
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-		lws_fi_destroy(&context->fic);
+		aws_lws_fi_destroy(&context->fic);
 #endif
 
-		lwsl_refcount_cx(context->log_cx, -1);
+		aws_lwsl_refcount_cx(context->log_cx, -1);
 
-		lws_free(context);
+		aws_lws_free(context);
 
 		if (pcontext_finalize)
 			*pcontext_finalize = NULL;
@@ -2223,20 +2223,20 @@ next:
 #if defined(LWS_WITH_NETWORK)
 bail:
 #endif
-	lwsl_cx_info(context, "leaving");
+	aws_lwsl_cx_info(context, "leaving");
 	context->inside_context_destroy = 0;
-	lws_context_unlock(context);
+	aws_lws_context_unlock(context);
 }
 
 int
-lws_context_is_being_destroyed(struct lws_context *context)
+aws_lws_context_is_being_destroyed(struct aws_lws_context *context)
 {
 	return !!context->being_destroyed;
 }
 
 #if defined(LWS_WITH_SYS_STATE)
-struct lws_context *
-lws_system_context_from_system_mgr(lws_state_manager_t *mgr)
+struct aws_lws_context *
+aws_lws_system_context_from_system_mgr(aws_lws_state_manager_t *mgr)
 {
 #if defined(LWS_WITH_NETWORK)
 	return mgr->context;
@@ -2247,17 +2247,17 @@ lws_system_context_from_system_mgr(lws_state_manager_t *mgr)
 #endif
 
 void
-lws_log_prepend_context(struct lws_log_cx *cx, void *obj, char **p, char *e)
+aws_lws_log_prepend_context(struct aws_lws_log_cx *cx, void *obj, char **p, char *e)
 {
-	struct lws_context *lcx = (struct lws_context *)obj;
+	struct aws_lws_context *lcx = (struct aws_lws_context *)obj;
 
 	if (lcx->name)
-		*p += lws_snprintf(*p, lws_ptr_diff_size_t(e, (*p)), "%s: ",
+		*p += aws_lws_snprintf(*p, aws_lws_ptr_diff_size_t(e, (*p)), "%s: ",
 				   lcx->name);
 }
 
-struct lws_log_cx *
-lwsl_context_get_cx(struct lws_context *cx)
+struct aws_lws_log_cx *
+aws_lwsl_context_get_cx(struct aws_lws_context *cx)
 {
 	if (!cx)
 		return NULL;

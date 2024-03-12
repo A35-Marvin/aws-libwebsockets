@@ -24,13 +24,13 @@
 
 #include <libubox/uloop.h>
 
-struct lws_pt_eventlibs_uloop {
-	struct lws_context_per_thread		*pt;
+struct aws_lws_pt_eventlibs_uloop {
+	struct aws_lws_context_per_thread		*pt;
 	struct uloop_timeout			hrtimer;
 	struct uloop_timeout			idle_timer;
 };
 
-struct lws_wsi_eventlibs_uloop {
+struct aws_lws_wsi_eventlibs_uloop {
 	struct lws				*wsi;
 	struct uloop_fd				fd;
 	unsigned int				actual_events;

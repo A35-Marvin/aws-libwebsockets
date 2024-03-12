@@ -23,7 +23,7 @@
  */
 
 /*! \defgroup Protocols-and-Plugins Protocols and Plugins
- * \ingroup lwsapi
+ * \ingroup aws_lwsapi
  *
  * ##Protocol and protocol plugin -related apis
  *
@@ -38,14 +38,14 @@
  * application each time, since they can be used standalone.
  */
 ///@{
-/** struct lws_protocols -	List of protocols and handlers client or server
+/** struct aws_lws_protocols -	List of protocols and handlers client or server
  *					supports. */
 
-struct lws_protocols {
+struct aws_lws_protocols {
 	const char *name;
 	/**< Protocol name that must match the one given in the client
 	 * Javascript new WebSocket(url, 'protocol') name. */
-	lws_callback_function *callback;
+	aws_lws_callback_function *callback;
 	/**< The service callback used for this protocol.  It allows the
 	 * service action for an entire protocol to be encapsulated in
 	 * the protocol-specific callback */
@@ -89,18 +89,18 @@ struct lws_protocols {
 #define LWS_PROTOCOL_LIST_TERM { NULL, NULL, 0, 0, 0, NULL, 0 }
 
 /**
- * lws_vhost_name_to_protocol() - get vhost's protocol object from its name
+ * aws_lws_vhost_name_to_protocol() - get vhost's protocol object from its name
  *
  * \param vh: vhost to search
  * \param name: protocol name
  *
  * Returns NULL or a pointer to the vhost's protocol of the requested name
  */
-LWS_VISIBLE LWS_EXTERN const struct lws_protocols *
-lws_vhost_name_to_protocol(struct lws_vhost *vh, const char *name);
+LWS_VISIBLE LWS_EXTERN const struct aws_lws_protocols *
+aws_lws_vhost_name_to_protocol(struct aws_lws_vhost *vh, const char *name);
 
 /**
- * lws_get_protocol() - Returns a protocol pointer from a websocket
+ * aws_lws_get_protocol() - Returns a protocol pointer from a websocket
  *				  connection.
  * \param wsi:	pointer to struct websocket you want to know the protocol of
  *
@@ -108,15 +108,15 @@ lws_vhost_name_to_protocol(struct lws_vhost *vh, const char *name);
  *	Some apis can act on all live connections of a given protocol,
  *	this is how you can get a pointer to the active protocol if needed.
  */
-LWS_VISIBLE LWS_EXTERN const struct lws_protocols *
-lws_get_protocol(struct lws *wsi);
+LWS_VISIBLE LWS_EXTERN const struct aws_lws_protocols *
+aws_lws_get_protocol(struct lws *wsi);
 
-/** lws_protocol_get() -  deprecated: use lws_get_protocol */
-LWS_VISIBLE LWS_EXTERN const struct lws_protocols *
-lws_protocol_get(struct lws *wsi) LWS_WARN_DEPRECATED;
+/** aws_lws_protocol_get() -  deprecated: use aws_lws_get_protocol */
+LWS_VISIBLE LWS_EXTERN const struct aws_lws_protocols *
+aws_lws_protocol_get(struct lws *wsi) LWS_WARN_DEPRECATED;
 
 /**
- * lws_protocol_vh_priv_zalloc() - Allocate and zero down a protocol's per-vhost
+ * aws_lws_protocol_vh_priv_zalloc() - Allocate and zero down a protocol's per-vhost
  *				   storage
  * \param vhost:	vhost the instance is related to
  * \param prot:		protocol the instance is related to
@@ -126,27 +126,27 @@ lws_protocol_get(struct lws *wsi) LWS_WARN_DEPRECATED;
  * helper to be called in the per-vhost init LWS_CALLBACK_PROTOCOL_INIT
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_protocol_vh_priv_zalloc(struct lws_vhost *vhost,
-			    const struct lws_protocols *prot, int size);
+aws_lws_protocol_vh_priv_zalloc(struct aws_lws_vhost *vhost,
+			    const struct aws_lws_protocols *prot, int size);
 
 /**
- * lws_protocol_vh_priv_get() - retreive a protocol's per-vhost storage
+ * aws_lws_protocol_vh_priv_get() - retreive a protocol's per-vhost storage
  *
  * \param vhost:	vhost the instance is related to
  * \param prot:		protocol the instance is related to
  *
  * Recover a pointer to the allocated per-vhost storage for the protocol created
- * by lws_protocol_vh_priv_zalloc() earlier
+ * by aws_lws_protocol_vh_priv_zalloc() earlier
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_protocol_vh_priv_get(struct lws_vhost *vhost,
-			 const struct lws_protocols *prot);
+aws_lws_protocol_vh_priv_get(struct aws_lws_vhost *vhost,
+			 const struct aws_lws_protocols *prot);
 
 /**
- * lws_vhd_find_by_pvo() - find a partner vhd
+ * aws_lws_vhd_find_by_pvo() - find a partner vhd
  *
- *  \param cx: the lws_context
- *  \param protname: the name of the lws_protocol the vhd belongs to
+ *  \param cx: the aws_lws_context
+ *  \param protname: the name of the aws_lws_protocol the vhd belongs to
  *  \param pvo_name: the name of a pvo that must exist bound to the vhd
  *  \param pvo_value: the required value of the named pvo
  *
@@ -173,12 +173,12 @@ lws_protocol_vh_priv_get(struct lws_vhost *vhost,
  * partner vhsot-protocol has not been instantiated yet.
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_vhd_find_by_pvo(struct lws_context *cx, const char *protname,
+aws_lws_vhd_find_by_pvo(struct aws_lws_context *cx, const char *protname,
 		    const char *pvo_name, const char *pvo_value);
 
 
 /**
- * lws_adjust_protocol_psds - change a vhost protocol's per session data size
+ * aws_lws_adjust_protocol_psds - change a vhost protocol's per session data size
  *
  * \param wsi: a connection with the protocol to change
  * \param new_size: the new size of the per session data size for the protocol
@@ -192,10 +192,10 @@ lws_vhd_find_by_pvo(struct lws_context *cx, const char *protname,
  * its per session data size at runtime.
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_adjust_protocol_psds(struct lws *wsi, size_t new_size);
+aws_lws_adjust_protocol_psds(struct lws *wsi, size_t new_size);
 
 /**
- * lws_finalize_startup() - drop initial process privileges
+ * aws_lws_finalize_startup() - drop initial process privileges
  *
  * \param context:	lws context
  *
@@ -203,21 +203,21 @@ lws_adjust_protocol_psds(struct lws *wsi, size_t new_size);
  * you may choose to call it earlier
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_finalize_startup(struct lws_context *context);
+aws_lws_finalize_startup(struct aws_lws_context *context);
 
 /**
- * lws_pvo_search() - helper to find a named pvo in a linked-list
+ * aws_lws_pvo_search() - helper to find a named pvo in a linked-list
  *
  * \param pvo:	the first pvo in the linked-list
  * \param name: the name of the pvo to return if found
  *
  * Returns NULL, or a pointer to the name pvo in the linked-list
  */
-LWS_VISIBLE LWS_EXTERN const struct lws_protocol_vhost_options *
-lws_pvo_search(const struct lws_protocol_vhost_options *pvo, const char *name);
+LWS_VISIBLE LWS_EXTERN const struct aws_lws_protocol_vhost_options *
+aws_lws_pvo_search(const struct aws_lws_protocol_vhost_options *pvo, const char *name);
 
 /**
- * lws_pvo_get_str() - retreive a string pvo value
+ * aws_lws_pvo_get_str() - retreive a string pvo value
  *
  * \param in:	the first pvo in the linked-list
  * \param name: the name of the pvo to return if found
@@ -226,10 +226,10 @@ lws_pvo_search(const struct lws_protocol_vhost_options *pvo, const char *name);
  * Returns 0 if found and *result set, or nonzero if not found
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_pvo_get_str(void *in, const char *name, const char **result);
+aws_lws_pvo_get_str(void *in, const char *name, const char **result);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_protocol_init(struct lws_context *context);
+aws_lws_protocol_init(struct aws_lws_context *context);
 
 #define LWS_PLUGIN_API_MAGIC 191
 
@@ -244,29 +244,29 @@ lws_protocol_init(struct lws_context *context);
  * That is the only expected export from the plugin.
  */
 
-typedef struct lws_plugin_header {
+typedef struct aws_lws_plugin_header {
 	const char *name;
 	const char *_class;
-	const char *lws_build_hash; /* set to LWS_BUILD_HASH */
+	const char *aws_lws_build_hash; /* set to LWS_BUILD_HASH */
 
 	unsigned int api_magic;
 	/* set to LWS_PLUGIN_API_MAGIC at plugin build time */
 
 	/* plugin-class specific superclass data follows */
-} lws_plugin_header_t;
+} aws_lws_plugin_header_t;
 
 /*
- * "lws_protocol_plugin" class export, for lws_protocol implementations done
+ * "aws_lws_protocol_plugin" class export, for aws_lws_protocol implementations done
  * as plugins
  */
-typedef struct lws_plugin_protocol {
-	lws_plugin_header_t hdr;
+typedef struct aws_lws_plugin_protocol {
+	aws_lws_plugin_header_t hdr;
 
-	const struct lws_protocols *protocols; /**< array of supported protocols provided by plugin */
-	const struct lws_extension *extensions; /**< array of extensions provided by plugin */
+	const struct aws_lws_protocols *protocols; /**< array of supported protocols provided by plugin */
+	const struct aws_lws_extension *extensions; /**< array of extensions provided by plugin */
 	int count_protocols; /**< how many protocols */
 	int count_extensions; /**< how many extensions */
-} lws_plugin_protocol_t;
+} aws_lws_plugin_protocol_t;
 
 
 /*
@@ -274,10 +274,10 @@ typedef struct lws_plugin_protocol {
  * These are kept in a linked-list and destroyed with the context.
  */
 
-struct lws_plugin {
-	struct lws_plugin *list; /**< linked list */
+struct aws_lws_plugin {
+	struct aws_lws_plugin *list; /**< linked list */
 
-	const lws_plugin_header_t *hdr;
+	const aws_lws_plugin_header_t *hdr;
 
 	union {
 #if defined(LWS_WITH_LIBUV) && defined(UV_ERRNO_MAP)
@@ -294,15 +294,15 @@ struct lws_plugin {
  * Public so new event libs can equally be supported outside lws itself
  */
 
-typedef struct lws_plugin_evlib {
-	lws_plugin_header_t hdr;
-	const struct lws_event_loop_ops *ops;
-} lws_plugin_evlib_t;
+typedef struct aws_lws_plugin_evlib {
+	aws_lws_plugin_header_t hdr;
+	const struct aws_lws_event_loop_ops *ops;
+} aws_lws_plugin_evlib_t;
 
-typedef int (*each_plugin_cb_t)(struct lws_plugin *p, void *user);
+typedef int (*each_plugin_cb_t)(struct aws_lws_plugin *p, void *user);
 
 /**
- * lws_plugins_init() - dynamically load plugins of matching class from dirs
+ * aws_lws_plugins_init() - dynamically load plugins of matching class from dirs
  *
  * \param pplugin:	pointer to linked-list for this kind of plugin
  * \param d: array of directory paths to look in
@@ -316,52 +316,52 @@ typedef int (*each_plugin_cb_t)(struct lws_plugin *p, void *user);
  * pointer each_user to it.
  *
  * To take down the plugins, pass a pointer to the linked-list head to
- * lws_plugins_destroy.
+ * aws_lws_plugins_destroy.
  *
  * This is used for lws protocol plugins but you can define your own plugin
  * class name like "mypluginclass", declare it in your plugin headers, and load
  * your own plugins to your own list using this api the same way.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_plugins_init(struct lws_plugin **pplugin, const char * const *d,
+aws_lws_plugins_init(struct aws_lws_plugin **pplugin, const char * const *d,
 		 const char *_class, const char *filter,
 		 each_plugin_cb_t each, void *each_user);
 
 /**
- * lws_plugins_destroy() - dynamically unload list of plugins
+ * aws_lws_plugins_destroy() - dynamically unload list of plugins
  *
  * \param pplugin:	pointer to linked-list for this kind of plugin
  * \param each: NULL, or each_plugin_cb_t callback for each instantiated plugin
  * \param each_user: pointer passed to each callback
  *
  * Allows you to destroy a class of plugins from a specified linked-list
- * created by a call to lws_plugins_init().
+ * created by a call to aws_lws_plugins_init().
  *
  * The each callback allows you to deinit each inistantiated callback and pass a
  * pointer each_user to it, just before its footprint is destroyed.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_plugins_destroy(struct lws_plugin **pplugin, each_plugin_cb_t each,
+aws_lws_plugins_destroy(struct aws_lws_plugin **pplugin, each_plugin_cb_t each,
 		    void *each_user);
 
 #if defined(LWS_WITH_PLUGINS_BUILTIN)
 
 /* provide exports for builtin plugin protocols */
 
-extern const struct lws_protocols post_demo_protocols[1];
-extern const struct lws_protocols lws_raw_proxy_protocols[1];
-extern const struct lws_protocols lws_status_protocols[1];
-extern const struct lws_protocols lws_mirror_protocols[1];
-extern const struct lws_protocols lws_ssh_base_protocols[2];
-extern const struct lws_protocols post_demo_protocols[1];
-extern const struct lws_protocols dumb_increment_protocols[1];
-extern const struct lws_protocols deaddrop_protocols[1];
-extern const struct lws_protocols lws_raw_test_protocols[1];
-extern const struct lws_protocols lws_sshd_demo_protocols[1];
-extern const struct lws_protocols lws_acme_client_protocols[1];
-extern const struct lws_protocols client_loopback_test_protocols[1];
-extern const struct lws_protocols fulltext_demo_protocols[1];
-extern const struct lws_protocols lws_openmetrics_export_protocols[
+extern const struct aws_lws_protocols post_demo_protocols[1];
+extern const struct aws_lws_protocols aws_lws_raw_proxy_protocols[1];
+extern const struct aws_lws_protocols aws_lws_status_protocols[1];
+extern const struct aws_lws_protocols aws_lws_mirror_protocols[1];
+extern const struct aws_lws_protocols aws_lws_ssh_base_protocols[2];
+extern const struct aws_lws_protocols post_demo_protocols[1];
+extern const struct aws_lws_protocols dumb_increment_protocols[1];
+extern const struct aws_lws_protocols deaddrop_protocols[1];
+extern const struct aws_lws_protocols aws_lws_raw_test_protocols[1];
+extern const struct aws_lws_protocols aws_lws_sshd_demo_protocols[1];
+extern const struct aws_lws_protocols aws_lws_acme_client_protocols[1];
+extern const struct aws_lws_protocols client_loopback_test_protocols[1];
+extern const struct aws_lws_protocols fulltext_demo_protocols[1];
+extern const struct aws_lws_protocols aws_lws_openmetrics_export_protocols[
 #if defined(LWS_WITH_SERVER) && defined(LWS_WITH_CLIENT) && defined(LWS_ROLE_WS)
 	4
 #else

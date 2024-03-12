@@ -21,8 +21,8 @@ same protocol.
 [2018/03/14 11:57:24:0689] USER: LWS minimal ws client rx
 [2018/03/14 11:57:24:0705] NOTICE: Creating Vhost 'default' port -1, 1 protocols, IPv6 off
 [2018/03/14 11:57:24:0710] NOTICE: created client ssl context for default
-[2018/03/14 11:57:24:0788] NOTICE: lws_client_connect_2: 0x15b8310: address libwebsockets.org
-[2018/03/14 11:57:24:7643] NOTICE: lws_client_connect_2: 0x15b8310: address libwebsockets.org
+[2018/03/14 11:57:24:0788] NOTICE: aws_lws_client_connect_2: 0x15b8310: address libwebsockets.org
+[2018/03/14 11:57:24:7643] NOTICE: aws_lws_client_connect_2: 0x15b8310: address libwebsockets.org
 [2018/03/14 11:57:26:9191] USER: RX: 0
 [2018/03/14 11:57:26:9318] USER: RX: 1
 [2018/03/14 11:57:27:2182] USER: RX: 2

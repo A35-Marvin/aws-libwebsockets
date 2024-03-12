@@ -35,12 +35,12 @@
  */
 ///@{
 
-struct lws_ssl_info {
+struct aws_lws_ssl_info {
 	int where;
 	int ret;
 };
 
-enum lws_cert_update_state {
+enum aws_lws_cert_update_state {
 	LWS_CUS_IDLE,
 	LWS_CUS_STARTING,
 	LWS_CUS_SUCCESS,
@@ -75,8 +75,8 @@ enum {
 	LWS_TLS_TOTAL_COUNT
 };
 
-struct lws_acme_cert_aging_args {
-	struct lws_vhost *vh;
+struct aws_lws_acme_cert_aging_args {
+	struct aws_lws_vhost *vh;
 	const char *element_overrides[LWS_TLS_TOTAL_COUNT]; /* NULL = use pvo */
 };
 
@@ -85,18 +85,18 @@ struct lws_acme_cert_aging_args {
  * points to one of these
  */
 
-struct lws_filter_network_conn_args {
+struct aws_lws_filter_network_conn_args {
 	struct sockaddr_storage		cli_addr;
 	socklen_t			clilen;
-	lws_sockfd_type			accept_fd;
+	aws_lws_sockfd_type			accept_fd;
 };
 
 /*
  * NOTE: These public enums are part of the abi.  If you want to add one,
  * add it at where specified so existing users are unaffected.
  */
-/** enum lws_callback_reasons - reason you're getting a protocol callback */
-enum lws_callback_reasons {
+/** enum aws_lws_callback_reasons - reason you're getting a protocol callback */
+enum aws_lws_callback_reasons {
 
 	/* ---------------------------------------------------------------------
 	 * ----- Callbacks related to wsi and protocol binding lifecycle -----
@@ -139,7 +139,7 @@ enum lws_callback_reasons {
 	 * including OpenSSL support, this callback allows your user code
 	 * to load extra certificates into the server which allow it to
 	 * verify the validity of certificates returned by clients.  user
-	 * is the server's OpenSSL SSL_CTX* and in is the lws_vhost */
+	 * is the server's OpenSSL SSL_CTX* and in is the aws_lws_vhost */
 
 	LWS_CALLBACK_OPENSSL_PERFORM_CLIENT_CERT_VERIFICATION	= 23,
 	/**< if the libwebsockets vhost was created with the option
@@ -173,7 +173,7 @@ enum lws_callback_reasons {
 	/**< SSL connections only.  An event you registered an
 	 * interest in at the vhost has occurred on a connection
 	 * using the vhost.  in is a pointer to a
-	 * struct lws_ssl_info containing information about the
+	 * struct aws_lws_ssl_info containing information about the
 	 * event*/
 
 	/* ---------------------------------------------------------------------
@@ -185,7 +185,7 @@ enum lws_callback_reasons {
 	 * this callback is called during OpenSSL verification of the cert
 	 * sent from the server to the client. It is sent to protocol[0]
 	 * callback as no protocol has been negotiated on the connection yet.
-	 * Notice that the wsi is set because lws_client_connect_via_info was
+	 * Notice that the wsi is set because aws_lws_client_connect_via_info was
 	 * successful.
 	 *
 	 * See http://www.openssl.org/docs/ssl/SSL_CTX_set_verify.html
@@ -230,7 +230,7 @@ enum lws_callback_reasons {
 	 * for example, to send a script to the client
 	 * which will then open the websockets connection.
 	 * in points to the URI path requested and
-	 * lws_serve_http_file() makes it very
+	 * aws_lws_serve_http_file() makes it very
 	 * simple to send back a file to the client.
 	 * Normally after sending the file you are done
 	 * with the http connection, since the rest of the
@@ -261,8 +261,8 @@ enum lws_callback_reasons {
 	 * user is a pointer to the connection user space allocation,
 	 * in is the URI, eg, "/"
 	 * In your handler you can use the public APIs
-	 * lws_hdr_total_length() / lws_hdr_copy() to access all of the
-	 * headers using the header enums lws_token_indexes from
+	 * aws_lws_hdr_total_length() / aws_lws_hdr_copy() to access all of the
+	 * headers using the header enums aws_lws_token_indexes from
 	 * libwebsockets.h to check for and read the supported header
 	 * presence and content before deciding to allow the http
 	 * connection to proceed or to kill the connection. */
@@ -270,7 +270,7 @@ enum lws_callback_reasons {
 	LWS_CALLBACK_ADD_HEADERS				= 53,
 	/**< This gives your user code a chance to add headers to a server
 	 * transaction bound to your protocol.  `in` points to a
-	 * `struct lws_process_html_args` describing a buffer and length
+	 * `struct aws_lws_process_html_args` describing a buffer and length
 	 * you can add headers into using the normal lws apis.
 	 *
 	 * (see LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER to add headers to
@@ -281,10 +281,10 @@ enum lws_callback_reasons {
 	 *
 	 * 	case LWS_CALLBACK_ADD_HEADERS:
 	 *
-	 *          struct lws_process_html_args *args =
-	 *          		(struct lws_process_html_args *)in;
+	 *          struct aws_lws_process_html_args *args =
+	 *          		(struct aws_lws_process_html_args *)in;
 	 *
-	 *	    if (lws_add_http_header_by_name(wsi,
+	 *	    if (aws_lws_add_http_header_by_name(wsi,
 	 *			(unsigned char *)"set-cookie:",
 	 *			(unsigned char *)cookie, cookie_len,
 	 *			(unsigned char **)&args->p,
@@ -305,14 +305,14 @@ enum lws_callback_reasons {
 
 	LWS_CALLBACK_CHECK_ACCESS_RIGHTS			= 51,
 	/**< This gives the user code a chance to forbid an http access.
-	 * `in` points to a `struct lws_process_html_args`, which
+	 * `in` points to a `struct aws_lws_process_html_args`, which
 	 * describes the URL, and a bit mask describing the type of
 	 * authentication required.  If the callback returns nonzero,
 	 * the transaction ends with HTTP_STATUS_UNAUTHORIZED. */
 
 	LWS_CALLBACK_PROCESS_HTML				= 52,
 	/**< This gives your user code a chance to mangle outgoing
-	 * HTML.  `in` points to a `struct lws_process_html_args`
+	 * HTML.  `in` points to a `struct aws_lws_process_html_args`
 	 * which describes the buffer containing outgoing HTML.
 	 * The buffer may grow up to `.max_len` (currently +128
 	 * bytes per buffer).
@@ -362,7 +362,7 @@ enum lws_callback_reasons {
 	/**< The HTTP client connection is closing */
 
 	LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ			= 48,
-	/**< This is generated by lws_http_client_read() used to drain
+	/**< This is generated by aws_lws_http_client_read() used to drain
 	 * incoming data.  In the case the incoming data was chunked, it will
 	 * be split into multiple smaller callbacks for each chunk block,
 	 * removing the chunk headers. If not chunked, it will appear all in
@@ -371,17 +371,17 @@ enum lws_callback_reasons {
 	LWS_CALLBACK_RECEIVE_CLIENT_HTTP			= 46,
 	/**< This indicates data was received on the HTTP client connection.  It
 	 * does NOT actually drain or provide the data, so if you are doing
-	 * http client, you MUST handle this and call lws_http_client_read().
+	 * http client, you MUST handle this and call aws_lws_http_client_read().
 	 * Failure to deal with it as in the minimal examples may cause spinning
 	 * around the event loop as it's continuously signalled the same data
 	 * is available for read.  The related minimal examples show how to
 	 * handle it.
 	 *
-	 * It's possible to defer calling lws_http_client_read() if you use
+	 * It's possible to defer calling aws_lws_http_client_read() if you use
 	 * rx flow control to stop further rx handling on the connection until
 	 * you did deal with it.  But normally you would call it in the handler.
 	 *
-	 * lws_http_client_read() strips any chunked framing and calls back
+	 * aws_lws_http_client_read() strips any chunked framing and calls back
 	 * with only payload data to LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ.  The
 	 * chunking is the reason this is not just all done in one callback for
 	 * http.
@@ -393,12 +393,12 @@ enum lws_callback_reasons {
 
 	LWS_CALLBACK_CLIENT_HTTP_WRITEABLE			= 57,
 	/**< when doing an HTTP type client connection, you can call
-	 * lws_client_http_body_pending(wsi, 1) from
+	 * aws_lws_client_http_body_pending(wsi, 1) from
 	 * LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER to get these callbacks
 	 * sending the HTTP headers.
 	 *
 	 * From this callback, when you have sent everything, you should let
-	 * lws know by calling lws_client_http_body_pending(wsi, 0)
+	 * lws know by calling aws_lws_client_http_body_pending(wsi, 0)
 	 */
 
 	LWS_CALLBACK_CLIENT_HTTP_REDIRECT			= 104,
@@ -450,8 +450,8 @@ enum lws_callback_reasons {
 	 * user is a pointer to the connection user space allocation,
 	 * in is the requested protocol name
 	 * In your handler you can use the public APIs
-	 * lws_hdr_total_length() / lws_hdr_copy() to access all of the
-	 * headers using the header enums lws_token_indexes from
+	 * aws_lws_hdr_total_length() / aws_lws_hdr_copy() to access all of the
+	 * headers using the header enums aws_lws_token_indexes from
 	 * libwebsockets.h to check for and read the supported header
 	 * presence and content before deciding to allow the handshake
 	 * to proceed or to kill the connection. */
@@ -486,8 +486,8 @@ enum lws_callback_reasons {
 	 *     	"getaddrinfo (ipv4) failed"
 	 *     	"set socket opts failed"
 	 *     	"insert wsi failed"
-	 *     	"lws_ssl_client_connect1 failed"
-	 *     	"lws_ssl_client_connect2 failed"
+	 *     	"aws_lws_ssl_client_connect1 failed"
+	 *     	"aws_lws_ssl_client_connect2 failed"
 	 *     	"Peer hung up"
 	 *     	"read failed"
 	 *     	"HS: URI missing"
@@ -545,7 +545,7 @@ enum lws_callback_reasons {
 	 *
 	 *	char **p = (char **)in, *end = (*p) + len;
 	 *
-	 *	if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_COOKIE,
+	 *	if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_COOKIE,
 	 *			(unsigned char)"a=b", 3, p, end))
 	 *		return -1;
 	 *
@@ -561,7 +561,7 @@ enum lws_callback_reasons {
 	/**< clients receive PONG packets with this callback reason */
 
 	LWS_CALLBACK_CLIENT_WRITEABLE				= 10,
-	/**<  If you call lws_callback_on_writable() on a connection, you will
+	/**<  If you call aws_lws_callback_on_writable() on a connection, you will
 	 * get one of these callbacks coming when the connection socket
 	 * is able to accept another write packet without blocking.
 	 * If it already was able to take another packet without blocking,
@@ -595,7 +595,7 @@ enum lws_callback_reasons {
 	 * or not, based on the client IP.
 	 *
 	 * user_data in the callback points to a
-	 * struct lws_filter_network_conn_args that is prepared with the
+	 * struct aws_lws_filter_network_conn_args that is prepared with the
 	 * sockfd, and the peer's address information.
 	 *
 	 * in contains the connection socket's descriptor.
@@ -632,7 +632,7 @@ enum lws_callback_reasons {
 	 * serving case.
 	 * This callback happens when a socket needs to be
 	 * added to the polling loop: in points to a struct
-	 * lws_pollargs; the fd member of the struct is the file
+	 * aws_lws_pollargs; the fd member of the struct is the file
 	 * descriptor, and events contains the active events
 	 *
 	 * If you are using the internal lws polling / event loop
@@ -641,14 +641,14 @@ enum lws_callback_reasons {
 	LWS_CALLBACK_DEL_POLL_FD				= 33,
 	/**< This callback happens when a socket descriptor
 	 * needs to be removed from an external polling array.  in is
-	 * again the struct lws_pollargs containing the fd member
+	 * again the struct aws_lws_pollargs containing the fd member
 	 * to be removed.  If you are using the internal polling
 	 * loop, you can just ignore it. */
 
 	LWS_CALLBACK_CHANGE_MODE_POLL_FD			= 34,
 	/**< This callback happens when lws wants to modify the events for
 	 * a connection.
-	 * in is the struct lws_pollargs with the fd to change.
+	 * in is the struct aws_lws_pollargs with the fd to change.
 	 * The new event mask is in events member and the old mask is in
 	 * the prev_events member.
 	 * If you are using the internal polling loop, you can just ignore
@@ -676,26 +676,26 @@ enum lws_callback_reasons {
 
 	LWS_CALLBACK_CGI					= 40,
 	/**< CGI: CGI IO events on stdin / out / err are sent here on
-	 * protocols[0].  The provided `lws_callback_http_dummy()`
+	 * protocols[0].  The provided `aws_lws_callback_http_dummy()`
 	 * handles this and the callback should be directed there if
 	 * you use CGI. */
 
 	LWS_CALLBACK_CGI_TERMINATED				= 41,
 	/**< CGI: The related CGI process ended, this is called before
 	 * the wsi is closed.  Used to, eg, terminate chunking.
-	 * The provided `lws_callback_http_dummy()`
+	 * The provided `aws_lws_callback_http_dummy()`
 	 * handles this and the callback should be directed there if
 	 * you use CGI.  The child PID that terminated is in len. */
 
 	LWS_CALLBACK_CGI_STDIN_DATA				= 42,
 	/**< CGI: Data is, to be sent to the CGI process stdin, eg from
-	 * a POST body.  The provided `lws_callback_http_dummy()`
+	 * a POST body.  The provided `aws_lws_callback_http_dummy()`
 	 * handles this and the callback should be directed there if
 	 * you use CGI. */
 
 	LWS_CALLBACK_CGI_STDIN_COMPLETED			= 43,
 	/**< CGI: no more stdin is coming.  The provided
-	 * `lws_callback_http_dummy()` handles this and the callback
+	 * `aws_lws_callback_http_dummy()` handles this and the callback
 	 * should be directed there if you use CGI. */
 
 	LWS_CALLBACK_CGI_PROCESS_ATTACH				= 70,
@@ -708,13 +708,13 @@ enum lws_callback_reasons {
 
 	LWS_CALLBACK_SESSION_INFO				= 54,
 	/**< This is only generated by user code using generic sessions.
-	 * It's used to get a `struct lws_session_info` filled in by
+	 * It's used to get a `struct aws_lws_session_info` filled in by
 	 * generic sessions with information about the logged-in user.
 	 * See the messageboard sample for an example of how to use. */
 
 	LWS_CALLBACK_GS_EVENT					= 55,
 	/**< Indicates an event happened to the Generic Sessions session.
-	 * `in` contains a `struct lws_gs_event_args` describing the event. */
+	 * `in` contains a `struct aws_lws_gs_event_args` describing the event. */
 
 	LWS_CALLBACK_HTTP_PMO					= 56,
 	/**< per-mount options for this connection, called before
@@ -808,17 +808,17 @@ enum lws_callback_reasons {
 
 	LWS_CALLBACK_TIMER					= 73,
 	/**< When the time elapsed after a call to
-	 * lws_set_timer_usecs(wsi, usecs) is up, the wsi will get one of
+	 * aws_lws_set_timer_usecs(wsi, usecs) is up, the wsi will get one of
 	 * these callbacks.  The deadline can be continuously extended into the
-	 * future by later calls to lws_set_timer_usecs() before the deadline
-	 * expires, or cancelled by lws_set_timer_usecs(wsi, -1);
+	 * future by later calls to aws_lws_set_timer_usecs() before the deadline
+	 * expires, or cancelled by aws_lws_set_timer_usecs(wsi, -1);
 	 */
 
 	LWS_CALLBACK_EVENT_WAIT_CANCELLED			= 71,
 	/**< This is sent to every protocol of every vhost in response
-	 * to lws_cancel_service() or lws_cancel_service_pt().  This
+	 * to aws_lws_cancel_service() or aws_lws_cancel_service_pt().  This
 	 * callback is serialized in the lws event loop normally, even
-	 * if the lws_cancel_service[_pt]() call was from a different
+	 * if the aws_lws_cancel_service[_pt]() call was from a different
 	 * thread. */
 
 	LWS_CALLBACK_CHILD_CLOSING				= 69,
@@ -829,7 +829,7 @@ enum lws_callback_reasons {
 	LWS_CALLBACK_CONNECTING					= 105,
 	/**< Called before a socketfd is about to connect().  In is the
 	 * socketfd, cast to a (void *), if on a platform where the socketfd
-	 * is an int, recover portably using (lws_sockfd_type)(intptr_t)in.
+	 * is an int, recover portably using (aws_lws_sockfd_type)(intptr_t)in.
 	 *
 	 * It's also called in SOCKS5 or http_proxy cases where the socketfd is
 	 * going to try to connect to its proxy.
@@ -843,9 +843,9 @@ enum lws_callback_reasons {
 	/**< When a vhost TLS cert has its expiry checked, this callback
 	 * is broadcast to every protocol of every vhost in case the
 	 * protocol wants to take some action with this information.
-	 * \p in is a pointer to a struct lws_acme_cert_aging_args,
+	 * \p in is a pointer to a struct aws_lws_acme_cert_aging_args,
 	 * and \p len is the number of days left before it expires, as
-	 * a (ssize_t).  In the struct lws_acme_cert_aging_args, vh
+	 * a (ssize_t).  In the struct aws_lws_acme_cert_aging_args, vh
 	 * points to the vhost the cert aging information applies to,
 	 * and element_overrides[] is an optional way to update information
 	 * from the pvos... NULL in an index means use the information from
@@ -856,7 +856,7 @@ enum lws_callback_reasons {
 	/**< When a vhost TLS cert is being updated, progress is
 	 * reported to the vhost in question here, including completion
 	 * and failure.  in points to optional JSON, and len represents the
-	 * connection state using enum lws_cert_update_state */
+	 * connection state using enum aws_lws_cert_update_state */
 
 	/* ---------------------------------------------------------------------
 	 * ----- Callbacks related to MQTT Client  -----
@@ -897,7 +897,7 @@ enum lws_callback_reasons {
 
 
 /**
- * typedef lws_callback_function() - User server actions
+ * typedef aws_lws_callback_function() - User server actions
  * \param wsi:	Opaque websocket instance pointer
  * \param reason:	The reason for the call
  * \param user:	Pointer to per-session user data allocated by library
@@ -909,10 +909,10 @@ enum lws_callback_reasons {
  *
  *	For each connection / session there is user data allocated that is
  *	pointed to by "user".  You set the size of this user data area when
- *	the library is initialized with lws_create_server.
+ *	the library is initialized with aws_lws_create_server.
  */
 typedef int
-lws_callback_function(struct lws *wsi, enum lws_callback_reasons reason,
+aws_lws_callback_function(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		    void *user, void *in, size_t len);
 
 #define LWS_CB_REASON_AUX_BF__CGI		1

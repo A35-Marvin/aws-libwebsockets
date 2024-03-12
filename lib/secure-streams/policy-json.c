@@ -249,11 +249,11 @@ typedef enum {
 
 static uint16_t sizes[] = {
 	sizeof(backoff_t),
-	sizeof(lws_ss_x509_t),
-	sizeof(lws_ss_trust_store_t),
-	sizeof(lws_ss_policy_t),
-	sizeof(lws_ss_auth_t),
-	sizeof(lws_metric_policy_t),
+	sizeof(aws_lws_ss_x509_t),
+	sizeof(aws_lws_ss_trust_store_t),
+	sizeof(aws_lws_ss_policy_t),
+	sizeof(aws_lws_ss_auth_t),
+	sizeof(aws_lws_metric_policy_t),
 };
 
 static const char * const protonames[] = {
@@ -264,11 +264,11 @@ static const char * const protonames[] = {
 	"raw",		/* LWSSSP_RAW */
 };
 
-static const lws_ss_auth_t *
-lws_ss_policy_find_auth_by_name(struct policy_cb_args *a,
+static const aws_lws_ss_auth_t *
+aws_lws_ss_policy_find_auth_by_name(struct policy_cb_args *a,
 				const char *name, size_t len)
 {
-	const lws_ss_auth_t *auth = a->heads[LTY_AUTH].a;
+	const aws_lws_ss_auth_t *auth = a->heads[LTY_AUTH].a;
 
 	while (auth) {
 		if (auth->name &&
@@ -283,14 +283,14 @@ lws_ss_policy_find_auth_by_name(struct policy_cb_args *a,
 }
 
 static int
-lws_ss_policy_alloc_helper(struct policy_cb_args *a, int type)
+aws_lws_ss_policy_alloc_helper(struct policy_cb_args *a, int type)
 {
 	/*
 	 * We do the pointers always as .b union member, all of the
 	 * participating structs begin with .next and .name the same
 	 */
 
-	a->curr[type].b = lwsac_use_zero(&a->ac,
+	a->curr[type].b = aws_lwsac_use_zero(&a->ac,
 				sizes[type], POL_AC_GRAIN);
 	if (!a->curr[type].b)
 		return 1;
@@ -302,24 +302,24 @@ lws_ss_policy_alloc_helper(struct policy_cb_args *a, int type)
 }
 
 static signed char
-lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
+aws_lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 {
 	struct policy_cb_args *a = (struct policy_cb_args *)ctx->user;
 #if defined(LWS_WITH_SSPLUGINS)
-	const lws_ss_plugin_t **pin;
+	const aws_lws_ss_plugin_t **pin;
 #endif
 	char **pp, dotstar[32], *q;
-	lws_ss_trust_store_t *ts;
-	lws_ss_metadata_t *pmd;
-	lws_ss_x509_t *x, **py;
-	lws_ss_policy_t *p2;
-	lws_retry_bo_t *b;
+	aws_lws_ss_trust_store_t *ts;
+	aws_lws_ss_metadata_t *pmd;
+	aws_lws_ss_x509_t *x, **py;
+	aws_lws_ss_policy_t *p2;
+	aws_lws_retry_bo_t *b;
 	size_t inl, outl;
 	uint8_t *extant;
 	backoff_t *bot;
 	int n = -1;
 
-//	lwsl_debug("%s: %d %d %s\n", __func__, reason, ctx->path_match - 1,
+//	aws_lwsl_debug("%s: %d %d %s\n", __func__, reason, ctx->path_match - 1,
 //		   ctx->path);
 
 	switch (ctx->path_match - 1) {
@@ -355,30 +355,30 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 		a->count = 0;
 
 	if (reason == LEJPCB_OBJECT_START && n == LTY_AUTH) {
-		if (lws_ss_policy_alloc_helper(a, LTY_AUTH))
+		if (aws_lws_ss_policy_alloc_helper(a, LTY_AUTH))
 			goto oom;
 		return 0;
 	}
 
 	if (reason == LEJPCB_ARRAY_END &&
 	    ctx->path_match - 1 == LSSPPT_TRUST_STORES_STACK && !a->count) {
-		lwsl_err("%s: at least one cert required in trust store\n",
+		aws_lwsl_err("%s: at least one cert required in trust store\n",
 				__func__);
 		goto oom;
 	}
 
 	if (reason == LEJPCB_ARRAY_END && a->count && a->pending_respmap) {
 
-		// lwsl_notice("%s: allocating respmap %d\n", __func__, a->count);
+		// aws_lwsl_notice("%s: allocating respmap %d\n", __func__, a->count);
 
-		a->curr[LTY_POLICY].p->u.http.respmap = lwsac_use_zero(&a->ac,
-			sizeof(lws_ss_http_respmap_t) * (unsigned int)a->count, POL_AC_GRAIN);
+		a->curr[LTY_POLICY].p->u.http.respmap = aws_lwsac_use_zero(&a->ac,
+			sizeof(aws_lws_ss_http_respmap_t) * (unsigned int)a->count, POL_AC_GRAIN);
 
 		if (!a->curr[LTY_POLICY].p->u.http.respmap)
 			goto oom;
 
 		memcpy((void *)a->curr[LTY_POLICY].p->u.http.respmap,
-		       a->respmap, sizeof(lws_ss_http_respmap_t) * (unsigned int)a->count);
+		       a->respmap, sizeof(aws_lws_ss_http_respmap_t) * (unsigned int)a->count);
 		a->curr[LTY_POLICY].p->u.http.count_respmap = (uint8_t)a->count;
 		a->count = 0;
 		a->pending_respmap = 0;
@@ -392,10 +392,10 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 		 * we decoded it into the a->p temp buffer and know the exact
 		 * size.
 		 *
-		 * The struct *x is in the lwsac... the ca_der it points to
+		 * The struct *x is in the aws_lwsac... the ca_der it points to
 		 * is individually allocated from the heap
 		 */
-		a->curr[LTY_X509].x->ca_der = lws_malloc((unsigned int)a->count, "ssx509");
+		a->curr[LTY_X509].x->ca_der = aws_lws_malloc((unsigned int)a->count, "ssx509");
 		if (!a->curr[LTY_X509].x->ca_der)
 			goto oom;
 		memcpy((uint8_t *)a->curr[LTY_X509].x->ca_der, a->p, (unsigned int)a->count);
@@ -404,7 +404,7 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 		/*
 		 * ... and then we can free the temp buffer
 		 */
-		lws_free_set_NULL(a->p);
+		aws_lws_free_set_NULL(a->p);
 
 		return 0;
 	}
@@ -420,14 +420,14 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 			 * select streamtype members of a streamtype that was
 			 * already defined
 			 */
-			p2 = (lws_ss_policy_t *)a->context->pss_policies;
+			p2 = (aws_lws_ss_policy_t *)a->context->pss_policies;
 
 			while (p2) {
 				if (!strncmp(p2->streamtype,
 					     ctx->path + ctx->st[ctx->sp].p,
 					     (unsigned int)(ctx->path_match_len -
 						          ctx->st[ctx->sp].p))) {
-					lwsl_info("%s: overriding s[] %s\n",
+					aws_lwsl_info("%s: overriding s[] %s\n",
 						  __func__, p2->streamtype);
 					break;
 				}
@@ -443,13 +443,13 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 		if (p2) /* we may be overriding existing streamtype... */
 			a->curr[n].b = (backoff_t *)p2;
 		else
-			a->curr[n].b = lwsac_use_zero(&a->ac, sizes[n],
+			a->curr[n].b = aws_lwsac_use_zero(&a->ac, sizes[n],
 							POL_AC_GRAIN);
 		if (!a->curr[n].b)
 			goto oom;
 
 		if (n == LTY_X509) {
-			a->p = lws_malloc(MAX_CERT_TEMP, "cert temp");
+			a->p = aws_lws_malloc(MAX_CERT_TEMP, "cert temp");
 			if (!a->p)
 				goto oom;
 			memset(&a->b64, 0, sizeof(a->b64));
@@ -491,11 +491,11 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 	case LSSPPT_BACKOFF:
 		b = &a->curr[LTY_BACKOFF].b->r;
 		if (b->retry_ms_table_count == 8) {
-			lwsl_err("%s: > 8 backoff levels\n", __func__);
+			aws_lwsl_err("%s: > 8 backoff levels\n", __func__);
 			return 1;
 		}
 		if (!b->retry_ms_table_count) {
-			b->retry_ms_table = (uint32_t *)lwsac_use_zero(&a->ac,
+			b->retry_ms_table = (uint32_t *)aws_lwsac_use_zero(&a->ac,
 					   sizeof(uint32_t) * 8, POL_AC_GRAIN);
 			if (!b->retry_ms_table)
 				goto oom;
@@ -523,24 +523,24 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 
 	case LSSPPT_CERTS:
 		if (a->count + ctx->npos >= MAX_CERT_TEMP) {
-			lwsl_err("%s: cert too big\n", __func__);
+			aws_lwsl_err("%s: cert too big\n", __func__);
 			goto oom;
 		}
 		inl = ctx->npos;
 		outl = MAX_CERT_TEMP - (unsigned int)a->count;
 
-		lws_b64_decode_stateful(&a->b64, ctx->buf, &inl,
+		aws_lws_b64_decode_stateful(&a->b64, ctx->buf, &inl,
 					a->p + a->count, &outl,
 					reason == LEJPCB_VAL_STR_END);
 		a->count += (int)outl;
 		if (inl != ctx->npos) {
-			lwsl_err("%s: b64 decode fail\n", __func__);
+			aws_lwsl_err("%s: b64 decode fail\n", __func__);
 			goto oom;
 		}
 		break;
 
 	case LSSPPT_TRUST_STORES_NAME:
-		if (lws_ss_policy_alloc_helper(a, LTY_TRUSTSTORE))
+		if (aws_lws_ss_policy_alloc_helper(a, LTY_TRUSTSTORE))
 			goto oom;
 
 		a->count = 0;
@@ -551,10 +551,10 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 	case LSSPPT_TRUST_STORES_STACK:
 		if (a->count >= (int)LWS_ARRAY_SIZE(
 					a->curr[LTY_TRUSTSTORE].t->ssx509)) {
-			lwsl_err("%s: trust store too big\n", __func__);
+			aws_lwsl_err("%s: trust store too big\n", __func__);
 			goto oom;
 		}
-		lwsl_debug("%s: trust stores stack %.*s\n", __func__,
+		aws_lwsl_debug("%s: trust stores stack %.*s\n", __func__,
 			   ctx->npos, ctx->buf);
 		x = a->heads[LTY_X509].x;
 		while (x) {
@@ -566,13 +566,13 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 			}
 			x = x->next;
 		}
-		lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
-		lwsl_err("%s: unknown trust store entry %s\n", __func__,
+		aws_lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
+		aws_lwsl_err("%s: unknown trust store entry %s\n", __func__,
 			 dotstar);
 		goto oom;
 #if defined(LWS_WITH_SYS_METRICS)
 	case LSSPPT_METRICS_NAME:
-		if (lws_ss_policy_alloc_helper(a, LTY_METRICS))
+		if (aws_lws_ss_policy_alloc_helper(a, LTY_METRICS))
 			goto oom;
 
 		pp = (char **)&a->curr[LTY_METRICS].b->name;
@@ -616,7 +616,7 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 				 * instantiated when the server is brought up
 				 */
 				x->keep = 1;
-				lwsl_notice("%s: server '%s' keep %d %p\n",
+				aws_lwsl_notice("%s: server '%s' keep %d %p\n",
 					    __func__, x->vhost_name,
 						ctx->path_match - 1, x);
 
@@ -642,8 +642,8 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 			py = &x->next;
 			x = x->next;
 		}
-		lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
-		lwsl_err("%s: unknown cert / key %s\n", __func__, dotstar);
+		aws_lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
+		aws_lwsl_err("%s: unknown cert / key %s\n", __func__, dotstar);
 		goto oom;
 
 	case LSSPPT_ENDPOINT:
@@ -705,7 +705,7 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 		pin = a->context->pss_plugins;
 		if (a->count ==
 			  (int)LWS_ARRAY_SIZE(a->curr[LTY_POLICY].p->plugins)) {
-			lwsl_err("%s: too many plugins\n", __func__);
+			aws_lwsl_err("%s: too many plugins\n", __func__);
 
 			goto oom;
 		}
@@ -718,7 +718,7 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 			}
 			pin++;
 		}
-		lwsl_err("%s: unknown plugin\n", __func__);
+		aws_lwsl_err("%s: unknown plugin\n", __func__);
 		goto oom;
 #else
 		break;
@@ -837,7 +837,7 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 			}
 			bot = bot->next;
 		}
-		lwsl_err("%s: unknown backoff scheme\n", __func__);
+		aws_lwsl_err("%s: unknown backoff scheme\n", __func__);
 
 		return -1;
 
@@ -850,8 +850,8 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 			}
 			ts = ts->next;
 		}
-		lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
-		lwsl_err("%s: unknown trust store name %s\n", __func__,
+		aws_lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
+		aws_lwsl_err("%s: unknown trust store name %s\n", __func__,
 			 dotstar);
 
 		return -1;
@@ -861,10 +861,10 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 
 	case LSSPPT_USE_AUTH:
 		a->curr[LTY_POLICY].p->auth =
-			lws_ss_policy_find_auth_by_name(a, ctx->buf, ctx->npos);
+			aws_lws_ss_policy_find_auth_by_name(a, ctx->buf, ctx->npos);
 		if (!a->curr[LTY_POLICY].p->auth) {
-			lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
-			lwsl_err("%s: unknown auth '%s'\n", __func__, dotstar);
+			aws_lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
+			aws_lwsl_err("%s: unknown auth '%s'\n", __func__, dotstar);
 			return -1;
 		}
 		break;
@@ -872,14 +872,14 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 
 	case LSSPPT_METADATA_ITEM:
 		pmd = a->curr[LTY_POLICY].p->metadata;
-		a->curr[LTY_POLICY].p->metadata = lwsac_use_zero(&a->ac,
-			sizeof(lws_ss_metadata_t) + ctx->npos +
+		a->curr[LTY_POLICY].p->metadata = aws_lwsac_use_zero(&a->ac,
+			sizeof(aws_lws_ss_metadata_t) + ctx->npos +
 			(unsigned int)(ctx->path_match_len - ctx->st[ctx->sp - 2].p + 1) + 2,
 			POL_AC_GRAIN);
 		a->curr[LTY_POLICY].p->metadata->next = pmd;
 
 		q = (char *)a->curr[LTY_POLICY].p->metadata +
-				sizeof(lws_ss_metadata_t);
+				sizeof(aws_lws_ss_metadata_t);
 		a->curr[LTY_POLICY].p->metadata->name = q;
 		memcpy(q, ctx->path + ctx->st[ctx->sp - 2].p + 1,
 		       (unsigned int)(ctx->path_match_len - ctx->st[ctx->sp - 2].p));
@@ -895,7 +895,7 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 		 * no header string match else it's the well-known header index
 		 */
 		a->curr[LTY_POLICY].p->metadata->value_is_http_token = (uint8_t)
-			lws_http_string_to_known_header(ctx->buf, ctx->npos);
+			aws_lws_http_string_to_known_header(ctx->buf, ctx->npos);
 #endif
 
 		a->curr[LTY_POLICY].p->metadata->length = /* the index in handle->metadata */
@@ -908,7 +908,7 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 
 	case LSSPPT_HTTPRESPMAP_ITEM:
 		if (a->count >= (int)LWS_ARRAY_SIZE(a->respmap)) {
-			lwsl_err("%s: respmap too big\n", __func__);
+			aws_lwsl_err("%s: respmap too big\n", __func__);
 			return -1;
 		}
 		a->respmap[a->count].resp = (uint16_t)
@@ -1080,8 +1080,8 @@ lws_ss_policy_parser_cb(struct lejp_ctx *ctx, char reason)
 
 		if (a->curr[LTY_POLICY].p->protocol != 0xff)
 			break;
-		lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
-		lwsl_err("%s: unknown protocol name %s\n", __func__, dotstar);
+		aws_lws_strnncpy(dotstar, ctx->buf, ctx->npos, sizeof(dotstar));
+		aws_lwsl_err("%s: unknown protocol name %s\n", __func__, dotstar);
 		return -1;
 
 	default:
@@ -1095,13 +1095,13 @@ string2:
 	 * If we can do const string folding, reuse the existing string rather
 	 * than make a new entry
 	 */
-	extant = lwsac_scan_extant(a->ac, (uint8_t *)ctx->buf, (size_t)ctx->npos, 1);
+	extant = aws_lwsac_scan_extant(a->ac, (uint8_t *)ctx->buf, (size_t)ctx->npos, 1);
 	if (extant) {
 		*pp = (char *)extant;
 
 		return 0;
 	}
-	*pp = lwsac_use_backfill(&a->ac, (size_t)(ctx->npos + 1), POL_AC_GRAIN);
+	*pp = aws_lwsac_use_backfill(&a->ac, (size_t)(ctx->npos + 1), POL_AC_GRAIN);
 	if (!*pp)
 		goto oom;
 	memcpy(*pp, ctx->buf, ctx->npos);
@@ -1111,7 +1111,7 @@ string2:
 
 string1:
 	n = ctx->st[ctx->sp].p;
-	*pp = lwsac_use_backfill(&a->ac, (size_t)ctx->path_match_len + (size_t)1 - (size_t)n,
+	*pp = aws_lwsac_use_backfill(&a->ac, (size_t)ctx->path_match_len + (size_t)1 - (size_t)n,
 				 POL_AC_GRAIN);
 	if (!*pp)
 		goto oom;
@@ -1121,27 +1121,27 @@ string1:
 	return 0;
 
 oom:
-	lwsl_err("%s: OOM\n", __func__);
-	lws_free_set_NULL(a->p);
-	lwsac_free(&a->ac);
+	aws_lwsl_err("%s: OOM\n", __func__);
+	aws_lws_free_set_NULL(a->p);
+	aws_lwsac_free(&a->ac);
 
 	return -1;
 }
 
 int
-lws_ss_policy_parse_begin(struct lws_context *context, int overlay)
+aws_lws_ss_policy_parse_begin(struct aws_lws_context *context, int overlay)
 {
 	struct policy_cb_args *args;
 	char *p;
 
-	args = lws_zalloc(sizeof(struct policy_cb_args), __func__);
+	args = aws_lws_zalloc(sizeof(struct policy_cb_args), __func__);
 	if (!args) {
-		lwsl_err("%s: OOM\n", __func__);
+		aws_lwsl_err("%s: OOM\n", __func__);
 
 		return 1;
 	}
 	if (overlay)
-		/* continue to use the existing lwsac */
+		/* continue to use the existing aws_lwsac */
 		args->ac = context->ac_policy;
 	else
 		/* we don't want to see any old policy */
@@ -1149,25 +1149,25 @@ lws_ss_policy_parse_begin(struct lws_context *context, int overlay)
 
 	context->pol_args = args;
 	args->context = context;
-	p = lwsac_use(&args->ac, 1, POL_AC_INITIAL);
+	p = aws_lwsac_use(&args->ac, 1, POL_AC_INITIAL);
 	if (!p) {
-		lwsl_err("%s: OOM\n", __func__);
-		lws_free_set_NULL(context->pol_args);
+		aws_lwsl_err("%s: OOM\n", __func__);
+		aws_lws_free_set_NULL(context->pol_args);
 
 		return -1;
 	}
 	*p = 0;
-	lejp_construct(&args->jctx, lws_ss_policy_parser_cb, args,
+	lejp_construct(&args->jctx, aws_lws_ss_policy_parser_cb, args,
 		       lejp_tokens_policy, LWS_ARRAY_SIZE(lejp_tokens_policy));
 
 	return 0;
 }
 
 int
-lws_ss_policy_parse_abandon(struct lws_context *context)
+aws_lws_ss_policy_parse_abandon(struct aws_lws_context *context)
 {
 	struct policy_cb_args *args = (struct policy_cb_args *)context->pol_args;
-	lws_ss_x509_t *x;
+	aws_lws_ss_x509_t *x;
 
 	x = args->heads[LTY_X509].x;
 	while (x) {
@@ -1175,7 +1175,7 @@ lws_ss_policy_parse_abandon(struct lws_context *context)
 		 * Free all the client DER buffers now they have been parsed
 		 * into tls library X.509 objects
 		 */
-		lws_free((void *)x->ca_der);
+		aws_lws_free((void *)x->ca_der);
 		x->ca_der = NULL;
 
 		x = x->next;
@@ -1183,15 +1183,15 @@ lws_ss_policy_parse_abandon(struct lws_context *context)
 
 	x = context->server_der_list;
 	while (x) {
-		lws_free((void *)x->ca_der);
+		aws_lws_free((void *)x->ca_der);
 		x->ca_der = NULL;
 
 		x = x->next;
 	}
 
 	lejp_destruct(&args->jctx);
-	lwsac_free(&args->ac);
-	lws_free_set_NULL(context->pol_args);
+	aws_lwsac_free(&args->ac);
+	aws_lws_free_set_NULL(context->pol_args);
 
 	context->server_der_list = NULL;
 
@@ -1200,11 +1200,11 @@ lws_ss_policy_parse_abandon(struct lws_context *context)
 
 #if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE)
 int
-lws_ss_policy_parse_file(struct lws_context *cx, const char *filepath)
+aws_lws_ss_policy_parse_file(struct aws_lws_context *cx, const char *filepath)
 {
 	struct policy_cb_args *args = (struct policy_cb_args *)cx->pol_args;
 	uint8_t buf[512];
-	int n, m, fd = lws_open(filepath, LWS_O_RDONLY);
+	int n, m, fd = aws_lws_open(filepath, LWS_O_RDONLY);
 
 	if (fd < 0)
 		return LEJP_REJECT_UNKNOWN;
@@ -1218,10 +1218,10 @@ lws_ss_policy_parse_file(struct lws_context *cx, const char *filepath)
 
 		m = lejp_parse(&args->jctx, buf, n);
 		if (m != LEJP_CONTINUE && m < 0) {
-			lwsl_err("%s: parse failed line %u: %d: %s\n", __func__,
+			aws_lwsl_err("%s: parse failed line %u: %d: %s\n", __func__,
 				 (unsigned int)args->jctx.line, m,
 				 lejp_error_to_string(m));
-			lws_ss_policy_parse_abandon(cx);
+			aws_lws_ss_policy_parse_abandon(cx);
 
 			m = -1;
 			goto bail;
@@ -1240,14 +1240,14 @@ bail:
 #endif
 
 int
-lws_ss_policy_parse(struct lws_context *context, const uint8_t *buf, size_t len)
+aws_lws_ss_policy_parse(struct aws_lws_context *context, const uint8_t *buf, size_t len)
 {
 	struct policy_cb_args *args = (struct policy_cb_args *)context->pol_args;
 	int m;
 
 #if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE)
 	if (args->jctx.line < 2 && buf[0] != '{' && !args->parse_data)
-		return lws_ss_policy_parse_file(context, (const char *)buf);
+		return aws_lws_ss_policy_parse_file(context, (const char *)buf);
 #endif
 
 	args->parse_data = 1;
@@ -1255,24 +1255,24 @@ lws_ss_policy_parse(struct lws_context *context, const uint8_t *buf, size_t len)
 	if (m == LEJP_CONTINUE || m >= 0)
 		return m;
 
-	lwsl_err("%s: parse failed line %u: %d: %s\n", __func__,
+	aws_lwsl_err("%s: parse failed line %u: %d: %s\n", __func__,
 		 (unsigned int)args->jctx.line, m, lejp_error_to_string(m));
-	lws_ss_policy_parse_abandon(context);
+	aws_lws_ss_policy_parse_abandon(context);
 	assert(0);
 
 	return m;
 }
 
 int
-lws_ss_policy_overlay(struct lws_context *context, const char *overlay)
+aws_lws_ss_policy_overlay(struct aws_lws_context *context, const char *overlay)
 {
-	lws_ss_policy_parse_begin(context, 1);
-	return lws_ss_policy_parse(context, (const uint8_t *)overlay,
+	aws_lws_ss_policy_parse_begin(context, 1);
+	return aws_lws_ss_policy_parse(context, (const uint8_t *)overlay,
 				   strlen(overlay));
 }
 
-const lws_ss_policy_t *
-lws_ss_policy_get(struct lws_context *context)
+const aws_lws_ss_policy_t *
+aws_lws_ss_policy_get(struct aws_lws_context *context)
 {
 	struct policy_cb_args *args = (struct policy_cb_args *)context->pol_args;
 
@@ -1282,8 +1282,8 @@ lws_ss_policy_get(struct lws_context *context)
 	return args->heads[LTY_POLICY].p;
 }
 
-const lws_ss_auth_t *
-lws_ss_auth_get(struct lws_context *context)
+const aws_lws_ss_auth_t *
+aws_lws_ss_auth_get(struct aws_lws_context *context)
 {
 	struct policy_cb_args *args = (struct policy_cb_args *)context->pol_args;
 

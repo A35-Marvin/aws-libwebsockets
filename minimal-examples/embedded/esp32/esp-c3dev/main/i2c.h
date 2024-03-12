@@ -17,19 +17,19 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef struct lws_i2c_ops {
-	int  (*start)(struct lws_i2c_ops *ctx);
-	void (*stop)(struct lws_i2c_ops *ctx);
-	int  (*write)(struct lws_i2c_ops *ctx, uint8_t data);
-	int  (*read)(struct lws_i2c_ops *ctx);
-	void (*set_ack)(struct lws_i2c_ops *octx, int ack);
-} lws_i2c_ops_t;
+typedef struct aws_lws_i2c_ops {
+	int  (*start)(struct aws_lws_i2c_ops *ctx);
+	void (*stop)(struct aws_lws_i2c_ops *ctx);
+	int  (*write)(struct aws_lws_i2c_ops *ctx, uint8_t data);
+	int  (*read)(struct aws_lws_i2c_ops *ctx);
+	void (*set_ack)(struct aws_lws_i2c_ops *octx, int ack);
+} aws_lws_i2c_ops_t;
 
 int
-lws_i2c_command(lws_i2c_ops_t *ctx, uint8_t ads, uint8_t c);
+aws_lws_i2c_command(aws_lws_i2c_ops_t *ctx, uint8_t ads, uint8_t c);
 
 int
-lws_i2c_command_list(lws_i2c_ops_t *ctx, uint8_t ads, const uint8_t *buf, size_t len);
+aws_lws_i2c_command_list(aws_lws_i2c_ops_t *ctx, uint8_t ads, const uint8_t *buf, size_t len);
 
 #endif
 

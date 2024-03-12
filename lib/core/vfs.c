@@ -25,54 +25,54 @@
 #include "private-lib-core.h"
 
 void
-lws_set_fops(struct lws_context *context, const struct lws_plat_file_ops *fops)
+aws_lws_set_fops(struct aws_lws_context *context, const struct aws_lws_plat_file_ops *fops)
 {
 	context->fops = fops;
 }
 
-lws_filepos_t
-lws_vfs_tell(lws_fop_fd_t fop_fd)
+aws_lws_filepos_t
+aws_lws_vfs_tell(aws_lws_fop_fd_t fop_fd)
 {
 	return fop_fd->pos;
 }
 
-lws_filepos_t
-lws_vfs_get_length(lws_fop_fd_t fop_fd)
+aws_lws_filepos_t
+aws_lws_vfs_get_length(aws_lws_fop_fd_t fop_fd)
 {
 	return fop_fd->len;
 }
 
 uint32_t
-lws_vfs_get_mod_time(lws_fop_fd_t fop_fd)
+aws_lws_vfs_get_mod_time(aws_lws_fop_fd_t fop_fd)
 {
 	return fop_fd->mod_time;
 }
 
-lws_fileofs_t
-lws_vfs_file_seek_set(lws_fop_fd_t fop_fd, lws_fileofs_t offset)
+aws_lws_fileofs_t
+aws_lws_vfs_file_seek_set(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
 {
-	lws_fileofs_t ofs;
+	aws_lws_fileofs_t ofs;
 
 	ofs = fop_fd->fops->LWS_FOP_SEEK_CUR(fop_fd,
-			offset - (lws_fileofs_t)fop_fd->pos);
+			offset - (aws_lws_fileofs_t)fop_fd->pos);
 
 	return ofs;
 }
 
 
-lws_fileofs_t
-lws_vfs_file_seek_end(lws_fop_fd_t fop_fd, lws_fileofs_t offset)
+aws_lws_fileofs_t
+aws_lws_vfs_file_seek_end(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
 {
 	return fop_fd->fops->LWS_FOP_SEEK_CUR(fop_fd,
-			(lws_fileofs_t)fop_fd->len + (lws_fileofs_t)fop_fd->pos + offset);
+			(aws_lws_fileofs_t)fop_fd->len + (aws_lws_fileofs_t)fop_fd->pos + offset);
 }
 
 
-const struct lws_plat_file_ops *
-lws_vfs_select_fops(const struct lws_plat_file_ops *fops, const char *vfs_path,
+const struct aws_lws_plat_file_ops *
+aws_lws_vfs_select_fops(const struct aws_lws_plat_file_ops *fops, const char *vfs_path,
 		    const char **vpath)
 {
-	const struct lws_plat_file_ops *pf;
+	const struct aws_lws_plat_file_ops *pf;
 	const char *p = vfs_path;
 	int n;
 
@@ -116,22 +116,22 @@ lws_vfs_select_fops(const struct lws_plat_file_ops *fops, const char *vfs_path,
 	return fops;
 }
 
-lws_fop_fd_t LWS_WARN_UNUSED_RESULT
-lws_vfs_file_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
-		  lws_fop_flags_t *flags)
+aws_lws_fop_fd_t LWS_WARN_UNUSED_RESULT
+aws_lws_vfs_file_open(const struct aws_lws_plat_file_ops *fops, const char *vfs_path,
+		  aws_lws_fop_flags_t *flags)
 {
 	const char *vpath = "";
-	const struct lws_plat_file_ops *selected;
+	const struct aws_lws_plat_file_ops *selected;
 
-	selected = lws_vfs_select_fops(fops, vfs_path, &vpath);
+	selected = aws_lws_vfs_select_fops(fops, vfs_path, &vpath);
 
 	return selected->LWS_FOP_OPEN(fops, vfs_path, vpath, flags);
 }
 
 
-struct lws_plat_file_ops *
-lws_get_fops(struct lws_context *context)
+struct aws_lws_plat_file_ops *
+aws_lws_get_fops(struct aws_lws_context *context)
 {
-	return (struct lws_plat_file_ops *)context->fops;
+	return (struct aws_lws_plat_file_ops *)context->fops;
 }
 

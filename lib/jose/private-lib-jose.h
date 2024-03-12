@@ -33,18 +33,18 @@
 #define F_OCT	(1 << 15)	/* octet key */
 
 void
-lws_jwk_destroy_elements(struct lws_gencrypto_keyelem *el, int m);
+aws_lws_jwk_destroy_elements(struct aws_lws_gencrypto_keyelem *el, int m);
 
 int
-lws_jose_render(struct lws_jose *jose, struct lws_jwk *aux_jwk,
+aws_lws_jose_render(struct aws_lws_jose *jose, struct aws_lws_jwk *aux_jwk,
 		char *out, size_t out_len);
 
 int
-_lws_jwk_set_el_jwk(struct lws_gencrypto_keyelem *e, char *in, size_t len);
+_lws_jwk_set_el_jwk(struct aws_lws_gencrypto_keyelem *e, char *in, size_t len);
 
 void
-lws_jwk_init_jps(struct lws_jwk_parse_state *jps,
-		 struct lws_jwk *jwk, lws_jwk_key_import_callback cb,
+aws_lws_jwk_init_jps(struct aws_lws_jwk_parse_state *jps,
+		 struct aws_lws_jwk *jwk, aws_lws_jwk_key_import_callback cb,
 		 void *user);
 
 signed char

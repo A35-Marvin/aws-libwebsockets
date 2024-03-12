@@ -29,13 +29,13 @@
 
 /*
  * one of these per different client context
- * cc_owner is in lws_context.lws_context_tls
+ * cc_owner is in aws_lws_context.aws_lws_context_tls
  */
 
-struct lws_tls_client_reuse {
-	lws_tls_ctx *ssl_client_ctx;
+struct aws_lws_tls_client_reuse {
+	aws_lws_tls_ctx *ssl_client_ctx;
 	uint8_t hash[32];
-	struct lws_dll2 cc_list;
+	struct aws_lws_dll2 cc_list;
 	int refcount;
 	int index;
 };
@@ -44,15 +44,15 @@ typedef int (*next_proto_cb)(SSL *, const unsigned char **out,
                              unsigned char *outlen, const unsigned char *in,
                              unsigned int inlen, void *arg);
 
-struct lws_x509_cert {
+struct aws_lws_x509_cert {
 	X509 *cert; /* X509 is opaque, this has to be a pointer */
 };
 
 int
-lws_gencrypto_openssl_hash_to_NID(enum lws_genhash_types hash_type);
+aws_lws_gencrypto_openssl_hash_to_NID(enum aws_lws_genhash_types hash_type);
 
 const EVP_MD *
-lws_gencrypto_openssl_hash_to_EVP_MD(enum lws_genhash_types hash_type);
+aws_lws_gencrypto_openssl_hash_to_EVP_MD(enum aws_lws_genhash_types hash_type);
 
 #if !defined(LWS_HAVE_BN_bn2binpad)
 int BN_bn2binpad(const BIGNUM *a, unsigned char *to, int tolen);

@@ -25,11 +25,11 @@
 #include "private-lib-core.h"
 
 int
-lws_plat_pipe_create(struct lws *wsi)
+aws_lws_plat_pipe_create(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct sockaddr_in *si = &wsi->a.context->frt_pipe_si;
-	lws_sockfd_type *fd = pt->dummy_pipe_fds;
+	aws_lws_sockfd_type *fd = pt->dummy_pipe_fds;
 	socklen_t sl;
 
 	/*
@@ -74,23 +74,23 @@ lws_plat_pipe_create(struct lws *wsi)
 	if (getsockname(fd[0], (struct sockaddr *)si, &sl))
 		goto bail;
 
-	lwsl_info("%s: cancel UDP skt port %d\n", __func__,
+	aws_lwsl_info("%s: cancel UDP skt port %d\n", __func__,
 		  ntohs(si->sin_port));
 
 	return 0;
 
 bail:
-	lwsl_err("%s: failed\n", __func__);
+	aws_lwsl_err("%s: failed\n", __func__);
 
 	return 1;
 }
 
 int
-lws_plat_pipe_signal(struct lws_context *ctx, int tsi)
+aws_lws_plat_pipe_signal(struct aws_lws_context *ctx, int tsi)
 {
-	struct lws_context_per_thread *pt = &ctx->pt[tsi];
+	struct aws_lws_context_per_thread *pt = &ctx->pt[tsi];
 	struct sockaddr_in *si = &ctx->frt_pipe_si;
-	lws_sockfd_type *fd = pt->dummy_pipe_fds;
+	aws_lws_sockfd_type *fd = pt->dummy_pipe_fds;
 	uint8_t u = 0;
 	int n;
 
@@ -112,10 +112,10 @@ lws_plat_pipe_signal(struct lws_context *ctx, int tsi)
 }
 
 void
-lws_plat_pipe_close(struct lws *wsi)
+aws_lws_plat_pipe_close(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	lws_sockfd_type *fd = pt->dummy_pipe_fds;
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	aws_lws_sockfd_type *fd = pt->dummy_pipe_fds;
 
 	if (fd[0] && fd[0] != -1)
 		close(fd[0]);

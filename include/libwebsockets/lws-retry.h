@@ -22,21 +22,21 @@
  * IN THE SOFTWARE.
  */
 
-typedef struct lws_retry_bo {
+typedef struct aws_lws_retry_bo {
 	const uint32_t	*retry_ms_table;	   /* base delay in ms */
 	uint16_t	retry_ms_table_count;      /* entries in table */
 	uint16_t	conceal_count;		   /* max retries to conceal */
 	uint16_t	secs_since_valid_ping;     /* idle before PING issued */
 	uint16_t	secs_since_valid_hangup;   /* idle before hangup conn */
 	uint8_t		jitter_percent;		/* % additional random jitter */
-} lws_retry_bo_t;
+} aws_lws_retry_bo_t;
 
 #define LWS_RETRY_CONCEAL_ALWAYS (0xffff)
 
 /**
- * lws_retry_get_delay_ms() - get next delay from backoff table
+ * aws_lws_retry_get_delay_ms() - get next delay from backoff table
  *
- * \param lws_context: the lws context (used for getting random)
+ * \param aws_lws_context: the lws context (used for getting random)
  * \param retry: the retry backoff table we are using, or NULL for default
  * \param ctry: pointer to the try counter
  * \param conceal: pointer to flag set to nonzero if the try should be concealed
@@ -53,13 +53,13 @@ typedef struct lws_retry_bo {
  */
 
 LWS_VISIBLE LWS_EXTERN unsigned int
-lws_retry_get_delay_ms(struct lws_context *context, const lws_retry_bo_t *retry,
+aws_lws_retry_get_delay_ms(struct aws_lws_context *context, const aws_lws_retry_bo_t *retry,
 		       uint16_t *ctry, char *conceal);
 
 /**
- * lws_retry_sul_schedule() - schedule a sul according to the backoff table
+ * aws_lws_retry_sul_schedule() - schedule a sul according to the backoff table
  *
- * \param lws_context: the lws context (used for getting random)
+ * \param aws_lws_context: the lws context (used for getting random)
  * \param sul: pointer to the sul to schedule
  * \param retry: the retry backoff table we are using, or NULL for default
  * \param cb: the callback for when the sul schedule time arrives
@@ -70,12 +70,12 @@ lws_retry_get_delay_ms(struct lws_context *context, const lws_retry_bo_t *retry,
  * and just return 1.  Otherwise the sul is scheduled and it returns 0.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_retry_sul_schedule(struct lws_context *context, int tid,
-		       lws_sorted_usec_list_t *sul, const lws_retry_bo_t *retry,
+aws_lws_retry_sul_schedule(struct aws_lws_context *context, int tid,
+		       aws_lws_sorted_usec_list_t *sul, const aws_lws_retry_bo_t *retry,
 		       sul_cb_t cb, uint16_t *ctry);
 
 /**
- * lws_retry_sul_schedule_retry_wsi() - retry sul schedule helper using wsi
+ * aws_lws_retry_sul_schedule_retry_wsi() - retry sul schedule helper using wsi
  *
  * \param wsi: the wsi to set the hrtimer sul on to the next retry interval
  * \param sul: pointer to the sul to schedule
@@ -83,7 +83,7 @@ lws_retry_sul_schedule(struct lws_context *context, int tid,
  * \param ctry: pointer to the try counter
  *
  * Helper that uses context, tid and retry policy from a wsi to call
- * lws_retry_sul_schedule.
+ * aws_lws_retry_sul_schedule.
  *
  * Since a udp connection can have many writes in flight, the retry count and
  * the sul used to track each thing that wants to be written have to be handled
@@ -91,5 +91,5 @@ lws_retry_sul_schedule(struct lws_context *context, int tid,
  * be filled in from the wsi conveniently.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_retry_sul_schedule_retry_wsi(struct lws *wsi, lws_sorted_usec_list_t *sul,
+aws_lws_retry_sul_schedule_retry_wsi(struct lws *wsi, aws_lws_sorted_usec_list_t *sul,
 				 sul_cb_t cb, uint16_t *ctry);

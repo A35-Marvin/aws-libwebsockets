@@ -49,15 +49,15 @@ struct pss {
 /* one of these is created for each vhost our protocol is used with */
 
 struct vhd {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 
 	struct pss *pss_list; /* linked-list of live pss*/
 	pthread_t pthread_spam[2];
 
 	pthread_mutex_t lock_ring; /* serialize access to the ring buffer */
-	struct lws_ring *ring; /* ringbuffer holding unsent messages */
+	struct aws_lws_ring *ring; /* ringbuffer holding unsent messages */
 	char finished;
 };
 
@@ -106,30 +106,30 @@ thread_spam(void *d)
 		pthread_mutex_lock(&vhd->lock_ring); /* --------- ring lock { */
 
 		/* only create if space in ringbuffer */
-		n = (int)lws_ring_get_count_free_elements(vhd->ring);
+		n = (int)aws_lws_ring_get_count_free_elements(vhd->ring);
 		if (!n) {
-			lwsl_user("dropping!\n");
+			aws_lwsl_user("dropping!\n");
 			goto wait_unlock;
 		}
 
 		amsg.payload = malloc((unsigned int)len);
 		if (!amsg.payload) {
-			lwsl_user("OOM: dropping\n");
+			aws_lwsl_user("OOM: dropping\n");
 			goto wait_unlock;
 		}
-		n = lws_snprintf((char *)amsg.payload, (unsigned int)len,
+		n = aws_lws_snprintf((char *)amsg.payload, (unsigned int)len,
 			         "%s: tid: %d, msg: %d", __func__, whoami, index++);
 		amsg.len = (unsigned int)n;
-		n = (int)lws_ring_insert(vhd->ring, &amsg, 1);
+		n = (int)aws_lws_ring_insert(vhd->ring, &amsg, 1);
 		if (n != 1) {
 			__minimal_destroy_message(&amsg);
-			lwsl_user("dropping!\n");
+			aws_lwsl_user("dropping!\n");
 		} else
 			/*
 			 * This will cause a LWS_CALLBACK_EVENT_WAIT_CANCELLED
 			 * in the lws service thread context.
 			 */
-			lws_cancel_service(vhd->context);
+			aws_lws_cancel_service(vhd->context);
 
 wait_unlock:
 		pthread_mutex_unlock(&vhd->lock_ring); /* } ring lock ------- */
@@ -140,7 +140,7 @@ wait:
 
 	} while (!vhd->finished);
 
-	lwsl_notice("thread_spam %d exiting\n", whoami);
+	aws_lwsl_notice("thread_spam %d exiting\n", whoami);
 
 	pthread_exit(NULL);
 
@@ -149,12 +149,12 @@ wait:
 
 
 static int
-callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_sse(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;
-	struct vhd *vhd = (struct vhd *)lws_protocol_vh_priv_get(
-			lws_get_vhost(wsi), lws_get_protocol(wsi));
+	struct vhd *vhd = (struct vhd *)aws_lws_protocol_vh_priv_get(
+			aws_lws_get_vhost(wsi), aws_lws_get_protocol(wsi));
 	uint8_t buf[LWS_PRE + LWS_RECOMMENDED_MIN_HEADER_SPACE],
 		*start = &buf[LWS_PRE], *p = start,
 		*end = &buf[sizeof(buf) - 1];
@@ -167,13 +167,13 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	/* --- vhost protocol lifecycle --- */
 
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi), sizeof(struct vhd));
-		vhd->context = lws_get_context(wsi);
-		vhd->protocol = lws_get_protocol(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi), sizeof(struct vhd));
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->protocol = aws_lws_get_protocol(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 
-		vhd->ring = lws_ring_create(sizeof(struct msg), 8,
+		vhd->ring = aws_lws_ring_create(sizeof(struct msg), 8,
 					    __minimal_destroy_message);
 		if (!vhd->ring)
 			return 1;
@@ -185,7 +185,7 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		for (n = 0; n < (int)LWS_ARRAY_SIZE(vhd->pthread_spam); n++)
 			if (pthread_create(&vhd->pthread_spam[n], NULL,
 					   thread_spam, vhd)) {
-				lwsl_err("thread creation failed\n");
+				aws_lwsl_err("thread creation failed\n");
 				goto init_fail;
 			}
 
@@ -198,7 +198,7 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			pthread_join(vhd->pthread_spam[n], &retval);
 
 		if (vhd->ring)
-			lws_ring_destroy(vhd->ring);
+			aws_lws_ring_destroy(vhd->ring);
 
 		pthread_mutex_destroy(&vhd->lock_ring);
 		return 0;
@@ -211,24 +211,24 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * you can use this to determine what data to return and store
 		 * that in the pss
 		 */
-		lwsl_info("%s: LWS_CALLBACK_HTTP: '%s'\n", __func__,
+		aws_lwsl_info("%s: LWS_CALLBACK_HTTP: '%s'\n", __func__,
 			  (const char *)in);
 
 		/* SSE requires a http OK response with this content-type */
 
-		if (lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
+		if (aws_lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
 						"text/event-stream",
 						LWS_ILLEGAL_HTTP_CONTENT_LEN,
 						&p, end))
 			return 1;
 
-		if (lws_finalize_write_http_header(wsi, start, &p, end))
+		if (aws_lws_finalize_write_http_header(wsi, start, &p, end))
 			return 1;
 
 		/* add ourselves to the list of live pss held in the vhd */
 
-		lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
-		pss->tail = lws_ring_get_oldest_tail(vhd->ring);
+		aws_lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
+		pss->tail = aws_lws_ring_get_oldest_tail(vhd->ring);
 		pss->wsi = wsi;
 
 		/*
@@ -238,40 +238,40 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * stops idle timeouts being applied to the network connection
 		 * while this wsi is still open.
 		 */
-		lws_http_mark_sse(wsi);
+		aws_lws_http_mark_sse(wsi);
 
 		/* write the body separately */
 
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 
 		return 0;
 
 	case LWS_CALLBACK_CLOSED_HTTP:
 		/* remove our closing pss from the list of live pss */
 
-		lws_ll_fwd_remove(struct pss, pss_list, pss, vhd->pss_list);
+		aws_lws_ll_fwd_remove(struct pss, pss_list, pss, vhd->pss_list);
 		return 0;
 
 	/* --- data transfer --- */
 
 	case LWS_CALLBACK_HTTP_WRITEABLE:
 
-		lwsl_info("%s: LWS_CALLBACK_HTTP_WRITEABLE\n", __func__);
+		aws_lwsl_info("%s: LWS_CALLBACK_HTTP_WRITEABLE\n", __func__);
 
-		pmsg = lws_ring_get_element(vhd->ring, &pss->tail);
+		pmsg = aws_lws_ring_get_element(vhd->ring, &pss->tail);
 		if (!pmsg)
 			break;
 
-		p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p),
+		p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p),
 				  "data: %s\x0d\x0a\x0d\x0a",
 				  (const char *)pmsg->payload);
 
-		if (lws_write(wsi, (uint8_t *)start, lws_ptr_diff_size_t(p, start),
-			      LWS_WRITE_HTTP) != lws_ptr_diff(p, start))
+		if (aws_lws_write(wsi, (uint8_t *)start, aws_lws_ptr_diff_size_t(p, start),
+			      LWS_WRITE_HTTP) != aws_lws_ptr_diff(p, start))
 			return 1;
 
-		lws_ring_consume_and_update_oldest_tail(
-			vhd->ring,	/* lws_ring object */
+		aws_lws_ring_consume_and_update_oldest_tail(
+			vhd->ring,	/* aws_lws_ring object */
 			struct pss,	/* type of objects with tails */
 			&pss->tail,	/* tail of guy doing the consuming */
 			1,	/* number of payload objects being consumed */
@@ -280,9 +280,9 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			pss_list /* member name of next object in objects with tails */
 		);
 
-		if (lws_ring_get_element(vhd->ring, &pss->tail))
+		if (aws_lws_ring_get_element(vhd->ring, &pss->tail))
 			/* come back as soon as we can write more */
-			lws_callback_on_writable(pss->wsi);
+			aws_lws_callback_on_writable(pss->wsi);
 
 		return 0;
 
@@ -293,27 +293,27 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * let everybody know we want to write something on them
 		 * as soon as they are ready
 		 */
-		lws_start_foreach_llp(struct pss **, ppss, vhd->pss_list) {
-			lws_callback_on_writable((*ppss)->wsi);
-		} lws_end_foreach_llp(ppss, pss_list);
+		aws_lws_start_foreach_llp(struct pss **, ppss, vhd->pss_list) {
+			aws_lws_callback_on_writable((*ppss)->wsi);
+		} aws_lws_end_foreach_llp(ppss, pss_list);
 		return 0;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static struct lws_protocols protocols[] = {
-	{ "http", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+static struct aws_lws_protocols protocols[] = {
+	{ "http", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	{ "sse", callback_sse, sizeof(struct pss), 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
 
 /* override the default mount for /sse in the URL space */
 
-static const struct lws_http_mount mount_sse = {
+static const struct aws_lws_http_mount mount_sse = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/sse",		/* mountpoint URL */
 	/* .origin */			NULL,		/* protocol */
@@ -335,7 +335,7 @@ static const struct lws_http_mount mount_sse = {
 
 /* default mount serves the URL space from ./mount-origin */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		&mount_sse,	/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -362,8 +362,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -375,11 +375,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http Server-Side Events + ring | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http Server-Side Events + ring | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -388,16 +388,16 @@ int main(int argc, const char **argv)
 	info.options =
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

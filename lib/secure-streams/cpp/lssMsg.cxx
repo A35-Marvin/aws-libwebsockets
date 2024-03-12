@@ -26,14 +26,14 @@
 
 #include <libwebsockets.hxx>
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 lssmsg_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	return LWSSSSRET_OK;
 }
 
-static lws_ss_state_return_t
-lssmsg_tx(void *userobj, lws_ss_tx_ordinal_t ord,uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+lssmsg_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord,uint8_t *buf, size_t *len,
    int *flags)
 {
 	/*
@@ -42,15 +42,15 @@ lssmsg_tx(void *userobj, lws_ss_tx_ordinal_t ord,uint8_t *buf, size_t *len,
 	return LWSSSSRET_TX_DONT_SEND;
 }
 
-static lws_ss_state_return_t
-lssmsg_state(void *userobj, void *h_src, lws_ss_constate_t state,
-		lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+lssmsg_state(void *userobj, void *h_src, aws_lws_ss_constate_t state,
+		aws_lws_ss_tx_ordinal_t ack)
 {
 	return LWSSSSRET_OK;
 }
 
 
-lssMsg::lssMsg(lws_ctx_t ctx, lsscomp_t _comp, std::string uri) :
+lssMsg::lssMsg(aws_lws_ctx_t ctx, lsscomp_t _comp, std::string uri) :
 	lss(ctx, uri, comp, 0, lssmsg_rx, lssmsg_tx, lssmsg_state)
 {
 }

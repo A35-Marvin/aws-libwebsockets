@@ -63,7 +63,7 @@ struct conn {
 	struct lws *wsi[2];
 
 	/* rings containing unsent rx from accepted and onward sides */
-	struct lws_ring *r[2];
+	struct aws_lws_ring *r[2];
 	uint32_t t[2]; /* ring tail */
 
 	uint32_t ticket_next;
@@ -102,9 +102,9 @@ destroy_conn(struct raw_vhd *vhd, struct raw_pss *pss)
 	struct conn *conn = pss->conn;
 
 	if (conn->r[ACC])
-		lws_ring_destroy(conn->r[ACC]);
+		aws_lws_ring_destroy(conn->r[ACC]);
 	if (conn->r[ONW])
-		lws_ring_destroy(conn->r[ONW]);
+		aws_lws_ring_destroy(conn->r[ONW]);
 
 	pss->conn = NULL;
 
@@ -114,22 +114,22 @@ destroy_conn(struct raw_vhd *vhd, struct raw_pss *pss)
 static int
 connect_client(struct raw_vhd *vhd, struct raw_pss *pss)
 {
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 	char host[128];
 	struct lws *cwsi;
 
-	lws_snprintf(host, sizeof(host), "%s:%u", vhd->addr, vhd->port);
+	aws_lws_snprintf(host, sizeof(host), "%s:%u", vhd->addr, vhd->port);
 
 	memset(&i, 0, sizeof(i));
 
 	i.method = "RAW";
-	i.context = lws_get_context(pss->conn->wsi[ACC]);
+	i.context = aws_lws_get_context(pss->conn->wsi[ACC]);
 	i.port = vhd->port;
 	i.address = vhd->addr;
 	i.host = host;
 	i.origin = host;
 	i.ssl_connection = 0;
-	i.vhost = lws_get_vhost(pss->conn->wsi[ACC]);
+	i.vhost = aws_lws_get_vhost(pss->conn->wsi[ACC]);
 	i.local_protocol_name = "raw-proxy";
 	i.protocol = "raw-proxy";
 	i.path = "/";
@@ -142,11 +142,11 @@ connect_client(struct raw_vhd *vhd, struct raw_pss *pss)
 	i.opaque_user_data = pss->conn;
 	i.pwsi = &pss->conn->wsi[ONW];
 
-	lwsl_info("%s: onward: %s:%d%s\n", __func__, i.address, i.port, i.path);
+	aws_lwsl_info("%s: onward: %s:%d%s\n", __func__, i.address, i.port, i.path);
 
-	cwsi = lws_client_connect_via_info(&i);
+	cwsi = aws_lws_client_connect_via_info(&i);
 	if (!cwsi)
-		lwsl_err("%s: client connect failed early\n", __func__);
+		aws_lwsl_err("%s: client connect failed early\n", __func__);
 
 	return !cwsi;
 }
@@ -159,27 +159,27 @@ flow_control(struct conn *conn, int side, int enable)
 	    !conn->established[side])
 		return 0;
 
-	if (lws_rx_flow_control(conn->wsi[side], enable))
+	if (aws_lws_rx_flow_control(conn->wsi[side], enable))
 		return 1;
 
 	conn->rx_enabled[side] = (char)enable;
-	lwsl_info("%s: %s side: %s\n", __func__, side ? "ONW" : "ACC",
+	aws_lwsl_info("%s: %s side: %s\n", __func__, side ? "ONW" : "ACC",
 		  enable ? "rx enabled" : "rx flow controlled");
 
 	return 0;
 }
 
 static int
-callback_raw_proxy(struct lws *wsi, enum lws_callback_reasons reason,
+callback_raw_proxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		   void *user, void *in, size_t len)
 {
 	struct raw_pss *pss = (struct raw_pss *)user;
-	struct raw_vhd *vhd = (struct raw_vhd *)lws_protocol_vh_priv_get(
-				     lws_get_vhost(wsi), lws_get_protocol(wsi));
+	struct raw_vhd *vhd = (struct raw_vhd *)aws_lws_protocol_vh_priv_get(
+				     aws_lws_get_vhost(wsi), aws_lws_get_protocol(wsi));
 	const struct packet *ppkt;
 	struct conn *conn = NULL;
-	struct lws_tokenize ts;
-	lws_tokenize_elem e;
+	struct aws_lws_tokenize ts;
+	aws_lws_tokenize_elem e;
 	struct packet pkt;
 	const char *cp;
 	int n;
@@ -189,22 +189,22 @@ callback_raw_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi), sizeof(struct raw_vhd));
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi), sizeof(struct raw_vhd));
 		if (!vhd)
 			return 0;
-		if (lws_pvo_get_str(in, "onward", &cp)) {
-			lwsl_warn("%s: vh %s: pvo 'onward' required\n", __func__,
-				 lws_get_vhost_name(lws_get_vhost(wsi)));
+		if (aws_lws_pvo_get_str(in, "onward", &cp)) {
+			aws_lwsl_warn("%s: vh %s: pvo 'onward' required\n", __func__,
+				 aws_lws_get_vhost_name(aws_lws_get_vhost(wsi)));
 
 			return 0;
 		}
-		lws_tokenize_init(&ts, cp, LWS_TOKENIZE_F_DOT_NONTERM |
+		aws_lws_tokenize_init(&ts, cp, LWS_TOKENIZE_F_DOT_NONTERM |
 					   LWS_TOKENIZE_F_MINUS_NONTERM |
 					   LWS_TOKENIZE_F_NO_FLOATS);
 		ts.len = strlen(cp);
 
-		if (lws_tokenize(&ts) != LWS_TOKZE_TOKEN)
+		if (aws_lws_tokenize(&ts) != LWS_TOKZE_TOKEN)
 			goto bad_onward;
 		if (!strncmp(ts.token, "ipv6", ts.token_len))
 			vhd->ipv6 = 1;
@@ -213,37 +213,37 @@ callback_raw_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 				goto bad_onward;
 
 		/* then the colon */
-		if (lws_tokenize(&ts) != LWS_TOKZE_DELIMITER)
+		if (aws_lws_tokenize(&ts) != LWS_TOKZE_DELIMITER)
 			goto bad_onward;
 
-		e = lws_tokenize(&ts);
+		e = aws_lws_tokenize(&ts);
 		if (!vhd->ipv6) {
 			if (e != LWS_TOKZE_TOKEN ||
 			    ts.token_len + 1 >= (int)sizeof(vhd->addr))
 				goto bad_onward;
 
-			lws_strncpy(vhd->addr, ts.token, ts.token_len + 1);
-			e = lws_tokenize(&ts);
+			aws_lws_strncpy(vhd->addr, ts.token, ts.token_len + 1);
+			e = aws_lws_tokenize(&ts);
 			if (e == LWS_TOKZE_DELIMITER) {
 				/* there should be a port then */
-				e = lws_tokenize(&ts);
+				e = aws_lws_tokenize(&ts);
 				if (e != LWS_TOKZE_INTEGER)
 					goto bad_onward;
 				vhd->port = (uint16_t)atoi(ts.token);
-				e = lws_tokenize(&ts);
+				e = aws_lws_tokenize(&ts);
 			}
 			if (e != LWS_TOKZE_ENDED)
 				goto bad_onward;
 		} else
-			lws_strncpy(vhd->addr, ts.token, sizeof(vhd->addr));
+			aws_lws_strncpy(vhd->addr, ts.token, sizeof(vhd->addr));
 
-		lwsl_notice("%s: vh %s: onward %s:%s:%d\n", __func__,
-			    lws_get_vhost_name(lws_get_vhost(wsi)),
+		aws_lwsl_notice("%s: vh %s: onward %s:%s:%d\n", __func__,
+			    aws_lws_get_vhost_name(aws_lws_get_vhost(wsi)),
 			    vhd->ipv6 ? "ipv6": "ipv4", vhd->addr, vhd->port);
 		break;
 
 bad_onward:
-		lwsl_err("%s: onward pvo format must be ipv4:addr[:port] "
+		aws_lwsl_err("%s: onward pvo format must be ipv4:addr[:port] "
 			 " or ipv6:addr, not '%s'\n", __func__, cp);
 		return -1;
 
@@ -253,15 +253,15 @@ bad_onward:
 	/* callbacks related to client "onward side" */
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		break;
 
         case LWS_CALLBACK_RAW_PROXY_CLI_ADOPT:
-		lwsl_debug("%s: %p: LWS_CALLBACK_RAW_CLI_ADOPT: pss %p\n", __func__, wsi, pss);
+		aws_lwsl_debug("%s: %p: LWS_CALLBACK_RAW_CLI_ADOPT: pss %p\n", __func__, wsi, pss);
 		if (conn || !pss)
 			break;
-		conn = pss->conn = lws_get_opaque_user_data(wsi);
+		conn = pss->conn = aws_lws_get_opaque_user_data(wsi);
 		if (!conn)
 			break;
 		conn->established[ONW] = 1;
@@ -272,12 +272,12 @@ bad_onward:
 		/* he disabled his rx while waiting for use to be established */
 		flow_control(conn, ACC, 1);
 
-		lws_callback_on_writable(wsi);
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+		aws_lws_callback_on_writable(wsi);
+		aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
 		break;
 
 	case LWS_CALLBACK_RAW_PROXY_CLI_CLOSE:
-		lwsl_debug("LWS_CALLBACK_RAW_PROXY_CLI_CLOSE\n");
+		aws_lwsl_debug("LWS_CALLBACK_RAW_PROXY_CLI_CLOSE\n");
 		if (!conn)
 			break;
 
@@ -289,87 +289,87 @@ bad_onward:
 		break;
 
 	case LWS_CALLBACK_RAW_PROXY_CLI_RX:
-		lwsl_debug("LWS_CALLBACK_RAW_PROXY_CLI_RX: %d\n", (int)len);
+		aws_lwsl_debug("LWS_CALLBACK_RAW_PROXY_CLI_RX: %d\n", (int)len);
 
 		if (!conn)
 			return 0;
 
 		if (!pss || !conn->wsi[ACC] || conn->closed[ACC]) {
-			lwsl_info(" pss %p, wsi[ACC] %p, closed[ACC] %d\n",
+			aws_lwsl_info(" pss %p, wsi[ACC] %p, closed[ACC] %d\n",
 				  pss, conn->wsi[ACC], conn->closed[ACC]);
 			return -1;
 		}
 		pkt.payload = malloc(len);
 		if (!pkt.payload) {
-			lwsl_notice("OOM: dropping\n");
+			aws_lwsl_notice("OOM: dropping\n");
 			return -1;
 		}
 		pkt.len = (uint32_t)len;
 		pkt.ticket = conn->ticket_next++;
 
 		memcpy(pkt.payload, in, len);
-		if (!lws_ring_insert(conn->r[ONW], &pkt, 1)) {
+		if (!aws_lws_ring_insert(conn->r[ONW], &pkt, 1)) {
 			__destroy_packet(&pkt);
-			lwsl_notice("dropping!\n");
+			aws_lwsl_notice("dropping!\n");
 			return -1;
 		}
 
-		lwsl_debug("After onward RX: acc free: %d...\n",
-			   (int)lws_ring_get_count_free_elements(conn->r[ONW]));
+		aws_lwsl_debug("After onward RX: acc free: %d...\n",
+			   (int)aws_lws_ring_get_count_free_elements(conn->r[ONW]));
 
 		if (conn->rx_enabled[ONW] &&
-		    lws_ring_get_count_free_elements(conn->r[ONW]) < 2)
+		    aws_lws_ring_get_count_free_elements(conn->r[ONW]) < 2)
 			flow_control(conn, ONW, 0);
 
 		if (!conn->closed[ACC])
-			lws_callback_on_writable(conn->wsi[ACC]);
+			aws_lws_callback_on_writable(conn->wsi[ACC]);
 		break;
 
 	case LWS_CALLBACK_RAW_PROXY_CLI_WRITEABLE:
-		lwsl_debug("LWS_CALLBACK_RAW_PROXY_CLI_WRITEABLE\n");
+		aws_lwsl_debug("LWS_CALLBACK_RAW_PROXY_CLI_WRITEABLE\n");
 
 		if (!conn)
 			break;
 
-		ppkt = lws_ring_get_element(conn->r[ACC], &conn->t[ACC]);
+		ppkt = aws_lws_ring_get_element(conn->r[ACC], &conn->t[ACC]);
 		if (!ppkt) {
-			lwsl_info("%s: CLI_WRITABLE had nothing in acc ring\n",
+			aws_lwsl_info("%s: CLI_WRITABLE had nothing in acc ring\n",
 				  __func__);
 			break;
 		}
 
 		if (ppkt->ticket != conn->ticket_retired + 1) {
-			lwsl_info("%s: acc ring has %d but next %d\n", __func__,
+			aws_lwsl_info("%s: acc ring has %d but next %d\n", __func__,
 				  ppkt->ticket, conn->ticket_retired + 1);
-			lws_callback_on_writable(conn->wsi[ACC]);
+			aws_lws_callback_on_writable(conn->wsi[ACC]);
 			break;
 		}
 
-		n = lws_write(wsi, ppkt->payload, ppkt->len, LWS_WRITE_RAW);
+		n = aws_lws_write(wsi, ppkt->payload, ppkt->len, LWS_WRITE_RAW);
 		if (n < 0) {
-			lwsl_info("%s: WRITEABLE: %d\n", __func__, n);
+			aws_lwsl_info("%s: WRITEABLE: %d\n", __func__, n);
 
 			return -1;
 		}
 
 		conn->ticket_retired = ppkt->ticket;
-		lws_ring_consume(conn->r[ACC], &conn->t[ACC], NULL, 1);
-		lws_ring_update_oldest_tail(conn->r[ACC], conn->t[ACC]);
+		aws_lws_ring_consume(conn->r[ACC], &conn->t[ACC], NULL, 1);
+		aws_lws_ring_update_oldest_tail(conn->r[ACC], conn->t[ACC]);
 
-		lwsl_debug("acc free: %d...\n",
-			  (int)lws_ring_get_count_free_elements(conn->r[ACC]));
+		aws_lwsl_debug("acc free: %d...\n",
+			  (int)aws_lws_ring_get_count_free_elements(conn->r[ACC]));
 
 		if (!conn->rx_enabled[ACC] &&
-		    lws_ring_get_count_free_elements(conn->r[ACC]) > 2)
+		    aws_lws_ring_get_count_free_elements(conn->r[ACC]) > 2)
 			flow_control(conn, ACC, 1);
 
-		ppkt = lws_ring_get_element(conn->r[ACC], &conn->t[ACC]);
-		lwsl_debug("%s: CLI_WRITABLE: next acc pkt %p idx %d vs %d\n",
+		ppkt = aws_lws_ring_get_element(conn->r[ACC], &conn->t[ACC]);
+		aws_lwsl_debug("%s: CLI_WRITABLE: next acc pkt %p idx %d vs %d\n",
 			   __func__, ppkt, ppkt ? ppkt->ticket : 0,
 					   conn->ticket_retired + 1);
 
 		if (ppkt && ppkt->ticket == conn->ticket_retired + 1)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		else {
 			/*
 			 * defer checking for accepted side closing until we
@@ -381,17 +381,17 @@ bad_onward:
 				 * we may have some tx still in tx buflist /
 				 * partial
 				 */
-				return lws_raw_transaction_completed(wsi);
+				return aws_lws_raw_transaction_completed(wsi);
 
-			if (lws_ring_get_element(conn->r[ONW], &conn->t[ONW]))
-				lws_callback_on_writable(conn->wsi[ACC]);
+			if (aws_lws_ring_get_element(conn->r[ONW], &conn->t[ONW]))
+				aws_lws_callback_on_writable(conn->wsi[ACC]);
 		}
 		break;
 
 	/* callbacks related to raw socket descriptor "accepted side" */
 
         case LWS_CALLBACK_RAW_PROXY_SRV_ADOPT:
-		lwsl_debug("LWS_CALLBACK_RAW_SRV_ADOPT\n");
+		aws_lwsl_debug("LWS_CALLBACK_RAW_SRV_ADOPT\n");
 		if (!pss)
 			return -1;
 		conn = pss->conn = malloc(sizeof(struct conn));
@@ -402,18 +402,18 @@ bad_onward:
 		conn->wsi[ACC] = wsi;
 		conn->ticket_next = 1;
 
-		conn->r[ACC] = lws_ring_create(sizeof(struct packet),
+		conn->r[ACC] = aws_lws_ring_create(sizeof(struct packet),
 					       RING_DEPTH, __destroy_packet);
 		if (!conn->r[ACC]) {
-			lwsl_err("%s: OOM\n", __func__);
+			aws_lwsl_err("%s: OOM\n", __func__);
 			return -1;
 		}
-		conn->r[ONW] = lws_ring_create(sizeof(struct packet),
+		conn->r[ONW] = aws_lws_ring_create(sizeof(struct packet),
 					       RING_DEPTH, __destroy_packet);
 		if (!conn->r[ONW]) {
-			lws_ring_destroy(conn->r[ACC]);
+			aws_lws_ring_destroy(conn->r[ACC]);
 			conn->r[ACC] = NULL;
-			lwsl_err("%s: OOM\n", __func__);
+			aws_lwsl_err("%s: OOM\n", __func__);
 
 			return -1;
 		}
@@ -423,14 +423,14 @@ bad_onward:
 		/* disable any rx until the client side is up */
 		flow_control(conn, ACC, 0);
 
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+		aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
 
 		/* try to create the onward client connection */
 		connect_client(vhd, pss);
                 break;
 
 	case LWS_CALLBACK_RAW_PROXY_SRV_CLOSE:
-		lwsl_debug("LWS_CALLBACK_RAW_PROXY_SRV_CLOSE:\n");
+		aws_lwsl_debug("LWS_CALLBACK_RAW_PROXY_SRV_CLOSE:\n");
 
 		if (!conn)
 			break;
@@ -441,15 +441,15 @@ bad_onward:
 		break;
 
 	case LWS_CALLBACK_RAW_PROXY_SRV_RX:
-		lwsl_debug("LWS_CALLBACK_RAW_PROXY_SRV_RX: rx %d\n", (int)len);
+		aws_lwsl_debug("LWS_CALLBACK_RAW_PROXY_SRV_RX: rx %d\n", (int)len);
 
 		if (!conn || !conn->wsi[ONW]) {
-			lwsl_err("%s: LWS_CALLBACK_RAW_PROXY_SRV_RX: "
+			aws_lwsl_err("%s: LWS_CALLBACK_RAW_PROXY_SRV_RX: "
 				 "conn->wsi[ONW] NULL\n", __func__);
 			return -1;
 		}
 		if (conn->closed[ONW]) {
-			lwsl_info(" closed[ONW] %d\n", conn->closed[ONW]);
+			aws_lwsl_info(" closed[ONW] %d\n", conn->closed[ONW]);
 			return -1;
 		}
 
@@ -458,77 +458,77 @@ bad_onward:
 
 		pkt.payload = malloc(len);
 		if (!pkt.payload) {
-			lwsl_notice("OOM: dropping\n");
+			aws_lwsl_notice("OOM: dropping\n");
 			return -1;
 		}
 		pkt.len = (uint32_t)len;
 		pkt.ticket = conn->ticket_next++;
 
 		memcpy(pkt.payload, in, len);
-		if (!lws_ring_insert(conn->r[ACC], &pkt, 1)) {
+		if (!aws_lws_ring_insert(conn->r[ACC], &pkt, 1)) {
 			__destroy_packet(&pkt);
-			lwsl_notice("dropping!\n");
+			aws_lwsl_notice("dropping!\n");
 			return -1;
 		}
 
-		lwsl_debug("After acc RX: acc free: %d...\n",
-			   (int)lws_ring_get_count_free_elements(conn->r[ACC]));
+		aws_lwsl_debug("After acc RX: acc free: %d...\n",
+			   (int)aws_lws_ring_get_count_free_elements(conn->r[ACC]));
 
 		if (conn->rx_enabled[ACC] &&
-		    lws_ring_get_count_free_elements(conn->r[ACC]) <= 2)
+		    aws_lws_ring_get_count_free_elements(conn->r[ACC]) <= 2)
 			flow_control(conn, ACC, 0);
 
 		if (conn->established[ONW] && !conn->closed[ONW])
-			lws_callback_on_writable(conn->wsi[ONW]);
+			aws_lws_callback_on_writable(conn->wsi[ONW]);
 		break;
 
 	case LWS_CALLBACK_RAW_PROXY_SRV_WRITEABLE:
-		lwsl_debug("LWS_CALLBACK_RAW_PROXY_SRV_WRITEABLE\n");
+		aws_lwsl_debug("LWS_CALLBACK_RAW_PROXY_SRV_WRITEABLE\n");
 
 		if (!conn || !conn->established[ONW] || conn->closed[ONW])
 			break;
 
-		ppkt = lws_ring_get_element(conn->r[ONW], &conn->t[ONW]);
+		ppkt = aws_lws_ring_get_element(conn->r[ONW], &conn->t[ONW]);
 		if (!ppkt) {
-			lwsl_info("%s: SRV_WRITABLE nothing in onw ring\n",
+			aws_lwsl_info("%s: SRV_WRITABLE nothing in onw ring\n",
 				  __func__);
 			break;
 		}
 
 		if (ppkt->ticket != conn->ticket_retired + 1) {
-			lwsl_info("%s: onw ring has %d but next %d\n", __func__,
+			aws_lwsl_info("%s: onw ring has %d but next %d\n", __func__,
 				  ppkt->ticket, conn->ticket_retired + 1);
-			lws_callback_on_writable(conn->wsi[ONW]);
+			aws_lws_callback_on_writable(conn->wsi[ONW]);
 			break;
 		}
 
-		n = lws_write(wsi, ppkt->payload, ppkt->len, LWS_WRITE_RAW);
+		n = aws_lws_write(wsi, ppkt->payload, ppkt->len, LWS_WRITE_RAW);
 		if (n < 0) {
-			lwsl_info("%s: WRITEABLE: %d\n", __func__, n);
+			aws_lwsl_info("%s: WRITEABLE: %d\n", __func__, n);
 
 			return -1;
 		}
 
 		conn->ticket_retired = ppkt->ticket;
-		lws_ring_consume(conn->r[ONW], &conn->t[ONW], NULL, 1);
-		lws_ring_update_oldest_tail(conn->r[ONW], conn->t[ONW]);
+		aws_lws_ring_consume(conn->r[ONW], &conn->t[ONW], NULL, 1);
+		aws_lws_ring_update_oldest_tail(conn->r[ONW], conn->t[ONW]);
 
-		lwsl_debug("onward free: %d... waiting %d\n",
-			  (int)lws_ring_get_count_free_elements(conn->r[ONW]),
-			  (int)lws_ring_get_count_waiting_elements(conn->r[ONW],
+		aws_lwsl_debug("onward free: %d... waiting %d\n",
+			  (int)aws_lws_ring_get_count_free_elements(conn->r[ONW]),
+			  (int)aws_lws_ring_get_count_waiting_elements(conn->r[ONW],
 								&conn->t[ONW]));
 
 		if (!conn->rx_enabled[ONW] &&
-		    lws_ring_get_count_free_elements(conn->r[ONW]) > 2)
+		    aws_lws_ring_get_count_free_elements(conn->r[ONW]) > 2)
 			flow_control(conn, ONW, 1);
 
-		ppkt = lws_ring_get_element(conn->r[ONW], &conn->t[ONW]);
-		lwsl_debug("%s: SRV_WRITABLE: next onw pkt %p idx %d vs %d\n",
+		ppkt = aws_lws_ring_get_element(conn->r[ONW], &conn->t[ONW]);
+		aws_lwsl_debug("%s: SRV_WRITABLE: next onw pkt %p idx %d vs %d\n",
 			   __func__, ppkt, ppkt ? ppkt->ticket : 0,
 					   conn->ticket_retired + 1);
 
 		if (ppkt && ppkt->ticket == conn->ticket_retired + 1)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		else {
 			/*
 			 * defer checking for onward side closing until we
@@ -540,10 +540,10 @@ bad_onward:
 				 * we may have some tx still in tx buflist /
 				 * partial
 				 */
-				return lws_raw_transaction_completed(wsi);
+				return aws_lws_raw_transaction_completed(wsi);
 
-		if (lws_ring_get_element(conn->r[ACC], &conn->t[ACC]))
-			lws_callback_on_writable(conn->wsi[ONW]);
+		if (aws_lws_ring_get_element(conn->r[ACC], &conn->t[ACC]))
+			aws_lws_callback_on_writable(conn->wsi[ONW]);
 		}
 		break;
 
@@ -551,7 +551,7 @@ bad_onward:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
 #define LWS_PLUGIN_PROTOCOL_RAW_PROXY { \
@@ -564,20 +564,20 @@ bad_onward:
 
 #if !defined (LWS_PLUGIN_STATIC)
 
-LWS_VISIBLE const struct lws_protocols lws_raw_proxy_protocols[] = {
+LWS_VISIBLE const struct aws_lws_protocols aws_lws_raw_proxy_protocols[] = {
 	LWS_PLUGIN_PROTOCOL_RAW_PROXY
 };
 
-LWS_VISIBLE const lws_plugin_protocol_t lws_raw_proxy = {
+LWS_VISIBLE const aws_lws_plugin_protocol_t aws_lws_raw_proxy = {
 	.hdr = {
 		"raw proxy",
-		"lws_protocol_plugin",
+		"aws_lws_protocol_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},
 
-	.protocols = lws_raw_proxy_protocols,
-	.count_protocols = LWS_ARRAY_SIZE(lws_raw_proxy_protocols),
+	.protocols = aws_lws_raw_proxy_protocols,
+	.count_protocols = LWS_ARRAY_SIZE(aws_lws_raw_proxy_protocols),
 	.extensions = NULL,
 	.count_extensions = 0,
 };

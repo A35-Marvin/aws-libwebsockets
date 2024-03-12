@@ -383,8 +383,8 @@ enum {
 
 #define LWS_SSH_INITIAL_WINDOW 16384
 
-struct lws_ssh_userauth {
-	struct lws_genhash_ctx hash_ctx;
+struct aws_lws_ssh_userauth {
+	struct aws_lws_genhash_ctx hash_ctx;
 	char *username;
 	char *service;
 	char *alg;
@@ -395,7 +395,7 @@ struct lws_ssh_userauth {
 	char sig_present;
 };
 
-struct lws_ssh_keys {
+struct aws_lws_ssh_keys {
 	/* 3 == SSH_KEYIDX_IV (len=4), SSH_KEYIDX_ENC, SSH_KEYIDX_INTEG */
 	uint8_t key[3][LWS_SIZE_CHACHA256_KEY];
 
@@ -408,7 +408,7 @@ struct lws_ssh_keys {
 	uint8_t full_length:1;
 };
 
-struct lws_kex {
+struct aws_lws_kex {
 	uint8_t kex_r[256];
 	uint8_t Q_C[LWS_SIZE_EC25519]; /* client eph public key aka 'e' */
 	uint8_t eph_pri_key[LWS_SIZE_EC25519]; /* server eph private key */
@@ -423,11 +423,11 @@ struct lws_kex {
 	uint8_t match_bitfield;
 	uint8_t newkeys; /* which sides newkeys have been applied */
 
-	struct lws_ssh_keys keys_next_cts;
-	struct lws_ssh_keys keys_next_stc;
+	struct aws_lws_ssh_keys keys_next_cts;
+	struct aws_lws_ssh_keys keys_next_stc;
 };
 
-struct lws_subprotocol_scp {
+struct aws_lws_subprotocol_scp {
 	char fp[128];
 	uint64_t len;
 	uint32_t attr;
@@ -436,17 +436,17 @@ struct lws_subprotocol_scp {
 };
 
 typedef union {
-	struct lws_subprotocol_scp scp;
-} lws_subprotocol;
+	struct aws_lws_subprotocol_scp scp;
+} aws_lws_subprotocol;
 
 struct per_session_data__sshd;
 
-struct lws_ssh_channel {
-	struct lws_ssh_channel *next;
+struct aws_lws_ssh_channel {
+	struct aws_lws_ssh_channel *next;
 
 	struct per_session_data__sshd *pss;
 
-	lws_subprotocol *sub; /* NULL, or allocated subprotocol state */
+	aws_lws_subprotocol *sub; /* NULL, or allocated subprotocol state */
 	void *priv; /* owned by user code */
 	int type;
 	uint32_t server_ch;
@@ -470,7 +470,7 @@ struct per_session_data__sshd {
 	struct per_vhost_data__sshd *vhd;
 	struct lws *wsi;
 
-	struct lws_kex *kex;
+	struct aws_lws_kex *kex;
 	char *disconnect_desc;
 
 	uint8_t K[LWS_SIZE_EC25519]; /* shared secret */
@@ -479,16 +479,16 @@ struct per_session_data__sshd {
 	char last_auth_req_username[32];
 	char last_auth_req_service[32];
 
-	struct lws_ssh_keys active_keys_cts;
-	struct lws_ssh_keys active_keys_stc;
-	struct lws_ssh_userauth *ua;
-	struct lws_ssh_channel *ch_list;
-	struct lws_ssh_channel *ch_temp;
+	struct aws_lws_ssh_keys active_keys_cts;
+	struct aws_lws_ssh_keys active_keys_stc;
+	struct aws_lws_ssh_userauth *ua;
+	struct aws_lws_ssh_channel *ch_list;
+	struct aws_lws_ssh_channel *ch_temp;
 
 	uint8_t *last_alloc;
 
 	union {
-		struct lws_ssh_pty pty;
+		struct aws_lws_ssh_pty pty;
 		char aux[64];
 	} args;
 
@@ -534,16 +534,16 @@ struct per_session_data__sshd {
 	uint8_t msg_id;
 	uint8_t msg_padding;
 	uint8_t write_task[8];
-	struct lws_ssh_channel *write_channel[8];
+	struct aws_lws_ssh_channel *write_channel[8];
 	uint8_t wt_head, wt_tail;
 };
 
 struct per_vhost_data__sshd {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 	struct per_session_data__sshd *live_pss_list;
-	const struct lws_ssh_ops *ops;
+	const struct aws_lws_ssh_ops *ops;
 };
 
 
@@ -566,24 +566,24 @@ extern int
 kex_ecdh(struct per_session_data__sshd *pss, uint8_t *result, uint32_t *plen);
 
 extern uint32_t
-lws_g32(uint8_t **p);
+aws_lws_g32(uint8_t **p);
 
 extern uint32_t
-lws_p32(uint8_t *p, uint32_t v);
+aws_lws_p32(uint8_t *p, uint32_t v);
 
 extern int
-lws_timingsafe_bcmp(const void *a, const void *b, uint32_t len);
+aws_lws_timingsafe_bcmp(const void *a, const void *b, uint32_t len);
 
-extern const char *lws_V_S;
+extern const char *aws_lws_V_S;
 
 extern int
-lws_chacha_activate(struct lws_ssh_keys *keys);
+aws_lws_chacha_activate(struct aws_lws_ssh_keys *keys);
 
 extern void
-lws_chacha_destroy(struct lws_ssh_keys *keys);
+aws_lws_chacha_destroy(struct aws_lws_ssh_keys *keys);
 
 extern uint32_t
-lws_chachapoly_get_length(struct lws_ssh_keys *keys, uint32_t seq,
+aws_lws_chachapoly_get_length(struct aws_lws_ssh_keys *keys, uint32_t seq,
 			  const uint8_t *in4);
 
 extern void
@@ -591,15 +591,15 @@ poly1305_auth(u_char out[POLY1305_TAGLEN], const u_char *m, size_t inlen,
     const u_char key[POLY1305_KEYLEN]);
 
 extern int
-lws_chacha_decrypt(struct lws_ssh_keys *keys, uint32_t seq,
+aws_lws_chacha_decrypt(struct aws_lws_ssh_keys *keys, uint32_t seq,
 		   const uint8_t *ct, uint32_t len, uint8_t *pt);
 extern int
-lws_chacha_encrypt(struct lws_ssh_keys *keys, uint32_t seq,
+aws_lws_chacha_encrypt(struct aws_lws_ssh_keys *keys, uint32_t seq,
 		   const uint8_t *ct, uint32_t len, uint8_t *pt);
 
 extern void
-lws_pad_set_length(struct per_session_data__sshd *pss, void *start, uint8_t **p,
-		   struct lws_ssh_keys *keys);
+aws_lws_pad_set_length(struct per_session_data__sshd *pss, void *start, uint8_t **p,
+		   struct aws_lws_ssh_keys *keys);
 
 extern size_t
 get_gen_server_key_25519(struct per_session_data__sshd *pss, uint8_t *b, size_t len);
@@ -610,7 +610,7 @@ crypto_sign_ed25519(unsigned char *sm, unsigned long long *smlen,
 		    const unsigned char *sk);
 
 extern int
-crypto_sign_ed25519_keypair(struct lws_context *context, uint8_t *pk,
+crypto_sign_ed25519_keypair(struct aws_lws_context *context, uint8_t *pk,
 			    uint8_t *sk);
 
 #endif

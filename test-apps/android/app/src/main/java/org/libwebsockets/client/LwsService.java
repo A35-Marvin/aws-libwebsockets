@@ -118,7 +118,7 @@ public class LwsService extends ThreadService {
     /** Load the native libwebsockets code */
     static {
         try {
-            System.loadLibrary("lwsservice");
+            System.loadLibrary("aws_lwsservice");
         }
         catch(UnsatisfiedLinkError ule) {
             Log.e("LwsService", "Warning: Could not load native library: " + ule.getMessage());

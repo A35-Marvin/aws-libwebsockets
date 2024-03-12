@@ -25,13 +25,13 @@
 #include "private-lib-core.h"
 
 int
-lws_plat_context_early_init(void)
+aws_lws_plat_context_early_init(void)
 {
 	return 0;
 }
 
 void
-lws_plat_context_early_destroy(struct lws_context *context)
+aws_lws_plat_context_early_destroy(struct aws_lws_context *context)
 {
 #if defined(LWS_AMAZON_RTOS) && defined(LWS_WITH_MBEDTLS)
 	mbedtls_ctr_drbg_free(&context->mcdc);
@@ -40,15 +40,15 @@ lws_plat_context_early_destroy(struct lws_context *context)
 }
 
 void
-lws_plat_context_late_destroy(struct lws_context *context)
+aws_lws_plat_context_late_destroy(struct aws_lws_context *context)
 {
 #ifdef LWS_WITH_PLUGINS
 	if (context->plugin_list)
-		lws_plat_plugins_destroy(context);
+		aws_lws_plat_plugins_destroy(context);
 #endif
 
-	if (context->lws_lookup)
-		lws_free(context->lws_lookup);
+	if (context->aws_lws_lookup)
+		aws_lws_free(context->aws_lws_lookup);
 }
 
 #if defined(LWS_WITH_HTTP2)
@@ -56,7 +56,7 @@ lws_plat_context_late_destroy(struct lws_context *context)
  * These are the default SETTINGS used on this platform.  The user
  * can selectively modify them for a vhost during vhost creation.
  */
-const struct http2_settings lws_h2_defaults_esp32 = { {
+const struct http2_settings aws_lws_h2_defaults_esp32 = { {
 	1,
 	/* H2SET_HEADER_TABLE_SIZE */			 512,
 	/* H2SET_ENABLE_PUSH */				   0,
@@ -70,8 +70,8 @@ const struct http2_settings lws_h2_defaults_esp32 = { {
 #endif
 
 int
-lws_plat_init(struct lws_context *context,
-	      const struct lws_context_creation_info *info)
+aws_lws_plat_init(struct aws_lws_context *context,
+	      const struct aws_lws_context_creation_info *info)
 {
 #if defined(LWS_AMAZON_RTOS) && defined(LWS_WITH_MBEDTLS)
 	int n;
@@ -83,7 +83,7 @@ lws_plat_init(struct lws_context *context,
 	n = mbedtls_ctr_drbg_seed(&context->mcdc, mbedtls_entropy_func,
 				  &context->mec, NULL, 0);
 	if (n) {
-		lwsl_err("%s: mbedtls_ctr_drbg_seed() returned 0x%x\n",
+		aws_lwsl_err("%s: mbedtls_ctr_drbg_seed() returned 0x%x\n",
 			 __func__, n);
 
 		return 1;
@@ -91,24 +91,24 @@ lws_plat_init(struct lws_context *context,
 #endif
 
 	/* context has the global fd lookup array */
-	context->lws_lookup = lws_zalloc(sizeof(struct lws *) *
-					 context->max_fds, "esp32 lws_lookup");
-	if (context->lws_lookup == NULL) {
-		lwsl_err("OOM on lws_lookup array for %d connections\n",
+	context->aws_lws_lookup = aws_lws_zalloc(sizeof(struct lws *) *
+					 context->max_fds, "esp32 aws_lws_lookup");
+	if (context->aws_lws_lookup == NULL) {
+		aws_lwsl_err("OOM on aws_lws_lookup array for %d connections\n",
 			 context->max_fds);
 		return 1;
 	}
 
-	lwsl_notice(" mem: platform fd map: %5lu bytes\n",
+	aws_lwsl_notice(" mem: platform fd map: %5lu bytes\n",
 		    (unsigned long)(sizeof(struct lws *) * context->max_fds));
 
 #ifdef LWS_WITH_PLUGINS
 	if (info->plugin_dirs)
-		lws_plat_plugins_init(context, info->plugin_dirs);
+		aws_lws_plat_plugins_init(context, info->plugin_dirs);
 #endif
 #if defined(LWS_WITH_HTTP2)
 	/* override settings */
-	context->set = lws_h2_defaults_esp32;
+	context->set = aws_lws_h2_defaults_esp32;
 #endif
 
 #if defined(LWS_ESP_PLATFORM)

@@ -19,7 +19,7 @@ Both client and server networking can be handled using Secure Streams APIS.
 
 ![overview](/doc-assets/ss-state-flow.png)
 
-Secure Streams are created using `lws_ss_create()`, after that they may acquire
+Secure Streams are created using `aws_lws_ss_create()`, after that they may acquire
 underlying connections, and lose them, but the lifecycle of the Secure Stream
 itself is not directly related to any underlying connection.
 
@@ -28,7 +28,7 @@ the number of failures exceeds the count of attempts to conceal in the retry /
 backoff policy, the stream reaches `LWSSSCS_ALL_RETRIES_FAILED`.  The stream becomes
 idle again until another explicit connection attempt is given.
 
-Once connected, the user code can use `lws_ss_request_tx()` to ask for a slot
+Once connected, the user code can use `aws_lws_ss_request_tx()` to ask for a slot
 to write to the peer, when this if forthcoming the tx handler can send a message.
 If the underlying protocol gives indications of transaction success, such as,
 eg, a 200 for http, or an ACK from MQTT, the stream state is called back with
@@ -86,15 +86,15 @@ response there may look like
 		/*
 		 * We do want to ack the transaction...
 		 */
-		lws_ss_server_ack(m->ss, 0);
+		aws_lws_ss_server_ack(m->ss, 0);
 		/*
 		 * ... it's going to be text/html...
 		 */
-		lws_ss_set_metadata(m->ss, "mime", "text/html", 9);
+		aws_lws_ss_set_metadata(m->ss, "mime", "text/html", 9);
 		/*
 		 * ...it's going to be 128 byte (and request tx)
 		 */
-		lws_ss_request_tx_len(m->ss, 128);
+		aws_lws_ss_request_tx_len(m->ss, 128);
 ```
 
 Otherwise the general api usage is very similar to client usage.
@@ -318,7 +318,7 @@ Set to `true` to enforce the stream travelling in a tls tunnel
 
 Set if the stream needs to authenticate itself using a tls client certificate.
 Set to the certificate index counting from 0+.  The certificates are managed
-using lws_sytstem blobs.
+using aws_lws_sytstem blobs.
 
 ### `opportunistic`
 
@@ -338,7 +338,7 @@ connection for retry + backoff
 
 Optional timeout associated with streams of this streamtype.
 
-If user code applies the `lws_ss_start_timeout()` api on a stream with a
+If user code applies the `aws_lws_ss_start_timeout()` api on a stream with a
 timeout of LWSSS_TIMEOUT_FROM_POLICY, the `timeout_ms` entry given in the
 policy is applied.
 
@@ -389,7 +389,7 @@ Indicate which metadata should be used to set aws service for certain streamtype
 
 ### `direct_proto_str`
 
-If set to `true`, application can use `lws_ss_set_metadata()` to directly set protocol related string and use `lws_ss_get_metadata` to fetch certain protocol related string.  Please note that currently HTTP header is the supported protocol string.  The `name` parameter is the name of HTTP header name (**with ':'**, e.g. `"Content-Type:"`) and `value` is the header's value. `LWS_WITH_SS_DIRECT_PROTOCOL_STR` flag needs to be configured during compilation for this.  Currently it's only work for non-proxy case.
+If set to `true`, application can use `aws_lws_ss_set_metadata()` to directly set protocol related string and use `aws_lws_ss_get_metadata` to fetch certain protocol related string.  Please note that currently HTTP header is the supported protocol string.  The `name` parameter is the name of HTTP header name (**with ':'**, e.g. `"Content-Type:"`) and `value` is the header's value. `LWS_WITH_SS_DIRECT_PROTOCOL_STR` flag needs to be configured during compilation for this.  Currently it's only work for non-proxy case.
 
 ### `server_cert`
 
@@ -483,7 +483,7 @@ substitution using the syntax like `xxx${myname}yyy`, forward references are
 valid but the scope of the symbols is just the streamtype the metadata is
 defined for.
 
-Client code can set metadata by name, using the `lws_ss_set_metadata()` api, this
+Client code can set metadata by name, using the `aws_lws_ss_set_metadata()` api, this
 should be done before a transaction.  And for metadata associated with a
 protocol-specific entity, like http headers, if incoming responses contain the
 mentioned header, the metadata symbol is set to that value at the client before
@@ -713,7 +713,7 @@ setting for this.
 ## Loading and using updated remote policy
 
 If the default, hardcoded policy includes a streamtype `fetch_policy`,
-during startup when lws_system reaches the POLICY state, lws will use
+during startup when aws_lws_system reaches the POLICY state, lws will use
 a Secure Stream of type `fetch_policy` to download, parse and update
 the policy to use it.
 
@@ -734,7 +734,7 @@ giving it the override JSON in one string
 
 ```
 int
-lws_ss_policy_overlay(struct lws_context *context, const char *overlay);
+aws_lws_ss_policy_overlay(struct aws_lws_context *context, const char *overlay);
 ```
 
 but there are also other apis available that can statefully process
@@ -786,7 +786,7 @@ By default Secure Streams expects to make the outgoing connection described in
 the policy in the same process / thread, this suits the case where all the
 participating clients are in the same statically-linked image.
 
-In this case the `lws_ss_` apis are fulfilled locally by secure-streams.c and
+In this case the `aws_lws_ss_` apis are fulfilled locally by secure-streams.c and
 policy.c for policy lookups.
 
 However it also supports serialization, where the SS api can be streamed over
@@ -805,8 +805,8 @@ In this case the proxy uses secure-streams.c and policy.c as before to fulfil
 the inbound proxy streams, but uses secure-streams-serialize.c to serialize and
 deserialize the proxied SS API activity.  The proxy clients define
 LWS_SS_USE_SSPC either very early in their sources before the includes, or on
-the compiler commandline... this causes the lws_ss_ apis to be replaced at
-preprocessor time with lws_sspc_ equivalents.  These serialize the api action
+the compiler commandline... this causes the aws_lws_ss_ apis to be replaced at
+preprocessor time with aws_lws_sspc_ equivalents.  These serialize the api action
 and pass it to the proxy over a Unix Domain Socket for fulfilment, the results
 and state changes etc are streamed over the Unix Domain Socket and presented to
 the application exactly the same as if it was being fulfilled locally.
@@ -912,7 +912,7 @@ streamtype additionally, the server will also accept upgrades to ws.
 To help the user code understand if the upgrade occurred, there's a special
 state `LWSSSCS_SERVER_UPGRADE`, so subsequent rx and tx can be understood to
 have come from the upgraded protocol.  To allow separation of rx and tx
-handling between http and ws, there's a ss api `lws_ss_change_handlers()`
+handling between http and ws, there's a ss api `aws_lws_ss_change_handlers()`
 which allows dynamically setting SS handlers.
 
 Since the http and ws upgrade identity is encapsulated in one streamtype, the

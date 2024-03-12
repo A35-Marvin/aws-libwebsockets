@@ -28,33 +28,33 @@
 /* jwe-rsa-aescbc.c */
 
 int
-lws_jwe_auth_and_decrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe);
+aws_lws_jwe_auth_and_decrypt_rsa_aes_cbc_hs(struct aws_lws_jwe *jwe);
 
 
 int
-lws_jwe_encrypt_rsa_aes_cbc_hs(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_rsa_aes_cbc_hs(struct aws_lws_jwe *jwe,
 			       char *temp, int *temp_len);
 
 int
-lws_jwe_auth_and_decrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *enc_cek,
+aws_lws_jwe_auth_and_decrypt_cbc_hs(struct aws_lws_jwe *jwe, uint8_t *enc_cek,
 				uint8_t *aad, int aad_len);
 
 
 /* jws-rsa-aesgcm.c */
 
 int
-lws_jwe_auth_and_decrypt_gcm(struct lws_jwe *jwe, uint8_t *enc_cek,
+aws_lws_jwe_auth_and_decrypt_gcm(struct aws_lws_jwe *jwe, uint8_t *enc_cek,
 			     uint8_t *aad, int aad_len);
 
 int
-lws_jwe_auth_and_decrypt_rsa_aes_gcm(struct lws_jwe *jwe);
+aws_lws_jwe_auth_and_decrypt_rsa_aes_gcm(struct aws_lws_jwe *jwe);
 
 int
-lws_jwe_encrypt_gcm(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_gcm(struct aws_lws_jwe *jwe,
 		    uint8_t *enc_cek, uint8_t *aad, int aad_len);
 
 int
-lws_jwe_encrypt_rsa_aes_gcm(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_rsa_aes_gcm(struct aws_lws_jwe *jwe,
 			    char *temp, int *temp_len);
 
 
@@ -63,26 +63,26 @@ lws_jwe_encrypt_rsa_aes_gcm(struct lws_jwe *jwe,
 /* jwe-rsa-aeskw.c */
 
 int
-lws_jwe_encrypt_aeskw_cbc_hs(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_aeskw_cbc_hs(struct aws_lws_jwe *jwe,
 			     char *temp, int *temp_len);
 
 int
-lws_jwe_auth_and_decrypt_aeskw_cbc_hs(struct lws_jwe *jwe);
+aws_lws_jwe_auth_and_decrypt_aeskw_cbc_hs(struct aws_lws_jwe *jwe);
 
 /* aescbc.c */
 
 int
-lws_jwe_auth_and_decrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *enc_cek,
+aws_lws_jwe_auth_and_decrypt_cbc_hs(struct aws_lws_jwe *jwe, uint8_t *enc_cek,
 				uint8_t *aad, int aad_len);
 
 int
-lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_cbc_hs(struct aws_lws_jwe *jwe,
 		       uint8_t *cek, uint8_t *aad, int aad_len);
 
 int
-lws_jwe_auth_and_decrypt_ecdh_cbc_hs(struct lws_jwe *jwe,
+aws_lws_jwe_auth_and_decrypt_ecdh_cbc_hs(struct aws_lws_jwe *jwe,
 		char *temp, int *temp_len);
 
 int
-lws_jwe_encrypt_ecdh_cbc_hs(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_ecdh_cbc_hs(struct aws_lws_jwe *jwe,
 		 	     char *temp, int *temp_len);

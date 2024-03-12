@@ -24,11 +24,11 @@
  *  This is included from private-lib-core.h if LWS_ROLE_WS
  */
 
-extern const struct lws_role_ops role_ops_ws;
+extern const struct aws_lws_role_ops role_ops_ws;
 
-#define lwsi_role_ws(wsi) (wsi->role_ops == &role_ops_ws)
+#define aws_lwsi_role_ws(wsi) (wsi->role_ops == &role_ops_ws)
 
-enum lws_rx_parse_state {
+enum aws_lws_rx_parse_state {
 	LWS_RXPS_NEW,
 
 	LWS_RXPS_04_mask_1,
@@ -56,7 +56,7 @@ enum lws_rx_parse_state {
 	LWS_RXPS_WS_FRAME_PAYLOAD
 };
 
-enum lws_websocket_opcodes_07 {
+enum aws_lws_websocket_opcodes_07 {
 	LWSWSOPC_CONTINUATION = 0,
 	LWSWSOPC_TEXT_FRAME = 1,
 	LWSWSOPC_BINARY_FRAME = 2,
@@ -70,18 +70,18 @@ enum lws_websocket_opcodes_07 {
 	LWSWSOPC_PONG = 0xa,
 };
 
-/* this is not usable directly by user code any more, lws_close_reason() */
+/* this is not usable directly by user code any more, aws_lws_close_reason() */
 #define LWS_WRITE_CLOSE 4
 
 #define ALREADY_PROCESSED_IGNORE_CHAR 1
 #define ALREADY_PROCESSED_NO_CB 2
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-struct lws_vhost_role_ws {
-	const struct lws_extension *extensions;
+struct aws_lws_vhost_role_ws {
+	const struct aws_lws_extension *extensions;
 };
 
-struct lws_pt_role_ws {
+struct aws_lws_pt_role_ws {
 	struct lws *rx_draining_ext_list;
 	struct lws *tx_draining_ext_list;
 };
@@ -92,14 +92,14 @@ struct lws_pt_role_ws {
 struct _lws_websocket_related {
 	unsigned char *rx_ubuf;
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	const struct lws_extension *active_extensions[LWS_MAX_EXTENSIONS_ACTIVE];
+	const struct aws_lws_extension *active_extensions[LWS_MAX_EXTENSIONS_ACTIVE];
 	void *act_ext_user[LWS_MAX_EXTENSIONS_ACTIVE];
 	struct lws *rx_draining_ext_list;
 	struct lws *tx_draining_ext_list;
 #endif
 
 #if defined(LWS_WITH_HTTP_PROXY)
-	struct lws_dll2_owner proxy_owner;
+	struct aws_lws_dll2_owner proxy_owner;
 	char actual_protocol[16];
 	size_t proxy_buffered;
 #endif
@@ -158,41 +158,41 @@ struct _lws_websocket_related {
  * and with inflated rx out that will be passed to the user code
  */
 
-struct lws_ext_pm_deflate_rx_ebufs {
-	struct lws_tokens eb_in;
-	struct lws_tokens eb_out;
+struct aws_lws_ext_pm_deflate_rx_ebufs {
+	struct aws_lws_tokens eb_in;
+	struct aws_lws_tokens eb_out;
 };
 
 int
-lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len);
+aws_lws_ws_handshake_client(struct lws *wsi, unsigned char **buf, size_t len);
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 LWS_VISIBLE void
-lws_context_init_extensions(const struct lws_context_creation_info *info,
-			    struct lws_context *context);
+aws_lws_context_init_extensions(const struct aws_lws_context_creation_info *info,
+			    struct aws_lws_context *context);
 LWS_EXTERN int
-lws_any_extension_handled(struct lws *wsi, enum lws_extension_callback_reasons r,
+aws_lws_any_extension_handled(struct lws *wsi, enum aws_lws_extension_callback_reasons r,
 			  void *v, size_t len);
 
 LWS_EXTERN int
-lws_ext_cb_active(struct lws *wsi, int reason, void *buf, int len);
+aws_lws_ext_cb_active(struct lws *wsi, int reason, void *buf, int len);
 LWS_EXTERN int
-lws_ext_cb_all_exts(struct lws_context *context, struct lws *wsi, int reason,
+aws_lws_ext_cb_all_exts(struct aws_lws_context *context, struct lws *wsi, int reason,
 		    void *arg, int len);
 #endif
 
 int
-handshake_0405(struct lws_context *context, struct lws *wsi);
+handshake_0405(struct aws_lws_context *context, struct lws *wsi);
 int
-lws_process_ws_upgrade(struct lws *wsi);
+aws_lws_process_ws_upgrade(struct lws *wsi);
 
 int
-lws_process_ws_upgrade2(struct lws *wsi);
+aws_lws_process_ws_upgrade2(struct lws *wsi);
 
-extern const struct lws_protocols lws_ws_proxy;
+extern const struct aws_lws_protocols aws_lws_ws_proxy;
 
 int
-lws_server_init_wsi_for_ws(struct lws *wsi);
+aws_lws_server_init_wsi_for_ws(struct lws *wsi);
 
 void
-lws_sul_wsping_cb(lws_sorted_usec_list_t *sul);
+aws_lws_sul_wsping_cb(aws_lws_sorted_usec_list_t *sul);

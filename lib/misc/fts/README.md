@@ -2,7 +2,7 @@
 
 ## Introduction
 
-![lwsac flow](/doc-assets/lws-fts.svg)
+![aws_lwsac flow](/doc-assets/lws-fts.svg)
 
 The general approach is to scan one or more UTF-8 input text "files" (they may
 only exist in memory) and create an in-memory optimized trie for every token in
@@ -26,8 +26,8 @@ Live Demo|[https://libwebsockets.org/ftsdemo/](https://libwebsockets.org/ftsdemo
 
 ## Query API overview
 
-Searching returns a potentially very large lwsac allocated object, with contents
-and max size controlled by the members of a struct lws_fts_search_params passed
+Searching returns a potentially very large aws_lwsac allocated object, with contents
+and max size controlled by the members of a struct aws_lws_fts_search_params passed
 to the search function.  Three kinds of result are possible:
 
 ### Autocomplete suggestions
@@ -41,7 +41,7 @@ path, and the results so the "most likely" results already measured by potential
 hits appear first.
  
 These results are in a linked-list headed by `result.autocomplete_head` and
-each is in a `struct lws_fts_result_autocomplete`.
+each is in a `struct aws_lws_fts_result_autocomplete`.
  
 They're enabled in the search results by giving the flag
  `LWSFTS_F_QUERY_AUTOCOMPLETE` in the search parameter flags.
@@ -49,7 +49,7 @@ They're enabled in the search results by giving the flag
 ### Filepath results 
 
 Simply a list of input files containing the search term with some statistics,
-one file is mentioned in a `struct lws_fts_result_filepath` result struct.
+one file is mentioned in a `struct aws_lws_fts_result_filepath` result struct.
 
 This would be useful for creating a selection UI to "drill down" to individual
 files when there are many with matches.
@@ -65,14 +65,14 @@ This is enabled by `LWSFTS_F_QUERY_FILE_LINES`... if you additionally give
 `LWSFTS_F_QUERY_QUOTE_LINE` flag then the contents of each hit line from the
 input file are also provided.
  
-## Result format inside the lwsac
+## Result format inside the aws_lwsac
 
-A `struct lws_fts_result` at the start of the lwsac contains heads for linked-
-lists of autocomplete and filepath results inside the lwsac.
+A `struct aws_lws_fts_result` at the start of the aws_lwsac contains heads for linked-
+lists of autocomplete and filepath results inside the aws_lwsac.
 
 For autocomplete suggestions, the string itself is immediately after the
-`struct lws_fts_result_autocomplete` in memory.  For filepath results, after
-each `struct lws_fts_result_filepath` is
+`struct aws_lws_fts_result_autocomplete` in memory.  For filepath results, after
+each `struct aws_lws_fts_result_filepath` is
 
  - match information depending on the flags given to the search
  - the filepath string
@@ -90,13 +90,13 @@ The matches information is either
 
  - 2 x int32_t as above plus a const char * if `LWSFTS_F_QUERY_QUOTE_LINE` is
    also given... this points to a NUL terminated string also stored in the
-   results lwsac that contains up to 255 chars of the line from the original
+   results aws_lwsac that contains up to 255 chars of the line from the original
    file.  In some cases, the original file was either virtual (you are indexing
    a git revision) or is not stored with the index, in that case you can't
    usefully use `LWSFTS_F_QUERY_QUOTE_LINE`.
 
 To facilitate interpreting what is stored per match, the original search flags
-that created the result are stored in the `struct lws_fts_result`.
+that created the result are stored in the `struct aws_lws_fts_result`.
 
 ## Indexing In-memory and serialized to file
 

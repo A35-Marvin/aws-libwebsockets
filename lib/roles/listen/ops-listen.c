@@ -25,12 +25,12 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_listen(struct lws_context_per_thread *pt, struct lws *wsi,
-			  struct lws_pollfd *pollfd)
+rops_handle_POLLIN_listen(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+			  struct aws_lws_pollfd *pollfd)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_filter_network_conn_args filt;
-	lws_sock_file_fd_type fd;
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_filter_network_conn_args filt;
+	aws_lws_sock_file_fd_type fd;
 
 	memset(&filt, 0, sizeof(filt));
 
@@ -89,7 +89,7 @@ rops_handle_POLLIN_listen(struct lws_context_per_thread *pt, struct lws *wsi,
 			    LWS_ERRNO == LWS_EWOULDBLOCK) {
 				break;
 			}
-			lwsl_err("accept: errno %d\n", LWS_ERRNO);
+			aws_lwsl_err("accept: errno %d\n", LWS_ERRNO);
 
 			return LWS_HPI_RET_HANDLED;
 		}
@@ -100,10 +100,10 @@ rops_handle_POLLIN_listen(struct lws_context_per_thread *pt, struct lws *wsi,
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
 
-		lws_plat_set_socket_options(wsi->a.vhost, filt.accept_fd, 0);
+		aws_lws_plat_set_socket_options(wsi->a.vhost, filt.accept_fd, 0);
 
 #if defined(LWS_WITH_IPV6)
-		lwsl_debug("accepted new conn port %u on fd=%d\n",
+		aws_lwsl_debug("accepted new conn port %u on fd=%d\n",
 			((filt.cli_addr.ss_family == AF_INET6) ?
 			ntohs(((struct sockaddr_in6 *) &filt.cli_addr)->sin6_port) :
 			ntohs(((struct sockaddr_in *) &filt.cli_addr)->sin_port)),
@@ -113,7 +113,7 @@ rops_handle_POLLIN_listen(struct lws_context_per_thread *pt, struct lws *wsi,
 		struct sockaddr_in sain;
 
 		memcpy(&sain, &filt.cli_addr, sizeof(sain));
-		lwsl_debug("accepted new conn port %u on fd=%d\n",
+		aws_lwsl_debug("accepted new conn port %u on fd=%d\n",
 			   ntohs(sain.sin_port),
 			   filt.accept_fd);
 		}
@@ -128,8 +128,8 @@ rops_handle_POLLIN_listen(struct lws_context_per_thread *pt, struct lws *wsi,
 		if ((wsi->a.vhost->protocols[0].callback)(wsi,
 				LWS_CALLBACK_FILTER_NETWORK_CONNECTION,
 				(void *)&filt,
-				(void *)(lws_intptr_t)filt.accept_fd, 0)) {
-			lwsl_debug("Callback denied net connection\n");
+				(void *)(aws_lws_intptr_t)filt.accept_fd, 0)) {
+			aws_lwsl_debug("Callback denied net connection\n");
 			compatible_close(filt.accept_fd);
 			return LWS_HPI_RET_HANDLED;
 		}
@@ -144,30 +144,30 @@ rops_handle_POLLIN_listen(struct lws_context_per_thread *pt, struct lws *wsi,
 			opts &= ~LWS_ADOPT_ALLOW_SSL;
 
 		fd.sockfd = filt.accept_fd;
-		cwsi = lws_adopt_descriptor_vhost(wsi->a.vhost, (lws_adoption_type)opts, fd,
+		cwsi = aws_lws_adopt_descriptor_vhost(wsi->a.vhost, (aws_lws_adoption_type)opts, fd,
 				wsi->a.vhost->listen_accept_protocol, NULL);
 		if (!cwsi) {
-			lwsl_info("%s: vh %s: adopt failed\n", __func__,
+			aws_lwsl_info("%s: vh %s: adopt failed\n", __func__,
 					wsi->a.vhost->name);
 
 			/* already closed cleanly as necessary */
 			return LWS_HPI_RET_WSI_ALREADY_DIED;
 		}
 /*
-		if (lws_server_socket_service_ssl(cwsi, accept_fd, 1)) {
-			lws_close_free_wsi(cwsi, LWS_CLOSE_STATUS_NOSTATUS,
+		if (aws_lws_server_socket_service_ssl(cwsi, accept_fd, 1)) {
+			aws_lws_close_free_wsi(cwsi, LWS_CLOSE_STATUS_NOSTATUS,
 					   "listen svc fail");
 			return LWS_HPI_RET_WSI_ALREADY_DIED;
 		}
 
-		lwsl_info("%s: new %s: wsistate 0x%lx, role_ops %s\n",
-			    __func__, lws_wsi_tag(cwsi), (unsigned long)cwsi->wsistate,
+		aws_lwsl_info("%s: new %s: wsistate 0x%lx, role_ops %s\n",
+			    __func__, aws_lws_wsi_tag(cwsi), (unsigned long)cwsi->wsistate,
 			    cwsi->role_ops->name);
 */
 
 	} while (pt->fds_count < context->fd_limit_per_thread - 1 &&
 		 wsi->position_in_fds_table != LWS_NO_FDS_POS &&
-		 lws_poll_listen_fd(&pt->fds[wsi->position_in_fds_table]) > 0);
+		 aws_lws_poll_listen_fd(&pt->fds[wsi->position_in_fds_table]) > 0);
 
 	return LWS_HPI_RET_HANDLED;
 }
@@ -177,12 +177,12 @@ int rops_handle_POLLOUT_listen(struct lws *wsi)
 	return LWS_HP_RET_USER_SERVICE;
 }
 
-static const lws_rops_t rops_table_listen[] = {
+static const aws_lws_rops_t rops_table_listen[] = {
 	/*  1 */ { .handle_POLLIN	  = rops_handle_POLLIN_listen },
 	/*  2 */ { .handle_POLLOUT	  = rops_handle_POLLOUT_listen },
 };
 
-const struct lws_role_ops role_ops_listen = {
+const struct aws_lws_role_ops role_ops_listen = {
 	/* role name */			"listen",
 	/* alpn id */			NULL,
 

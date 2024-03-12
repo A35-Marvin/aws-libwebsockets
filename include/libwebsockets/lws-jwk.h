@@ -25,14 +25,14 @@
 /*! \defgroup jwk JSON Web Keys
  * ## JSON Web Keys API
  *
- * Lws provides an API to parse JSON Web Keys into a struct lws_gencrypto_keyelem.
+ * Lws provides an API to parse JSON Web Keys into a struct aws_lws_gencrypto_keyelem.
  *
  * "oct" and "RSA" type keys are supported.  For "oct" keys, they are held in
- * the "e" member of the struct lws_gencrypto_keyelem.
+ * the "e" member of the struct aws_lws_gencrypto_keyelem.
  *
  * Keys elements are allocated on the heap.  You must destroy the allocations
- * in the struct lws_gencrypto_keyelem by calling
- * lws_genrsa_destroy_elements() when you are finished with it.
+ * in the struct aws_lws_gencrypto_keyelem by calling
+ * aws_lws_genrsa_destroy_elements() when you are finished with it.
  */
 ///@{
 
@@ -47,21 +47,21 @@ enum enum_jwk_meta_tok {
 	LWS_COUNT_JWK_ELEMENTS
 };
 
-struct lws_jwk {
+struct aws_lws_jwk {
 	/* key data elements */
-	struct lws_gencrypto_keyelem e[LWS_GENCRYPTO_MAX_KEYEL_COUNT];
+	struct aws_lws_gencrypto_keyelem e[LWS_GENCRYPTO_MAX_KEYEL_COUNT];
 	/* generic meta key elements, like KID */
-	struct lws_gencrypto_keyelem meta[LWS_COUNT_JWK_ELEMENTS];
+	struct aws_lws_gencrypto_keyelem meta[LWS_COUNT_JWK_ELEMENTS];
 	int kty;			/**< one of LWS_GENCRYPTO_KTY_ */
 	char private_key; /* nonzero = has private key elements */
 };
 
-typedef int (*lws_jwk_key_import_callback)(struct lws_jwk *s, void *user);
+typedef int (*aws_lws_jwk_key_import_callback)(struct aws_lws_jwk *s, void *user);
 
-struct lws_jwk_parse_state {
-	struct lws_jwk *jwk;
+struct aws_lws_jwk_parse_state {
+	struct aws_lws_jwk *jwk;
 	char b64[(((8192 / 8) * 4) / 3) + 1]; /* enough for 8Kb key */
-	lws_jwk_key_import_callback per_key_cb;
+	aws_lws_jwk_key_import_callback per_key_cb;
 	void *user;
 	int pos;
 	int cose_state;
@@ -69,7 +69,7 @@ struct lws_jwk_parse_state {
 	unsigned short possible;
 };
 
-/** lws_jwk_import() - Create a JSON Web key from the textual representation
+/** aws_lws_jwk_import() - Create a JSON Web key from the textual representation
  *
  * \param jwk: the JWK object to create
  * \param cb: callback for each jwk-processed key, or NULL if importing a single
@@ -79,7 +79,7 @@ struct lws_jwk_parse_state {
  * \param in: a single JWK JSON stanza in utf-8
  * \param len: the length of the JWK JSON stanza in bytes
  *
- * Creates an lws_jwk struct filled with data from the JSON representation.
+ * Creates an aws_lws_jwk struct filled with data from the JSON representation.
  *
  * There are two ways to use this... with some protocols a single jwk is
  * delivered with no parent "keys": [] array.  If you call this with cb and
@@ -93,19 +93,19 @@ struct lws_jwk_parse_state {
  * iteration through any further keys).
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_import(struct lws_jwk *jwk, lws_jwk_key_import_callback cb, void *user,
+aws_lws_jwk_import(struct aws_lws_jwk *jwk, aws_lws_jwk_key_import_callback cb, void *user,
 	       const char *in, size_t len);
 
-/** lws_jwk_destroy() - Destroy a JSON Web key
+/** aws_lws_jwk_destroy() - Destroy a JSON Web key
  *
  * \param jwk: the JWK object to destroy
  *
- * All allocations in the lws_jwk are destroyed
+ * All allocations in the aws_lws_jwk are destroyed
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_jwk_destroy(struct lws_jwk *jwk);
+aws_lws_jwk_destroy(struct aws_lws_jwk *jwk);
 
-/** lws_jwk_dup_oct() - Set a jwk to a dup'd binary OCT key
+/** aws_lws_jwk_dup_oct() - Set a jwk to a dup'd binary OCT key
  *
  * \param jwk: the JWK object to set
  * \param key: the JWK object to destroy
@@ -115,12 +115,12 @@ lws_jwk_destroy(struct lws_jwk *jwk);
  * into the allocation.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_dup_oct(struct lws_jwk *jwk, const void *key, int len);
+aws_lws_jwk_dup_oct(struct aws_lws_jwk *jwk, const void *key, int len);
 
 #define LWSJWKF_EXPORT_PRIVATE				(1 << 0)
 #define LWSJWKF_EXPORT_NOCRLF				(1 << 1)
 
-/** lws_jwk_export() - Export a JSON Web key to a textual representation
+/** aws_lws_jwk_export() - Export a JSON Web key to a textual representation
  *
  * \param jwk: the JWK object to export
  * \param flags: control export options
@@ -140,9 +140,9 @@ lws_jwk_dup_oct(struct lws_jwk *jwk, const void *key, int len);
  * Serializes the content of the JWK into a char buffer.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len);
+aws_lws_jwk_export(struct aws_lws_jwk *jwk, int flags, char *p, int *len);
 
-/** lws_jwk_load() - Import a JSON Web key from a file
+/** aws_lws_jwk_load() - Import a JSON Web key from a file
  *
  * \param jwk: the JWK object to load into
  * \param filename: filename to load from
@@ -163,10 +163,10 @@ lws_jwk_export(struct lws_jwk *jwk, int flags, char *p, int *len);
  * iteration through any further keys, leaving the last one in s).
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_load(struct lws_jwk *jwk, const char *filename,
-	     lws_jwk_key_import_callback cb, void *user);
+aws_lws_jwk_load(struct aws_lws_jwk *jwk, const char *filename,
+	     aws_lws_jwk_key_import_callback cb, void *user);
 
-/** lws_jwk_save() - Export a JSON Web key to a file
+/** aws_lws_jwk_save() - Export a JSON Web key to a file
  *
  * \param jwk: the JWK object to save from
  * \param filename: filename to save to
@@ -174,9 +174,9 @@ lws_jwk_load(struct lws_jwk *jwk, const char *filename,
  * Returns 0 for OK or -1 for failure
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_save(struct lws_jwk *jwk, const char *filename);
+aws_lws_jwk_save(struct aws_lws_jwk *jwk, const char *filename);
 
-/** lws_jwk_rfc7638_fingerprint() - jwk to RFC7638 compliant fingerprint
+/** aws_lws_jwk_rfc7638_fingerprint() - jwk to RFC7638 compliant fingerprint
  *
  * \param jwk: the JWK object to fingerprint
  * \param digest32: buffer to take 32-byte digest
@@ -184,9 +184,9 @@ lws_jwk_save(struct lws_jwk *jwk, const char *filename);
  * Returns 0 for OK or -1 for failure
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_rfc7638_fingerprint(struct lws_jwk *jwk, char *digest32);
+aws_lws_jwk_rfc7638_fingerprint(struct aws_lws_jwk *jwk, char *digest32);
 
-/** lws_jwk_strdup_meta() - allocate a duplicated string meta element
+/** aws_lws_jwk_strdup_meta() - allocate a duplicated string meta element
  *
  * \param jwk: the JWK object to fingerprint
  * \param idx: JWK_META_ element index
@@ -196,16 +196,16 @@ lws_jwk_rfc7638_fingerprint(struct lws_jwk *jwk, char *digest32);
  * Returns 0 for OK or nonzero for failure
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_strdup_meta(struct lws_jwk *jwk, enum enum_jwk_meta_tok idx,
+aws_lws_jwk_strdup_meta(struct aws_lws_jwk *jwk, enum enum_jwk_meta_tok idx,
 		    const char *in, int len);
 
 
 LWS_VISIBLE LWS_EXTERN int
-lws_jwk_dump(struct lws_jwk *jwk);
+aws_lws_jwk_dump(struct aws_lws_jwk *jwk);
 
-/** lws_jwk_generate() - create a new key of given type and characteristics
+/** aws_lws_jwk_generate() - create a new key of given type and characteristics
  *
- * \param context: the struct lws_context used for RNG
+ * \param context: the struct aws_lws_context used for RNG
  * \param jwk: the JWK object to fingerprint
  * \param kty: One of the LWS_GENCRYPTO_KTY_ key types
  * \param bits: for OCT and RSA keys, the number of bits
@@ -214,7 +214,7 @@ lws_jwk_dump(struct lws_jwk *jwk);
  * Returns 0 for OK or nonzero for failure
  */
 LWS_VISIBLE int
-lws_jwk_generate(struct lws_context *context, struct lws_jwk *jwk,
-	         enum lws_gencrypto_kty kty, int bits, const char *curve);
+aws_lws_jwk_generate(struct aws_lws_context *context, struct aws_lws_jwk *jwk,
+	         enum aws_lws_gencrypto_kty kty, int bits, const char *curve);
 
 ///@}

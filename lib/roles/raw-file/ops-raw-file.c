@@ -25,17 +25,17 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_raw_file(struct lws_context_per_thread *pt, struct lws *wsi,
-			    struct lws_pollfd *pollfd)
+rops_handle_POLLIN_raw_file(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+			    struct aws_lws_pollfd *pollfd)
 {
 	int n;
 
 	if (pollfd->revents & LWS_POLLOUT) {
-		if (lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
-			lwsl_wsi_info(wsi, "failed at set pollfd");
+		if (aws_lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
+			aws_lwsl_wsi_info(wsi, "failed at set pollfd");
 			return LWS_HPI_RET_WSI_ALREADY_DIED;
 		}
-		n = lws_callback_as_writeable(wsi);
+		n = aws_lws_callback_as_writeable(wsi);
 		if (n)
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
@@ -44,7 +44,7 @@ rops_handle_POLLIN_raw_file(struct lws_context_per_thread *pt, struct lws *wsi,
 		if (user_callback_handle_rxflow(wsi->a.protocol->callback,
 						wsi, LWS_CALLBACK_RAW_RX_FILE,
 						wsi->user_space, NULL, 0)) {
-			lwsl_wsi_debug(wsi, "raw rx callback closed it");
+			aws_lwsl_wsi_debug(wsi, "raw rx callback closed it");
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
 	}
@@ -64,7 +64,7 @@ rops_adoption_bind_raw_file(struct lws *wsi, int type, const char *vh_prot_name)
 	    (type & _LWS_ADOPT_FINISH))
 		return 0; /* no match */
 
-	lws_role_transition(wsi, 0, LRS_ESTABLISHED, &role_ops_raw_file);
+	aws_lws_role_transition(wsi, 0, LRS_ESTABLISHED, &role_ops_raw_file);
 
 	if (!vh_prot_name) {
 		if (wsi->a.vhost->default_protocol_index >=
@@ -78,12 +78,12 @@ rops_adoption_bind_raw_file(struct lws *wsi, int type, const char *vh_prot_name)
 	return 1; /* bound */
 }
 
-static const lws_rops_t rops_table_raw_file[] = {
+static const aws_lws_rops_t rops_table_raw_file[] = {
 	/*  1 */ { .handle_POLLIN	= rops_handle_POLLIN_raw_file },
 	/*  2 */ { .adoption_bind	= rops_adoption_bind_raw_file },
 };
 
-const struct lws_role_ops role_ops_raw_file = {
+const struct aws_lws_role_ops role_ops_raw_file = {
 	/* role name */			"raw-file",
 	/* alpn id */			NULL,
 

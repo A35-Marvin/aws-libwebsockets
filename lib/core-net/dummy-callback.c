@@ -32,24 +32,24 @@ static int
 proxy_header(struct lws *wsi, struct lws *par, unsigned char *temp,
 	     int temp_len, int index, unsigned char **p, unsigned char *end)
 {
-	int n = lws_hdr_total_length(par, (enum lws_token_indexes)index);
+	int n = aws_lws_hdr_total_length(par, (enum aws_lws_token_indexes)index);
 
 	if (n < 1) {
-		lwsl_wsi_debug(wsi, "no index %d:", index);
+		aws_lwsl_wsi_debug(wsi, "no index %d:", index);
 
 		return 0;
 	}
 
-	if (lws_hdr_copy(par, (char *)temp, temp_len, (enum lws_token_indexes)index) < 0) {
-		lwsl_wsi_notice(wsi, "unable to copy par hdr idx %d (len %d)",
+	if (aws_lws_hdr_copy(par, (char *)temp, temp_len, (enum aws_lws_token_indexes)index) < 0) {
+		aws_lwsl_wsi_notice(wsi, "unable to copy par hdr idx %d (len %d)",
 				      index, n);
 		return -1;
 	}
 
-	lwsl_wsi_debug(wsi, "index %d: %s", index, (char *)temp);
+	aws_lwsl_wsi_debug(wsi, "index %d: %s", index, (char *)temp);
 
-	if (lws_add_http_header_by_token(wsi, (enum lws_token_indexes)index, temp, n, p, end)) {
-		lwsl_wsi_notice(wsi, "unable to append par hdr idx %d (len %d)",
+	if (aws_lws_add_http_header_by_token(wsi, (enum aws_lws_token_indexes)index, temp, n, p, end)) {
+		aws_lwsl_wsi_notice(wsi, "unable to append par hdr idx %d (len %d)",
 				     index, n);
 		return -1;
 	}
@@ -68,7 +68,7 @@ stream_close(struct lws *wsi)
 	wsi->http.did_stream_close = 1;
 
 	if (wsi->mux_substream) {
-		if (lws_write(wsi, (unsigned char *)buf + LWS_PRE, 0,
+		if (aws_lws_write(wsi, (unsigned char *)buf + LWS_PRE, 0,
 			      LWS_WRITE_HTTP_FINAL) < 0)
 			goto bail;
 
@@ -81,22 +81,22 @@ stream_close(struct lws *wsi)
 	*out++ = '\x0d';
 	*out++ = '\x0a';
 
-	if (lws_write(wsi, (unsigned char *)buf + LWS_PRE, 5,
+	if (aws_lws_write(wsi, (unsigned char *)buf + LWS_PRE, 5,
 		      LWS_WRITE_HTTP_FINAL) < 0)
 		goto bail;
 
 	return 0;
 
 bail:
-	lwsl_wsi_info(wsi, "h2 fin wr failed");
+	aws_lwsl_wsi_info(wsi, "h2 fin wr failed");
 
 	return -1;
 }
 
 #endif
 
-struct lws_proxy_pkt {
-	struct lws_dll2 pkt_list;
+struct aws_lws_proxy_pkt {
+	struct aws_lws_dll2 pkt_list;
 	size_t len;
 	char binary;
 	char first;
@@ -107,11 +107,11 @@ struct lws_proxy_pkt {
 
 #if defined(LWS_WITH_HTTP_PROXY) && defined(LWS_ROLE_WS)
 int
-lws_callback_ws_proxy(struct lws *wsi, enum lws_callback_reasons reason,
+aws_lws_callback_ws_proxy(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
-	struct lws_proxy_pkt *pkt;
-	struct lws_dll2 *dll;
+	struct aws_lws_proxy_pkt *pkt;
+	struct aws_lws_dll2 *dll;
 
 	switch (reason) {
 
@@ -121,12 +121,12 @@ lws_callback_ws_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 		if (!wsi->h1_ws_proxied || !wsi->parent)
 			break;
 
-		if (lws_process_ws_upgrade2(wsi->parent))
+		if (aws_lws_process_ws_upgrade2(wsi->parent))
 			return -1;
 
 #if defined(LWS_WITH_HTTP2)
 		if (wsi->parent->mux_substream)
-			lwsl_wsi_info(wsi, "proxied h2 -> h1 ws established");
+			aws_lwsl_wsi_info(wsi, "proxied h2 -> h1 ws established");
 #endif
 		break;
 
@@ -135,10 +135,10 @@ lws_callback_ws_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 	case LWS_CALLBACK_CLIENT_CLOSED:
-		lwsl_wsi_info(wsi, "client closed: parent %s",
-				   lws_wsi_tag(wsi->parent));
+		aws_lwsl_wsi_info(wsi, "client closed: parent %s",
+				   aws_lws_wsi_tag(wsi->parent));
 		if (wsi->parent)
-                       lws_set_timeout(wsi->parent, 1, LWS_TO_KILL_ASYNC);
+                       aws_lws_set_timeout(wsi->parent, 1, LWS_TO_KILL_ASYNC);
 		break;
 
 	case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
@@ -160,42 +160,42 @@ lws_callback_ws_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_RECEIVE:
 		wsi->parent->ws->proxy_buffered += len;
 		if (wsi->parent->ws->proxy_buffered > 10 * 1024 * 1024) {
-			lwsl_wsi_err(wsi, "proxied ws connection "
+			aws_lwsl_wsi_err(wsi, "proxied ws connection "
 					  "excessive buffering: dropping");
 			return -1;
 		}
-		pkt = lws_zalloc(sizeof(*pkt) + LWS_PRE + len, __func__);
+		pkt = aws_lws_zalloc(sizeof(*pkt) + LWS_PRE + len, __func__);
 		if (!pkt)
 			return -1;
 
 		pkt->len = len;
-		pkt->first = (char)lws_is_first_fragment(wsi);
-		pkt->final = (char)lws_is_final_fragment(wsi);
-		pkt->binary = (char)lws_frame_is_binary(wsi);
+		pkt->first = (char)aws_lws_is_first_fragment(wsi);
+		pkt->final = (char)aws_lws_is_final_fragment(wsi);
+		pkt->binary = (char)aws_lws_frame_is_binary(wsi);
 
 		memcpy(((uint8_t *)&pkt[1]) + LWS_PRE, in, len);
 
-		lws_dll2_add_tail(&pkt->pkt_list, &wsi->parent->ws->proxy_owner);
-		lws_callback_on_writable(wsi->parent);
+		aws_lws_dll2_add_tail(&pkt->pkt_list, &wsi->parent->ws->proxy_owner);
+		aws_lws_callback_on_writable(wsi->parent);
 		break;
 
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
-		dll = lws_dll2_get_head(&wsi->ws->proxy_owner);
+		dll = aws_lws_dll2_get_head(&wsi->ws->proxy_owner);
 		if (!dll)
 			break;
 
-		pkt = (struct lws_proxy_pkt *)dll;
-		if (lws_write(wsi, ((unsigned char *)&pkt[1]) +
-			      LWS_PRE, pkt->len, (enum lws_write_protocol)lws_write_ws_flags(
+		pkt = (struct aws_lws_proxy_pkt *)dll;
+		if (aws_lws_write(wsi, ((unsigned char *)&pkt[1]) +
+			      LWS_PRE, pkt->len, (enum aws_lws_write_protocol)aws_lws_write_ws_flags(
 				pkt->binary ? LWS_WRITE_BINARY : LWS_WRITE_TEXT,
 					pkt->first, pkt->final)) < 0)
 			return -1;
 
-		lws_dll2_remove(dll);
-		lws_free(pkt);
+		aws_lws_dll2_remove(dll);
+		aws_lws_free(pkt);
 
-		if (lws_dll2_get_head(&wsi->ws->proxy_owner))
-			lws_callback_on_writable(wsi);
+		if (aws_lws_dll2_get_head(&wsi->ws->proxy_owner))
+			aws_lws_callback_on_writable(wsi);
 		break;
 
 	/* h1 ws proxying... parent / server / incoming */
@@ -204,44 +204,44 @@ lws_callback_ws_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 		return 1;
 
 	case LWS_CALLBACK_CLOSED:
-		lwsl_wsi_info(wsi, "closed");
+		aws_lwsl_wsi_info(wsi, "closed");
 		return -1;
 
 	case LWS_CALLBACK_RECEIVE:
-		pkt = lws_zalloc(sizeof(*pkt) + LWS_PRE + len, __func__);
+		pkt = aws_lws_zalloc(sizeof(*pkt) + LWS_PRE + len, __func__);
 		if (!pkt)
 			return -1;
 
 		pkt->len = len;
-		pkt->first = (char)lws_is_first_fragment(wsi);
-		pkt->final = (char)lws_is_final_fragment(wsi);
-		pkt->binary = (char)lws_frame_is_binary(wsi);
+		pkt->first = (char)aws_lws_is_first_fragment(wsi);
+		pkt->final = (char)aws_lws_is_final_fragment(wsi);
+		pkt->binary = (char)aws_lws_frame_is_binary(wsi);
 
 		memcpy(((uint8_t *)&pkt[1]) + LWS_PRE, in, len);
 
-		lws_dll2_add_tail(&pkt->pkt_list, &wsi->child_list->ws->proxy_owner);
-		lws_callback_on_writable(wsi->child_list);
+		aws_lws_dll2_add_tail(&pkt->pkt_list, &wsi->child_list->ws->proxy_owner);
+		aws_lws_callback_on_writable(wsi->child_list);
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
-		dll = lws_dll2_get_head(&wsi->ws->proxy_owner);
+		dll = aws_lws_dll2_get_head(&wsi->ws->proxy_owner);
 		if (!dll)
 			break;
 
-		pkt = (struct lws_proxy_pkt *)dll;
-		if (lws_write(wsi, ((unsigned char *)&pkt[1]) +
-			      LWS_PRE, pkt->len, (enum lws_write_protocol)lws_write_ws_flags(
+		pkt = (struct aws_lws_proxy_pkt *)dll;
+		if (aws_lws_write(wsi, ((unsigned char *)&pkt[1]) +
+			      LWS_PRE, pkt->len, (enum aws_lws_write_protocol)aws_lws_write_ws_flags(
 				pkt->binary ? LWS_WRITE_BINARY : LWS_WRITE_TEXT,
 					pkt->first, pkt->final)) < 0)
 			return -1;
 
 		wsi->ws->proxy_buffered -= pkt->len;
 
-		lws_dll2_remove(dll);
-		lws_free(pkt);
+		aws_lws_dll2_remove(dll);
+		aws_lws_free(pkt);
 
-		if (lws_dll2_get_head(&wsi->ws->proxy_owner))
-			lws_callback_on_writable(wsi);
+		if (aws_lws_dll2_get_head(&wsi->ws->proxy_owner))
+			aws_lws_callback_on_writable(wsi);
 		break;
 
 	default:
@@ -251,9 +251,9 @@ lws_callback_ws_proxy(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-const struct lws_protocols lws_ws_proxy = {
+const struct aws_lws_protocols aws_lws_ws_proxy = {
 		"lws-ws-proxy",
-		lws_callback_ws_proxy,
+		aws_lws_callback_ws_proxy,
 		0,
 		8192,
 		8192, NULL, 0
@@ -263,12 +263,12 @@ const struct lws_protocols lws_ws_proxy = {
 
 
 int
-lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
+aws_lws_callback_http_dummy(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
-	struct lws_ssl_info *si;
+	struct aws_lws_ssl_info *si;
 #ifdef LWS_WITH_CGI
-	struct lws_cgi_args *args;
+	struct aws_lws_cgi_args *args;
 #endif
 #if defined(LWS_WITH_CGI) || defined(LWS_WITH_HTTP_PROXY)
 	char buf[LWS_PRE + 32 + 8192];
@@ -283,10 +283,10 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 	case LWS_CALLBACK_HTTP:
 #if defined(LWS_WITH_SERVER)
-		if (lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, NULL))
+		if (aws_lws_return_http_status(wsi, HTTP_STATUS_NOT_FOUND, NULL))
 			return -1;
 
-		if (lws_http_transaction_completed(wsi))
+		if (aws_lws_http_transaction_completed(wsi))
 #endif
 			return -1;
 		break;
@@ -294,19 +294,19 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_HTTP_BODY_COMPLETION:
 #if defined(LWS_WITH_HTTP_PROXY)
 		if (wsi->child_list) {
-			lwsl_wsi_info(wsi, "HTTP_BODY_COMPLETION: %d",
+			aws_lwsl_wsi_info(wsi, "HTTP_BODY_COMPLETION: %d",
 					   (int)len);
-			lws_callback_on_writable(wsi->child_list);
+			aws_lws_callback_on_writable(wsi->child_list);
 			break;
 		}
 #endif
-		if (lws_return_http_status(wsi, 200, NULL))
+		if (aws_lws_return_http_status(wsi, 200, NULL))
 			return -1;
 		break;
 
 		/* fallthru */
 	case LWS_CALLBACK_HTTP_FILE_COMPLETION:
-		if (lws_http_transaction_completed(wsi))
+		if (aws_lws_http_transaction_completed(wsi))
 			return -1;
 		break;
 #endif
@@ -314,29 +314,29 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 #if defined(LWS_WITH_HTTP_PROXY)
 	case LWS_CALLBACK_HTTP_BODY:
 		if (wsi->child_list) {
-			lwsl_wsi_info(wsi, "HTTP_BODY: stashing %d", (int)len);
-			if (lws_buflist_append_segment(
+			aws_lwsl_wsi_info(wsi, "HTTP_BODY: stashing %d", (int)len);
+			if (aws_lws_buflist_append_segment(
 				     &wsi->http.buflist_post_body, in, len) < 0)
 				return -1;
-			lws_client_http_body_pending(wsi->child_list, 1);
-			lws_callback_on_writable(wsi->child_list);
+			aws_lws_client_http_body_pending(wsi->child_list, 1);
+			aws_lws_callback_on_writable(wsi->child_list);
 		}
 		break;
 #endif
 
 	case LWS_CALLBACK_HTTP_WRITEABLE:
-		// lwsl_err("%s: LWS_CALLBACK_HTTP_WRITEABLE\n", __func__);
+		// aws_lwsl_err("%s: LWS_CALLBACK_HTTP_WRITEABLE\n", __func__);
 #ifdef LWS_WITH_CGI
 		if (wsi->reason_bf & (LWS_CB_REASON_AUX_BF__CGI_HEADERS |
 				      LWS_CB_REASON_AUX_BF__CGI)) {
-			n = lws_cgi_write_split_stdout_headers(wsi);
+			n = aws_lws_cgi_write_split_stdout_headers(wsi);
 			if (n < 0) {
-				lwsl_wsi_debug(wsi, "AUX_BF__CGI forcing close");
+				aws_lwsl_wsi_debug(wsi, "AUX_BF__CGI forcing close");
 				return -1;
 			}
 			if (!n && wsi->http.cgi && wsi->http.cgi->lsp &&
 			    wsi->http.cgi->lsp->stdwsi[LWS_STDOUT])
-				lws_rx_flow_control(
+				aws_lws_rx_flow_control(
 					wsi->http.cgi->lsp->stdwsi[LWS_STDOUT], 1);
 
 			if (wsi->reason_bf & LWS_CB_REASON_AUX_BF__CGI_HEADERS)
@@ -346,7 +346,7 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 				wsi->reason_bf &= (char)~LWS_CB_REASON_AUX_BF__CGI;
 
 			if (wsi->http.cgi && wsi->http.cgi->cgi_transaction_over) {
-				lwsl_wsi_info(wsi, "txn over");
+				aws_lwsl_wsi_info(wsi, "txn over");
 				return -1;
 			}
 
@@ -357,16 +357,16 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		    (wsi->reason_bf & LWS_CB_REASON_AUX_BF__CGI_CHUNK_END)) {
 			if (!wsi->mux_substream) {
 				memcpy(buf + LWS_PRE, "0\x0d\x0a\x0d\x0a", 5);
-				lwsl_wsi_debug(wsi, "wr chunk term and exiting");
-				lws_write(wsi, (unsigned char *)buf +
+				aws_lwsl_wsi_debug(wsi, "wr chunk term and exiting");
+				aws_lws_write(wsi, (unsigned char *)buf +
 						   LWS_PRE, 5, LWS_WRITE_HTTP);
 			} else
-				lws_write(wsi, (unsigned char *)buf +
+				aws_lws_write(wsi, (unsigned char *)buf +
 						   LWS_PRE, 0,
 						   LWS_WRITE_HTTP_FINAL);
 
 			/* always close after sending it */
-			if (lws_http_transaction_completed(wsi))
+			if (aws_lws_http_transaction_completed(wsi))
 				return -1;
 			return 0;
 		}
@@ -382,22 +382,22 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 			if (!wsi->http.prh_content_length)
 				n |= LWS_WRITE_H2_STREAM_END;
 
-			lwsl_wsi_debug(wsi, "issuing proxy headers: clen %d",
+			aws_lwsl_wsi_debug(wsi, "issuing proxy headers: clen %d",
 				    (int)wsi->http.prh_content_length);
-			n = lws_write(wsi, wsi->http.pending_return_headers +
+			n = aws_lws_write(wsi, wsi->http.pending_return_headers +
 					   LWS_PRE,
 				      wsi->http.pending_return_headers_len,
-				      (enum lws_write_protocol)n);
+				      (enum aws_lws_write_protocol)n);
 
-			lws_free_set_NULL(wsi->http.pending_return_headers);
+			aws_lws_free_set_NULL(wsi->http.pending_return_headers);
 
 			if (n < 0) {
-				lwsl_wsi_err(wsi, "EST_CLIENT_HTTP: wr failed");
+				aws_lwsl_wsi_err(wsi, "EST_CLIENT_HTTP: wr failed");
 
 				return -1;
 			}
 
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 			break;
 		}
 
@@ -412,13 +412,13 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 			 * is the smaller.
 			 */
 			wsi->reason_bf &= (char)~LWS_CB_REASON_AUX_BF__PROXY;
-			if (!lws_get_child(wsi))
+			if (!aws_lws_get_child(wsi))
 				break;
 
 			/* this causes LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ */
-			if (lws_http_client_read(lws_get_child(wsi), &px,
+			if (aws_lws_http_client_read(aws_lws_get_child(wsi), &px,
 						 &lenx) < 0) {
-				lwsl_wsi_info(wsi, "LWS_CB_REASON_AUX_BF__PROXY: "
+				aws_lwsl_wsi_info(wsi, "LWS_CB_REASON_AUX_BF__PROXY: "
 					   "client closed");
 
 				stream_close(wsi);
@@ -429,14 +429,14 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		}
 
 		if (wsi->reason_bf & LWS_CB_REASON_AUX_BF__PROXY_TRANS_END) {
-			lwsl_wsi_info(wsi, "PROXY_TRANS_END");
+			aws_lwsl_wsi_info(wsi, "PROXY_TRANS_END");
 
 			wsi->reason_bf &= (char)~LWS_CB_REASON_AUX_BF__PROXY_TRANS_END;
 
 			if (stream_close(wsi))
 				return -1;
 
-			if (lws_http_transaction_completed(wsi))
+			if (aws_lws_http_transaction_completed(wsi))
 				return -1;
 		}
 #endif
@@ -444,22 +444,22 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 
 #if defined(LWS_WITH_HTTP_PROXY)
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP:
-		assert(lws_get_parent(wsi));
-		if (!lws_get_parent(wsi))
+		assert(aws_lws_get_parent(wsi));
+		if (!aws_lws_get_parent(wsi))
 			break;
-		lws_get_parent(wsi)->reason_bf |= LWS_CB_REASON_AUX_BF__PROXY;
-		lws_callback_on_writable(lws_get_parent(wsi));
+		aws_lws_get_parent(wsi)->reason_bf |= LWS_CB_REASON_AUX_BF__PROXY;
+		aws_lws_callback_on_writable(aws_lws_get_parent(wsi));
 		break;
 
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ: {
 		char *out = buf + LWS_PRE;
 
-		assert(lws_get_parent(wsi));
+		assert(aws_lws_get_parent(wsi));
 
 		if (wsi->http.proxy_parent_chunked) {
 
 			if (len > sizeof(buf) - LWS_PRE - 16) {
-				lwsl_wsi_err(wsi, "oversize buf %d %d", (int)len,
+				aws_lwsl_wsi_err(wsi, "oversize buf %d %d", (int)len,
 						(int)sizeof(buf) - LWS_PRE - 16);
 				return -1;
 			}
@@ -468,18 +468,18 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 			 * this only needs dealing with on http/1.1 to allow
 			 * pipelining
 			 */
-			n = lws_snprintf(out, 14, "%X\x0d\x0a", (int)len);
+			n = aws_lws_snprintf(out, 14, "%X\x0d\x0a", (int)len);
 			out += n;
 			memcpy(out, in, len);
 			out += len;
 			*out++ = '\x0d';
 			*out++ = '\x0a';
 
-			n = lws_write(lws_get_parent(wsi),
+			n = aws_lws_write(aws_lws_get_parent(wsi),
 				      (unsigned char *)buf + LWS_PRE,
 				      (size_t)(unsigned int)(len + (unsigned int)n + 2), LWS_WRITE_HTTP);
 		} else
-			n = lws_write(lws_get_parent(wsi), (unsigned char *)in,
+			n = aws_lws_write(aws_lws_get_parent(wsi), (unsigned char *)in,
 				      len, LWS_WRITE_HTTP);
 		if (n < 0)
 			return -1;
@@ -501,7 +501,7 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		 * written on the proxy connection as soon as convenient.
 		 */
 
-		parent = lws_get_parent(wsi);
+		parent = aws_lws_get_parent(wsi);
 
 		if (!parent)
 			return 0;
@@ -509,8 +509,8 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		start = p = (unsigned char *)buf + LWS_PRE;
 		end = p + sizeof(buf) - LWS_PRE - MAXHDRVAL;
 
-		if (lws_add_http_header_status(lws_get_parent(wsi),
-				lws_http_client_http_response(wsi), &p, end))
+		if (aws_lws_add_http_header_status(aws_lws_get_parent(wsi),
+				aws_lws_http_client_http_response(wsi), &p, end))
 			return 1;
 
 		/*
@@ -535,7 +535,7 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 			     WSI_TOKEN_HTTP_LOCATION, &p, end);
 
 		if (!parent->mux_substream)
-			if (lws_add_http_header_by_token(parent,
+			if (aws_lws_add_http_header_by_token(parent,
 				WSI_TOKEN_CONNECTION, (unsigned char *)"close",
 				5, &p, end))
 			return -1;
@@ -549,9 +549,9 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		 */
 
 		if (!parent->mux_substream &&
-		    !lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
-			lwsl_wsi_debug(wsi, "downstream parent chunked");
-			if (lws_add_http_header_by_token(parent,
+		    !aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
+			aws_lwsl_wsi_debug(wsi, "downstream parent chunked");
+			if (aws_lws_add_http_header_by_token(parent,
 					WSI_TOKEN_HTTP_TRANSFER_ENCODING,
 					(unsigned char *)"chunked", 7, &p, end))
 				return -1;
@@ -559,18 +559,18 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 			wsi->http.proxy_parent_chunked = 1;
 		}
 
-		if (lws_finalize_http_header(parent, &p, end))
+		if (aws_lws_finalize_http_header(parent, &p, end))
 			return 1;
 
 		parent->http.prh_content_length = (size_t)-1;
-		if (lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH))
+		if (aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH))
 			parent->http.prh_content_length = (size_t)atoll(
-				lws_hdr_simple_ptr(wsi,
+				aws_lws_hdr_simple_ptr(wsi,
 						WSI_TOKEN_HTTP_CONTENT_LENGTH));
 
-		parent->http.pending_return_headers_len = lws_ptr_diff_size_t(p, start);
+		parent->http.pending_return_headers_len = aws_lws_ptr_diff_size_t(p, start);
 		parent->http.pending_return_headers =
-			lws_malloc(parent->http.pending_return_headers_len +
+			aws_lws_malloc(parent->http.pending_return_headers_len +
 				    LWS_PRE, "return proxy headers");
 		if (!parent->http.pending_return_headers)
 			return -1;
@@ -580,9 +580,9 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 
 		parent->reason_bf |= LWS_CB_REASON_AUX_BF__PROXY_HEADERS;
 
-		lwsl_wsi_debug(wsi, "ESTABLISHED_CLIENT_HTTP: "
+		aws_lwsl_wsi_debug(wsi, "ESTABLISHED_CLIENT_HTTP: "
 			   "prepared %d headers (len %d)",
-			   lws_http_client_http_response(wsi),
+			   aws_lws_http_client_http_response(wsi),
 			   (int)parent->http.prh_content_length);
 
 		/*
@@ -591,31 +591,31 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		 * inbound stuff to send, it can go now.
 		 */
 
-		lws_callback_on_writable(parent);
+		aws_lws_callback_on_writable(parent);
 
 		break; }
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_wsi_info(wsi, "COMPLETED_CLIENT_HTTP: (parent %s)",
-				   lws_wsi_tag(lws_get_parent(wsi)));
-		if (!lws_get_parent(wsi))
+		aws_lwsl_wsi_info(wsi, "COMPLETED_CLIENT_HTTP: (parent %s)",
+				   aws_lws_wsi_tag(aws_lws_get_parent(wsi)));
+		if (!aws_lws_get_parent(wsi))
 			break;
-		lws_get_parent(wsi)->reason_bf |=
+		aws_lws_get_parent(wsi)->reason_bf |=
 				LWS_CB_REASON_AUX_BF__PROXY_TRANS_END;
-		lws_callback_on_writable(lws_get_parent(wsi));
+		aws_lws_callback_on_writable(aws_lws_get_parent(wsi));
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
-		if (!lws_get_parent(wsi))
+		if (!aws_lws_get_parent(wsi))
 			break;
-	//	lwsl_err("%s: LWS_CALLBACK_CLOSED_CLIENT_HTTP\n", __func__);
-               lws_set_timeout(lws_get_parent(wsi),
+	//	aws_lwsl_err("%s: LWS_CALLBACK_CLOSED_CLIENT_HTTP\n", __func__);
+               aws_lws_set_timeout(aws_lws_get_parent(wsi),
         		       (enum pending_timeout)LWS_TO_KILL_ASYNC,
                                (int)PENDING_TIMEOUT_KILLED_BY_PROXY_CLIENT_CLOSE);
 		break;
 
 	case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
-		parent = lws_get_parent(wsi);
+		parent = aws_lws_get_parent(wsi);
 		if (!parent)
 			break;
 
@@ -641,8 +641,8 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 				WSI_TOKEN_HTTP_COOKIE, p, end);
 
 		buf[0] = '\0';
-		lws_get_peer_simple(parent, buf, sizeof(buf));
-		if (lws_add_http_header_by_token(wsi, WSI_TOKEN_X_FORWARDED_FOR,
+		aws_lws_get_peer_simple(parent, buf, sizeof(buf));
+		if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_X_FORWARDED_FOR,
 				(unsigned char *)buf, (int)strlen(buf), p, end))
 			return -1;
 
@@ -657,7 +657,7 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 	 *  - subprocess stderr goes to the logs
 	 */
 	case LWS_CALLBACK_CGI:
-		args = (struct lws_cgi_args *)in;
+		args = (struct aws_lws_cgi_args *)in;
 		switch (args->ch) { /* which of stdin/out/err ? */
 		case LWS_STDIN:
 			/* TBD stdin rx flow control */
@@ -665,13 +665,13 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		case LWS_STDOUT:
 			if (args->stdwsi[LWS_STDOUT])
 				/* quench POLLIN on STDOUT until MASTER got writeable */
-				lws_rx_flow_control(args->stdwsi[LWS_STDOUT], 0);
+				aws_lws_rx_flow_control(args->stdwsi[LWS_STDOUT], 0);
 			wsi->reason_bf |= LWS_CB_REASON_AUX_BF__CGI;
 			/* when writing to MASTER would not block */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 			break;
 		case LWS_STDERR:
-			n = lws_get_socket_fd(args->stdwsi[LWS_STDERR]);
+			n = aws_lws_get_socket_fd(args->stdwsi[LWS_STDERR]);
 			if (n < 0)
 				break;
 			n = (int)read(n, buf, sizeof(buf) - 2);
@@ -679,40 +679,40 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 				if (buf[n - 1] != '\n')
 					buf[n++] = '\n';
 				buf[n] = '\0';
-				lwsl_wsi_notice(wsi, "CGI-stderr: %s", buf);
+				aws_lwsl_wsi_notice(wsi, "CGI-stderr: %s", buf);
 			}
 			break;
 		}
 		break;
 
 	case LWS_CALLBACK_CGI_TERMINATED:
-		lwsl_wsi_debug(wsi, "CGI_TERMINATED: %d %" PRIu64,
+		aws_lwsl_wsi_debug(wsi, "CGI_TERMINATED: %d %" PRIu64,
 				wsi->http.cgi->explicitly_chunked,
 				(uint64_t)wsi->http.cgi->content_length);
 		if (!(wsi->http.cgi->explicitly_chunked && wsi->mux_substream) &&
 		    !wsi->http.cgi->content_length) {
 			/* send terminating chunk */
-			lwsl_wsi_debug(wsi, "LWS_CALLBACK_CGI_TERMINATED: ending");
+			aws_lwsl_wsi_debug(wsi, "LWS_CALLBACK_CGI_TERMINATED: ending");
 			wsi->reason_bf |= LWS_CB_REASON_AUX_BF__CGI_CHUNK_END;
-			lws_callback_on_writable(wsi);
-			lws_set_timeout(wsi, PENDING_TIMEOUT_CGI, 3);
+			aws_lws_callback_on_writable(wsi);
+			aws_lws_set_timeout(wsi, PENDING_TIMEOUT_CGI, 3);
 			break;
 		}
 		if (wsi->mux_substream && !wsi->cgi_stdout_zero_length)
-			lws_write(wsi, (unsigned char *)buf + LWS_PRE, 0,
+			aws_lws_write(wsi, (unsigned char *)buf + LWS_PRE, 0,
 						      LWS_WRITE_HTTP_FINAL);
 #if defined(LWS_WITH_SERVER)
-		if (lws_http_transaction_completed(wsi))
+		if (aws_lws_http_transaction_completed(wsi))
 			return -1;
 #endif
 		return 0;
 
 	case LWS_CALLBACK_CGI_STDIN_DATA:  /* POST body for stdin */
-		args = (struct lws_cgi_args *)in;
+		args = (struct aws_lws_cgi_args *)in;
 		args->data[args->len] = '\0';
 		if (!args->stdwsi[LWS_STDIN])
 			return -1;
-		n = lws_get_socket_fd(args->stdwsi[LWS_STDIN]);
+		n = aws_lws_get_socket_fd(args->stdwsi[LWS_STDIN]);
 		if (n < 0)
 			return -1;
 
@@ -721,14 +721,14 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 			/* gzip handling */
 
 			if (!wsi->http.cgi->gzip_init) {
-				lwsl_wsi_info(wsi, "inflating gzip");
+				aws_lwsl_wsi_info(wsi, "inflating gzip");
 
 				memset(&wsi->http.cgi->inflate, 0,
 				       sizeof(wsi->http.cgi->inflate));
 
 				if (inflateInit2(&wsi->http.cgi->inflate,
 						 16 + 15) != Z_OK) {
-					lwsl_wsi_err(wsi, "iniflateInit fail");
+					aws_lwsl_wsi_err(wsi, "iniflateInit fail");
 					return -1;
 				}
 
@@ -755,7 +755,7 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 				case Z_MEM_ERROR:
 					inflateEnd(&wsi->http.cgi->inflate);
 					wsi->http.cgi->gzip_init = 0;
-					lwsl_wsi_err(wsi, "zlib err inflate %d", n);
+					aws_lwsl_wsi_err(wsi, "zlib err inflate %d", n);
 					return -1;
 				}
 
@@ -771,14 +771,14 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 					if (written != (int)(
 						sizeof(wsi->http.cgi->inflate_buf) -
 						wsi->http.cgi->inflate.avail_out)) {
-						lwsl_wsi_notice(wsi,
+						aws_lwsl_wsi_notice(wsi,
 							"CGI_STDIN_DATA: "
 							"sent %d only %d went",
 							n, args->len);
 					}
 
 					if (n == Z_STREAM_END) {
-						lwsl_wsi_err(wsi,
+						aws_lwsl_wsi_err(wsi,
 							    "gzip inflate end");
 						inflateEnd(&wsi->http.cgi->inflate);
 						wsi->http.cgi->gzip_init = 0;
@@ -798,12 +798,12 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 #endif /* WITH_ZLIB */
 
 		n = (int)write(n, args->data, (unsigned int)args->len);
-//		lwsl_hexdump_notice(args->data, args->len);
+//		aws_lwsl_hexdump_notice(args->data, args->len);
 		if (n < args->len)
-			lwsl_wsi_notice(wsi, "CGI_STDIN_DATA: "
+			aws_lwsl_wsi_notice(wsi, "CGI_STDIN_DATA: "
 				    "sent %d only %d went", n, args->len);
 
-		lwsl_wsi_info(wsi, "proxied %d bytes", n);
+		aws_lwsl_wsi_info(wsi, "proxied %d bytes", n);
 
 		if (wsi->http.cgi->post_in_expected && args->stdwsi[LWS_STDIN] &&
 		    args->stdwsi[LWS_STDIN]->desc.filefd > 0) {
@@ -820,7 +820,7 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 				 * if no content-length)...
 				 */
 
-				lwsl_wsi_info(siwsi, "expected POST in end: "
+				aws_lwsl_wsi_info(siwsi, "expected POST in end: "
 						     "closing stdin fd %d",
 						     siwsi->desc.sockfd);
 
@@ -830,10 +830,10 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 				 * rest of the cgi and children to stay up
 				 */
 
-				lws_remove_child_from_any_parent(siwsi);
-				lws_wsi_close(siwsi, LWS_TO_KILL_ASYNC);
+				aws_lws_remove_child_from_any_parent(siwsi);
+				aws_lws_wsi_close(siwsi, LWS_TO_KILL_ASYNC);
 				wsi->http.cgi->lsp->stdwsi[LWS_STDIN] = NULL;
-				lws_spawn_stdwsi_closed(wsi->http.cgi->lsp, siwsi);
+				aws_lws_spawn_stdwsi_closed(wsi->http.cgi->lsp, siwsi);
 			}
 		}
 
@@ -844,7 +844,7 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 		si = in;
 
 		(void)si;
-		lwsl_wsi_notice(wsi, "SSL_INFO: where: 0x%x, ret: 0x%x",
+		aws_lwsl_wsi_notice(wsi, "SSL_INFO: where: 0x%x, ret: 0x%x",
 				si->where, si->ret);
 		break;
 
@@ -853,9 +853,9 @@ lws_callback_http_dummy(struct lws *wsi, enum lws_callback_reasons reason,
 #ifdef __PTW32_H
 		/* If we use implementation of PThreads for Win that is
 		 * distributed by VCPKG */
-		return (int)(lws_intptr_t)(pthread_self()).p;
+		return (int)(aws_lws_intptr_t)(pthread_self()).p;
 #else
-		return (int)(lws_intptr_t)pthread_self();
+		return (int)(aws_lws_intptr_t)pthread_self();
 #endif // __PTW32_H
 #endif
 

@@ -23,19 +23,19 @@
 #define G_SOURCE_FUNC(f) ((GSourceFunc) (void (*)(void)) (f))
 #endif
 
-typedef struct lws_glib_tag {
+typedef struct aws_lws_glib_tag {
 	GSource			*gs;
 	guint			tag;
-} lws_glib_tag_t;
+} aws_lws_glib_tag_t;
 
-#define lws_gs_valid(t)		  (t.gs)
-#define lws_gs_destroy(t)	  if (lws_gs_valid(t)) { \
+#define aws_lws_gs_valid(t)		  (t.gs)
+#define aws_lws_gs_destroy(t)	  if (aws_lws_gs_valid(t)) { \
 					g_source_remove(t.tag); \
 					g_source_unref(t.gs); \
 					t.gs = NULL; t.tag = 0; }
 
 static GMainLoop *loop_glib;
-static lws_glib_tag_t timer_outer_glib, sighandler_glib;
+static aws_lws_glib_tag_t timer_outer_glib, sighandler_glib;
 
 static int
 timer_cb_glib(void *p)
@@ -82,8 +82,8 @@ foreign_event_loop_cleanup_glib(void)
 {
 	/* cleanup the foreign loop assets */
 
-	lws_gs_destroy(sighandler_glib);
-	lws_gs_destroy(timer_outer_glib);
+	aws_lws_gs_destroy(sighandler_glib);
+	aws_lws_gs_destroy(timer_outer_glib);
 
 	g_main_loop_unref(loop_glib);
 	loop_glib = NULL;

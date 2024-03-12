@@ -35,7 +35,7 @@ struct per_session_data__client_loopback_test {
  * This is a bit fiddly...
  *
  * 0) If you want the wss:// test to work, make sure the vhost is marked with
- *    enable-client-ssl if using lwsws, or call lws_init_vhost_client_ssl() on
+ *    enable-client-ssl if using aws_lwsws, or call aws_lws_init_vhost_client_ssl() on
  *    the vhost if you're doing it by hand.
  *
  * 1) enable the protocol on a vhost
@@ -65,10 +65,10 @@ struct per_session_data__client_loopback_test {
  */
 
 static int
-callback_client_loopback_test(struct lws *wsi, enum lws_callback_reasons reason,
+callback_client_loopback_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 	struct per_session_data__client_loopback_test *pss =
 			(struct per_session_data__client_loopback_test *)user;
 	const char *p = (const char *)in;
@@ -87,13 +87,13 @@ callback_client_loopback_test(struct lws *wsi, enum lws_callback_reasons reason,
 		while (*p && *p != '/')
 			p++;
 		if (!*p) {
-			lws_return_http_status(wsi, 400, "Arg needs to be in format ws://xxx or wss://xxx");
+			aws_lws_return_http_status(wsi, 400, "Arg needs to be in format ws://xxx or wss://xxx");
 			return -1;
 		}
 		p++;
 
 		memset(&i, 0, sizeof(i));
-		i.context = lws_get_context(wsi);
+		i.context = aws_lws_get_context(wsi);
 
 		// stacked /// get resolved to /
 
@@ -108,7 +108,7 @@ callback_client_loopback_test(struct lws *wsi, enum lws_callback_reasons reason,
 				p += 5;
 			} else {
 				sprintf(buf, "Arg %s is not in format ws://xxx or wss://xxx\n", p);
-				lws_return_http_status(wsi, 400, buf);
+				aws_lws_return_http_status(wsi, 400, buf);
 				return -1;
 			}
 
@@ -119,13 +119,13 @@ callback_client_loopback_test(struct lws *wsi, enum lws_callback_reasons reason,
 		i.ietf_version_or_minus_one = -1;
 		i.protocol = "client-loopback-test";
 
-		pss->wsi = lws_client_connect_via_info(&i);
+		pss->wsi = aws_lws_client_connect_via_info(&i);
 		if (!pss->wsi)
-			lws_return_http_status(wsi, 401, "client-loopback-test: connect failed\n");
+			aws_lws_return_http_status(wsi, 401, "client-loopback-test: connect failed\n");
 		else {
-			lwsl_notice("client connection to %s:%d with ssl: %d started\n",
+			aws_lwsl_notice("client connection to %s:%d with ssl: %d started\n",
 				    i.address, i.port, i.ssl_connection);
-			lws_return_http_status(wsi, 200, "OK");
+			aws_lws_return_http_status(wsi, 200, "OK");
 		}
 
 		/* either way, close the triggering http link */
@@ -133,15 +133,15 @@ callback_client_loopback_test(struct lws *wsi, enum lws_callback_reasons reason,
 		return -1;
 
 	case LWS_CALLBACK_CLOSED_HTTP:
-		lwsl_notice("Http part closed\n");
+		aws_lwsl_notice("Http part closed\n");
 		break;
 
 	/* server part */
 
 	case LWS_CALLBACK_ESTABLISHED:
-		lwsl_notice("server part: LWS_CALLBACK_ESTABLISHED\n");
+		aws_lwsl_notice("server part: LWS_CALLBACK_ESTABLISHED\n");
 		strcpy(buf + LWS_PRE, "Made it");
-		n = lws_write(wsi, (unsigned char *)buf + LWS_PRE,
+		n = aws_lws_write(wsi, (unsigned char *)buf + LWS_PRE,
 			      7, LWS_WRITE_TEXT);
 		if (n < 7)
 			return -1;
@@ -150,12 +150,12 @@ callback_client_loopback_test(struct lws *wsi, enum lws_callback_reasons reason,
 	/* client part */
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		lwsl_notice("Client connection established\n");
+		aws_lwsl_notice("Client connection established\n");
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-		lws_strncpy(buf, in, sizeof(buf));
-		lwsl_notice("Client connection received %ld from server '%s'\n",
+		aws_lws_strncpy(buf, in, sizeof(buf));
+		aws_lwsl_notice("Client connection received %ld from server '%s'\n",
 			    (long)len, buf);
 
 		/* OK we are done with the client connection */
@@ -168,7 +168,7 @@ callback_client_loopback_test(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-LWS_VISIBLE const struct lws_protocols client_loopback_test_protocols[] = {
+LWS_VISIBLE const struct aws_lws_protocols client_loopback_test_protocols[] = {
 	{
 		"client-loopback-test",
 		callback_client_loopback_test,
@@ -178,10 +178,10 @@ LWS_VISIBLE const struct lws_protocols client_loopback_test_protocols[] = {
 	},
 };
 
-LWS_VISIBLE const lws_plugin_protocol_t client_loopback_test = {
+LWS_VISIBLE const aws_lws_plugin_protocol_t client_loopback_test = {
 	.hdr = {
 		"client loopback test",
-		"lws_protocol_plugin",
+		"aws_lws_protocol_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},

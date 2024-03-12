@@ -137,7 +137,7 @@ static const char * const tok[] = {
 static signed char
 test_cb(struct lejp_ctx *ctx, char reason)
 {
-	lwsl_info("%s: ctx->path %s, buf %s\n", __func__, ctx->path, ctx->buf);
+	aws_lwsl_info("%s: ctx->path %s, buf %s\n", __func__, ctx->path, ctx->buf);
 	return 0;
 }
 
@@ -150,19 +150,19 @@ int main(int argc, const char **argv)
 	struct lejp_ctx ctx;
 	const char *p;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: lws_struct JSON\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: aws_lws_struct JSON\n");
 
 	for (m = 0; m < (int)LWS_ARRAY_SIZE(json_tests); m++) {
 
-		lwsl_info("%s: ++++++++++++++++ test %d\n", __func__, m + 1);
+		aws_lwsl_info("%s: ++++++++++++++++ test %d\n", __func__, m + 1);
 
 		lejp_construct(&ctx, test_cb, NULL, tok, LWS_ARRAY_SIZE(tok));
 
-		lwsl_hexdump_info(json_tests[m], strlen(json_tests[m]));
+		aws_lwsl_hexdump_info(json_tests[m], strlen(json_tests[m]));
 
 		if (m == 7)
 			n = lejp_parse(&ctx, (uint8_t *)json_tests[m],
@@ -171,14 +171,14 @@ int main(int argc, const char **argv)
 			n = lejp_parse(&ctx, (uint8_t *)json_tests[m],
 						 (int)strlen(json_tests[m]));
 
-		lwsl_info("n = %d\n", n);
+		aws_lwsl_info("n = %d\n", n);
 		if (n < 0 && m != 9) {
-			lwsl_err("%s: test %d: JSON decode failed '%s'\n",
+			aws_lwsl_err("%s: test %d: JSON decode failed '%s'\n",
 					__func__, m + 1, lejp_error_to_string(n));
 			e++;
 		}
 		if (n >= 0 && m == 9) {
-			lwsl_err("%s: test %d: JSON decode should have failed '%s'\n",
+			aws_lwsl_err("%s: test %d: JSON decode should have failed '%s'\n",
 					__func__, m + 1, lejp_error_to_string(n));
 			e++;
 		}
@@ -187,20 +187,20 @@ int main(int argc, const char **argv)
 	{
 		const char *cs;
 		size_t cslen;
-		cs = lws_json_simple_find("{\"blah\":123,\"ext\":{\"authorized\":1}}", 35,
+		cs = aws_lws_json_simple_find("{\"blah\":123,\"ext\":{\"authorized\":1}}", 35,
 					    "\"ext\":", &cslen);
 		if (!cs) {
-			lwsl_err("%s: simple_find failed\n", __func__);
+			aws_lwsl_err("%s: simple_find failed\n", __func__);
 			e++;
 		} else {
-			if (lws_json_simple_strcmp(cs, cslen,
+			if (aws_lws_json_simple_strcmp(cs, cslen,
 					"\"authorized\":", "1"))
 				e++;
 		}
-		cs = lws_json_simple_find("{\"blah\":123,\"auth_user\":\"andy@warmcat.com\",\"thing\":\"yeah\"}", 57,
+		cs = aws_lws_json_simple_find("{\"blah\":123,\"auth_user\":\"andy@warmcat.com\",\"thing\":\"yeah\"}", 57,
 					    "\"auth_user\":", &cslen);
 		if (cslen != 16) {
-			lwsl_err("%s: wrong string len %d isolated\n", __func__, (int)cslen);
+			aws_lwsl_err("%s: wrong string len %d isolated\n", __func__, (int)cslen);
 			e++;
 		}
 	}
@@ -208,12 +208,12 @@ int main(int argc, const char **argv)
 	if (e)
 		goto bail;
 
-	lwsl_user("Completed: PASS\n");
+	aws_lwsl_user("Completed: PASS\n");
 
 	return 0;
 
 bail:
-	lwsl_user("Completed: FAIL\n");
+	aws_lwsl_user("Completed: FAIL\n");
 
 	return 1;
 }

@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genrsa provides an RSA abstraction api in lws that works the
+ *  aws_lws_genrsa provides an RSA abstraction api in lws that works the
  *  same whether you are using openssl or mbedtls crypto functions underneath.
  */
 #include "private-lib-core.h"
@@ -33,16 +33,16 @@
  */
 
 void
-lws_genrsa_destroy_elements(struct lws_gencrypto_keyelem *el)
+aws_lws_genrsa_destroy_elements(struct aws_lws_gencrypto_keyelem *el)
 {
-	lws_gencrypto_destroy_elements(el, LWS_GENCRYPTO_RSA_KEYEL_COUNT);
+	aws_lws_gencrypto_destroy_elements(el, LWS_GENCRYPTO_RSA_KEYEL_COUNT);
 }
 
 static int mode_map_crypt[] = { RSA_PKCS1_PADDING, RSA_PKCS1_OAEP_PADDING },
 	   mode_map_sig[]   = { RSA_PKCS1_PADDING, RSA_PKCS1_PSS_PADDING };
 
 static int
-rsa_pkey_wrap(struct lws_genrsa_ctx *ctx, RSA *rsa)
+rsa_pkey_wrap(struct aws_lws_genrsa_ctx *ctx, RSA *rsa)
 {
 	EVP_PKEY *pkey;
 
@@ -55,7 +55,7 @@ rsa_pkey_wrap(struct lws_genrsa_ctx *ctx, RSA *rsa)
 	/* bind the PKEY to the RSA key we just prepared */
 
 	if (EVP_PKEY_assign_RSA(pkey, rsa) != 1) {
-		lwsl_err("%s: EVP_PKEY_assign_RSA_KEY failed\n", __func__);
+		aws_lwsl_err("%s: EVP_PKEY_assign_RSA_KEY failed\n", __func__);
 		goto bail;
 	}
 
@@ -77,10 +77,10 @@ bail:
 }
 
 int
-lws_genrsa_create(struct lws_genrsa_ctx *ctx,
-		  const struct lws_gencrypto_keyelem *el,
-		  struct lws_context *context, enum enum_genrsa_mode mode,
-		  enum lws_genhash_types oaep_hashid)
+aws_lws_genrsa_create(struct aws_lws_genrsa_ctx *ctx,
+		  const struct aws_lws_gencrypto_keyelem *el,
+		  struct aws_lws_context *context, enum enum_genrsa_mode mode,
+		  enum aws_lws_genhash_types oaep_hashid)
 {
 	int n;
 
@@ -96,7 +96,7 @@ lws_genrsa_create(struct lws_genrsa_ctx *ctx,
 	for (n = 0; n < 5; n++) {
 		ctx->bn[n] = BN_bin2bn(el[n].buf, (int)el[n].len, NULL);
 		if (!ctx->bn[n]) {
-			lwsl_notice("mpi load failed\n");
+			aws_lwsl_notice("mpi load failed\n");
 			goto bail;
 		}
 	}
@@ -108,7 +108,7 @@ lws_genrsa_create(struct lws_genrsa_ctx *ctx,
 
 	ctx->rsa = RSA_new();
 	if (!ctx->rsa) {
-		lwsl_notice("Failed to create RSA\n");
+		aws_lwsl_notice("Failed to create RSA\n");
 		goto bail;
 	}
 
@@ -116,7 +116,7 @@ lws_genrsa_create(struct lws_genrsa_ctx *ctx,
 	if (RSA_set0_key(ctx->rsa, ctx->bn[LWS_GENCRYPTO_RSA_KEYEL_N],
 			 ctx->bn[LWS_GENCRYPTO_RSA_KEYEL_E],
 			 ctx->bn[LWS_GENCRYPTO_RSA_KEYEL_D]) != 1) {
-		lwsl_notice("RSA_set0_key failed\n");
+		aws_lwsl_notice("RSA_set0_key failed\n");
 		goto bail;
 	}
 	RSA_set0_factors(ctx->rsa, ctx->bn[LWS_GENCRYPTO_RSA_KEYEL_P],
@@ -148,8 +148,8 @@ bail:
 }
 
 int
-lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
-		       enum enum_genrsa_mode mode, struct lws_gencrypto_keyelem *el,
+aws_lws_genrsa_new_keypair(struct aws_lws_context *context, struct aws_lws_genrsa_ctx *ctx,
+		       enum enum_genrsa_mode mode, struct aws_lws_gencrypto_keyelem *el,
 		       int bits)
 {
 	BIGNUM *bn;
@@ -161,7 +161,7 @@ lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
 
 	ctx->rsa = RSA_new();
 	if (!ctx->rsa) {
-		lwsl_notice("Failed to create RSA\n");
+		aws_lwsl_notice("Failed to create RSA\n");
 		return -1;
 	}
 
@@ -193,7 +193,7 @@ lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
 #endif
 		for (n = 0; n < 5; n++)
 			if (BN_num_bytes(mpi[n])) {
-				el[n].buf = lws_malloc(
+				el[n].buf = aws_lws_malloc(
 					(unsigned int)BN_num_bytes(mpi[n]), "genrsakey");
 				if (!el[n].buf)
 					goto cleanup;
@@ -208,7 +208,7 @@ lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
 cleanup:
 	for (n = 0; n < LWS_GENCRYPTO_RSA_KEYEL_COUNT; n++)
 		if (el[n].buf)
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_free_set_NULL(el[n].buf);
 cleanup_1:
 	RSA_free(ctx->rsa);
 	ctx->rsa = NULL;
@@ -222,14 +222,14 @@ cleanup_1:
  */
 
 int
-lws_genrsa_public_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_public_encrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			  size_t in_len, uint8_t *out)
 {
 	int n = RSA_public_encrypt((int)in_len, in, out, ctx->rsa,
 				   mode_map_crypt[ctx->mode]);
 	if (n < 0) {
-		lwsl_err("%s: RSA_public_encrypt failed\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_err("%s: RSA_public_encrypt failed\n", __func__);
+		aws_lws_tls_err_describe_clear();
 		return -1;
 	}
 
@@ -237,14 +237,14 @@ lws_genrsa_public_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_private_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_private_encrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			   size_t in_len, uint8_t *out)
 {
 	int n = RSA_private_encrypt((int)in_len, in, out, ctx->rsa,
 			        mode_map_crypt[ctx->mode]);
 	if (n < 0) {
-		lwsl_err("%s: RSA_private_encrypt failed\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_err("%s: RSA_private_encrypt failed\n", __func__);
+		aws_lws_tls_err_describe_clear();
 		return -1;
 	}
 
@@ -252,13 +252,13 @@ lws_genrsa_private_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_public_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_public_decrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			  size_t in_len, uint8_t *out, size_t out_max)
 {
 	int n = RSA_public_decrypt((int)in_len, in, out, ctx->rsa,
 			       mode_map_crypt[ctx->mode]);
 	if (n < 0) {
-		lwsl_err("%s: RSA_public_decrypt failed\n", __func__);
+		aws_lwsl_err("%s: RSA_public_decrypt failed\n", __func__);
 		return -1;
 	}
 
@@ -266,14 +266,14 @@ lws_genrsa_public_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_private_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_private_decrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			   size_t in_len, uint8_t *out, size_t out_max)
 {
 	int n = RSA_private_decrypt((int)in_len, in, out, ctx->rsa,
 			        mode_map_crypt[ctx->mode]);
 	if (n < 0) {
-		lwsl_err("%s: RSA_private_decrypt failed\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_err("%s: RSA_private_decrypt failed\n", __func__);
+		aws_lws_tls_err_describe_clear();
 		return -1;
 	}
 
@@ -281,12 +281,12 @@ lws_genrsa_private_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
-			 enum lws_genhash_types hash_type, const uint8_t *sig,
+aws_lws_genrsa_hash_sig_verify(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
+			 enum aws_lws_genhash_types hash_type, const uint8_t *sig,
 			 size_t sig_len)
 {
-	int n = lws_gencrypto_openssl_hash_to_NID(hash_type),
-	    h = (int)lws_genhash_size(hash_type);
+	int n = aws_lws_gencrypto_openssl_hash_to_NID(hash_type),
+	    h = (int)aws_lws_genhash_size(hash_type);
 	const EVP_MD *md = NULL;
 
 	if (n < 0)
@@ -298,7 +298,7 @@ lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 			       (unsigned int)sig_len, ctx->rsa);
 		break;
 	case LGRSAM_PKCS1_OAEP_PSS:
-		md = lws_gencrypto_openssl_hash_to_EVP_MD(hash_type);
+		md = aws_lws_gencrypto_openssl_hash_to_EVP_MD(hash_type);
 		if (!md)
 			return -1;
 
@@ -315,8 +315,8 @@ lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 	}
 
 	if (n != 1) {
-		lwsl_notice("%s: fail\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_notice("%s: fail\n", __func__);
+		aws_lws_tls_err_describe_clear();
 
 		return -1;
 	}
@@ -325,12 +325,12 @@ lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
-		       enum lws_genhash_types hash_type, uint8_t *sig,
+aws_lws_genrsa_hash_sign(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
+		       enum aws_lws_genhash_types hash_type, uint8_t *sig,
 		       size_t sig_len)
 {
-	int n = lws_gencrypto_openssl_hash_to_NID(hash_type),
-	    h = (int)lws_genhash_size(hash_type);
+	int n = aws_lws_gencrypto_openssl_hash_to_NID(hash_type),
+	    h = (int)aws_lws_genhash_size(hash_type);
 	unsigned int used = 0;
 	EVP_MD_CTX *mdctx = NULL;
 	const EVP_MD *md = NULL;
@@ -341,7 +341,7 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 	switch(ctx->mode) {
 	case LGRSAM_PKCS1_1_5:
 		if (RSA_sign(n, in, (unsigned int)h, sig, &used, ctx->rsa) != 1) {
-			lwsl_err("%s: RSA_sign failed\n", __func__);
+			aws_lwsl_err("%s: RSA_sign failed\n", __func__);
 
 			goto bail;
 		}
@@ -349,13 +349,13 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 
 	case LGRSAM_PKCS1_OAEP_PSS:
 
-		md = lws_gencrypto_openssl_hash_to_EVP_MD(hash_type);
+		md = aws_lws_gencrypto_openssl_hash_to_EVP_MD(hash_type);
 		if (!md)
 			return -1;
 
 		if (EVP_PKEY_CTX_set_rsa_padding(ctx->ctx,
 						 mode_map_sig[ctx->mode]) != 1) {
-			lwsl_err("%s: set_rsa_padding failed\n", __func__);
+			aws_lwsl_err("%s: set_rsa_padding failed\n", __func__);
 
 			goto bail;
 		}
@@ -370,17 +370,17 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 #else
 				       EVP_PKEY_CTX_get0_pkey(ctx->ctx))) {
 #endif
-			lwsl_err("%s: EVP_DigestSignInit failed\n", __func__);
+			aws_lwsl_err("%s: EVP_DigestSignInit failed\n", __func__);
 
 			goto bail;
 		}
 		if (EVP_DigestSignUpdate(mdctx, in, (unsigned int)EVP_MD_size(md))) {
-			lwsl_err("%s: EVP_DigestSignUpdate failed\n", __func__);
+			aws_lwsl_err("%s: EVP_DigestSignUpdate failed\n", __func__);
 
 			goto bail;
 		}
 		if (EVP_DigestSignFinal(mdctx, sig, &sig_len)) {
-			lwsl_err("%s: EVP_DigestSignFinal failed\n", __func__);
+			aws_lwsl_err("%s: EVP_DigestSignFinal failed\n", __func__);
 
 			goto bail;
 		}
@@ -402,7 +402,7 @@ bail:
 }
 
 void
-lws_genrsa_destroy(struct lws_genrsa_ctx *ctx)
+aws_lws_genrsa_destroy(struct aws_lws_genrsa_ctx *ctx)
 {
 	if (!ctx->ctx)
 		return;

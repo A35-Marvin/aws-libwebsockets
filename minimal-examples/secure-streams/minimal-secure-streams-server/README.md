@@ -28,17 +28,17 @@ Commandline option|Meaning
 [2020/07/27 10:51:04:8994] U: LWS Secure Streams Server
 [2020/07/27 10:51:04:9440] N: LWS: 4.0.99-v4.0.0-245-ge6eb4417a, loglevel 1031
 [2020/07/27 10:51:04:9444] N: NET CLI SRV H1 H2 WS MQTT SS-JSON-POL SSPROX ASYNC_DNS IPv6-absent
-[2020/07/27 10:51:05:1685] N: lws_adopt_descriptor_vhost2: wsi 0x5317d30, vhost system ss_handle (nil)
-[2020/07/27 10:51:05:1753] N: lws_adopt_descriptor_vhost2: wsi 0x53182c0, vhost system ss_handle (nil)
-[2020/07/27 10:51:05:2129] N: lws_ss_policy_parser_cb: server 'self_localhost' keep 52 0x5318cc0
-[2020/07/27 10:51:05:2134] N: lws_ss_policy_parser_cb: server 'self_localhost_key' keep 53 0x5318cf8
-[2020/07/27 10:51:05:2192] N: lws_ss_policy_ref_trust_store: le_via_isrg trust store initial 'isrg_root_x1'
+[2020/07/27 10:51:05:1685] N: aws_lws_adopt_descriptor_vhost2: wsi 0x5317d30, vhost system ss_handle (nil)
+[2020/07/27 10:51:05:1753] N: aws_lws_adopt_descriptor_vhost2: wsi 0x53182c0, vhost system ss_handle (nil)
+[2020/07/27 10:51:05:2129] N: aws_lws_ss_policy_parser_cb: server 'self_localhost' keep 52 0x5318cc0
+[2020/07/27 10:51:05:2134] N: aws_lws_ss_policy_parser_cb: server 'self_localhost_key' keep 53 0x5318cf8
+[2020/07/27 10:51:05:2192] N: aws_lws_ss_policy_ref_trust_store: le_via_isrg trust store initial 'isrg_root_x1'
 [2020/07/27 10:51:05:7804] N: smd_cb: creating server stream
 [2020/07/27 10:51:05:7851] N:  Vhost 'myserver' using TLS mode
 [2020/07/27 10:51:05:8660] N:  SSL ECDH curve 'prime256v1'
 [2020/07/27 10:51:06:1035] N:    vhost myserver: cert expiry: 729599d
-[2020/07/27 10:51:06:1039] N: lws_ss_create: created server myserver
-[2020/07/27 10:51:11:8650] N: lws_adopt_descriptor_vhost2: wsi 0x5b046e0, vhost myserver ss_handle 0x56e2be0
+[2020/07/27 10:51:06:1039] N: aws_lws_ss_create: created server myserver
+[2020/07/27 10:51:11:8650] N: aws_lws_adopt_descriptor_vhost2: wsi 0x5b046e0, vhost myserver ss_handle 0x56e2be0
 [2020/07/27 10:51:11:8672] U: myss_srv_state: 0x5b52f60 LWSSSCS_CREATING, ord 0x0
 [2020/07/27 10:51:11:8693] U: myss_srv_state: 0x5b52f60 LWSSSCS_CONNECTING, ord 0x0
 [2020/07/27 10:51:11:8696] U: myss_srv_state: 0x5b52f60 LWSSSCS_CONNECTED, ord 0x0
@@ -50,13 +50,13 @@ Commandline option|Meaning
 [2020/07/27 10:51:12:0194] U: myss_srv_state: 0x5bad0a0 LWSSSCS_CONNECTED, ord 0x0
 [2020/07/27 10:51:12:0306] N: secstream_h1: LWS_CALLBACK_HTTP
 [2020/07/27 10:51:12:0329] U: myss_srv_state: 0x5bad0a0 LWSSSCS_SERVER_TXN, ord 0x0
-[2020/07/27 10:51:12:0481] N: lws_h2_ws_handshake: Server SS 0x5ba2bd0 .wsi 0x5ba27b0 switching to ws protocol
+[2020/07/27 10:51:12:0481] N: aws_lws_h2_ws_handshake: Server SS 0x5ba2bd0 .wsi 0x5ba27b0 switching to ws protocol
 [2020/07/27 10:51:12:0484] U: myss_srv_state: 0x5ba2bd0 LWSSSCS_SERVER_UPGRADE, ord 0x0
 [2020/07/27 10:51:12:0541] U: myss_srv_state: 0x5ba2bd0 LWSSSCS_CONNECTED, ord 0x0
 [2020/07/27 10:51:12:1222] U: myss_srv_state: 0x5bd1100 LWSSSCS_CREATING, ord 0x0
 [2020/07/27 10:51:12:1222] U: myss_srv_state: 0x5bd1100 LWSSSCS_CONNECTING, ord 0x0
 [2020/07/27 10:51:12:1223] U: myss_srv_state: 0x5bd1100 LWSSSCS_CONNECTED, ord 0x0
-[2020/07/27 10:51:12:1242] N: lws_h2_ws_handshake: Server SS 0x5bd1100 .wsi 0x5bd0ce0 switching to ws protocol
+[2020/07/27 10:51:12:1242] N: aws_lws_h2_ws_handshake: Server SS 0x5bd1100 .wsi 0x5bd0ce0 switching to ws protocol
 [2020/07/27 10:51:12:1243] U: myss_srv_state: 0x5bd1100 LWSSSCS_SERVER_UPGRADE, ord 0x0
 [2020/07/27 10:51:12:1246] U: myss_srv_state: 0x5bd1100 LWSSSCS_CONNECTED, ord 0x0
 ^C[2020/07/27 10:51:15:2809] U: myss_srv_state: 0x5bad0a0 LWSSSCS_DISCONNECTED, ord 0x0

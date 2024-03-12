@@ -29,33 +29,33 @@
 
 
 int
-lws_jwe_encrypt_rsa_aes_gcm(struct lws_jwe *jwe, char *temp, int *temp_len)
+aws_lws_jwe_encrypt_rsa_aes_gcm(struct aws_lws_jwe *jwe, char *temp, int *temp_len)
 {
 	int ekbytes = jwe->jose.enc_alg->keybits_fixed / 8;
-	struct lws_genrsa_ctx rsactx;
+	struct aws_lws_genrsa_ctx rsactx;
 	int n, ret = -1, ot = *temp_len;
 
 	if (jwe->jws.jwk->kty != LWS_GENCRYPTO_KTY_RSA) {
-		lwsl_err("%s: wrong kty %d\n", __func__, jwe->jws.jwk->kty);
+		aws_lwsl_err("%s: wrong kty %d\n", __func__, jwe->jws.jwk->kty);
 
 		return -1;
 	}
 
 	/* create the IV + CEK */
 
-	if (lws_jws_randomize_element(jwe->jws.context, &jwe->jws.map, LJWE_IV,
+	if (aws_lws_jws_randomize_element(jwe->jws.context, &jwe->jws.map, LJWE_IV,
 				      temp, temp_len,
 				      LWS_AESGCM_IV, 0))
 		return -1;
 
-	if (lws_jws_alloc_element(&jwe->jws.map, LJWE_ATAG,
+	if (aws_lws_jws_alloc_element(&jwe->jws.map, LJWE_ATAG,
 				  temp + (ot - *temp_len),
 				  temp_len, LWS_AESGCM_TAG, 0))
 		return -1;
 
 	/* create a b64 version of the JOSE header, needed as aad */
 
-	if (lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
+	if (aws_lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
 				       temp + (ot - *temp_len), temp_len,
 				       jwe->jws.map.buf[LJWE_JOSE],
 				       jwe->jws.map.len[LJWE_JOSE]))
@@ -67,46 +67,46 @@ lws_jwe_encrypt_rsa_aes_gcm(struct lws_jwe *jwe, char *temp, int *temp_len)
 	 * just reuse it.  It will be cleansed in the JWE destroy.
 	 */
 	if (!jwe->cek_valid) {
-		if (lws_get_random(jwe->jws.context, jwe->cek, (unsigned int)ekbytes) !=
+		if (aws_lws_get_random(jwe->jws.context, jwe->cek, (unsigned int)ekbytes) !=
 							      (size_t)ekbytes) {
-			lwsl_err("%s: Problem getting random\n", __func__);
+			aws_lwsl_err("%s: Problem getting random\n", __func__);
 			return -1;
 		}
 		jwe->cek_valid = 1;
 	}
 
-	if (lws_jws_dup_element(&jwe->jws.map, LJWE_EKEY,
+	if (aws_lws_jws_dup_element(&jwe->jws.map, LJWE_EKEY,
 			        temp + (ot - *temp_len), temp_len,
 			        jwe->cek, (unsigned int)ekbytes, 0))
 		return -1;
 
 	/* encrypt the payload */
 
-	n = lws_jwe_encrypt_gcm(jwe, (uint8_t *)jwe->jws.map.buf[LJWE_EKEY],
+	n = aws_lws_jwe_encrypt_gcm(jwe, (uint8_t *)jwe->jws.map.buf[LJWE_EKEY],
 				(uint8_t *)jwe->jws.map_b64.buf[LJWE_JOSE],
 				(int)jwe->jws.map_b64.len[LJWE_JOSE]);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt_gcm failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt_gcm failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* Encrypt the CEK into EKEY to make the JWE Encrypted Key */
 
-	if (lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
+	if (aws_lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
 			!strcmp(jwe->jose.alg->alg,   "RSA-OAEP") ?
 				LGRSAM_PKCS1_OAEP_PSS : LGRSAM_PKCS1_1_5,
 			LWS_GENHASH_TYPE_SHA1 /* !!! */)) {
-		lwsl_notice("%s: lws_genrsa_public_decrypt_create\n",
+		aws_lwsl_notice("%s: lws_genrsa_public_decrypt_create\n",
 			    __func__);
 		goto bail;
 	}
 
-	n = lws_genrsa_public_encrypt(&rsactx, jwe->cek, (unsigned int)ekbytes,
+	n = aws_lws_genrsa_public_encrypt(&rsactx, jwe->cek, (unsigned int)ekbytes,
 				      (uint8_t *)jwe->jws.map.buf[LJWE_EKEY]);
-	lws_genrsa_destroy(&rsactx);
+	aws_lws_genrsa_destroy(&rsactx);
 	if (n < 0) {
-		lwsl_err("%s: encrypt cek fail: \n", __func__);
+		aws_lwsl_err("%s: encrypt cek fail: \n", __func__);
 		goto bail;
 	}
 
@@ -121,20 +121,20 @@ bail:
 }
 
 int
-lws_jwe_auth_and_decrypt_rsa_aes_gcm(struct lws_jwe *jwe)
+aws_lws_jwe_auth_and_decrypt_rsa_aes_gcm(struct aws_lws_jwe *jwe)
 {
 	int n;
-	struct lws_genrsa_ctx rsactx;
+	struct aws_lws_genrsa_ctx rsactx;
 	uint8_t enc_cek[LWS_JWE_LIMIT_KEY_ELEMENT_BYTES];
 
 	if (jwe->jws.jwk->kty != LWS_GENCRYPTO_KTY_RSA) {
-		lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
+		aws_lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
 
 		return -1;
 	}
 
 	if (jwe->jws.map.len[LJWE_EKEY] < 32) {
-		lwsl_err("%s: EKEY length too short %d\n", __func__,
+		aws_lwsl_err("%s: EKEY length too short %d\n", __func__,
 				jwe->jws.map.len[LJWE_EKEY]);
 
 		return -1;
@@ -142,30 +142,30 @@ lws_jwe_auth_and_decrypt_rsa_aes_gcm(struct lws_jwe *jwe)
 
 	/* Decrypt the JWE Encrypted Key to get the direct CEK */
 
-	if (lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
+	if (aws_lws_genrsa_create(&rsactx, jwe->jws.jwk->e, jwe->jws.context,
 			!strcmp(jwe->jose.alg->alg,   "RSA-OAEP") ?
 				LGRSAM_PKCS1_OAEP_PSS : LGRSAM_PKCS1_1_5,
 			LWS_GENHASH_TYPE_SHA1 /* !!! */)) {
-		lwsl_notice("%s: lws_genrsa_public_decrypt_create\n",
+		aws_lwsl_notice("%s: lws_genrsa_public_decrypt_create\n",
 			    __func__);
 		return -1;
 	}
 
-	n = lws_genrsa_private_decrypt(&rsactx,
+	n = aws_lws_genrsa_private_decrypt(&rsactx,
 				       (uint8_t *)jwe->jws.map.buf[LJWE_EKEY],
 				       jwe->jws.map.len[LJWE_EKEY], enc_cek,
 				       sizeof(enc_cek));
-	lws_genrsa_destroy(&rsactx);
+	aws_lws_genrsa_destroy(&rsactx);
 	if (n < 0) {
-		lwsl_err("%s: decrypt cek fail: \n", __func__);
+		aws_lwsl_err("%s: decrypt cek fail: \n", __func__);
 		return -1;
 	}
 
-	n = lws_jwe_auth_and_decrypt_gcm(jwe, enc_cek,
+	n = aws_lws_jwe_auth_and_decrypt_gcm(jwe, enc_cek,
 			(uint8_t *)jwe->jws.map_b64.buf[LJWE_JOSE],
 				(int)jwe->jws.map_b64.len[LJWE_JOSE]);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt_gcm_hs failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt_gcm_hs failed\n",
 			 __func__);
 		return -1;
 	}

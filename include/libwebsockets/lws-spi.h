@@ -34,7 +34,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef int (*lws_spi_cb_t)(void *opaque);
+typedef int (*aws_lws_spi_cb_t)(void *opaque);
 
 enum {
 	LWSSPIMODE_CPOL					= (1 << 0),
@@ -51,23 +51,23 @@ enum {
 	 * one time... i2c style in SPI */
 };
 
-typedef struct lws_spi_desc {
+typedef struct aws_lws_spi_desc {
 	const uint8_t		*src;
 	const uint8_t		*data;
 	uint8_t			*dest;
 	void			*opaque;
-	lws_spi_cb_t		completion_cb;
+	aws_lws_spi_cb_t		completion_cb;
 	uint16_t		count_cmd;
 	uint16_t		count_write;
 	uint16_t		count_read;
 	uint8_t			txn_type;
 	uint8_t			channel;
-} lws_spi_desc_t;
+} aws_lws_spi_desc_t;
 
-typedef struct lws_spi_ops {
-	int  (*init)(const struct lws_spi_ops *ctx);
-	int  (*queue)(const struct lws_spi_ops *ctx, const lws_spi_desc_t *desc);
+typedef struct aws_lws_spi_ops {
+	int  (*init)(const struct aws_lws_spi_ops *ctx);
+	int  (*queue)(const struct aws_lws_spi_ops *ctx, const aws_lws_spi_desc_t *desc);
 	uint8_t	bus_mode;
-} lws_spi_ops_t;
+} aws_lws_spi_ops_t;
 
 #endif

@@ -88,26 +88,26 @@ _lws_b64_encode_string(const char *encode, const char *in, int in_len,
 }
 
 int
-lws_b64_encode_string(const char *in, int in_len, char *out, int out_size)
+aws_lws_b64_encode_string(const char *in, int in_len, char *out, int out_size)
 {
 	return _lws_b64_encode_string(encode_orig, in, in_len, out, out_size);
 }
 
 int
-lws_b64_encode_string_url(const char *in, int in_len, char *out, int out_size)
+aws_lws_b64_encode_string_url(const char *in, int in_len, char *out, int out_size)
 {
 	return _lws_b64_encode_string(encode_url, in, in_len, out, out_size);
 }
 
 
 void
-lws_b64_decode_state_init(struct lws_b64state *state)
+aws_lws_b64_decode_state_init(struct aws_lws_b64state *state)
 {
 	memset(state, 0, sizeof(*state));
 }
 
 int
-lws_b64_decode_stateful(struct lws_b64state *s, const char *in, size_t *in_len,
+aws_lws_b64_decode_stateful(struct aws_lws_b64state *s, const char *in, size_t *in_len,
 			uint8_t *out, size_t *out_size, int final)
 {
 	const char *orig_in = in, *end_in = in + *in_len;
@@ -183,14 +183,14 @@ lws_b64_decode_stateful(struct lws_b64state *s, const char *in, size_t *in_len,
 static size_t
 _lws_b64_decode_string(const char *in, int in_len, char *out, size_t out_size)
 {
-	struct lws_b64state state;
+	struct aws_lws_b64state state;
 	size_t il = (size_t)in_len, ol = out_size;
 
 	if (in_len == -1)
 		il = strlen(in);
 
-	lws_b64_decode_state_init(&state);
-	lws_b64_decode_stateful(&state, in, &il, (uint8_t *)out, &ol, 1);
+	aws_lws_b64_decode_state_init(&state);
+	aws_lws_b64_decode_stateful(&state, in, &il, (uint8_t *)out, &ol, 1);
 
 	if (!il)
 		return 0;
@@ -199,13 +199,13 @@ _lws_b64_decode_string(const char *in, int in_len, char *out, size_t out_size)
 }
 
 int
-lws_b64_decode_string(const char *in, char *out, int out_size)
+aws_lws_b64_decode_string(const char *in, char *out, int out_size)
 {
 	return (int)_lws_b64_decode_string(in, -1, out, (unsigned int)out_size);
 }
 
 int
-lws_b64_decode_string_len(const char *in, int in_len, char *out, int out_size)
+aws_lws_b64_decode_string_len(const char *in, int in_len, char *out, int out_size)
 {
 	return (int)_lws_b64_decode_string(in, in_len, out, (unsigned int)out_size);
 }
@@ -229,44 +229,44 @@ static const char * const coded[] = {
 };
 
 int
-lws_b64_selftest(void)
+aws_lws_b64_selftest(void)
 {
 	char buf[64];
 	unsigned int n,  r = 0;
 	unsigned int test;
 
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 
 	/* examples from https://en.wikipedia.org/wiki/Base64 */
 
 	for (test = 0; test < (int)LWS_ARRAY_SIZE(plaintext); test++) {
 
 		buf[sizeof(buf) - 1] = '\0';
-		n = lws_b64_encode_string(plaintext[test],
+		n = aws_lws_b64_encode_string(plaintext[test],
 				      strlen(plaintext[test]), buf, sizeof buf);
 		if (n != strlen(coded[test]) || strcmp(buf, coded[test])) {
-			lwsl_err("Failed lws_b64 encode selftest "
+			aws_lwsl_err("Failed aws_lws_b64 encode selftest "
 					   "%d result '%s' %d\n", test, buf, n);
 			r = -1;
 		}
 
 		buf[sizeof(buf) - 1] = '\0';
-		n = lws_b64_decode_string(coded[test], buf, sizeof buf);
+		n = aws_lws_b64_decode_string(coded[test], buf, sizeof buf);
 		if (n != strlen(plaintext[test]) ||
 		    strcmp(buf, plaintext[test])) {
-			lwsl_err("Failed lws_b64 decode selftest "
+			aws_lwsl_err("Failed aws_lws_b64 decode selftest "
 				 "%d result '%s' / '%s', %d / %zu\n",
 				 test, buf, plaintext[test], n,
 				 strlen(plaintext[test]));
-			lwsl_hexdump_err(buf, n);
+			aws_lwsl_hexdump_err(buf, n);
 			r = -1;
 		}
 	}
 
 	if (!r)
-		lwsl_notice("Base 64 selftests passed\n");
+		aws_lwsl_notice("Base 64 selftests passed\n");
 	else
-		lwsl_notice("Base64 selftests failed\n");
+		aws_lwsl_notice("Base64 selftests failed\n");
 
 	return r;
 }

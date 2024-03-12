@@ -136,7 +136,7 @@ unsigned char filter_array[] = {
 	0xff /* not matchable */
 };
 
-static unsigned char lws_header_implies_psuedoheader_map[] = {
+static unsigned char aws_lws_header_implies_psuedoheader_map[] = {
 	0x07, 0x00, 0x00, 0x00, 0xf8, 0x00, 0x00, 0x00, 0x00 /* <-64 */,
 	0x0e /* <- 72 */, 0x24 /* <- 80 */, 0, 0, 0, 0
 };
@@ -267,7 +267,7 @@ int issue(int version)
 	for (n = 0; n < sizeof(set) / sizeof(set[0]); n++)
 		if (filter_array[n] & (1 << version)) {
 			printf("\t/* %d: %d: %s */\n", setmembers, n, set[n]);
-			if (lws_header_implies_psuedoheader_map[n >> 3] & (1 << (n & 7)))
+			if (aws_lws_header_implies_psuedoheader_map[n >> 3] & (1 << (n & 7)))
 				pseudomap[version][(setmembers >> 3)] |= 1 << (setmembers & 7);
 			rset[setmembers++] = set[n];
 		}
@@ -484,7 +484,7 @@ int main(void)
 			 "%cdefined(LWS_ROLE_H2)\n", n & 1 ? ' ' : '!',
 			     n & 2 ? ' ' : '!', n & 4 ? ' ' : '!');
 
-		printf("static uint8_t lws_header_implies_psuedoheader_map[] = {\n\t");
+		printf("static uint8_t aws_lws_header_implies_psuedoheader_map[] = {\n\t");
 
 		for (m = 0; m < sizeof(pseudomap[n]); m++)
 			printf("0x%02x,", pseudomap[n][m]);

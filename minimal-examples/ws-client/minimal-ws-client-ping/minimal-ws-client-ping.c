@@ -22,23 +22,23 @@
 #endif
 #include <pthread.h>
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 static struct lws *client_wsi;
 static int interrupted, port = 443, ssl_connection = LCCSCF_USE_SSL;
 static const char *server_address = "libwebsockets.org", *pro = "lws-mirror-protocol";
-static lws_sorted_usec_list_t sul;
+static aws_lws_sorted_usec_list_t sul;
 
-static const lws_retry_bo_t retry = {
+static const aws_lws_retry_bo_t retry = {
 	.secs_since_valid_ping = 3,
 	.secs_since_valid_hangup = 10,
 };
 
 static void
-connect_cb(lws_sorted_usec_list_t *_sul)
+connect_cb(aws_lws_sorted_usec_list_t *_sul)
 {
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 
-	lwsl_notice("%s: connecting\n", __func__);
+	aws_lwsl_notice("%s: connecting\n", __func__);
 
 	memset(&i, 0, sizeof(i));
 
@@ -55,35 +55,35 @@ connect_cb(lws_sorted_usec_list_t *_sul)
 	i.pwsi = &client_wsi;
 	i.retry_and_idle_policy = &retry;
 
-	if (!lws_client_connect_via_info(&i))
-		lws_sul_schedule(context, 0, _sul, connect_cb, 5 * LWS_USEC_PER_SEC);
+	if (!aws_lws_client_connect_via_info(&i))
+		aws_lws_sul_schedule(context, 0, _sul, connect_cb, 5 * LWS_USEC_PER_SEC);
 }
 
 static int
-callback_minimal_pingtest(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal_pingtest(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			 void *user, void *in, size_t len)
 {
 
 	switch (reason) {
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
-		lws_sul_schedule(context, 0, &sul, connect_cb, 5 * LWS_USEC_PER_SEC);
+		aws_lws_sul_schedule(context, 0, &sul, connect_cb, 5 * LWS_USEC_PER_SEC);
 		break;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		lwsl_user("%s: established\n", __func__);
+		aws_lwsl_user("%s: established\n", __func__);
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"lws-ping-test",
 		callback_minimal_pingtest,
@@ -100,7 +100,7 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -112,11 +112,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws client PING\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws client PING\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -130,33 +130,33 @@ int main(int argc, const char **argv)
 	info.client_ssl_ca_filepath = "./libwebsockets.org.cer";
 #endif
 
-	if ((p = lws_cmdline_option(argc, argv, "--protocol")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--protocol")))
 		pro = p;
 
-	if ((p = lws_cmdline_option(argc, argv, "--server"))) {
+	if ((p = aws_lws_cmdline_option(argc, argv, "--server"))) {
 		server_address = p;
 		pro = "lws-minimal";
 		ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "--port")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--port")))
 		port = atoi(p);
 
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	lws_sul_schedule(context, 0, &sul, connect_cb, 100);
+	aws_lws_sul_schedule(context, 0, &sul, connect_cb, 100);
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
-	lwsl_user("Completed\n");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed\n");
 
 	return 0;
 }

@@ -29,7 +29,7 @@
 /* updates *dest, returns chars used from ls directly, else -1 for fail */
 
 static int
-lws_adns_parse_label(const uint8_t *pkt, int len, const uint8_t *ls, int budget,
+aws_lws_adns_parse_label(const uint8_t *pkt, int len, const uint8_t *ls, int budget,
 		     char **dest, size_t dl)
 {
 	const uint8_t *e = pkt + len, *ols = ls;
@@ -51,9 +51,9 @@ again1:
 		if (budget < 2)
 			return -1;
 		/* pointer into message pkt to name to actually use */
-		n = lws_ser_ru16be(ls) & 0x3fff;
+		n = aws_lws_ser_ru16be(ls) & 0x3fff;
 		if (n >= len) {
-			lwsl_notice("%s: illegal name pointer\n", __func__);
+			aws_lwsl_notice("%s: illegal name pointer\n", __func__);
 
 			return -1;
 		}
@@ -64,7 +64,7 @@ again1:
 		/* are we being fuzzed or messed with? */
 		if (((*ls) & 0xc0) == 0xc0) {
 			/* ... pointer to pointer is unreasonable */
-			lwsl_notice("%s: label ptr to ptr invalid\n", __func__);
+			aws_lwsl_notice("%s: label ptr to ptr invalid\n", __func__);
 
 			return -1;
 		}
@@ -76,20 +76,20 @@ again1:
 
 	ll = *ls++;
 	if (ls + ll + 1 > e) {
-		lwsl_notice("%s: label len invalid, %d vs %d\n", __func__,
-			    lws_ptr_diff((ls + ll + 1), pkt), lws_ptr_diff(e, pkt));
+		aws_lwsl_notice("%s: label len invalid, %d vs %d\n", __func__,
+			    aws_lws_ptr_diff((ls + ll + 1), pkt), aws_lws_ptr_diff(e, pkt));
 
 		return -1;
 	}
 
 	if (ls + ll > ols + budget) {
-		lwsl_notice("%s: label too long %d vs %d\n", __func__, ll, budget);
+		aws_lwsl_notice("%s: label too long %d vs %d\n", __func__, ll, budget);
 
 		return -1;
 	}
 
 	if ((unsigned int)ll + 2 > dl) {
-		lwsl_notice("%s: qname too large\n", __func__);
+		aws_lwsl_notice("%s: qname too large\n", __func__);
 
 		return -1;
 	}
@@ -123,10 +123,10 @@ again1:
 
 	ls++;
 
-	return lws_ptr_diff(ls, ols);
+	return aws_lws_ptr_diff(ls, ols);
 }
 
-typedef int (*lws_async_dns_find_t)(const char *name, void *opaque,
+typedef int (*aws_lws_async_dns_find_t)(const char *name, void *opaque,
 				    uint32_t ttl, adns_query_type_t type,
 				    const uint8_t *payload);
 
@@ -150,8 +150,8 @@ struct label_stack {
  */
 
 static int
-lws_adns_iterate(lws_adns_q_t *q, const uint8_t *pkt, int len,
-		 const char *expname, lws_async_dns_find_t cb, void *opaque)
+aws_lws_adns_iterate(aws_lws_adns_q_t *q, const uint8_t *pkt, int len,
+		 const char *expname, aws_lws_async_dns_find_t cb, void *opaque)
 {
 	const uint8_t *e = pkt + len, *p, *pay;
 	struct label_stack stack[4];
@@ -160,11 +160,11 @@ lws_adns_iterate(lws_adns_q_t *q, const uint8_t *pkt, int len,
 	char *sp, inq;
 	uint32_t ttl;
 
-	lws_strncpy(stack[0].name, expname, sizeof(stack[0].name));
+	aws_lws_strncpy(stack[0].name, expname, sizeof(stack[0].name));
 	stack[0].enl = (int)strlen(expname);
 
 start:
-	ansc = lws_ser_ru16be(pkt + DHO_NANSWERS);
+	ansc = aws_lws_ser_ru16be(pkt + DHO_NANSWERS);
 	p = pkt + DHO_SIZEOF;
 	inq = 1;
 
@@ -203,9 +203,9 @@ start:
 
 		/* while we have more labels */
 
-		n = lws_adns_parse_label(pkt, len, p, len, &sp,
+		n = aws_lws_adns_parse_label(pkt, len, p, len, &sp,
 					 sizeof(stack[0].name) -
-					 lws_ptr_diff_size_t(sp, stack[0].name));
+					 aws_lws_ptr_diff_size_t(sp, stack[0].name));
 		/* includes case name won't fit */
 		if (n < 0)
 			return -1;
@@ -221,15 +221,15 @@ start:
 		 * We sent class = 1 = IN query... response must match
 		 */
 
-		if (lws_ser_ru16be(&p[2]) != 1) {
-			lwsl_err("%s: non-IN response 0x%x\n", __func__,
-						lws_ser_ru16be(&p[2]));
+		if (aws_lws_ser_ru16be(&p[2]) != 1) {
+			aws_lwsl_err("%s: non-IN response 0x%x\n", __func__,
+						aws_lws_ser_ru16be(&p[2]));
 
 			return -1;
 		}
 
 		if (inq) {
-			lwsl_debug("%s: reached end of inq\n", __func__);
+			aws_lwsl_debug("%s: reached end of inq\n", __func__);
 			inq = 0;
 			p += 4;
 			continue;
@@ -237,15 +237,15 @@ start:
 
 		/* carefully validate the claimed RR payload length */
 
-		rrpaylen = lws_ser_ru16be(&p[8]);
+		rrpaylen = aws_lws_ser_ru16be(&p[8]);
 		if (p + 10 + rrpaylen > e) { /* it may be == e */
-			lwsl_notice("%s: invalid RR data length\n", __func__);
+			aws_lwsl_notice("%s: invalid RR data length\n", __func__);
 
 			return -1;
 		}
 
-		ttl = lws_ser_ru32be(&p[4]);
-		rrtype = lws_ser_ru16be(&p[0]);
+		ttl = aws_lws_ser_ru32be(&p[4]);
+		rrtype = aws_lws_ser_ru16be(&p[0]);
 		p += 10; /* point to the payload */
 		pay = p;
 
@@ -254,7 +254,7 @@ start:
 		 * to have an extra '.' at the end.
 		 */
 
-		n = lws_ptr_diff(sp, stack[0].name);
+		n = aws_lws_ptr_diff(sp, stack[0].name);
 		if (stack[0].name[n - 1] == '.')
 			n--;
 
@@ -264,7 +264,7 @@ start:
 
 		if (n < 1 || n != m ||
 		    strncmp(stack[0].name, stack[stp].name, (unsigned int)n)) {
-			//lwsl_notice("%s: skipping %s vs %s\n", __func__,
+			//aws_lwsl_notice("%s: skipping %s vs %s\n", __func__,
 			//		stack[0].name, stack[stp].name);
 			goto skip;
 		}
@@ -289,7 +289,7 @@ start:
 
 		case LWS_ADNS_RECORD_AAAA:
 			if (rrpaylen != 16) {
-				lwsl_err("%s: unexpected rrpaylen\n", __func__);
+				aws_lwsl_err("%s: unexpected rrpaylen\n", __func__);
 				return -1;
 			}
 #if defined(LWS_WITH_IPV6)
@@ -300,7 +300,7 @@ start:
 
 		case LWS_ADNS_RECORD_A:
 			if (rrpaylen != 4) {
-				lwsl_err("%s: unexpected rrpaylen4\n", __func__);
+				aws_lwsl_err("%s: unexpected rrpaylen4\n", __func__);
 
 				return -1;
 			}
@@ -324,15 +324,15 @@ do_cb:
 			 */
 
 			if (++stp == (int)LWS_ARRAY_SIZE(stack)) {
-				lwsl_notice("%s: CNAMEs too deep\n", __func__);
+				aws_lwsl_notice("%s: CNAMEs too deep\n", __func__);
 
 				return -1;
 			}
 			sp = stack[stp].name;
 			/* get the cname alias */
-			n = lws_adns_parse_label(pkt, len, p, rrpaylen, &sp,
+			n = aws_lws_adns_parse_label(pkt, len, p, rrpaylen, &sp,
 						 sizeof(stack[stp].name) -
-						 lws_ptr_diff_size_t(sp, stack[stp].name));
+						 aws_lws_ptr_diff_size_t(sp, stack[stp].name));
 			/* includes case name won't fit */
 			if (n < 0)
 				return -1;
@@ -346,17 +346,17 @@ do_cb:
 			 * CNAME, else somewhere in the middle */
 
 			if (p != pay + rrpaylen) {
-				lwsl_err("%s: cname name bad len %d\n", __func__, rrpaylen);
+				aws_lwsl_err("%s: cname name bad len %d\n", __func__, rrpaylen);
 
 				return -1;
 			}
 #endif
-			lwsl_notice("%s: recursing looking for %s\n", __func__, stack[stp].name);
+			aws_lwsl_notice("%s: recursing looking for %s\n", __func__, stack[stp].name);
 
-			lwsl_info("%s: recursing looking for %s\n", __func__,
+			aws_lwsl_info("%s: recursing looking for %s\n", __func__,
 					stack[stp].name);
 
-			stack[stp].enl = lws_ptr_diff(sp, stack[stp].name);
+			stack[stp].enl = aws_lws_ptr_diff(sp, stack[stp].name);
 			/* when we unstack, resume from here */
 			stack[stp].p = pay + rrpaylen;
 			goto start;
@@ -372,7 +372,7 @@ skip:
 	if (!stp)
 		return 1; /* we didn't find anything, but we didn't error */
 
-	lwsl_info("%s: '%s' -> CNAME '%s' resolution not provided, recursing\n",
+	aws_lwsl_info("%s: '%s' -> CNAME '%s' resolution not provided, recursing\n",
 			__func__, ((const char *)&q[1]) + DNS_MAX,
 			stack[stp].name);
 
@@ -390,7 +390,7 @@ skip:
 	 * action with a new tid.
 	 */
 
-	if (lws_async_dns_get_new_tid(q->context, q))
+	if (aws_lws_async_dns_get_new_tid(q->context, q))
 		return -1;
 
 	LADNS_MOST_RECENT_TID(q) &= 0xfffe;
@@ -401,13 +401,13 @@ skip:
 	q->sent[0] = 0;
 	q->recursion++;
 	if (q->recursion == DNS_RECURSION_LIMIT) {
-		lwsl_err("%s: recursion overflow\n", __func__);
+		aws_lwsl_err("%s: recursion overflow\n", __func__);
 
 		return -1;
 	}
 
 	if (q->firstcache)
-		lws_adns_cache_destroy(q->firstcache);
+		aws_lws_adns_cache_destroy(q->firstcache);
 	q->firstcache = NULL;
 
 	/* overwrite the query name with the CNAME */
@@ -424,13 +424,13 @@ skip:
 		*cp = '\0';
 	}
 
-	lws_callback_on_writable(q->dns->wsi);
+	aws_lws_callback_on_writable(q->dns->wsi);
 
 	return 2;
 }
 
 int
-lws_async_dns_estimate(const char *name, void *opaque, uint32_t ttl,
+aws_lws_async_dns_estimate(const char *name, void *opaque, uint32_t ttl,
 			adns_query_type_t type, const uint8_t *payload)
 {
 	size_t *est = (size_t *)opaque, my;
@@ -460,7 +460,7 @@ struct adstore {
  * into the preallocated exact-sized storage.
  */
 int
-lws_async_dns_store(const char *name, void *opaque, uint32_t ttl,
+aws_lws_async_dns_store(const char *name, void *opaque, uint32_t ttl,
 		    adns_query_type_t type, const uint8_t *payload)
 {
 	struct adstore *adst = (struct adstore *)opaque;
@@ -513,10 +513,10 @@ lws_async_dns_store(const char *name, void *opaque, uint32_t ttl,
 					sizeof(struct addrinfo) + i);
 
 #if defined(_DEBUG)
-	if (lws_write_numeric_address(payload,
+	if (aws_lws_write_numeric_address(payload,
 				type == LWS_ADNS_RECORD_AAAA ? 16 : 4,
 							buf, sizeof(buf)) > 0)
-		lwsl_info("%s: %d: %s: %s\n", __func__, adst->ctr,
+		aws_lwsl_info("%s: %d: %s: %s\n", __func__, adst->ctr,
 				adst->name, buf);
 #endif
 	adst->ctr++;
@@ -529,16 +529,16 @@ lws_async_dns_store(const char *name, void *opaque, uint32_t ttl,
  */
 
 void
-lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
+aws_lws_adns_parse_udp(aws_lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 {
 	const char *nm, *nmcname;
-	lws_adns_cache_t *c;
+	aws_lws_adns_cache_t *c;
 	struct adstore adst;
-	lws_adns_q_t *q;
+	aws_lws_adns_q_t *q;
 	int n, ncname;
 	size_t est;
 
-	// lwsl_hexdump_notice(pkt, len);
+	// aws_lwsl_hexdump_notice(pkt, len);
 
 	/* we have to at least have the header */
 
@@ -547,25 +547,25 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 
 	/* we asked with one query, so anything else is bogus */
 
-	if (lws_ser_ru16be(pkt + DHO_NQUERIES) != 1)
+	if (aws_lws_ser_ru16be(pkt + DHO_NQUERIES) != 1)
 		return;
 
 	/* match both A and AAAA queries if any */
 
-	q = lws_adns_get_query(dns, 0, &dns->waiting,
-			       lws_ser_ru16be(pkt + DHO_TID), NULL);
+	q = aws_lws_adns_get_query(dns, 0, &dns->waiting,
+			       aws_lws_ser_ru16be(pkt + DHO_TID), NULL);
 	if (!q) {
-		lwsl_info("%s: dropping unknown query tid 0x%x\n",
-			    __func__, lws_ser_ru16be(pkt + DHO_TID));
+		aws_lwsl_info("%s: dropping unknown query tid 0x%x\n",
+			    __func__, aws_lws_ser_ru16be(pkt + DHO_TID));
 
 		return;
 	}
 
 	/* we can get dups... drop any that have already happened */
 
-	n = 1 << (lws_ser_ru16be(pkt + DHO_TID) & 1);
+	n = 1 << (aws_lws_ser_ru16be(pkt + DHO_TID) & 1);
 	if (q->responded & n) {
-		lwsl_notice("%s: dup\n", __func__);
+		aws_lwsl_notice("%s: dup\n", __func__);
 		goto fail_out;
 	}
 
@@ -579,17 +579,17 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 	 * First walk the packet figuring out the allocation needed for all
 	 * the results.  Produce the following layout at c
 	 *
-	 *  lws_adns_cache_t: new cache object
+	 *  aws_lws_adns_cache_t: new cache object
 	 *  [struct addrinfo + struct sockaddr_in or _in6]: for each A or AAAA
 	 *  char []: copy of resolved name
 	 */
 
 	ncname = (int)strlen(nmcname) + 1;
 
-	est = sizeof(lws_adns_cache_t) + (unsigned int)ncname;
-	if (lws_ser_ru16be(pkt + DHO_NANSWERS)) {
-		int ir = lws_adns_iterate(q, pkt, (int)len, nmcname,
-					  lws_async_dns_estimate, &est);
+	est = sizeof(aws_lws_adns_cache_t) + (unsigned int)ncname;
+	if (aws_lws_ser_ru16be(pkt + DHO_NANSWERS)) {
+		int ir = aws_lws_adns_iterate(q, pkt, (int)len, nmcname,
+					  aws_lws_async_dns_estimate, &est);
 		if (ir < 0)
 			goto fail_out;
 
@@ -602,11 +602,11 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 	nm = ((const char *)&q[1]) + DNS_MAX;
 	n = (int)strlen(nm) + 1;
 
-	lwsl_info("%s: create cache entry for %s, %zu\n", __func__, nm,
-			est - sizeof(lws_adns_cache_t));
-	c = lws_malloc(est + 1, "async-dns-entry");
+	aws_lwsl_info("%s: create cache entry for %s, %zu\n", __func__, nm,
+			est - sizeof(aws_lws_adns_cache_t));
+	c = aws_lws_malloc(est + 1, "async-dns-entry");
 	if (!c) {
-		lwsl_err("%s: OOM %zu\n", __func__, est);
+		aws_lwsl_err("%s: OOM %zu\n", __func__, est);
 		goto fail_out;
 	}
 	memset(c, 0, sizeof(*c));
@@ -632,13 +632,13 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 	 * set to the minimum ttl seen in all the results.
 	 */
 
-	if (lws_ser_ru16be(pkt + DHO_NANSWERS) &&
-	    lws_adns_iterate(q, pkt, (int)len, nmcname, lws_async_dns_store, &adst) < 0) {
-		lws_free(c);
+	if (aws_lws_ser_ru16be(pkt + DHO_NANSWERS) &&
+	    aws_lws_adns_iterate(q, pkt, (int)len, nmcname, aws_lws_async_dns_store, &adst) < 0) {
+		aws_lws_free(c);
 		goto fail_out;
 	}
 
-	if (lws_ser_ru16be(pkt + DHO_NANSWERS)) {
+	if (aws_lws_ser_ru16be(pkt + DHO_NANSWERS)) {
 		c->results = (struct addrinfo *)&c[1];
 		if (q->last) /* chain the second one on */
 			*q->last = c->results;
@@ -664,7 +664,7 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 		 * Trim the oldest cache entry if necessary
 		 */
 
-		lws_async_dns_trim_cache(dns);
+		aws_lws_async_dns_trim_cache(dns);
 
 		/*
 		 * cache the first results object... if a second one comes,
@@ -674,9 +674,9 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 		 */
 
 		c->flags = adst.flags;
-		lws_dll2_add_head(&c->list, &dns->cached);
-		lws_sul_schedule(q->context, 0, &c->sul, sul_cb_expire,
-				 lws_now_usecs() +
+		aws_lws_dll2_add_head(&c->list, &dns->cached);
+		aws_lws_sul_schedule(q->context, 0, &c->sul, sul_cb_expire,
+				 aws_lws_now_usecs() +
 				 (adst.smallest_ttl * LWS_US_PER_SEC));
 	}
 
@@ -689,7 +689,7 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 	 */
 
 	c->incomplete = 0;
-	lws_async_dns_complete(q, q->firstcache);
+	aws_lws_async_dns_complete(q, q->firstcache);
 
 	q->go_nogo = METRES_GO;
 
@@ -698,6 +698,6 @@ lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len)
 	 */
 
 fail_out:
-	lws_adns_q_destroy(q);
+	aws_lws_adns_q_destroy(q);
 }
 

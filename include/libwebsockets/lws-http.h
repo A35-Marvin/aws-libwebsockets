@@ -40,7 +40,7 @@
 //@{
 
 /**
- * lws_get_mimetype() - Determine mimetype to use from filename
+ * aws_lws_get_mimetype() - Determine mimetype to use from filename
  *
  * \param file:		filename
  * \param m:		NULL, or mount context
@@ -51,10 +51,10 @@
  * Returns either NULL or a pointer to the mimetype matching the file.
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_get_mimetype(const char *file, const struct lws_http_mount *m);
+aws_lws_get_mimetype(const char *file, const struct aws_lws_http_mount *m);
 
 /**
- * lws_serve_http_file() - Send a file back to the client using http
+ * aws_lws_serve_http_file() - Send a file back to the client using http
  * \param wsi:		Websocket instance (available from user callback)
  * \param file:		The file to issue over http
  * \param content_type:	The http content type, eg, text/html
@@ -67,16 +67,16 @@ lws_get_mimetype(const char *file, const struct lws_http_mount *m);
  *
  *	Returning <0 indicates error and the wsi should be closed.  Returning
  *	>0 indicates the file was completely sent and
- *	lws_http_transaction_completed() called on the wsi (and close if != 0)
+ *	aws_lws_http_transaction_completed() called on the wsi (and close if != 0)
  *	==0 indicates the file transfer is started and needs more service later,
  *	the wsi should be left alone.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_serve_http_file(struct lws *wsi, const char *file, const char *content_type,
+aws_lws_serve_http_file(struct lws *wsi, const char *file, const char *content_type,
 		    const char *other_headers, int other_headers_len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_serve_http_file_fragment(struct lws *wsi);
+aws_lws_serve_http_file_fragment(struct lws *wsi);
 //@}
 
 
@@ -129,7 +129,7 @@ enum http_status {
  */
 //@{
 
-struct lws_process_html_args {
+struct aws_lws_process_html_args {
 	char *p; /**< pointer to the buffer containing the data */
 	int len; /**< length of the original data at p */
 	int max_len; /**< maximum length we can grow the data to */
@@ -138,9 +138,9 @@ struct lws_process_html_args {
 			(incompatible with HTTP/2) */
 };
 
-typedef const char *(*lws_process_html_state_cb)(void *data, int index);
+typedef const char *(*aws_lws_process_html_state_cb)(void *data, int index);
 
-struct lws_process_html_state {
+struct aws_lws_process_html_state {
 	char *start; /**< pointer to start of match */
 	char swallow[16]; /**< matched character buffer */
 	int pos; /**< position in match */
@@ -148,17 +148,17 @@ struct lws_process_html_state {
 	const char * const *vars; /**< list of variable names */
 	int count_vars; /**< count of variable names */
 
-	lws_process_html_state_cb replace;
+	aws_lws_process_html_state_cb replace;
 		/**< called on match to perform substitution */
 };
 
-/*! lws_chunked_html_process() - generic chunked substitution
+/*! aws_lws_chunked_html_process() - generic chunked substitution
  * \param args: buffer to process using chunked encoding
  * \param s: current processing state
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_chunked_html_process(struct lws_process_html_args *args,
-			 struct lws_process_html_state *s);
+aws_lws_chunked_html_process(struct aws_lws_process_html_args *args,
+			 struct aws_lws_process_html_state *s);
 //@}
 
 /** \defgroup HTTP-headers-read HTTP headers: read
@@ -187,32 +187,32 @@ lws_chunked_html_process(struct lws_process_html_args *args,
  *  length to confirm the method.
  *
  *  For URL arguments, each argument is stored urldecoded in a "fragment", so
- *  you can use the fragment-aware api lws_hdr_copy_fragment() to access each
+ *  you can use the fragment-aware api aws_lws_hdr_copy_fragment() to access each
  *  argument in turn: the fragments contain urldecoded strings like x=1 or y=2.
  *
  *  As a convenience, lws has an api that will find the fragment with a
- *  given name= part, lws_get_urlarg_by_name().
+ *  given name= part, aws_lws_get_urlarg_by_name().
  */
 ///@{
 
-/** struct lws_tokens
+/** struct aws_lws_tokens
  * you need these to look at headers that have been parsed if using the
  * LWS_CALLBACK_FILTER_CONNECTION callback.  If a header from the enum
  * list below is absent, .token = NULL and len = 0.  Otherwise .token
  * points to .len chars containing that header content.
  */
-struct lws_tokens {
+struct aws_lws_tokens {
 	unsigned char *token; /**< pointer to start of the token */
 	int len; /**< length of the token's value */
 };
 
-/* enum lws_token_indexes
+/* enum aws_lws_token_indexes
  * these have to be kept in sync with lextable.h / minilex.c
  *
  * NOTE: These public enums are part of the abi.  If you want to add one,
  * add it at where specified so existing users are unaffected.
  */
-enum lws_token_indexes {
+enum aws_lws_token_indexes {
 	WSI_TOKEN_GET_URI, /* 0 */
 	WSI_TOKEN_POST_URI,
 #if defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) || defined(LWS_HTTP_HEADERS_ALL)
@@ -366,11 +366,11 @@ enum lws_token_indexes {
 	WSI_INIT_TOKEN_MUXURL,
 };
 
-struct lws_token_limits {
+struct aws_lws_token_limits {
 	unsigned short token_limit[WSI_TOKEN_COUNT]; /**< max chars for this token */
 };
 
-enum lws_h2_settings {
+enum aws_lws_h2_settings {
 	H2SET_HEADER_TABLE_SIZE = 1,
 	H2SET_ENABLE_PUSH,
 	H2SET_MAX_CONCURRENT_STREAMS,
@@ -384,15 +384,15 @@ enum lws_h2_settings {
 };
 
 /**
- * lws_token_to_string() - returns a textual representation of a hdr token index
+ * aws_lws_token_to_string() - returns a textual representation of a hdr token index
  *
  * \param token: token index
  */
 LWS_VISIBLE LWS_EXTERN const unsigned char *
-lws_token_to_string(enum lws_token_indexes token);
+aws_lws_token_to_string(enum aws_lws_token_indexes token);
 
 /**
- * lws_hdr_total_length: report length of all fragments of a header totalled up
+ * aws_lws_hdr_total_length: report length of all fragments of a header totalled up
  *		The returned length does not include the space for a
  *		terminating '\0'
  *
@@ -400,10 +400,10 @@ lws_token_to_string(enum lws_token_indexes token);
  * \param h: which header index we are interested in
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_hdr_total_length(struct lws *wsi, enum lws_token_indexes h);
+aws_lws_hdr_total_length(struct lws *wsi, enum aws_lws_token_indexes h);
 
 /**
- * lws_hdr_fragment_length: report length of a single fragment of a header
+ * aws_lws_hdr_fragment_length: report length of a single fragment of a header
  *		The returned length does not include the space for a
  *		terminating '\0'
  *
@@ -412,11 +412,11 @@ lws_hdr_total_length(struct lws *wsi, enum lws_token_indexes h);
  * \param frag_idx: which fragment of h we want to get the length of
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_hdr_fragment_length(struct lws *wsi, enum lws_token_indexes h,
+aws_lws_hdr_fragment_length(struct lws *wsi, enum aws_lws_token_indexes h,
 			int frag_idx);
 
 /**
- * lws_hdr_copy() - copy all fragments of the given header to a buffer
+ * aws_lws_hdr_copy() - copy all fragments of the given header to a buffer
  *		The buffer length len must include space for an additional
  *		terminating '\0', or it will fail returning -1.
  *
@@ -430,10 +430,10 @@ lws_hdr_fragment_length(struct lws *wsi, enum lws_token_indexes h,
  * header.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_hdr_copy(struct lws *wsi, char *dest, int len, enum lws_token_indexes h);
+aws_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum aws_lws_token_indexes h);
 
 /**
- * lws_hdr_copy_fragment() - copy a single fragment of the given header to a buffer
+ * aws_lws_hdr_copy_fragment() - copy a single fragment of the given header to a buffer
  *		The buffer length len must include space for an additional
  *		terminating '\0', or it will fail returning -1.
  *		If the requested fragment index is not present, it fails
@@ -450,11 +450,11 @@ lws_hdr_copy(struct lws *wsi, char *dest, int len, enum lws_token_indexes h);
  * fragment 0 will contain "x=1" and fragment 1 "y=2"
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_hdr_copy_fragment(struct lws *wsi, char *dest, int len,
-		      enum lws_token_indexes h, int frag_idx);
+aws_lws_hdr_copy_fragment(struct lws *wsi, char *dest, int len,
+		      enum aws_lws_token_indexes h, int frag_idx);
 
 /**
- * lws_hdr_custom_length() - return length of a custom header
+ * aws_lws_hdr_custom_length() - return length of a custom header
  *
  * \param wsi: websocket connection
  * \param name: header string (including terminating :)
@@ -463,17 +463,17 @@ lws_hdr_copy_fragment(struct lws *wsi, char *dest, int len,
  * Lws knows about 100 common http headers, and parses them into indexes when
  * it recognizes them.  When it meets a header that it doesn't know, it stores
  * the name and value directly, and you can look them up using
- * lws_hdr_custom_length() and lws_hdr_custom_copy().
+ * aws_lws_hdr_custom_length() and aws_lws_hdr_custom_copy().
  *
  * This api returns -1, or the length of the value part of the header if it
  * exists.  Lws must be built with LWS_WITH_CUSTOM_HEADERS (on by default) to
  * use this api.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen);
+aws_lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen);
 
 /**
- * lws_hdr_custom_copy() - copy value part of a custom header
+ * aws_lws_hdr_custom_copy() - copy value part of a custom header
  *
  * \param wsi: websocket connection
  * \param dst: pointer to buffer to receive the copy
@@ -484,19 +484,19 @@ lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen);
  * Lws knows about 100 common http headers, and parses them into indexes when
  * it recognizes them.  When it meets a header that it doesn't know, it stores
  * the name and value directly, and you can look them up using
- * lws_hdr_custom_length() and lws_hdr_custom_copy().
+ * aws_lws_hdr_custom_length() and aws_lws_hdr_custom_copy().
  *
  * This api returns -1, or the length of the string it copied into dst if it
  * was big enough to contain both the string and an extra terminating NUL. Lws
  * must be built with LWS_WITH_CUSTOM_HEADERS (on by default) to use this api.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
+aws_lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
 		    int nlen);
 
-typedef void (*lws_hdr_custom_fe_cb_t)(const char *name, int nlen, void *opaque);
+typedef void (*aws_lws_hdr_custom_fe_cb_t)(const char *name, int nlen, void *opaque);
 /**
- * lws_hdr_custom_name_foreach() - Iterate the custom header names
+ * aws_lws_hdr_custom_name_foreach() - Iterate the custom header names
  *
  * \param wsi: websocket connection
  * \param cb: callback for each custom header name
@@ -505,17 +505,17 @@ typedef void (*lws_hdr_custom_fe_cb_t)(const char *name, int nlen, void *opaque)
  * Lws knows about 100 common http headers, and parses them into indexes when
  * it recognizes them.  When it meets a header that it doesn't know, it stores
  * the name and value directly, and you can look them up using
- * lws_hdr_custom_length() and lws_hdr_custom_copy().
+ * aws_lws_hdr_custom_length() and aws_lws_hdr_custom_copy().
  * 
- * This api returns -1 on error else 0. Use lws_hdr_custom_copy() to get the
+ * This api returns -1 on error else 0. Use aws_lws_hdr_custom_copy() to get the
  * values of headers. Lws must be built with LWS_WITH_CUSTOM_HEADERS (on by
  * default) to use this api.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_hdr_custom_name_foreach(struct lws *wsi, lws_hdr_custom_fe_cb_t cb, void *opaque);
+aws_lws_hdr_custom_name_foreach(struct lws *wsi, aws_lws_hdr_custom_fe_cb_t cb, void *opaque);
 
 /**
- * lws_get_urlarg_by_name_safe() - get copy and return length of y for x=y urlargs
+ * aws_lws_get_urlarg_by_name_safe() - get copy and return length of y for x=y urlargs
  *
  * \param wsi: the connection to check
  * \param name: the arg name, like "token" or "token="
@@ -532,16 +532,16 @@ lws_hdr_custom_name_foreach(struct lws *wsi, lws_hdr_custom_fe_cb_t cb, void *op
  *
  * buf may have been written even when -1 is returned indicating no match.
  *
- * Use this in place of lws_get_urlarg_by_name() that does not return an
+ * Use this in place of aws_lws_get_urlarg_by_name() that does not return an
  * explicit length.
  *
- * Use lws_get_urlarg_by_name_safe() instead of this, which returns the length.
+ * Use aws_lws_get_urlarg_by_name_safe() instead of this, which returns the length.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_get_urlarg_by_name_safe(struct lws *wsi, const char *name, char *buf, int len);
+aws_lws_get_urlarg_by_name_safe(struct lws *wsi, const char *name, char *buf, int len);
 
 /**
- * lws_get_urlarg_by_name() - return pointer to arg value if present
+ * aws_lws_get_urlarg_by_name() - return pointer to arg value if present
  *
  * \param wsi: the connection to check
  * \param name: the arg name, like "token="
@@ -555,10 +555,10 @@ lws_get_urlarg_by_name_safe(struct lws *wsi, const char *name, char *buf, int le
  * It can't correctly deal with binary values encoded with %XX, eg. %00 will
  * be understood to terminate the string.
  *
- * Use lws_get_urlarg_by_name_safe() instead of this, which returns the length.
+ * Use aws_lws_get_urlarg_by_name_safe() instead of this, which returns the length.
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_get_urlarg_by_name(struct lws *wsi, const char *name, char *buf, int len)
+aws_lws_get_urlarg_by_name(struct lws *wsi, const char *name, char *buf, int len)
 /* LWS_WARN_DEPRECATED */;
 ///@}
 
@@ -582,7 +582,7 @@ lws_get_urlarg_by_name(struct lws *wsi, const char *name, char *buf, int len)
 #define LWSAHH_FLAG_NO_SERVER_NAME		(1 << 30)
 
 /**
- * lws_add_http_header_status() - add the HTTP response status code
+ * aws_lws_add_http_header_status() - add the HTTP response status code
  *
  * \param wsi: the connection to check
  * \param code: an HTTP code like 200, 404 etc (see enum http_status)
@@ -596,11 +596,11 @@ lws_get_urlarg_by_name(struct lws *wsi, const char *name, char *buf, int len)
  *    LWSAHH_FLAG_NO_SERVER_NAME:  don't apply server name header this time
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_add_http_header_status(struct lws *wsi,
+aws_lws_add_http_header_status(struct lws *wsi,
 			   unsigned int code, unsigned char **p,
 			   unsigned char *end);
 /**
- * lws_add_http_header_by_name() - append named header and value
+ * aws_lws_add_http_header_by_name() - append named header and value
  *
  * \param wsi: the connection to check
  * \param name: the hdr name, like "my-header:"
@@ -612,11 +612,11 @@ lws_add_http_header_status(struct lws *wsi,
  * Appends name: value to the headers
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_add_http_header_by_name(struct lws *wsi, const unsigned char *name,
+aws_lws_add_http_header_by_name(struct lws *wsi, const unsigned char *name,
 			    const unsigned char *value, int length,
 			    unsigned char **p, unsigned char *end);
 /**
- * lws_add_http_header_by_token() - append given header and value
+ * aws_lws_add_http_header_by_token() - append given header and value
  *
  * \param wsi: the connection to check
  * \param token: the token index for the hdr
@@ -629,11 +629,11 @@ lws_add_http_header_by_name(struct lws *wsi, const unsigned char *name,
  * HTTP/2 coding mechanisms where possible.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_add_http_header_by_token(struct lws *wsi, enum lws_token_indexes token,
+aws_lws_add_http_header_by_token(struct lws *wsi, enum aws_lws_token_indexes token,
 			     const unsigned char *value, int length,
 			     unsigned char **p, unsigned char *end);
 /**
- * lws_add_http_header_content_length() - append content-length helper
+ * aws_lws_add_http_header_content_length() - append content-length helper
  *
  * \param wsi: the connection to check
  * \param content_length: the content length to use
@@ -643,11 +643,11 @@ lws_add_http_header_by_token(struct lws *wsi, enum lws_token_indexes token,
  * Appends content-length: content_length to the headers
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_add_http_header_content_length(struct lws *wsi,
-				   lws_filepos_t content_length,
+aws_lws_add_http_header_content_length(struct lws *wsi,
+				   aws_lws_filepos_t content_length,
 				   unsigned char **p, unsigned char *end);
 /**
- * lws_finalize_http_header() - terminate header block
+ * aws_lws_finalize_http_header() - terminate header block
  *
  * \param wsi: the connection to check
  * \param p: pointer to current position in buffer pointer
@@ -656,11 +656,11 @@ lws_add_http_header_content_length(struct lws *wsi,
  * Indicates no more headers will be added
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_finalize_http_header(struct lws *wsi, unsigned char **p,
+aws_lws_finalize_http_header(struct lws *wsi, unsigned char **p,
 			 unsigned char *end);
 
 /**
- * lws_finalize_write_http_header() - Helper finializing and writing http headers
+ * aws_lws_finalize_write_http_header() - Helper finializing and writing http headers
  *
  * \param wsi: the connection to check
  * \param start: pointer to the start of headers in the buffer, eg &buf[LWS_PRE]
@@ -671,13 +671,13 @@ lws_finalize_http_header(struct lws *wsi, unsigned char **p,
  * and writes the headers.  Returns nonzero for error.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_finalize_write_http_header(struct lws *wsi, unsigned char *start,
+aws_lws_finalize_write_http_header(struct lws *wsi, unsigned char *start,
 			       unsigned char **p, unsigned char *end);
 
-#define LWS_ILLEGAL_HTTP_CONTENT_LEN ((lws_filepos_t)-1ll)
+#define LWS_ILLEGAL_HTTP_CONTENT_LEN ((aws_lws_filepos_t)-1ll)
 
 /**
- * lws_add_http_common_headers() - Helper preparing common http headers
+ * aws_lws_add_http_common_headers() - Helper preparing common http headers
  *
  * \param wsi: the connection to check
  * \param code: an HTTP code like 200, 404 etc (see enum http_status)
@@ -699,12 +699,12 @@ lws_finalize_write_http_header(struct lws *wsi, unsigned char *start,
  * You can miss out the content length header by providing the constant
  * LWS_ILLEGAL_HTTP_CONTENT_LEN for the content_len.
  *
- * It does not call lws_finalize_http_header(), to allow you to add further
+ * It does not call aws_lws_finalize_http_header(), to allow you to add further
  * headers after calling this.  You will need to call that yourself at the end.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_add_http_common_headers(struct lws *wsi, unsigned int code,
-			    const char *content_type, lws_filepos_t content_len,
+aws_lws_add_http_common_headers(struct lws *wsi, unsigned int code,
+			    const char *content_type, aws_lws_filepos_t content_len,
 			    unsigned char **p, unsigned char *end);
 
 enum {
@@ -720,7 +720,7 @@ enum {
 };
 
 /**
- * lws_http_get_uri_and_method() - Get information on method and url
+ * aws_lws_http_get_uri_and_method() - Get information on method and url
  *
  * \param wsi: the connection to get information on
  * \param puri_ptr: points to pointer to set to url
@@ -733,7 +733,7 @@ enum {
  */
 
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len);
+aws_lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len);
 
 ///@}
 
@@ -749,7 +749,7 @@ lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len);
 //@{
 
 /**
- * lws_urlencode() - like strncpy but with urlencoding
+ * aws_lws_urlencode() - like strncpy but with urlencoding
  *
  * \param escaped: output buffer
  * \param string: input buffer ('/0' terminated)
@@ -759,7 +759,7 @@ lws_http_get_uri_and_method(struct lws *wsi, char **puri_ptr, int *puri_len);
  * possible to do it in-place, ie, with escaped == string
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_urlencode(char *escaped, const char *string, int len);
+aws_lws_urlencode(char *escaped, const char *string, int len);
 
 /*
  * URLDECODE 1 / 2
@@ -768,7 +768,7 @@ lws_urlencode(char *escaped, const char *string, int len);
  * data to exist all at once
  */
 /**
- * lws_urldecode() - like strncpy but with urldecoding
+ * aws_lws_urldecode() - like strncpy but with urldecoding
  *
  * \param string: output buffer
  * \param escaped: input buffer ('\0' terminated)
@@ -783,11 +783,11 @@ lws_urlencode(char *escaped, const char *string, int len);
  * where hex required, etc)
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_urldecode(char *string, const char *escaped, int len);
+aws_lws_urldecode(char *string, const char *escaped, int len);
 ///@}
 
 /**
- * lws_http_date_render_from_unix() - render unixtime as RFC7231 date string
+ * aws_lws_http_date_render_from_unix() - render unixtime as RFC7231 date string
  *
  * \param buf:		Destination string buffer
  * \param len:		avilable length of dest string buffer in bytes
@@ -797,10 +797,10 @@ lws_urldecode(char *string, const char *escaped, int len);
  * nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t);
+aws_lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t);
 
 /**
- * lws_http_date_parse_unix() - parse a RFC7231 date string into unixtime
+ * aws_lws_http_date_parse_unix() - parse a RFC7231 date string into unixtime
  *
  * \param b:		Source string buffer
  * \param len:		avilable length of source string buffer in bytes
@@ -810,10 +810,10 @@ lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t);
  * *t set to the parsed unixtime, else return nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_date_parse_unix(const char *b, size_t len, time_t *t);
+aws_lws_http_date_parse_unix(const char *b, size_t len, time_t *t);
 
 /**
- * lws_http_check_retry_after() - increase a timeout if retry-after present
+ * aws_lws_http_check_retry_after() - increase a timeout if retry-after present
  *
  * \param wsi:		http stream this relates to
  * \param us_interval_in_out: default us retry interval on entry may be updated
@@ -831,10 +831,10 @@ lws_http_date_parse_unix(const char *b, size_t len, time_t *t);
  * *us_interval_in_out is left alone and the function returns nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_check_retry_after(struct lws *wsi, lws_usec_t *us_interval_in_out);
+aws_lws_http_check_retry_after(struct lws *wsi, aws_lws_usec_t *us_interval_in_out);
 
 /**
- * lws_return_http_status() - Return simple http status
+ * aws_lws_return_http_status() - Return simple http status
  * \param wsi:		Websocket instance (available from user callback)
  * \param code:		Status index, eg, 404
  * \param html_body:		User-readable HTML description < 1KB, or NULL
@@ -843,11 +843,11 @@ lws_http_check_retry_after(struct lws *wsi, lws_usec_t *us_interval_in_out);
  *	consistently
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_return_http_status(struct lws *wsi, unsigned int code,
+aws_lws_return_http_status(struct lws *wsi, unsigned int code,
 		       const char *html_body);
 
 /**
- * lws_http_redirect() - write http redirect out on wsi
+ * aws_lws_http_redirect() - write http redirect out on wsi
  *
  * \param wsi:	websocket connection
  * \param code:	HTTP response code (eg, 301)
@@ -859,11 +859,11 @@ lws_return_http_status(struct lws *wsi, unsigned int code,
  * Returns amount written, or < 0 indicating fatal write failure.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_http_redirect(struct lws *wsi, int code, const unsigned char *loc, int len,
+aws_lws_http_redirect(struct lws *wsi, int code, const unsigned char *loc, int len,
 		  unsigned char **p, unsigned char *end);
 
 /**
- * lws_http_transaction_completed() - wait for new http transaction or close
+ * aws_lws_http_transaction_completed() - wait for new http transaction or close
  * \param wsi:	websocket connection
  *
  *	Returns nonzero if the HTTP connection must close now
@@ -871,20 +871,20 @@ lws_http_redirect(struct lws *wsi, int code, const unsigned char *loc, int len,
  *	  transaction if possible
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_http_transaction_completed(struct lws *wsi);
+aws_lws_http_transaction_completed(struct lws *wsi);
 
 /**
- * lws_http_headers_detach() - drop the associated headers storage and allow
+ * aws_lws_http_headers_detach() - drop the associated headers storage and allow
  *				it to be reused by another connection
  * \param wsi:	http connection
  *
  * If the wsi has an ah headers struct attached, detach it.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_headers_detach(struct lws *wsi);
+aws_lws_http_headers_detach(struct lws *wsi);
 
 /**
- * lws_http_mark_sse() - called to indicate this http stream is now doing SSE
+ * aws_lws_http_mark_sse() - called to indicate this http stream is now doing SSE
  *
  * \param wsi:	http connection
  *
@@ -892,10 +892,10 @@ lws_http_headers_detach(struct lws *wsi);
  * containing an immortal stream for the duration the SSE stream is open.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_mark_sse(struct lws *wsi);
+aws_lws_http_mark_sse(struct lws *wsi);
 
 /**
- * lws_h2_client_stream_long_poll_rxonly() - h2 stream to immortal read-only
+ * aws_lws_h2_client_stream_long_poll_rxonly() - h2 stream to immortal read-only
  *
  * \param wsi: h2 stream client wsi
  *
@@ -910,10 +910,10 @@ lws_http_mark_sse(struct lws *wsi);
  * if it wasn't an h2 stream.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_h2_client_stream_long_poll_rxonly(struct lws *wsi);
+aws_lws_h2_client_stream_long_poll_rxonly(struct lws *wsi);
 
 /**
- * lws_http_compression_apply() - apply an http compression transform
+ * aws_lws_http_compression_apply() - apply an http compression transform
  *
  * \param wsi: the wsi to apply the compression transform to
  * \param name: NULL, or the name of the compression transform, eg, "deflate"
@@ -938,11 +938,11 @@ lws_h2_client_stream_long_poll_rxonly(struct lws *wsi);
  * allowing user code to build either way and use compression if available.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_compression_apply(struct lws *wsi, const char *name,
+aws_lws_http_compression_apply(struct lws *wsi, const char *name,
 			   unsigned char **p, unsigned char *end, char decomp);
 
 /**
- * lws_http_is_redirected_to_get() - true if redirected to GET
+ * aws_lws_http_is_redirected_to_get() - true if redirected to GET
  *
  * \param wsi: the wsi to check
  *
@@ -950,10 +950,10 @@ lws_http_compression_apply(struct lws *wsi, const char *name,
  * receiving a 303.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_is_redirected_to_get(struct lws *wsi);
+aws_lws_http_is_redirected_to_get(struct lws *wsi);
 
 /**
- * lws_http_cookie_get() - return copy of named cookie if present
+ * aws_lws_http_cookie_get() - return copy of named cookie if present
  *
  * \param wsi: the wsi to check
  * \param name: name of the cookie
@@ -970,20 +970,20 @@ lws_http_is_redirected_to_get(struct lws *wsi);
  * terminating the requested cookie at the next ; if present.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_http_cookie_get(struct lws *wsi, const char *name, char *buf, size_t *max);
+aws_lws_http_cookie_get(struct lws *wsi, const char *name, char *buf, size_t *max);
 
 /**
- * lws_http_client_http_error() - determine if the response code indicates an error
+ * aws_lws_http_client_http_error() - determine if the response code indicates an error
  *
  * \param code: the response code to test
  *
  * Returns nonzero if the code indicates an error, else zero if reflects a
  * non-error condition
  */
-#define lws_http_client_http_resp_is_error(code) (!(code < 400))
+#define aws_lws_http_client_http_resp_is_error(code) (!(code < 400))
 
 /**
- * lws_h2_update_peer_txcredit() - manually update stream peer tx credit
+ * aws_lws_h2_update_peer_txcredit() - manually update stream peer tx credit
  *
  * \param wsi: the h2 child stream whose peer credit to change
  * \param sid: the stream ID, or LWS_H2_STREAM_SID for the wsi stream ID
@@ -1009,11 +1009,11 @@ lws_http_cookie_get(struct lws *wsi, const char *name, char *buf, size_t *max);
  */
 #define LWS_H2_STREAM_SID -1
 LWS_VISIBLE LWS_EXTERN int
-lws_h2_update_peer_txcredit(struct lws *wsi, unsigned int sid, int bump);
+aws_lws_h2_update_peer_txcredit(struct lws *wsi, unsigned int sid, int bump);
 
 
 /**
- * lws_h2_get_peer_txcredit_estimate() - return peer tx credit estimate
+ * aws_lws_h2_get_peer_txcredit_estimate() - return peer tx credit estimate
  *
  * \param wsi: the h2 child stream whose peer credit estimate to return
  *
@@ -1024,7 +1024,7 @@ lws_h2_update_peer_txcredit(struct lws *wsi, unsigned int sid, int bump);
  * towards us and actually already used.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_h2_get_peer_txcredit_estimate(struct lws *wsi);
+aws_lws_h2_get_peer_txcredit_estimate(struct lws *wsi);
 
 ///@}
 

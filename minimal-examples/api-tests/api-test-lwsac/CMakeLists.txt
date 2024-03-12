@@ -1,15 +1,15 @@
-project(lws-api-test-lwsac C)
+project(lws-api-test-aws_lwsac C)
 cmake_minimum_required(VERSION 2.8.12)
 find_package(libwebsockets CONFIG REQUIRED)
 list(APPEND CMAKE_MODULE_PATH ${LWS_CMAKE_DIR})
 include(CheckCSourceCompiles)
 include(LwsCheckRequirements)
 
-set(SAMP lws-api-test-lwsac)
+set(SAMP lws-api-test-aws_lwsac)
 set(SRCS main.c)
 
 add_executable(${SAMP} ${SRCS})
-add_test(NAME api-test-lwsac COMMAND lws-api-test-lwsac)
+add_test(NAME api-test-aws_lwsac COMMAND lws-api-test-aws_lwsac)
 
 if (websockets_shared)
 	target_link_libraries(${SAMP} websockets_shared ${LIBWEBSOCKETS_DEP_LIBS})

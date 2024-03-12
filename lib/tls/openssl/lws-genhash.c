@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genhash provides a hash / hmac abstraction api in lws that works the
+ *  aws_lws_genhash provides a hash / hmac abstraction api in lws that works the
  *  same whether you are using openssl or mbedtls hash functions underneath.
  */
 #include <private-lib-core.h>
@@ -33,7 +33,7 @@
  */
 
 int
-lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
+aws_lws_genhash_init(struct aws_lws_genhash_ctx *ctx, enum aws_lws_genhash_types type)
 {
 	ctx->type = (uint8_t)type;
 	ctx->mdctx = EVP_MD_CTX_create();
@@ -70,7 +70,7 @@ lws_genhash_init(struct lws_genhash_ctx *ctx, enum lws_genhash_types type)
 }
 
 int
-lws_genhash_update(struct lws_genhash_ctx *ctx, const void *in, size_t len)
+aws_lws_genhash_update(struct aws_lws_genhash_ctx *ctx, const void *in, size_t len)
 {
 	if (!len)
 		return 0;
@@ -79,7 +79,7 @@ lws_genhash_update(struct lws_genhash_ctx *ctx, const void *in, size_t len)
 }
 
 int
-lws_genhash_destroy(struct lws_genhash_ctx *ctx, void *result)
+aws_lws_genhash_destroy(struct aws_lws_genhash_ctx *ctx, void *result)
 {
 	unsigned int len;
 	int ret = 0;
@@ -101,7 +101,7 @@ lws_genhash_destroy(struct lws_genhash_ctx *ctx, void *result)
 #if defined(LWS_HAVE_EVP_PKEY_new_raw_private_key)
 
 int
-lws_genhmac_init(struct lws_genhmac_ctx *ctx, enum lws_genhmac_types type,
+aws_lws_genhmac_init(struct aws_lws_genhmac_ctx *ctx, enum aws_lws_genhmac_types type,
 		 const uint8_t *key, size_t key_len)
 {
 	ctx->ctx = EVP_MD_CTX_create();
@@ -122,7 +122,7 @@ lws_genhmac_init(struct lws_genhmac_ctx *ctx, enum lws_genhmac_types type,
 		ctx->evp_type = EVP_sha512();
 		break;
 	default:
-		lwsl_err("%s: unknown HMAC type %d\n", __func__, type);
+		aws_lwsl_err("%s: unknown HMAC type %d\n", __func__, type);
 		goto bail;
 	}
 
@@ -144,7 +144,7 @@ bail:
 }
 
 int
-lws_genhmac_update(struct lws_genhmac_ctx *ctx, const void *in, size_t len)
+aws_lws_genhmac_update(struct aws_lws_genhmac_ctx *ctx, const void *in, size_t len)
 {
 
 	if (EVP_DigestSignUpdate(ctx->ctx, in, len) != 1)
@@ -154,9 +154,9 @@ lws_genhmac_update(struct lws_genhmac_ctx *ctx, const void *in, size_t len)
 }
 
 int
-lws_genhmac_destroy(struct lws_genhmac_ctx *ctx, void *result)
+aws_lws_genhmac_destroy(struct aws_lws_genhmac_ctx *ctx, void *result)
 {
-	size_t size = (size_t)lws_genhmac_size(ctx->type);
+	size_t size = (size_t)aws_lws_genhmac_size(ctx->type);
 	int n;
 
 	n = EVP_DigestSignFinal(ctx->ctx, result, &size);
@@ -172,7 +172,7 @@ lws_genhmac_destroy(struct lws_genhmac_ctx *ctx, void *result)
 #else
 
 int
-lws_genhmac_init(struct lws_genhmac_ctx *ctx, enum lws_genhmac_types type,
+aws_lws_genhmac_init(struct aws_lws_genhmac_ctx *ctx, enum aws_lws_genhmac_types type,
 		 const uint8_t *key, size_t key_len)
 {
 #if defined(LWS_HAVE_HMAC_CTX_new)
@@ -197,7 +197,7 @@ lws_genhmac_init(struct lws_genhmac_ctx *ctx, enum lws_genhmac_types type,
 		ctx->evp_type = EVP_sha512();
 		break;
 	default:
-		lwsl_err("%s: unknown HMAC type %d\n", __func__, type);
+		aws_lwsl_err("%s: unknown HMAC type %d\n", __func__, type);
 		goto bail;
 	}
 
@@ -219,7 +219,7 @@ bail:
 }
 
 int
-lws_genhmac_update(struct lws_genhmac_ctx *ctx, const void *in, size_t len)
+aws_lws_genhmac_update(struct aws_lws_genhmac_ctx *ctx, const void *in, size_t len)
 {
 #if defined(LWS_HAVE_HMAC_CTX_new)
 #if defined(LIBRESSL_VERSION_NUMBER)
@@ -236,9 +236,9 @@ lws_genhmac_update(struct lws_genhmac_ctx *ctx, const void *in, size_t len)
 }
 
 int
-lws_genhmac_destroy(struct lws_genhmac_ctx *ctx, void *result)
+aws_lws_genhmac_destroy(struct aws_lws_genhmac_ctx *ctx, void *result)
 {
-	unsigned int size = (unsigned int)lws_genhmac_size(ctx->type);
+	unsigned int size = (unsigned int)aws_lws_genhmac_size(ctx->type);
 #if defined(LWS_HAVE_HMAC_CTX_new)
 	int n = HMAC_Final(ctx->ctx, result, &size);
 

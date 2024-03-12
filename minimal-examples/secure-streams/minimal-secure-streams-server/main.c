@@ -11,9 +11,9 @@
 #include <string.h>
 #include <signal.h>
 
-extern const lws_ss_info_t ssi_client, ssi_server;
+extern const aws_lws_ss_info_t ssi_client, ssi_server;
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 int interrupted, bad = 1, multipart;
 static const char * const default_ss_policy =
 	"{"
@@ -224,30 +224,30 @@ static const char * const default_ss_policy =
 ;
 
 static int
-smd_cb(void *opaque, lws_smd_class_t c, lws_usec_t ts, void *buf, size_t len)
+smd_cb(void *opaque, aws_lws_smd_class_t c, aws_lws_usec_t ts, void *buf, size_t len)
 {
 	if ((c & LWSSMDCL_SYSTEM_STATE) &&
-	    !lws_json_simple_strcmp(buf, len, "\"state\":", "OPERATIONAL")) {
+	    !aws_lws_json_simple_strcmp(buf, len, "\"state\":", "OPERATIONAL")) {
 
 		/* create the secure streams */
 
-		lwsl_notice("%s: creating server stream\n", __func__);
+		aws_lwsl_notice("%s: creating server stream\n", __func__);
 
-		if (lws_ss_create(context, 0, &ssi_server, NULL, NULL,
+		if (aws_lws_ss_create(context, 0, &ssi_server, NULL, NULL,
 				  NULL, NULL)) {
-			lwsl_err("%s: failed to create secure stream\n",
+			aws_lwsl_err("%s: failed to create secure stream\n",
 				 __func__);
 			bad = 1;
 			interrupted = 1;
-			lws_cancel_service(context);
+			aws_lws_cancel_service(context);
 			return -1;
 		}
 #if 0
-		lwsl_notice("%s: creating client stream\n", __func__);
+		aws_lwsl_notice("%s: creating client stream\n", __func__);
 
-		if (lws_ss_create(context, 0, &ssi_client, NULL, NULL,
+		if (aws_lws_ss_create(context, 0, &ssi_client, NULL, NULL,
 				  NULL, NULL)) {
-			lwsl_err("%s: failed to create secure stream\n",
+			aws_lwsl_err("%s: failed to create secure stream\n",
 				 __func__);
 			return -1;
 		}
@@ -265,18 +265,18 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	if (lws_cmdline_option(argc, argv, "-m"))
+	if (aws_lws_cmdline_option(argc, argv, "-m"))
 		multipart = 1;
 
-	lwsl_user("LWS Secure Streams Server\n");
+	aws_lwsl_user("LWS Secure Streams Server\n");
 
 	info.options			= LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
 					  LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -286,21 +286,21 @@ int main(int argc, const char **argv)
 	info.early_smd_cb		= smd_cb;
 	info.early_smd_class_filter	= LWSSMDCL_SYSTEM_STATE;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	/* the event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 	bad = 0;
 
-	lws_context_destroy(context);
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

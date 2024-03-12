@@ -10,9 +10,9 @@
 #include "bb-i2c.h"
 
 int
-lws_bb_i2c_start(lws_i2c_ops_t *octx)
+aws_lws_bb_i2c_start(aws_lws_i2c_ops_t *octx)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 
 	ctx->gpio->set(ctx->sda, 1);
 	ctx->gpio->set(ctx->scl, 1);
@@ -29,9 +29,9 @@ lws_bb_i2c_start(lws_i2c_ops_t *octx)
 }
 
 void
-lws_bb_i2c_stop(lws_i2c_ops_t *octx)
+aws_lws_bb_i2c_stop(aws_lws_i2c_ops_t *octx)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 
 	ctx->gpio->set(ctx->sda, 0);
 	ctx->gpio->set(ctx->scl, 1);
@@ -45,9 +45,9 @@ lws_bb_i2c_stop(lws_i2c_ops_t *octx)
 }
 
 int
-lws_bb_i2c_write(lws_i2c_ops_t *octx, uint8_t data)
+aws_lws_bb_i2c_write(aws_lws_i2c_ops_t *octx, uint8_t data)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 	int n;
 
 	for (n = 0; n < 8; n++) {
@@ -71,9 +71,9 @@ lws_bb_i2c_write(lws_i2c_ops_t *octx, uint8_t data)
 }
 
 int
-lws_bb_i2c_read(lws_i2c_ops_t *octx)
+aws_lws_bb_i2c_read(aws_lws_i2c_ops_t *octx)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 	int n, r = 0;
 
 	ctx->gpio->set(ctx->sda, 1);
@@ -92,9 +92,9 @@ lws_bb_i2c_read(lws_i2c_ops_t *octx)
 }
 
 void
-lws_bb_i2c_set_ack(lws_i2c_ops_t *octx, int ack)
+aws_lws_bb_i2c_set_ack(aws_lws_i2c_ops_t *octx, int ack)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 
 	ctx->gpio->set(ctx->scl, 0);
 	ctx->gpio->set(ctx->sda, !!ack);

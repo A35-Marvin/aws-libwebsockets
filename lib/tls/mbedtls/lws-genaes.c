@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genaes provides an abstraction api for AES in lws that works the
+ *  aws_lws_genaes provides an abstraction api for AES in lws that works the
  *  same whether you are using openssl or mbedtls hash functions underneath.
  */
 #include "private-lib-core.h"
@@ -46,8 +46,8 @@ _write_pkcs7_pad(uint8_t *p, int len)
 }
 
 int
-lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
-		  enum enum_aes_modes mode, struct lws_gencrypto_keyelem *el,
+aws_lws_genaes_create(struct aws_lws_genaes_ctx *ctx, enum enum_aes_operation op,
+		  enum enum_aes_modes mode, struct aws_lws_gencrypto_keyelem *el,
 		  enum enum_aes_padding padding, void *engine)
 {
 	int n = 0;
@@ -71,7 +71,7 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 		n = mbedtls_gcm_setkey(&ctx->u.ctx_gcm, MBEDTLS_CIPHER_ID_AES,
 				       ctx->k->buf, ctx->k->len * 8);
 		if (n) {
-			lwsl_notice("%s: mbedtls_gcm_setkey: -0x%x\n",
+			aws_lwsl_notice("%s: mbedtls_gcm_setkey: -0x%x\n",
 				    __func__, -n);
 			return n;
 		}
@@ -123,13 +123,13 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
 	}
 
 	if (n)
-		lwsl_notice("%s: setting key: -0x%x\n", __func__, -n);
+		aws_lwsl_notice("%s: setting key: -0x%x\n", __func__, -n);
 
 	return n;
 }
 
 int
-lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
+aws_lws_genaes_destroy(struct aws_lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 {
 #if defined(MBEDTLS_VERSION_NUMBER) && MBEDTLS_VERSION_NUMBER >= 0x03000000
 	size_t last_len = 0;
@@ -146,15 +146,15 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 #endif
 
 		if (n)
-			lwsl_notice("%s: mbedtls_gcm_finish: -0x%x\n",
+			aws_lwsl_notice("%s: mbedtls_gcm_finish: -0x%x\n",
 				    __func__, -n);
 		if (tag && ctx->op == MBEDTLS_AES_DECRYPT && !n) {
-			if (lws_timingsafe_bcmp(ctx->tag, tag, (unsigned int)ctx->taglen)) {
-				lwsl_err("%s: lws_genaes_crypt tag "
+			if (aws_lws_timingsafe_bcmp(ctx->tag, tag, (unsigned int)ctx->taglen)) {
+				aws_lwsl_err("%s: aws_lws_genaes_crypt tag "
 					 "mismatch (bad first)\n",
 						__func__);
-				lwsl_hexdump_notice(tag, tlen);
-				lwsl_hexdump_notice(ctx->tag, (unsigned int)ctx->taglen);
+				aws_lwsl_hexdump_notice(tag, tlen);
+				aws_lwsl_hexdump_notice(ctx->tag, (unsigned int)ctx->taglen);
 				n = -1;
 			}
 		}
@@ -175,7 +175,7 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen)
 
 #if defined(LWS_HAVE_mbedtls_internal_aes_encrypt)
 static int
-lws_genaes_rfc3394_wrap(int wrap, int cek_bits, const uint8_t *kek,
+aws_lws_genaes_rfc3394_wrap(int wrap, int cek_bits, const uint8_t *kek,
 			int kek_bits, const uint8_t *in, uint8_t *out)
 {
 	int n, m, ret = -1, c64 = cek_bits / 64;
@@ -232,7 +232,7 @@ lws_genaes_rfc3394_wrap(int wrap, int cek_bits, const uint8_t *kek,
 	}
 
 	if (n < 0) {
-		lwsl_err("%s: setkey failed\n", __func__);
+		aws_lwsl_err("%s: setkey failed\n", __func__);
 		goto bail;
 	}
 
@@ -279,7 +279,7 @@ lws_genaes_rfc3394_wrap(int wrap, int cek_bits, const uint8_t *kek,
 
 bail:
 	if (ret)
-		lwsl_notice("%s: failed\n", __func__);
+		aws_lwsl_notice("%s: failed\n", __func__);
 	mbedtls_aes_free(&ctx);
 
 	return ret;
@@ -287,7 +287,7 @@ bail:
 #endif
 
 int
-lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
+aws_lws_genaes_crypt(struct aws_lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 		 uint8_t *out, uint8_t *iv_or_nonce_ctr_or_data_unit_16,
 		 uint8_t *stream_block_16, size_t *nc_or_iv_off, int taglen)
 {
@@ -298,14 +298,14 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 	case LWS_GAESM_KW:
 #if defined(LWS_HAVE_mbedtls_internal_aes_encrypt)
 		/* a key of length ctx->k->len is wrapped by a 128-bit KEK */
-		n = lws_genaes_rfc3394_wrap(ctx->op == MBEDTLS_AES_ENCRYPT,
+		n = aws_lws_genaes_rfc3394_wrap(ctx->op == MBEDTLS_AES_ENCRYPT,
 				(ctx->op == MBEDTLS_AES_ENCRYPT ? (int)len * 8 :
 						((int)len - 8) * 8), ctx->k->buf,
 						(int)ctx->k->len * 8,
 				in, out);
 		break;
 #else
-		lwsl_err("%s: your mbedtls is too old\n", __func__);
+		aws_lwsl_err("%s: your mbedtls is too old\n", __func__);
 		return -1;
 #endif
 	case LWS_GAESM_CBC:
@@ -321,8 +321,8 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 			 * the over-allocation at the end of the input,
 			 * we have to allocate a temp with space for it
 			 */
-			uint8_t *padin = (uint8_t *)lws_malloc(
-				lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN, len),
+			uint8_t *padin = (uint8_t *)aws_lws_malloc(
+				aws_lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN, len),
 								__func__);
 
 			if (!padin)
@@ -332,7 +332,7 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 			len += _write_pkcs7_pad((uint8_t *)padin, (int)len);
 			n = mbedtls_aes_crypt_cbc(&ctx->u.ctx, (int)ctx->op, len, iv,
 						  padin, out);
-			lws_free(padin);
+			aws_lws_free(padin);
 		} else
 			n = mbedtls_aes_crypt_cbc(&ctx->u.ctx, (int)ctx->op, len, iv,
                                       in, out);
@@ -411,7 +411,7 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 					       *nc_or_iv_off, in, len);
 #endif
 			if (n) {
-				lwsl_notice("%s: mbedtls_gcm_starts: -0x%x\n",
+				aws_lwsl_notice("%s: mbedtls_gcm_starts: -0x%x\n",
 					    __func__, -n);
 
 				return -1;
@@ -429,7 +429,7 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 		n = mbedtls_gcm_update(&ctx->u.ctx_gcm, len, in, out);
 #endif
 		if (n) {
-			lwsl_notice("%s: mbedtls_gcm_update: -0x%x\n",
+			aws_lwsl_notice("%s: mbedtls_gcm_update: -0x%x\n",
 				    __func__, -n);
 
 			return -1;
@@ -438,7 +438,7 @@ lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 	}
 
 	if (n) {
-		lwsl_notice("%s: failed: -0x%x, len %d\n", __func__, -n, (int)len);
+		aws_lwsl_notice("%s: failed: -0x%x, len %d\n", __func__, -n, (int)len);
 
 		return -1;
 	}

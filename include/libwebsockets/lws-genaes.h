@@ -65,7 +65,7 @@ enum enum_aes_padding {
 #define LWS_AES_BLOCKSIZE 128
 #define LWS_AES_CBC_BLOCKLEN 16
 
-struct lws_genaes_ctx {
+struct aws_lws_genaes_ctx {
 #if defined(LWS_WITH_MBEDTLS)
 	union {
 		mbedtls_aes_context ctx;
@@ -81,7 +81,7 @@ struct lws_genaes_ctx {
 	char init;
 #endif
 	unsigned char tag[16];
-	struct lws_gencrypto_keyelem *k;
+	struct aws_lws_gencrypto_keyelem *k;
 	enum enum_aes_operation op;
 	enum enum_aes_modes mode;
 	enum enum_aes_padding padding;
@@ -89,9 +89,9 @@ struct lws_genaes_ctx {
 	char underway;
 };
 
-/** lws_genaes_create() - Create RSA public decrypt context
+/** aws_lws_genaes_create() - Create RSA public decrypt context
  *
- * \param ctx: your struct lws_genaes_ctx
+ * \param ctx: your struct aws_lws_genaes_ctx
  * \param op: LWS_GAESO_ENC or LWS_GAESO_DEC
  * \param mode: one of LWS_GAESM_
  * \param el: struct prepared with key element data
@@ -106,13 +106,13 @@ struct lws_genaes_ctx {
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
-		  enum enum_aes_modes mode, struct lws_gencrypto_keyelem *el,
+aws_lws_genaes_create(struct aws_lws_genaes_ctx *ctx, enum enum_aes_operation op,
+		  enum enum_aes_modes mode, struct aws_lws_gencrypto_keyelem *el,
 		  enum enum_aes_padding padding, void *engine);
 
-/** lws_genaes_destroy() - Destroy genaes AES context
+/** aws_lws_genaes_destroy() - Destroy genaes AES context
  *
- * \param ctx: your struct lws_genaes_ctx
+ * \param ctx: your struct aws_lws_genaes_ctx
  * \param tag: NULL, or, GCM-only: buffer to receive tag
  * \param tlen: 0, or, GCM-only: length of tag buffer
  *
@@ -123,11 +123,11 @@ lws_genaes_create(struct lws_genaes_ctx *ctx, enum enum_aes_operation op,
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen);
+aws_lws_genaes_destroy(struct aws_lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen);
 
-/** lws_genaes_crypt() - Encrypt or decrypt
+/** aws_lws_genaes_crypt() - Encrypt or decrypt
  *
- * \param ctx: your struct lws_genaes_ctx
+ * \param ctx: your struct aws_lws_genaes_ctx
  * \param in: input plaintext or ciphertext
  * \param len: length of input (which is always length of output)
  * \param out: output plaintext or ciphertext
@@ -161,7 +161,7 @@ lws_genaes_destroy(struct lws_genaes_ctx *ctx, unsigned char *tag, size_t tlen);
  * This and related APIs operate identically with OpenSSL or mbedTLS backends.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_genaes_crypt(struct lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
+aws_lws_genaes_crypt(struct aws_lws_genaes_ctx *ctx, const uint8_t *in, size_t len,
 		 uint8_t *out,
 		 uint8_t *iv_or_nonce_ctr_or_data_unit_16,
 		 uint8_t *stream_block_16,

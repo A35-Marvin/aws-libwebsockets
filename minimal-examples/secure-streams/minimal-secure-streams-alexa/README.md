@@ -43,20 +43,20 @@ There are some special build considerations:
 ```
  $ ./lws-minimal-secure-streams-alexa
 [2019/10/16 16:22:01:1097] U: LWS secure streams - Alex voice test [-d<verb>]
-[2019/10/16 16:22:01:1115] N: lws_create_context: creating Secure Streams policy
-[2019/10/16 16:22:01:1115] N: lwsac_use: alloc 1532 for 1
-[2019/10/16 16:22:01:1119] N: lwsac_use: alloc 288 for 168
-[2019/10/16 16:22:01:1119] N: lws_ss_policy_set: policy lwsac size:     1.796KiB, pad 11%
-[2019/10/16 16:22:02:4114] N: lws_ss_client_connect: connecting 0 api.amazon.com /auth/o2/token
+[2019/10/16 16:22:01:1115] N: aws_lws_create_context: creating Secure Streams policy
+[2019/10/16 16:22:01:1115] N: aws_lwsac_use: alloc 1532 for 1
+[2019/10/16 16:22:01:1119] N: aws_lwsac_use: alloc 288 for 168
+[2019/10/16 16:22:01:1119] N: aws_lws_ss_policy_set: policy aws_lwsac size:     1.796KiB, pad 11%
+[2019/10/16 16:22:02:4114] N: aws_lws_ss_client_connect: connecting 0 api.amazon.com /auth/o2/token
 [2019/10/16 16:22:02:8686] N: auth_api_amazon_com_parser_cb: expires in 3600
 [2019/10/16 16:22:02:8686] N: ss_api_amazon_auth_rx: acquired 656-byte api.amazon.com auth token
-[2019/10/16 16:22:02:8754] N: lws_ss_client_connect: connecting 1 alexa.na.gateway.devices.a2z.com /v20160207/directives
+[2019/10/16 16:22:02:8754] N: aws_lws_ss_client_connect: connecting 1 alexa.na.gateway.devices.a2z.com /v20160207/directives
 [2019/10/16 16:22:02:3182] N: secstream_h2: h2 client entering LONG_POLL
 [2019/10/16 16:22:02:3183] U: Connected to Alexa... speak "Alexa, ..."
 [2019/10/16 16:22:06:9380] W: ************* Wakeword
 [2019/10/16 16:22:06:9380] N: avs_query_start:
-[2019/10/16 16:22:06:9381] N: lws_ss_client_connect: connecting 1 alexa.na.gateway.devices.a2z.com /v20160207/events
-[2019/10/16 16:22:06:9381] N: lws_vhost_active_conns: just join h2 directly
+[2019/10/16 16:22:06:9381] N: aws_lws_ss_client_connect: connecting 1 alexa.na.gateway.devices.a2z.com /v20160207/events
+[2019/10/16 16:22:06:9381] N: aws_lws_vhost_active_conns: just join h2 directly
 [2019/10/16 16:22:06:9384] N: metadata done
 [2019/10/16 16:22:06:1524] N: est: 42 1
 [2019/10/16 16:22:06:3723] N: est: 108 1

@@ -17,16 +17,16 @@
 static int interrupted, bad = 1, concurrent = 1, completed;
 
 static int
-lss_completion(lss *lss, lws_ss_constate_t state, void *arg)
+lss_completion(lss *lss, aws_lws_ss_constate_t state, void *arg)
 {
 	lssFile *lf = (lssFile *)lss;
 
 	if (state == LWSSSCS_QOS_ACK_REMOTE) {
-		lwsl_notice("%s: %s: len %llu, done OK %dms\n", __func__,
+		aws_lwsl_notice("%s: %s: len %llu, done OK %dms\n", __func__,
 			    lf->path.c_str(), (unsigned long long)lf->rxlen,
-			    (int)((lws_now_usecs() - lf->us_start) / 1000));
+			    (int)((aws_lws_now_usecs() - lf->us_start) / 1000));
 	} else
-		lwsl_notice("%s: %s: failed\n", __func__, lf->path.c_str());
+		aws_lwsl_notice("%s: %s: failed\n", __func__, lf->path.c_str());
 
 	if (++completed == concurrent) {
 		interrupted = 1;
@@ -44,22 +44,22 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	if ((p = lws_cmdline_option(argc, argv, "-c")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-c")))
 		concurrent = atoi(p);
 
 	if (concurrent > 12)
 		concurrent = 12;
 
-	lwsl_user("LWS secure streams cpp test client "
+	aws_lwsl_user("LWS secure streams cpp test client "
 			"[-d<verb>] [-c<concurrent>]\n");
 
 	info.fd_limit_per_thread = 1 + 12 + 1;
@@ -68,9 +68,9 @@ int main(int argc, const char **argv)
 
 	/* create the context */
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -90,18 +90,18 @@ int main(int argc, const char **argv)
 			new lssFile(context, url, filepath, lss_completion, 0);
 		}
 	} catch (std::exception &e) {
-		lwsl_err("%s: failed to create ss: %s\n", __func__, e.what());
+		aws_lwsl_err("%s: failed to create ss: %s\n", __func__, e.what());
 		interrupted = 1;
 	}
 
 	/* the event loop */
 
-	while (!interrupted && lws_service(context, 0) >= 0)
+	while (!interrupted && aws_lws_service(context, 0) >= 0)
 		;
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

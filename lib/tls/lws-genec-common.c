@@ -21,15 +21,15 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genec provides an EC abstraction api in lws that works the
+ *  aws_lws_genec provides an EC abstraction api in lws that works the
  *  same whether you are using openssl or mbedtls crypto functions underneath.
  */
 #include "private-lib-core.h"
 
-const struct lws_ec_curves *
-lws_genec_curve(const struct lws_ec_curves *table, const char *name)
+const struct aws_lws_ec_curves *
+aws_lws_genec_curve(const struct aws_lws_ec_curves *table, const char *name)
 {
-	const struct lws_ec_curves *c = lws_ec_curves;
+	const struct aws_lws_ec_curves *c = aws_lws_ec_curves;
 
 	if (table)
 		c = table;
@@ -43,42 +43,42 @@ lws_genec_curve(const struct lws_ec_curves *table, const char *name)
 	return NULL;
 }
 
-//extern const struct lws_ec_curves *lws_ec_curves;
+//extern const struct aws_lws_ec_curves *aws_lws_ec_curves;
 
 int
-lws_genec_confirm_curve_allowed_by_tls_id(const char *allowed, int id,
-					  struct lws_jwk *jwk)
+aws_lws_genec_confirm_curve_allowed_by_tls_id(const char *allowed, int id,
+					  struct aws_lws_jwk *jwk)
 {
-	struct lws_tokenize ts;
-	lws_tokenize_elem e;
+	struct aws_lws_tokenize ts;
+	aws_lws_tokenize_elem e;
 	size_t len;
 	int n;
 
-	lws_tokenize_init(&ts, allowed, LWS_TOKENIZE_F_COMMA_SEP_LIST |
+	aws_lws_tokenize_init(&ts, allowed, LWS_TOKENIZE_F_COMMA_SEP_LIST |
 				       LWS_TOKENIZE_F_MINUS_NONTERM);
 	ts.len = strlen(allowed);
 	do {
-		e = lws_tokenize(&ts);
+		e = aws_lws_tokenize(&ts);
 		switch (e) {
 		case LWS_TOKZE_TOKEN:
 			n = 0;
-			while (lws_ec_curves[n].name) {
-				if (id != lws_ec_curves[n].tls_lib_nid) {
+			while (aws_lws_ec_curves[n].name) {
+				if (id != aws_lws_ec_curves[n].tls_lib_nid) {
 					n++;
 					continue;
 				}
-				lwsl_info("match curve %s\n",
-					  lws_ec_curves[n].name);
-				len = strlen(lws_ec_curves[n].name);
+				aws_lwsl_info("match curve %s\n",
+					  aws_lws_ec_curves[n].name);
+				len = strlen(aws_lws_ec_curves[n].name);
 				jwk->e[LWS_GENCRYPTO_EC_KEYEL_CRV].len = (uint32_t)len;
 				jwk->e[LWS_GENCRYPTO_EC_KEYEL_CRV].buf =
-						lws_malloc(len + 1, "cert crv");
+						aws_lws_malloc(len + 1, "cert crv");
 				if (!jwk->e[LWS_GENCRYPTO_EC_KEYEL_CRV].buf) {
-					lwsl_err("%s: OOM\n", __func__);
+					aws_lwsl_err("%s: OOM\n", __func__);
 					return 1;
 				}
 				memcpy(jwk->e[LWS_GENCRYPTO_EC_KEYEL_CRV].buf,
-				       lws_ec_curves[n].name, len + 1);
+				       aws_lws_ec_curves[n].name, len + 1);
 				return 0;
 			}
 			break;
@@ -87,48 +87,48 @@ lws_genec_confirm_curve_allowed_by_tls_id(const char *allowed, int id,
 			break;
 
 		default: /* includes ENDED */
-			lwsl_err("%s: malformed or curve name in list\n",
+			aws_lwsl_err("%s: malformed or curve name in list\n",
 				 __func__);
 
 			return -1;
 		}
 	} while (e > 0);
 
-	lwsl_err("%s: unsupported curve group nid %d\n", __func__, n);
+	aws_lwsl_err("%s: unsupported curve group nid %d\n", __func__, n);
 
 	return -1;
 }
 
 void
-lws_genec_destroy_elements(struct lws_gencrypto_keyelem *el)
+aws_lws_genec_destroy_elements(struct aws_lws_gencrypto_keyelem *el)
 {
 	int n;
 
 	for (n = 0; n < LWS_GENCRYPTO_EC_KEYEL_COUNT; n++)
 		if (el[n].buf)
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_free_set_NULL(el[n].buf);
 }
 
 static const char *enames[] = { "crv", "x", "d", "y" };
 
 int
-lws_genec_dump(struct lws_gencrypto_keyelem *el)
+aws_lws_genec_dump(struct aws_lws_gencrypto_keyelem *el)
 {
 	int n;
 
 	(void)enames;
 
-	lwsl_info("  genec %p: crv: '%s'\n", el,
+	aws_lwsl_info("  genec %p: crv: '%s'\n", el,
 		  !!el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf ?
 		  (char *)el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf: "no curve name");
 
 	for (n = LWS_GENCRYPTO_EC_KEYEL_X; n < LWS_GENCRYPTO_EC_KEYEL_COUNT;
 	     n++) {
-		lwsl_info("  e: %s\n", enames[n]);
-		lwsl_hexdump_info(el[n].buf, el[n].len);
+		aws_lwsl_info("  e: %s\n", enames[n]);
+		aws_lwsl_hexdump_info(el[n].buf, el[n].len);
 	}
 
-	lwsl_info("\n");
+	aws_lwsl_info("\n");
 
 	return 0;
 }

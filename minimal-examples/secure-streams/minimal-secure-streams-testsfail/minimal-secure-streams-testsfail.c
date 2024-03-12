@@ -19,13 +19,13 @@
 #include <signal.h>
 
 static int interrupted, tests, tests_pass, tests_fail;
-static lws_sorted_usec_list_t sul_next_test;
-static lws_state_notify_link_t nl;
-struct lws_context *context;
+static aws_lws_sorted_usec_list_t sul_next_test;
+static aws_lws_state_notify_link_t nl;
+struct aws_lws_context *context;
 size_t amount = 12345;
 
 static void
-tests_start_next(lws_sorted_usec_list_t *sul);
+tests_start_next(aws_lws_sorted_usec_list_t *sul);
 
 /*
  * If the -proxy app is fulfilling our connection, then we don't need to have
@@ -431,7 +431,7 @@ struct tests_seq {
 	const char		*name;
 	const char		*streamtype;
 	uint64_t		timeout_us;
-	lws_ss_constate_t	must_see;
+	aws_lws_ss_constate_t	must_see;
 	unsigned int		mask_unexpected;
 	size_t			eom_pass;
 } tests_seq[] = {
@@ -595,7 +595,7 @@ struct tests_seq {
 };
 
 typedef struct myss {
-	struct lws_ss_handle 		*ss;
+	struct aws_lws_ss_handle 		*ss;
 	void				*opaque_data;
 
 	size_t				rx_seen;
@@ -605,7 +605,7 @@ typedef struct myss {
 
 /* secure streams payload interface */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	myss_t *m = (myss_t *)userobj;
@@ -613,15 +613,15 @@ myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	m->rx_seen += len;
 
 	if (flags & LWSSS_FLAG_EOM)
-		lwsl_notice("%s: %s len %d, fl %d, received %u bytes\n",
-				__func__, lws_ss_tag(m->ss), (int)len, flags,
+		aws_lwsl_notice("%s: %s len %d, fl %d, received %u bytes\n",
+				__func__, aws_lws_ss_tag(m->ss), (int)len, flags,
 				(unsigned int)m->rx_seen);
 
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+myss_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	int *flags)
 {
 	//myss_t *m = (myss_t *)userobj;
@@ -631,31 +631,31 @@ myss_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	return LWSSSSRET_TX_DONT_SEND;
 }
 
-static lws_ss_state_return_t
-myss_state(void *userobj, void *sh, lws_ss_constate_t state,
-	   lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+myss_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+	   aws_lws_ss_tx_ordinal_t ack)
 {
 	myss_t *m = (myss_t *)userobj;
 	struct tests_seq *curr_test = (	struct tests_seq *)m->opaque_data;
 	char buf[8];
 	size_t sl;
 
-	lwsl_info("%s: %s: %s (%d), ord 0x%x\n", __func__, lws_ss_tag(m->ss),
-		  lws_ss_state_name((int)state), state, (unsigned int)ack);
+	aws_lwsl_info("%s: %s: %s (%d), ord 0x%x\n", __func__, aws_lws_ss_tag(m->ss),
+		  aws_lws_ss_state_name((int)state), state, (unsigned int)ack);
 
 	if (curr_test->mask_unexpected & (1u << state)) {
 		/*
 		 * We have definitively failed on an unexpected state received
 		 */
 
-		lwsl_warn("%s: failing on unexpected state %s\n",
-				__func__, lws_ss_state_name((int)state));
+		aws_lwsl_warn("%s: failing on unexpected state %s\n",
+				__func__, aws_lws_ss_state_name((int)state));
 
 fail:
 		m->result_reported = 1;
 		tests_fail++;
 		/* we'll start the next test next time around the event loop */
-		lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
+		aws_lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
 
 		return LWSSSSRET_OK;
 	}
@@ -663,42 +663,42 @@ fail:
 	if (state == curr_test->must_see) {
 
 		if (curr_test->eom_pass != m->rx_seen) {
-			lwsl_notice("%s: failing on rx %d, expected %d\n",
+			aws_lwsl_notice("%s: failing on rx %d, expected %d\n",
 				    __func__, (int)m->rx_seen,
 				    (int)curr_test->eom_pass);
 			goto fail;
 		}
 
-		lwsl_warn("%s: saw expected state %s\n",
-				__func__, lws_ss_state_name((int)state));
+		aws_lwsl_warn("%s: saw expected state %s\n",
+				__func__, aws_lws_ss_state_name((int)state));
 		m->result_reported = 1;
 		tests_pass++;
 		/* we'll start the next test next time around the event loop */
-		lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
+		aws_lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
 
 		return LWSSSSRET_OK;
 	}
 
 	switch (state) {
 	case LWSSSCS_CREATING:
-		lws_ss_start_timeout(m->ss,
+		aws_lws_ss_start_timeout(m->ss,
 			(unsigned int)(curr_test->timeout_us / LWS_US_PER_MS));
 		if (curr_test->eom_pass) {
-			sl = (size_t)lws_snprintf(buf, sizeof(buf), "%u",
+			sl = (size_t)aws_lws_snprintf(buf, sizeof(buf), "%u",
 					(unsigned int)curr_test->eom_pass);
-			if (lws_ss_set_metadata(m->ss, "amount", buf, sl))
+			if (aws_lws_ss_set_metadata(m->ss, "amount", buf, sl))
 				return LWSSSSRET_DISCONNECT_ME;
 		}
-		return lws_ss_client_connect(m->ss);
+		return aws_lws_ss_client_connect(m->ss);
 
 	case LWSSSCS_DESTROYING:
 		if (!m->result_reported) {
-			lwsl_user("%s: failing on unexpected destruction\n",
+			aws_lwsl_user("%s: failing on unexpected destruction\n",
 					__func__);
 
 			tests_fail++;
 			/* we'll start the next test next time around the event loop */
-			lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
+			aws_lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
 		}
 		break;
 
@@ -710,21 +710,21 @@ fail:
 }
 
 static void
-tests_start_next(lws_sorted_usec_list_t *sul)
+tests_start_next(aws_lws_sorted_usec_list_t *sul)
 {
 	struct tests_seq *ts;
-	lws_ss_info_t ssi;
-	static struct lws_ss_handle *h;
+	aws_lws_ss_info_t ssi;
+	static struct aws_lws_ss_handle *h;
 
 	/* destroy the old one */
 
 	if (h) {
-		lwsl_info("%s: destroying previous stream\n", __func__);
-		lws_ss_destroy(&h);
+		aws_lwsl_info("%s: destroying previous stream\n", __func__);
+		aws_lws_ss_destroy(&h);
 	}
 
 	if ((unsigned int)tests >= LWS_ARRAY_SIZE(tests_seq)) {
-		lwsl_notice("Completed all tests\n");
+		aws_lwsl_notice("Completed all tests\n");
 		interrupted = 1;
 		return;
 	}
@@ -742,10 +742,10 @@ tests_start_next(lws_sorted_usec_list_t *sul)
 	ssi.user_alloc = sizeof(myss_t);
 	ssi.streamtype = ts->streamtype;
 
-	lwsl_user("%s: %d: %s\n", __func__, tests, ts->name);
+	aws_lwsl_user("%s: %d: %s\n", __func__, tests, ts->name);
 
-	if (lws_ss_create(context, 0, &ssi, ts, &h, NULL, NULL)) {
-		lwsl_err("%s: failed to create secure stream\n",
+	if (aws_lws_ss_create(context, 0, &ssi, ts, &h, NULL, NULL)) {
+		aws_lwsl_err("%s: failed to create secure stream\n",
 			 __func__);
 		tests_fail++;
 		interrupted = 1;
@@ -754,7 +754,7 @@ tests_start_next(lws_sorted_usec_list_t *sul)
 }
 
 static int
-app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+app_system_state_nf(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		    int current, int target)
 {
 	switch (target) {
@@ -762,27 +762,27 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	case LWS_SYSTATE_OPERATIONAL:
 		if (current == LWS_SYSTATE_OPERATIONAL)
 			/* we'll start the next test next time around the event loop */
-			lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
+			aws_lws_sul_schedule(context, 0, &sul_next_test, tests_start_next, 1);
 		break;
 	}
 
 	return 0;
 }
 
-static lws_state_notify_link_t * const app_notifier_list[] = {
+static aws_lws_state_notify_link_t * const app_notifier_list[] = {
 	&nl, NULL
 };
 
 #if defined(LWS_WITH_SYS_METRICS)
 static int
-my_metric_report(lws_metric_pub_t *mp)
+my_metric_report(aws_lws_metric_pub_t *mp)
 {
-	lws_metric_bucket_t *sub = mp->u.hist.head;
+	aws_lws_metric_bucket_t *sub = mp->u.hist.head;
 	char buf[192];
 
 	do {
-		if (lws_metrics_format(mp, &sub, buf, sizeof(buf)))
-			lwsl_user("%s: %s\n", __func__, buf);
+		if (aws_lws_metrics_format(mp, &sub, buf, sizeof(buf)))
+			aws_lwsl_user("%s: %s\n", __func__, buf);
 	} while ((mp->flags & LWSMTFL_REPORT_HIST) && sub);
 
 	/* 0 = leave metric to accumulate, 1 = reset the metric */
@@ -790,7 +790,7 @@ my_metric_report(lws_metric_pub_t *mp)
 	return 1;
 }
 
-static const lws_system_ops_t system_ops = {
+static const aws_lws_system_ops_t system_ops = {
 	.metric_report = my_metric_report,
 };
 
@@ -805,15 +805,15 @@ sigint_handler(int sig)
 int
 main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *pp;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	if ((pp = lws_cmdline_option(argc, argv, "--amount")))
+	if ((pp = aws_lws_cmdline_option(argc, argv, "--amount")))
 		amount = (size_t)atoi(pp);
 
 	/* set the expected payload for the bulk-related tests to amount */
@@ -824,28 +824,28 @@ main(int argc, const char **argv)
 	// puts(default_ss_policy);
 #endif
 
-	lwsl_user("LWS secure streams error path tests [-d<verb>]\n");
+	aws_lwsl_user("LWS secure streams error path tests [-d<verb>]\n");
 
 	info.fd_limit_per_thread = 1 + 16 + 1;
 	info.port = CONTEXT_PORT_NO_LISTEN;
 #if defined(LWS_SS_USE_SSPC)
-	info.protocols = lws_sspc_protocols;
+	info.protocols = aws_lws_sspc_protocols;
 	{
 		const char *p;
 
 		/* connect to ssproxy via UDS by default, else via
 		 * tcp connection to this port */
-		if ((p = lws_cmdline_option(argc, argv, "-p")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-p")))
 			info.ss_proxy_port = (uint16_t)atoi(p);
 
 		/* UDS "proxy.ss.lws" in abstract namespace, else this socket
 		 * path; when -p given this can specify the network interface
 		 * to bind to */
-		if ((p = lws_cmdline_option(argc, argv, "-i")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-i")))
 			info.ss_proxy_bind = p;
 
 		/* if -p given, -a specifies the proxy address to connect to */
-		if ((p = lws_cmdline_option(argc, argv, "-a")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-a")))
 			info.ss_proxy_address = p;
 	}
 #else
@@ -870,19 +870,19 @@ main(int argc, const char **argv)
 
 	/* create the context */
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	/* the event loop */
 
-	do { } while(lws_service(context, 0) >= 0 && !interrupted);
+	do { } while(aws_lws_service(context, 0) >= 0 && !interrupted);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed: %s (pass %d, fail %d)\n",
+	aws_lwsl_user("Completed: %s (pass %d, fail %d)\n",
 		  tests_pass == tests && !tests_fail ? "OK" : "failed",
 				  tests_pass, tests_fail);
 

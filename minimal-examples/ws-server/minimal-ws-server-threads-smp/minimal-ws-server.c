@@ -34,17 +34,17 @@
 
 #define COUNT_THREADS 2
 
-static struct lws_protocols protocols[] = {
-	{ "http", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+static struct aws_lws_protocols protocols[] = {
+	{ "http", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	LWS_PLUGIN_PROTOCOL_MINIMAL,
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 static int interrupted, started;
 static pthread_t pthread_service[COUNT_THREADS];
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -73,14 +73,14 @@ static const struct lws_http_mount mount = {
  * protocol instance.
  */
 
-static const struct lws_protocol_vhost_options pvo_ops = {
+static const struct aws_lws_protocol_vhost_options pvo_ops = {
 	NULL,
 	NULL,
 	"config",		/* pvo name */
 	(void *)"myconfig"	/* pvo value */
 };
 
-static const struct lws_protocol_vhost_options pvo = {
+static const struct aws_lws_protocol_vhost_options pvo = {
 	NULL,		/* "next" pvo linked-list */
 	&pvo_ops,	/* "child" pvo linked-list */
 	"lws-minimal",	/* protocol name we belong to on this vhost */
@@ -89,8 +89,8 @@ static const struct lws_protocol_vhost_options pvo = {
 
 void *thread_service(void *threadid)
 {
-	while (lws_service_tsi(context, 1000,
-			       (int)(lws_intptr_t)threadid) >= 0 &&
+	while (aws_lws_service_tsi(context, 1000,
+			       (int)(aws_lws_intptr_t)threadid) >= 0 &&
 	       !interrupted)
 		;
 
@@ -100,10 +100,10 @@ void *thread_service(void *threadid)
 }
 
 static int
-system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+system_notify_cb(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		   int current, int target)
 {
-	struct lws_context *context = mgr->parent;
+	struct aws_lws_context *context = mgr->parent;
 	void *retval;
 
 	if (current != target)
@@ -111,17 +111,17 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 	switch (current) {
 	case LWS_SYSTATE_OPERATIONAL:
-		lwsl_notice("  Service threads: %d\n",
-			    lws_get_count_threads(context));
+		aws_lwsl_notice("  Service threads: %d\n",
+			    aws_lws_get_count_threads(context));
 
 		/* start all the service threads */
 
-		for (started = 1; started < lws_get_count_threads(context);
+		for (started = 1; started < aws_lws_get_count_threads(context);
 		     started++)
 			if (pthread_create(&pthread_service[started], NULL,
 					   thread_service,
-					   (void *)(lws_intptr_t)started))
-				lwsl_err("Failed to start service thread\n");
+					   (void *)(aws_lws_intptr_t)started))
+				aws_lwsl_err("Failed to start service thread\n");
 		break;
 	case LWS_SYSTATE_CONTEXT_DESTROYING:
 		/* wait for all the service threads to exit */
@@ -135,30 +135,30 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	return 0;
 }
 
-lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
+aws_lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
 				     system_notify_cb, "app" };
-lws_state_notify_link_t *na[] = { &notifier, NULL };
+aws_lws_state_notify_link_t *na[] = { &notifier, NULL };
 
 void sigint_handler(int sig)
 {
 	interrupted = 1;
-	lws_cancel_service(context);
+	aws_lws_cancel_service(context);
 }
 
 int main(int argc, const char **argv)
 {
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws server + threads + smp | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws server + threads + smp | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -170,16 +170,16 @@ int main(int argc, const char **argv)
 	info.options =
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

@@ -11,7 +11,7 @@
 static const uint32_t _rbo_bo_0[] = {
  1000,  2000,  3000,  5000,  10000, 
 };
-static const lws_retry_bo_t _rbo_0 = {
+static const aws_lws_retry_bo_t _rbo_0 = {
 	.retry_ms_table = _rbo_bo_0,
 	.retry_ms_table_count = 5,
 	.conceal_count = 25,
@@ -195,12 +195,12 @@ static const uint8_t _ss_der_isrg_root_x1[] = {
 	/* 0x560 */ 0xFE, 0x8E, 0x1E, 0x57, 0xA2, 0xCD, 0x40, 0x9D, 
 	/* 0x568 */ 0x7E, 0x62, 0x22, 0xDA, 0xDE, 0x18, 0x27, 
 };
-static const lws_ss_x509_t _ss_x509_isrg_root_x1 = {
+static const aws_lws_ss_x509_t _ss_x509_isrg_root_x1 = {
 	.vhost_name = "isrg_root_x1",
 	.ca_der = _ss_der_isrg_root_x1,
 	.ca_der_len = 1391,
 };
-static const lws_ss_trust_store_t _ss_ts_le_via_isrg = {
+static const aws_lws_ss_trust_store_t _ss_ts_le_via_isrg = {
 	.name = "le_via_isrg",
 	.count = 1,
 	.ssx509 = {
@@ -208,7 +208,7 @@ static const lws_ss_trust_store_t _ss_ts_le_via_isrg = {
 	}
 };
 
-static const lws_ss_policy_t _ssp_captive_portal_detect = {
+static const aws_lws_ss_policy_t _ssp_captive_portal_detect = {
 	.streamtype = "captive_portal_detect",
 	.endpoint = "connectivitycheck.android.com",
 	.u = {

@@ -10,22 +10,22 @@
 #include <libwebsockets.h>
 
 int
-test_cose_keys(struct lws_context *context);
+test_cose_keys(struct aws_lws_context *context);
 int
-test_cose_sign(struct lws_context *context);
+test_cose_sign(struct aws_lws_context *context);
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int result = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS COSE api tests\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS COSE api tests\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 #if defined(LWS_WITH_NETWORK)
@@ -33,18 +33,18 @@ int main(int argc, const char **argv)
 #endif
 	info.options = 0;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	result |= test_cose_keys(context);
 	result |= test_cose_sign(context);
 
-	lwsl_user("Completed: %s\n", result ? "FAIL" : "PASS");
+	aws_lwsl_user("Completed: %s\n", result ? "FAIL" : "PASS");
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return result;
 }

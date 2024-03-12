@@ -27,7 +27,7 @@
 
 #include <stdint.h>
 
-typedef uint16_t lws_display_scalar;
+typedef uint16_t aws_lws_display_scalar;
 
 /*
  * This is embedded in the actual display implementation object at the top,
@@ -37,42 +37,42 @@ typedef uint16_t lws_display_scalar;
  * Notice for the backlight / display intensity we contain pwm_ops... these can
  * be some other pwm_ops like existing gpio pwm ops, or handled in a customized
  * way like set oled contrast.  Either way, the pwm level is arrived at via a
- * full set of lws_led_sequences capable of generic lws transitions
+ * full set of aws_lws_led_sequences capable of generic lws transitions
  */
 
-typedef struct lws_display {
-	int (*init)(const struct lws_display *disp);
-	const lws_pwm_ops_t		*bl_pwm_ops;
-	int (*contrast)(const struct lws_display *disp, uint8_t contrast);
-	int (*blit)(const struct lws_display *disp, const uint8_t *src,
-		    lws_display_scalar x, lws_display_scalar y,
-		    lws_display_scalar w, lws_display_scalar h);
-	int (*power)(const struct lws_display *disp, int state);
+typedef struct aws_lws_display {
+	int (*init)(const struct aws_lws_display *disp);
+	const aws_lws_pwm_ops_t		*bl_pwm_ops;
+	int (*contrast)(const struct aws_lws_display *disp, uint8_t contrast);
+	int (*blit)(const struct aws_lws_display *disp, const uint8_t *src,
+		    aws_lws_display_scalar x, aws_lws_display_scalar y,
+		    aws_lws_display_scalar w, aws_lws_display_scalar h);
+	int (*power)(const struct aws_lws_display *disp, int state);
 
-	const lws_led_sequence_def_t	*bl_active;
-	const lws_led_sequence_def_t	*bl_dim;
-	const lws_led_sequence_def_t	*bl_transition;
+	const aws_lws_led_sequence_def_t	*bl_active;
+	const aws_lws_led_sequence_def_t	*bl_dim;
+	const aws_lws_led_sequence_def_t	*bl_transition;
 
 	void				*variant;
 
 	int				bl_index;
 
-	lws_display_scalar		w;
+	aws_lws_display_scalar		w;
 	/**< display surface width in pixels */
-	lws_display_scalar		h;
+	aws_lws_display_scalar		h;
 	/**< display surface height in pixels */
 
 	uint8_t				latency_wake_ms;
 	/**< ms required after wake from sleep before display usable again...
 	 * delay bringing up the backlight for this amount of time on wake.
 	 * This is managed via a sul on the event loop, not blocking. */
-} lws_display_t;
+} aws_lws_display_t;
 
 /*
  * This contains dynamic data related to display state
  */
 
-enum lws_display_controller_state {
+enum aws_lws_display_controller_state {
 	LWSDISPS_OFF,
 	LWSDISPS_AUTODIMMED,	  /* is in pre- blanking static dim mode */
 	LWSDISPS_BECOMING_ACTIVE, /* waiting for wake latency before active */
@@ -80,26 +80,26 @@ enum lws_display_controller_state {
 	LWSDISPS_GOING_OFF	  /* dimming then off */
 };
 
-typedef struct lws_display_state {
+typedef struct aws_lws_display_state {
 
-	lws_sorted_usec_list_t		sul_autodim;
-	const lws_display_t		*disp;
-	struct lws_context		*ctx;
+	aws_lws_sorted_usec_list_t		sul_autodim;
+	const aws_lws_display_t		*disp;
+	struct aws_lws_context		*ctx;
 
 	int				autodim_ms;
 	int				off_ms;
 
-	struct lws_led_state		*bl_lcs;
+	struct aws_lws_led_state		*bl_lcs;
 
-	lws_led_state_chs_t		chs;
+	aws_lws_led_state_chs_t		chs;
 	/* set of sequencer transition channels */
 
-	enum lws_display_controller_state state;
+	enum aws_lws_display_controller_state state;
 
-} lws_display_state_t;
+} aws_lws_display_state_t;
 
 /**
- * lws_display_state_init() - initialize display states
+ * aws_lws_display_state_init() - initialize display states
  *
  * \param lds: the display state object
  * \param ctx: the lws context
@@ -117,12 +117,12 @@ typedef struct lws_display_state {
  *  - neither: set both autodim and off_ms to -1
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_display_state_init(lws_display_state_t *lds, struct lws_context *ctx,
-		       int autodim_ms, int off_ms, struct lws_led_state *bl_lcs,
-		       const lws_display_t *disp);
+aws_lws_display_state_init(aws_lws_display_state_t *lds, struct aws_lws_context *ctx,
+		       int autodim_ms, int off_ms, struct aws_lws_led_state *bl_lcs,
+		       const aws_lws_display_t *disp);
 
 /**
- * lws_display_state_set_brightness() - gradually change the brightness
+ * aws_lws_display_state_set_brightness() - gradually change the brightness
  *
  * \param lds: the display state we are changing
  * \param target: the target brightness to transition to
@@ -130,11 +130,11 @@ lws_display_state_init(lws_display_state_t *lds, struct lws_context *ctx,
  * Adjusts the brightness gradually twoards the target at 20Hz
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_display_state_set_brightness(lws_display_state_t *lds,
-				 const lws_led_sequence_def_t *pwmseq);
+aws_lws_display_state_set_brightness(aws_lws_display_state_t *lds,
+				 const aws_lws_led_sequence_def_t *pwmseq);
 
 /*
- * lws_display_state_active() - inform the system the display is active
+ * aws_lws_display_state_active() - inform the system the display is active
  *
  * \param lds: the display state we are marking as active
  *
@@ -142,10 +142,10 @@ lws_display_state_set_brightness(lws_display_state_t *lds,
  * at the active brightness level
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_display_state_active(lws_display_state_t *lds);
+aws_lws_display_state_active(aws_lws_display_state_t *lds);
 
 /*
- * lws_display_state_off() - turns off the related display
+ * aws_lws_display_state_off() - turns off the related display
  *
  * \param lds: the display state we are turning off
  *
@@ -153,6 +153,6 @@ lws_display_state_active(lws_display_state_t *lds);
  * Disables the timers related to dimming and blanking.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_display_state_off(lws_display_state_t *lds);
+aws_lws_display_state_off(aws_lws_display_state_t *lds);
 
 #endif

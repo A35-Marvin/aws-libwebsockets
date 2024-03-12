@@ -34,7 +34,7 @@
 #include "private-lib-roles-http-compression.h"
 #endif
 
-#define lwsi_role_http(wsi) (lwsi_role_h1(wsi) || lwsi_role_h2(wsi))
+#define aws_lwsi_role_http(wsi) (aws_lwsi_role_h1(wsi) || aws_lwsi_role_h2(wsi))
 
 enum http_version {
 	HTTP_VERSION_1_0,
@@ -59,7 +59,7 @@ typedef uint16_t ah_data_idx_t;
 typedef uint32_t ah_data_idx_t;
 #endif
 
-struct lws_fragments {
+struct aws_lws_fragments {
 	ah_data_idx_t	offset;
 	uint16_t	len;
 	uint8_t		nfrag; /* which ah->frag[] continues this content, or 0 */
@@ -77,7 +77,7 @@ enum range_states {
 	LWSRS_SYNTAX,
 };
 
-struct lws_range_parsing {
+struct aws_lws_range_parsing {
 	unsigned long long start, end, extent, agg, budget;
 	const char buf[128];
 	int pos;
@@ -86,12 +86,12 @@ struct lws_range_parsing {
 };
 
 int
-lws_ranges_init(struct lws *wsi, struct lws_range_parsing *rp,
+aws_lws_ranges_init(struct lws *wsi, struct aws_lws_range_parsing *rp,
 		unsigned long long extent);
 int
-lws_ranges_next(struct lws_range_parsing *rp);
+aws_lws_ranges_next(struct aws_lws_range_parsing *rp);
 void
-lws_ranges_reset(struct lws_range_parsing *rp);
+aws_lws_ranges_reset(struct aws_lws_range_parsing *rp);
 #endif
 
 #define LWS_HTTP_NO_KNOWN_HEADER 0xff
@@ -108,9 +108,9 @@ struct allocated_headers {
 	ah_data_idx_t data_length;
 	/*
 	 * the randomly ordered fragments, indexed by frag_index and
-	 * lws_fragments->nfrag for continuation.
+	 * aws_lws_fragments->nfrag for continuation.
 	 */
-	struct lws_fragments frags[WSI_TOKEN_COUNT];
+	struct aws_lws_fragments frags[WSI_TOKEN_COUNT];
 	time_t assigned;
 	/*
 	 * for each recognized token, frag_index says which frag[] his data
@@ -145,13 +145,13 @@ struct allocated_headers {
 
 	char esc_stash;
 	char post_literal_equal;
-	uint8_t /* enum lws_token_indexes */ parser_state;
+	uint8_t /* enum aws_lws_token_indexes */ parser_state;
 };
 
 
 
 #if defined(LWS_WITH_HUBBUB)
-struct lws_rewrite {
+struct aws_lws_rewrite {
 	hubbub_parser *parser;
 	hubbub_parser_optparams params;
 	const char *from, *to;
@@ -167,19 +167,19 @@ static LWS_INLINE int hstrcmp(hubbub_string *s, const char *p, int len)
 	return strncmp((const char *)s->ptr, p, len);
 }
 typedef hubbub_error (*hubbub_callback_t)(const hubbub_token *token, void *pw);
-LWS_EXTERN struct lws_rewrite *
-lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from, const char *to);
+LWS_EXTERN struct aws_lws_rewrite *
+aws_lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from, const char *to);
 LWS_EXTERN void
-lws_rewrite_destroy(struct lws_rewrite *r);
+aws_lws_rewrite_destroy(struct aws_lws_rewrite *r);
 LWS_EXTERN int
-lws_rewrite_parse(struct lws_rewrite *r, const unsigned char *in, int in_len);
+aws_lws_rewrite_parse(struct aws_lws_rewrite *r, const unsigned char *in, int in_len);
 #endif
 
-struct lws_pt_role_http {
+struct aws_lws_pt_role_http {
 	struct allocated_headers *ah_list;
 	struct lws *ah_wait_list;
 #ifdef LWS_WITH_CGI
-	struct lws_cgi *cgi_list;
+	struct aws_lws_cgi *cgi_list;
 #endif
 	int ah_wait_list_length;
 	uint32_t ah_pool_length;
@@ -187,16 +187,16 @@ struct lws_pt_role_http {
 	int ah_count_in_use;
 };
 
-struct lws_peer_role_http {
+struct aws_lws_peer_role_http {
 	uint32_t count_ah;
 	uint32_t total_ah;
 };
 
-struct lws_vhost_role_http {
+struct aws_lws_vhost_role_http {
 #if defined(LWS_CLIENT_HTTP_PROXYING)
 	char http_proxy_address[128];
 #endif
-	const struct lws_http_mount *mount_list;
+	const struct aws_lws_http_mount *mount_list;
 	const char *error_document_404;
 #if defined(LWS_CLIENT_HTTP_PROXYING)
 	unsigned int http_proxy_port;
@@ -204,7 +204,7 @@ struct lws_vhost_role_http {
 };
 
 #ifdef LWS_WITH_ACCESS_LOG
-struct lws_access_log {
+struct aws_lws_access_log {
 	char *header_log;
 	char *user_agent;
 	char *referrer;
@@ -224,8 +224,8 @@ struct _lws_http_mode_related {
 	size_t prh_content_length;
 
 #if defined(LWS_WITH_HTTP_PROXY)
-	struct lws_rewrite *rw;
-	struct lws_buflist *buflist_post_body;
+	struct aws_lws_rewrite *rw;
+	struct aws_lws_buflist *buflist_post_body;
 #endif
 	struct allocated_headers *ah;
 	struct lws *ah_wait_list;
@@ -233,39 +233,39 @@ struct _lws_http_mode_related {
 	unsigned long		writeable_len;
 
 #if defined(LWS_WITH_FILE_OPS)
-	lws_filepos_t filepos;
-	lws_filepos_t filelen;
-	lws_fop_fd_t fop_fd;
+	aws_lws_filepos_t filepos;
+	aws_lws_filepos_t filelen;
+	aws_lws_fop_fd_t fop_fd;
 #endif
 #if defined(LWS_WITH_CLIENT)
 	char multipart_boundary[16];
 #endif
 #if defined(LWS_WITH_RANGES)
-	struct lws_range_parsing range;
+	struct aws_lws_range_parsing range;
 	char multipart_content_type[64];
 #endif
 
 #ifdef LWS_WITH_ACCESS_LOG
-	struct lws_access_log access_log;
+	struct aws_lws_access_log access_log;
 #endif
 #if defined(LWS_WITH_SERVER)
 	unsigned int response_code;
 #endif
 #ifdef LWS_WITH_CGI
-	struct lws_cgi *cgi; /* wsi being cgi stream have one of these */
+	struct aws_lws_cgi *cgi; /* wsi being cgi stream have one of these */
 #endif
 #if defined(LWS_WITH_HTTP_STREAM_COMPRESSION)
-	struct lws_compression_support *lcs;
-	lws_comp_ctx_t comp_ctx;
+	struct aws_lws_compression_support *lcs;
+	aws_lws_comp_ctx_t comp_ctx;
 	unsigned char comp_accept_mask;
 #endif
 
 	enum http_version request_version;
 	enum http_conn_type conn_type;
-	lws_filepos_t tx_content_length;
-	lws_filepos_t tx_content_remain;
-	lws_filepos_t rx_content_length;
-	lws_filepos_t rx_content_remain;
+	aws_lws_filepos_t tx_content_length;
+	aws_lws_filepos_t tx_content_remain;
+	aws_lws_filepos_t rx_content_length;
+	aws_lws_filepos_t rx_content_remain;
 
 #if defined(LWS_WITH_HTTP_PROXY)
 	unsigned int perform_rewrite:1;
@@ -283,7 +283,7 @@ struct _lws_http_mode_related {
 
 
 #if defined(LWS_WITH_CLIENT)
-enum lws_chunk_parser {
+enum aws_lws_chunk_parser {
 	ELCP_HEX,
 	ELCP_CR,
 	ELCP_CONTENT,
@@ -294,52 +294,52 @@ enum lws_chunk_parser {
 };
 #endif
 
-enum lws_parse_urldecode_results {
+enum aws_lws_parse_urldecode_results {
 	LPUR_CONTINUE,
 	LPUR_SWALLOW,
 	LPUR_FORBID,
 	LPUR_EXCESSIVE,
 };
 
-enum lws_check_basic_auth_results {
+enum aws_lws_check_basic_auth_results {
 	LCBA_CONTINUE,
 	LCBA_FAILED_AUTH,
 	LCBA_END_TRANSACTION,
 };
 
-enum lws_check_basic_auth_results
-lws_check_basic_auth(struct lws *wsi, const char *basic_auth_login_file, unsigned int auth_mode);
+enum aws_lws_check_basic_auth_results
+aws_lws_check_basic_auth(struct lws *wsi, const char *basic_auth_login_file, unsigned int auth_mode);
 
 int
-lws_unauthorised_basic_auth(struct lws *wsi);
+aws_lws_unauthorised_basic_auth(struct lws *wsi);
 
 int
-lws_read_h1(struct lws *wsi, unsigned char *buf, lws_filepos_t len);
+aws_lws_read_h1(struct lws *wsi, unsigned char *buf, aws_lws_filepos_t len);
 
 void
 _lws_header_table_reset(struct allocated_headers *ah);
 
 LWS_EXTERN int
-_lws_destroy_ah(struct lws_context_per_thread *pt, struct allocated_headers *ah);
+_lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers *ah);
 
 int
-lws_http_proxy_start(struct lws *wsi, const struct lws_http_mount *hit,
+aws_lws_http_proxy_start(struct lws *wsi, const struct aws_lws_http_mount *hit,
 		     char *uri_ptr, char ws);
 
 void
-lws_sul_http_ah_lifecheck(lws_sorted_usec_list_t *sul);
+aws_lws_sul_http_ah_lifecheck(aws_lws_sorted_usec_list_t *sul);
 
 uint8_t *
-lws_http_multipart_headers(struct lws *wsi, uint8_t *p);
+aws_lws_http_multipart_headers(struct lws *wsi, uint8_t *p);
 
 int
-lws_http_string_to_known_header(const char *s, size_t slen);
+aws_lws_http_string_to_known_header(const char *s, size_t slen);
 
 int
-lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t);
+aws_lws_http_date_render_from_unix(char *buf, size_t len, const time_t *t);
 
 int
-lws_http_date_parse_unix(const char *b, size_t len, time_t *t);
+aws_lws_http_date_parse_unix(const char *b, size_t len, time_t *t);
 
 enum {
 	CCTLS_RETURN_ERROR		= -1,
@@ -348,4 +348,4 @@ enum {
 };
 
 int
-lws_client_create_tls(struct lws *wsi, const char **pcce, int do_c1);
+aws_lws_client_create_tls(struct lws *wsi, const char **pcce, int do_c1);

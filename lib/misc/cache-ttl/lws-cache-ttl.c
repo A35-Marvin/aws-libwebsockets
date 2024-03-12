@@ -32,35 +32,35 @@
 #endif
 
 void
-lws_cache_clear_matches(lws_dll2_owner_t *results_owner)
+aws_lws_cache_clear_matches(aws_lws_dll2_owner_t *results_owner)
 {
-	lws_start_foreach_dll_safe(struct lws_dll2 *, d, d1, results_owner->head) {
-		lws_cache_match_t *item = lws_container_of(d, lws_cache_match_t,
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1, results_owner->head) {
+		aws_lws_cache_match_t *item = aws_lws_container_of(d, aws_lws_cache_match_t,
 							   list);
-		lws_dll2_remove(d);
-		lws_free(item);
-	} lws_end_foreach_dll_safe(d, d1);
+		aws_lws_dll2_remove(d);
+		aws_lws_free(item);
+	} aws_lws_end_foreach_dll_safe(d, d1);
 }
 
 void
-lws_cache_schedule(struct lws_cache_ttl_lru *cache, sul_cb_t cb, lws_usec_t e)
+aws_lws_cache_schedule(struct aws_lws_cache_ttl_lru *cache, sul_cb_t cb, aws_lws_usec_t e)
 {
-	lwsl_cache("%s: %s schedule %llu\n", __func__, cache->info.name,
+	aws_lwsl_cache("%s: %s schedule %llu\n", __func__, cache->info.name,
 			(unsigned long long)e);
 
-	lws_sul_schedule(cache->info.cx, cache->info.tsi, &cache->sul, cb,
-			 e - lws_now_usecs());
+	aws_lws_sul_schedule(cache->info.cx, cache->info.tsi, &cache->sul, cb,
+			 e - aws_lws_now_usecs());
 }
 
 int
-lws_cache_write_through(struct lws_cache_ttl_lru *cache,
+aws_lws_cache_write_through(struct aws_lws_cache_ttl_lru *cache,
 			const char *specific_key, const uint8_t *source,
-			size_t size, lws_usec_t expiry, void **ppay)
+			size_t size, aws_lws_usec_t expiry, void **ppay)
 {
-	struct lws_cache_ttl_lru *levels[LWS_CACHE_MAX_LEVELS], *c = cache;
+	struct aws_lws_cache_ttl_lru *levels[LWS_CACHE_MAX_LEVELS], *c = cache;
 	int n = 0, r = 0;
 
-	lws_cache_item_remove(cache, specific_key);
+	aws_lws_cache_item_remove(cache, specific_key);
 
 	/* starting from L1 */
 
@@ -88,12 +88,12 @@ lws_cache_write_through(struct lws_cache_ttl_lru *cache,
  */
 
 int
-lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
+aws_lws_cache_lookup(struct aws_lws_cache_ttl_lru *cache, const char *wildcard_key,
 		 const void **pdata, size_t *psize)
 {
-	struct lws_cache_ttl_lru *l1 = cache;
-	lws_dll2_owner_t results_owner;
-	lws_usec_t expiry = 0;
+	struct aws_lws_cache_ttl_lru *l1 = cache;
+	aws_lws_dll2_owner_t results_owner;
+	aws_lws_usec_t expiry = 0;
 	char meta_key[128];
 	uint8_t *p, *temp;
 	size_t sum = 0;
@@ -101,7 +101,7 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
 
 	memset(&results_owner, 0, sizeof(results_owner));
 	meta_key[0] = META_ITEM_LEADING;
-	lws_strncpy(&meta_key[1], wildcard_key, sizeof(meta_key) - 2);
+	aws_lws_strncpy(&meta_key[1], wildcard_key, sizeof(meta_key) - 2);
 
 	/*
 	 * If we have a cached result set in L1 already, return that
@@ -121,9 +121,9 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
 	if (cache->info.ops->lookup(cache, wildcard_key, &results_owner)) {
 		/* eg, OOM */
 
-		lwsl_cache("%s: bs lookup fail\n", __func__);
+		aws_lwsl_cache("%s: bs lookup fail\n", __func__);
 
-		lws_cache_clear_matches(&results_owner);
+		aws_lws_cache_clear_matches(&results_owner);
 		return 1;
 	}
 
@@ -134,8 +134,8 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
 	 * expired when any of the results would expire.
 	 */
 
-	lws_start_foreach_dll(struct lws_dll2 *, d, results_owner.head) {
-		lws_cache_match_t *m = lws_container_of(d, lws_cache_match_t,
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d, results_owner.head) {
+		aws_lws_cache_match_t *m = aws_lws_container_of(d, aws_lws_cache_match_t,
 							list);
 		sum += 8; /* payload size, name length */
 		sum += m->tag_size + 1;
@@ -143,14 +143,14 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
 		if (m->expiry && (!expiry || expiry < m->expiry))
 			expiry = m->expiry;
 
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 
-	lwsl_cache("%s: results %d, size %d\n", __func__,
+	aws_lwsl_cache("%s: results %d, size %d\n", __func__,
 		    (int)results_owner.count, (int)sum);
 
-	temp = lws_malloc(sum, __func__);
+	temp = aws_lws_malloc(sum, __func__);
 	if (!temp) {
-		lws_cache_clear_matches(&results_owner);
+		aws_lws_cache_clear_matches(&results_owner);
 		return 1;
 	}
 
@@ -159,24 +159,24 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
 	 */
 
 	p = temp;
-	lws_start_foreach_dll(struct lws_dll2 *, d, results_owner.head) {
-		lws_cache_match_t *m = lws_container_of(d, lws_cache_match_t,
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d, results_owner.head) {
+		aws_lws_cache_match_t *m = aws_lws_container_of(d, aws_lws_cache_match_t,
 							list);
 
 		/* we don't copy the payload in, but take note of its size */
-		lws_ser_wu32be(p, (uint32_t)m->payload_size);
+		aws_lws_ser_wu32be(p, (uint32_t)m->payload_size);
 		p += 4;
 		/* length of the tag name (there is an uncounted NUL after) */
-		lws_ser_wu32be(p, (uint32_t)m->tag_size);
+		aws_lws_ser_wu32be(p, (uint32_t)m->tag_size);
 		p += 4;
 
 		/* then the tag name, plus the extra NUL */
 		memcpy(p, &m[1], m->tag_size + 1);
 		p += m->tag_size + 1;
 
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 
-	lws_cache_clear_matches(&results_owner);
+	aws_lws_cache_clear_matches(&results_owner);
 
 	/*
 	 * Create the right amount of space for an L1 record of these results,
@@ -186,7 +186,7 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
 
 	n = l1->info.ops->write(l1, meta_key, temp, sum, expiry, (void **)&p);
 	/* done with temp */
-	lws_free(temp);
+	aws_lws_free(temp);
 
 	if (n)
 		return 1;
@@ -200,12 +200,12 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
 }
 
 int
-lws_cache_item_get(struct lws_cache_ttl_lru *cache, const char *specific_key,
+aws_lws_cache_item_get(struct aws_lws_cache_ttl_lru *cache, const char *specific_key,
 		   const void **pdata, size_t *psize)
 {
 	while (cache) {
 		if (!cache->info.ops->get(cache, specific_key, pdata, psize)) {
-			lwsl_cache("%s: hit\n", __func__);
+			aws_lwsl_cache("%s: hit\n", __func__);
 			return 0;
 		}
 
@@ -216,7 +216,7 @@ lws_cache_item_get(struct lws_cache_ttl_lru *cache, const char *specific_key,
 }
 
 int
-lws_cache_expunge(struct lws_cache_ttl_lru *cache)
+aws_lws_cache_expunge(struct aws_lws_cache_ttl_lru *cache)
 {
 	int ret = 0;
 
@@ -230,7 +230,7 @@ lws_cache_expunge(struct lws_cache_ttl_lru *cache)
 }
 
 int
-lws_cache_item_remove(struct lws_cache_ttl_lru *cache, const char *wildcard_key)
+aws_lws_cache_item_remove(struct aws_lws_cache_ttl_lru *cache, const char *wildcard_key)
 {
 	while (cache) {
 		if (cache->info.ops->invalidate(cache, wildcard_key))
@@ -243,13 +243,13 @@ lws_cache_item_remove(struct lws_cache_ttl_lru *cache, const char *wildcard_key)
 }
 
 uint64_t
-lws_cache_footprint(struct lws_cache_ttl_lru *cache)
+aws_lws_cache_footprint(struct aws_lws_cache_ttl_lru *cache)
 {
 	return cache->current_footprint;
 }
 
 void
-lws_cache_debug_dump(struct lws_cache_ttl_lru *cache)
+aws_lws_cache_debug_dump(struct aws_lws_cache_ttl_lru *cache)
 {
 #if defined(_DEBUG)
 	if (cache->info.ops->debug_dump)
@@ -258,13 +258,13 @@ lws_cache_debug_dump(struct lws_cache_ttl_lru *cache)
 }
 
 int
-lws_cache_results_walk(lws_cache_results_t *walk_ctx)
+aws_lws_cache_results_walk(aws_lws_cache_results_t *walk_ctx)
 {
 	if (!walk_ctx->size)
 		return 1;
 
-	walk_ctx->payload_len = lws_ser_ru32be(walk_ctx->ptr);
-	walk_ctx->tag_len = lws_ser_ru32be(walk_ctx->ptr + 4);
+	walk_ctx->payload_len = aws_lws_ser_ru32be(walk_ctx->ptr);
+	walk_ctx->tag_len = aws_lws_ser_ru32be(walk_ctx->ptr + 4);
 	walk_ctx->tag = walk_ctx->ptr + 8;
 
 	walk_ctx->ptr += walk_ctx->tag_len + 1 + 8;
@@ -273,8 +273,8 @@ lws_cache_results_walk(lws_cache_results_t *walk_ctx)
 	return 0;
 }
 
-struct lws_cache_ttl_lru *
-lws_cache_create(const struct lws_cache_creation_info *info)
+struct aws_lws_cache_ttl_lru *
+aws_lws_cache_create(const struct aws_lws_cache_creation_info *info)
 {
 	assert(info);
 	assert(info->ops);
@@ -285,16 +285,16 @@ lws_cache_create(const struct lws_cache_creation_info *info)
 }
 
 void
-lws_cache_destroy(struct lws_cache_ttl_lru **_cache)
+aws_lws_cache_destroy(struct aws_lws_cache_ttl_lru **_cache)
 {
-	lws_cache_ttl_lru_t *cache = *_cache;
+	aws_lws_cache_ttl_lru_t *cache = *_cache;
 
 	if (!cache)
 		return;
 
 	assert(cache->info.ops->destroy);
 
-	lws_sul_cancel(&cache->sul);
+	aws_lws_sul_cancel(&cache->sul);
 
 	cache->info.ops->destroy(_cache);
 }

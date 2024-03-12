@@ -24,12 +24,12 @@
 #include "../../../plugins/protocol_dumb_increment.c"
 #include "../../../plugins/protocol_post_demo.c"
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	/* first protocol must always be HTTP handler */
 
-	{ "http-only", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+	{ "http-only", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	LWS_PLUGIN_PROTOCOL_DUMB_INCREMENT,
 	LWS_PLUGIN_PROTOCOL_MIRROR,
 	LWS_PLUGIN_PROTOCOL_LWS_STATUS,
@@ -41,7 +41,7 @@ static struct lws_protocols protocols[] = {
  * mount handlers for sections of the URL space
  */
 
-static const struct lws_http_mount mount_ziptest_uncomm = {
+static const struct aws_lws_http_mount mount_ziptest_uncomm = {
 	NULL,			/* linked-list pointer to next*/
 	"/uncommziptest",		/* mountpoint in URL namespace on this vhost */
 	"./mount-origin/candide-uncompressed.zip",	/* handler */
@@ -60,7 +60,7 @@ static const struct lws_http_mount mount_ziptest_uncomm = {
 	14,			/* strlen("/ziptest"), ie length of the mountpoint */
 	NULL,
 }, mount_ziptest = {
-	(struct lws_http_mount *)&mount_ziptest_uncomm,			/* linked-list pointer to next*/
+	(struct aws_lws_http_mount *)&mount_ziptest_uncomm,			/* linked-list pointer to next*/
 	"/ziptest",		/* mountpoint in URL namespace on this vhost */
 	"./mount-origin/candide.zip",	/* handler */
 	NULL,	/* default filename if none given */
@@ -79,7 +79,7 @@ static const struct lws_http_mount mount_ziptest_uncomm = {
 	NULL,
 
 }, mount_post = {
-	(struct lws_http_mount *)&mount_ziptest, /* linked-list pointer to next*/
+	(struct aws_lws_http_mount *)&mount_ziptest, /* linked-list pointer to next*/
 	"/formtest",		/* mountpoint in URL namespace on this vhost */
 	"protocol-post-demo",	/* handler */
 	NULL,	/* default filename if none given */
@@ -119,7 +119,7 @@ static const struct lws_http_mount mount_ziptest_uncomm = {
 
 void signal_cb(void *handle, int signum)
 {
-	lwsl_err("%s: signal %d\n", __func__, signum);
+	aws_lwsl_err("%s: signal %d\n", __func__, signum);
 
 	switch (signum) {
 	case SIGTERM:
@@ -129,7 +129,7 @@ void signal_cb(void *handle, int signum)
 
 		break;
 	}
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 }
 
 void sigint_handler(int sig)
@@ -139,7 +139,7 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -149,12 +149,12 @@ int main(int argc, const char **argv)
 			/* | LLL_EXT */ /* | LLL_CLIENT */ /* | LLL_LATENCY */
 			/* | LLL_DEBUG */;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server eventlib | visit http://localhost:7681\n");
-	lwsl_user(" [-s (ssl)] [--uv (libuv)] [--ev (libev)] [--event (libevent)]\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server eventlib | visit http://localhost:7681\n");
+	aws_lwsl_user(" [-s (ssl)] [--uv (libuv)] [--ev (libev)] [--event (libevent)]\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -166,7 +166,7 @@ int main(int argc, const char **argv)
 	info.options =
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	if (lws_cmdline_option(argc, argv, "-s")) {
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 #if defined(LWS_WITH_TLS)
 		info.ssl_cert_filepath = "localhost-100y.cert";
@@ -174,31 +174,31 @@ int main(int argc, const char **argv)
 #endif
 	}
 
-	if (lws_cmdline_option(argc, argv, "--uv"))
+	if (aws_lws_cmdline_option(argc, argv, "--uv"))
 		info.options |= LWS_SERVER_OPTION_LIBUV;
 	else
-		if (lws_cmdline_option(argc, argv, "--event"))
+		if (aws_lws_cmdline_option(argc, argv, "--event"))
 			info.options |= LWS_SERVER_OPTION_LIBEVENT;
 		else
-			if (lws_cmdline_option(argc, argv, "--ev"))
+			if (aws_lws_cmdline_option(argc, argv, "--ev"))
 				info.options |= LWS_SERVER_OPTION_LIBEV;
 			else
-				if (lws_cmdline_option(argc, argv, "--glib"))
+				if (aws_lws_cmdline_option(argc, argv, "--glib"))
 					info.options |= LWS_SERVER_OPTION_GLIB;
 				else
 					signal(SIGINT, sigint_handler);
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	while (!lws_service(context, 0))
+	while (!aws_lws_service(context, 0))
 		;
 
-	lwsl_info("calling external context destroy\n");
-	lws_context_destroy(context);
+	aws_lwsl_info("calling external context destroy\n");
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

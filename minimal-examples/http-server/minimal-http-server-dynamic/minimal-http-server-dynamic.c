@@ -37,7 +37,7 @@ struct pss {
 static int interrupted;
 
 static int
-callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_dynamic_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;
@@ -56,7 +56,7 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 		 * If you want to know the full url path used, you can get it
 		 * like this
 		 *
-		 * n = lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_GET_URI);
+		 * n = aws_lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_GET_URI);
 		 *
 		 * The base path is the first (n - strlen((const char *)in))
 		 * chars in buf.
@@ -67,11 +67,11 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 		 * positioned at, eg, if positioned at "/dyn" and given
 		 * "/dyn/mypath", in will contain /mypath
 		 */
-		lws_snprintf(pss->path, sizeof(pss->path), "%s",
+		aws_lws_snprintf(pss->path, sizeof(pss->path), "%s",
 				(const char *)in);
 
-		lws_get_peer_simple(wsi, (char *)buf, sizeof(buf));
-		lwsl_notice("%s: HTTP: connection %s, path %s\n", __func__,
+		aws_lws_get_peer_simple(wsi, (char *)buf, sizeof(buf));
+		aws_lwsl_notice("%s: HTTP: connection %s, path %s\n", __func__,
 				(const char *)buf, pss->path);
 
 		/*
@@ -80,11 +80,11 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 		{
 			char value[100];
-			int z = lws_get_urlarg_by_name_safe(wsi, "x", value,
+			int z = aws_lws_get_urlarg_by_name_safe(wsi, "x", value,
 					   sizeof(value) - 1);
 
 			if (z >= 0)
-				lwsl_hexdump_notice(value, (size_t)z);
+				aws_lwsl_hexdump_notice(value, (size_t)z);
 		}
 
 		/*
@@ -105,12 +105,12 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 		 * often you don't know it and avoiding having to compute it
 		 * at header-time makes life easier at the server.
 		 */
-		if (lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
+		if (aws_lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
 				"text/html",
 				LWS_ILLEGAL_HTTP_CONTENT_LEN, /* no content len */
 				&p, end))
 			return 1;
-		if (lws_finalize_write_http_header(wsi, start, &p, end))
+		if (aws_lws_finalize_write_http_header(wsi, start, &p, end))
 			return 1;
 
 		pss->times = 0;
@@ -120,7 +120,7 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 			pss->budget = 10;
 
 		/* write the body separately */
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 
 		return 0;
 
@@ -161,7 +161,7 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 			 * to work with http/2, we must take care about LWS_PRE
 			 * valid behind the buffer we will send.
 			 */
-			p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p), "<html>"
+			p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p), "<html>"
 				"<head><meta charset=utf-8 "
 				"http-equiv=\"Content-Language\" "
 				"content=\"en\"/></head><body>"
@@ -182,17 +182,17 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 			 * buffer we will send.
 			 */
 
-			while (lws_ptr_diff(end, p) > 80)
-				p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p),
+			while (aws_lws_ptr_diff(end, p) > 80)
+				p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p),
 					"%d.%d: this is some content... ",
 					pss->times, pss->content_lines++);
 
-			p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p), "<br><br>");
+			p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p), "<br><br>");
 		}
 
 		pss->times++;
-		if (lws_write(wsi, (uint8_t *)start, lws_ptr_diff_size_t(p, start), (enum lws_write_protocol)n) !=
-				lws_ptr_diff(p, start))
+		if (aws_lws_write(wsi, (uint8_t *)start, aws_lws_ptr_diff_size_t(p, start), (enum aws_lws_write_protocol)n) !=
+				aws_lws_ptr_diff(p, start))
 			return 1;
 
 		/*
@@ -201,10 +201,10 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 		 * HTTP/2: stream ended, parent connection remains up
 		 */
 		if (n == LWS_WRITE_HTTP_FINAL) {
-		    if (lws_http_transaction_completed(wsi))
+		    if (aws_lws_http_transaction_completed(wsi))
 			return -1;
 		} else
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 
 		return 0;
 
@@ -212,18 +212,18 @@ callback_dynamic_http(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols defprot =
-	{ "defprot", lws_callback_http_dummy, 0, 0, 0, NULL, 0 }, protocol =
+static const struct aws_lws_protocols defprot =
+	{ "defprot", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 }, protocol =
 	{ "http", callback_dynamic_http, sizeof(struct pss), 0, 0, NULL, 0 };
 
-static const struct lws_protocols *pprotocols[] = { &defprot, &protocol, NULL };
+static const struct aws_lws_protocols *pprotocols[] = { &defprot, &protocol, NULL };
 
 /* override the default mount for /dyn in the URL space */
 
-static const struct lws_http_mount mount_dyn = {
+static const struct aws_lws_http_mount mount_dyn = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/dyn",		/* mountpoint URL */
 	/* .origin */			NULL,	/* protocol */
@@ -245,7 +245,7 @@ static const struct lws_http_mount mount_dyn = {
 
 /* default mount serves the URL space from ./mount-origin */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */	&mount_dyn,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */		"./mount-origin",	/* serve from dir */
@@ -272,8 +272,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -285,11 +285,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server dynamic | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server dynamic | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
@@ -297,12 +297,12 @@ int main(int argc, const char **argv)
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
 	/* for testing ah queue, not useful in real world */
-	if (lws_cmdline_option(argc, argv, "--ah1"))
+	if (aws_lws_cmdline_option(argc, argv, "--ah1"))
 		info.max_http_header_pool = 1;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -313,8 +313,8 @@ int main(int argc, const char **argv)
 	info.mounts = &mount;
 	info.vhost_name = "http";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create tls vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create tls vhost\n");
 		goto bail;
 	}
 
@@ -328,16 +328,16 @@ int main(int argc, const char **argv)
 #endif
 	info.vhost_name = "localhost";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create tls vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create tls vhost\n");
 		goto bail;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 bail:
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

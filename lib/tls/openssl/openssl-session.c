@@ -24,42 +24,42 @@
 
 #include "private-lib-core.h"
 
-typedef struct lws_tls_session_cache_openssl {
-	lws_dll2_t			list;
+typedef struct aws_lws_tls_session_cache_openssl {
+	aws_lws_dll2_t			list;
 
 	SSL_SESSION			*session;
-	lws_sorted_usec_list_t		sul_ttl;
+	aws_lws_sorted_usec_list_t		sul_ttl;
 
 	/* name is overallocated here */
-} lws_tls_sco_t;
+} aws_lws_tls_sco_t;
 
-#define lwsl_tlssess lwsl_info
+#define aws_lwsl_tlssess aws_lwsl_info
 
 static void
-__lws_tls_session_destroy(lws_tls_sco_t *ts)
+__lws_tls_session_destroy(aws_lws_tls_sco_t *ts)
 {
-	lwsl_tlssess("%s: %s (%u)\n", __func__, (const char *)&ts[1],
+	aws_lwsl_tlssess("%s: %s (%u)\n", __func__, (const char *)&ts[1],
 				     ts->list.owner->count - 1);
 
-	lws_sul_cancel(&ts->sul_ttl);
+	aws_lws_sul_cancel(&ts->sul_ttl);
 	SSL_SESSION_free(ts->session);
-	lws_dll2_remove(&ts->list);		/* vh lock */
+	aws_lws_dll2_remove(&ts->list);		/* vh lock */
 
-	lws_free(ts);
+	aws_lws_free(ts);
 }
 
-static lws_tls_sco_t *
-__lws_tls_session_lookup_by_name(struct lws_vhost *vh, const char *name)
+static aws_lws_tls_sco_t *
+__lws_tls_session_lookup_by_name(struct aws_lws_vhost *vh, const char *name)
 {
-	lws_start_foreach_dll(struct lws_dll2 *, p,
-			      lws_dll2_get_head(&vh->tls_sessions)) {
-		lws_tls_sco_t *ts = lws_container_of(p, lws_tls_sco_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p,
+			      aws_lws_dll2_get_head(&vh->tls_sessions)) {
+		aws_lws_tls_sco_t *ts = aws_lws_container_of(p, aws_lws_tls_sco_t, list);
 		const char *ts_name = (const char *)&ts[1];
 
 		if (!strcmp(name, ts_name))
 			return ts;
 
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	return NULL;
 }
@@ -69,31 +69,31 @@ __lws_tls_session_lookup_by_name(struct lws_vhost *vh, const char *name)
  */
 
 void
-lws_tls_reuse_session(struct lws *wsi)
+aws_lws_tls_reuse_session(struct lws *wsi)
 {
 	char tag[LWS_SESSION_TAG_LEN];
-	lws_tls_sco_t *ts;
+	aws_lws_tls_sco_t *ts;
 
 	if (!wsi->a.vhost ||
 	    wsi->a.vhost->options & LWS_SERVER_OPTION_DISABLE_TLS_SESSION_CACHE)
 		return;
 
-	lws_context_lock(wsi->a.context, __func__); /* -------------- cx { */
-	lws_vhost_lock(wsi->a.vhost); /* -------------- vh { */
+	aws_lws_context_lock(wsi->a.context, __func__); /* -------------- cx { */
+	aws_lws_vhost_lock(wsi->a.vhost); /* -------------- vh { */
 
-	if (lws_tls_session_tag_from_wsi(wsi, tag, sizeof(tag)))
+	if (aws_lws_tls_session_tag_from_wsi(wsi, tag, sizeof(tag)))
 		goto bail;
 	ts = __lws_tls_session_lookup_by_name(wsi->a.vhost, tag);
 
 	if (!ts) {
-		lwsl_tlssess("%s: no existing session for %s\n", __func__, tag);
+		aws_lwsl_tlssess("%s: no existing session for %s\n", __func__, tag);
 		goto bail;
 	}
 
-	lwsl_tlssess("%s: %s\n", __func__, (const char *)&ts[1]);
+	aws_lwsl_tlssess("%s: %s\n", __func__, (const char *)&ts[1]);
 
 	if (!SSL_set_session(wsi->tls.ssl, ts->session)) {
-		lwsl_err("%s: session not set for %s\n", __func__, tag);
+		aws_lwsl_err("%s: session not set for %s\n", __func__, tag);
 		goto bail;
 	}
 
@@ -110,19 +110,19 @@ lws_tls_reuse_session(struct lws *wsi)
 
 	/* keep our session list sorted in lru -> mru order */
 
-	lws_dll2_remove(&ts->list);
-	lws_dll2_add_tail(&ts->list, &wsi->a.vhost->tls_sessions);
+	aws_lws_dll2_remove(&ts->list);
+	aws_lws_dll2_add_tail(&ts->list, &wsi->a.vhost->tls_sessions);
 
 bail:
-	lws_vhost_unlock(wsi->a.vhost); /* } vh --------------  */
-	lws_context_unlock(wsi->a.context); /* } cx --------------  */
+	aws_lws_vhost_unlock(wsi->a.vhost); /* } vh --------------  */
+	aws_lws_context_unlock(wsi->a.context); /* } cx --------------  */
 }
 
 int
-lws_tls_session_is_reused(struct lws *wsi)
+aws_lws_tls_session_is_reused(struct lws *wsi)
 {
 #if defined(LWS_WITH_CLIENT)
-	struct lws *nwsi = lws_get_network_wsi(wsi);
+	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (!nwsi || !nwsi->tls.ssl)
 		return 0;
@@ -134,9 +134,9 @@ lws_tls_session_is_reused(struct lws *wsi)
 }
 
 static int
-lws_tls_session_destroy_dll(struct lws_dll2 *d, void *user)
+aws_lws_tls_session_destroy_dll(struct aws_lws_dll2 *d, void *user)
 {
-	lws_tls_sco_t *ts = lws_container_of(d, lws_tls_sco_t, list);
+	aws_lws_tls_sco_t *ts = aws_lws_container_of(d, aws_lws_tls_sco_t, list);
 
 	__lws_tls_session_destroy(ts);
 
@@ -144,30 +144,30 @@ lws_tls_session_destroy_dll(struct lws_dll2 *d, void *user)
 }
 
 void
-lws_tls_session_vh_destroy(struct lws_vhost *vh)
+aws_lws_tls_session_vh_destroy(struct aws_lws_vhost *vh)
 {
-	lws_dll2_foreach_safe(&vh->tls_sessions, NULL,
-			      lws_tls_session_destroy_dll);
+	aws_lws_dll2_foreach_safe(&vh->tls_sessions, NULL,
+			      aws_lws_tls_session_destroy_dll);
 }
 
 static void
-lws_tls_session_expiry_cb(lws_sorted_usec_list_t *sul)
+aws_lws_tls_session_expiry_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	lws_tls_sco_t *ts = lws_container_of(sul, lws_tls_sco_t, sul_ttl);
-	struct lws_vhost *vh = lws_container_of(ts->list.owner,
-						struct lws_vhost, tls_sessions);
+	aws_lws_tls_sco_t *ts = aws_lws_container_of(sul, aws_lws_tls_sco_t, sul_ttl);
+	struct aws_lws_vhost *vh = aws_lws_container_of(ts->list.owner,
+						struct aws_lws_vhost, tls_sessions);
 
-	lws_context_lock(vh->context, __func__); /* -------------- cx { */
-	lws_vhost_lock(vh); /* -------------- vh { */
+	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
+	aws_lws_vhost_lock(vh); /* -------------- vh { */
 	__lws_tls_session_destroy(ts);
-	lws_vhost_unlock(vh); /* } vh --------------  */
-	lws_context_unlock(vh->context); /* } cx --------------  */
+	aws_lws_vhost_unlock(vh); /* } vh --------------  */
+	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 }
 
-static lws_tls_sco_t *
-lws_tls_session_add_entry(struct lws_vhost *vh, const char *tag)
+static aws_lws_tls_sco_t *
+aws_lws_tls_session_add_entry(struct aws_lws_vhost *vh, const char *tag)
 {
-	lws_tls_sco_t *ts;
+	aws_lws_tls_sco_t *ts;
 	size_t nl = strlen(tag);
 
 	if (vh->tls_sessions.count == (vh->tls_session_cache_max ?
@@ -177,19 +177,19 @@ lws_tls_session_add_entry(struct lws_vhost *vh, const char *tag)
 		 * We have reached the vhost's session cache limit,
 		 * prune the LRU / head
 		 */
-		ts = lws_container_of(vh->tls_sessions.head,
-				      lws_tls_sco_t, list);
+		ts = aws_lws_container_of(vh->tls_sessions.head,
+				      aws_lws_tls_sco_t, list);
 
 		if (ts) { /* centos 7 ... */
-			lwsl_tlssess("%s: pruning oldest session\n", __func__);
+			aws_lwsl_tlssess("%s: pruning oldest session\n", __func__);
 
-			lws_vhost_lock(vh); /* -------------- vh { */
+			aws_lws_vhost_lock(vh); /* -------------- vh { */
 			__lws_tls_session_destroy(ts);
-			lws_vhost_unlock(vh); /* } vh --------------  */
+			aws_lws_vhost_unlock(vh); /* } vh --------------  */
 		}
 	}
 
-	ts = lws_malloc(sizeof(*ts) + nl + 1, __func__);
+	ts = aws_lws_malloc(sizeof(*ts) + nl + 1, __func__);
 
 	if (!ts)
 		return NULL;
@@ -197,26 +197,26 @@ lws_tls_session_add_entry(struct lws_vhost *vh, const char *tag)
 	memset(ts, 0, sizeof(*ts));
 	memcpy(&ts[1], tag, nl + 1);
 
-	lws_dll2_add_tail(&ts->list, &vh->tls_sessions);
+	aws_lws_dll2_add_tail(&ts->list, &vh->tls_sessions);
 
 	return ts;
 }
 
 static int
-lws_tls_session_new_cb(SSL *ssl, SSL_SESSION *sess)
+aws_lws_tls_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 {
 	struct lws *wsi = (struct lws *)SSL_get_ex_data(ssl,
 					openssl_websocket_private_data_index);
 	char tag[LWS_SESSION_TAG_LEN];
-	struct lws_vhost *vh;
-	lws_tls_sco_t *ts;
+	struct aws_lws_vhost *vh;
+	aws_lws_tls_sco_t *ts;
 	long ttl;
 #if !defined(LWS_WITH_NO_LOGS) && defined(_DEBUG)
 	const char *disposition = "reuse";
 #endif
 
 	if (!wsi) {
-		lwsl_warn("%s: can't get wsi from ssl privdata\n", __func__);
+		aws_lwsl_warn("%s: can't get wsi from ssl privdata\n", __func__);
 
 		return 0;
 	}
@@ -225,26 +225,26 @@ lws_tls_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 	if (vh->options & LWS_SERVER_OPTION_DISABLE_TLS_SESSION_CACHE)
 		return 0;
 
-	if (lws_tls_session_tag_from_wsi(wsi, tag, sizeof(tag)))
+	if (aws_lws_tls_session_tag_from_wsi(wsi, tag, sizeof(tag)))
 		return 0;
 
 	/* api return is long, although we only support setting
 	 * default (300s) or max uint32_t */
 	ttl = SSL_SESSION_get_timeout(sess);
 
-	lws_context_lock(vh->context, __func__); /* -------------- cx { */
-	lws_vhost_lock(vh); /* -------------- vh { */
+	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
+	aws_lws_vhost_lock(vh); /* -------------- vh { */
 
 	ts = __lws_tls_session_lookup_by_name(vh, tag);
 
 	if (!ts) {
-		ts = lws_tls_session_add_entry(vh, tag);
+		ts = aws_lws_tls_session_add_entry(vh, tag);
 
 		if (!ts)
 			goto bail;
 
-		lws_sul_schedule(wsi->a.context, wsi->tsi, &ts->sul_ttl,
-				 lws_tls_session_expiry_cb,
+		aws_lws_sul_schedule(wsi->a.context, wsi->tsi, &ts->sul_ttl,
+				 aws_lws_tls_session_expiry_cb,
 				 ttl * LWS_US_PER_SEC);
 
 #if !defined(LWS_WITH_NO_LOGS) && defined(_DEBUG)
@@ -265,16 +265,16 @@ lws_tls_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 
 		/* keep our session list sorted in lru -> mru order */
 
-		lws_dll2_remove(&ts->list);
-		lws_dll2_add_tail(&ts->list, &vh->tls_sessions);
+		aws_lws_dll2_remove(&ts->list);
+		aws_lws_dll2_add_tail(&ts->list, &vh->tls_sessions);
 	}
 
 	ts->session = sess;
 
-	lws_vhost_unlock(vh); /* } vh --------------  */
-	lws_context_unlock(vh->context); /* } cx --------------  */
+	aws_lws_vhost_unlock(vh); /* } vh --------------  */
+	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 
-	lwsl_tlssess("%s: %p: %s: %s %s, ttl %lds (%s:%u)\n", __func__,
+	aws_lwsl_tlssess("%s: %p: %s: %s %s, ttl %lds (%s:%u)\n", __func__,
 		     sess, wsi->lc.gutag, disposition, tag, ttl, vh->name,
 		     vh->tls_sessions.count);
 
@@ -286,8 +286,8 @@ lws_tls_session_new_cb(SSL *ssl, SSL_SESSION *sess)
 	return 1;
 
 bail:
-	lws_vhost_unlock(vh); /* } vh --------------  */
-	lws_context_unlock(vh->context); /* } cx --------------  */
+	aws_lws_vhost_unlock(vh); /* } vh --------------  */
+	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 
 	return 0;
 }
@@ -307,14 +307,14 @@ bail:
  */
 
 void
-lws_sess_cache_synth_cb(lws_sorted_usec_list_t *sul)
+aws_lws_sess_cache_synth_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_lws_tls *tls = lws_container_of(sul, struct lws_lws_tls,
+	struct aws_lws_lws_tls *tls = aws_lws_container_of(sul, struct aws_lws_lws_tls,
 						   sul_cb_synth);
-	struct lws *wsi = lws_container_of(tls, struct lws, tls);
+	struct lws *wsi = aws_lws_container_of(tls, struct lws, tls);
 	SSL_SESSION *sess;
 
-	if (lws_tls_session_is_reused(wsi))
+	if (aws_lws_tls_session_is_reused(wsi))
 		return;
 
 	sess = SSL_get1_session(tls->ssl);
@@ -322,7 +322,7 @@ lws_sess_cache_synth_cb(lws_sorted_usec_list_t *sul)
 		return;
 
 	if (!SSL_SESSION_is_resumable(sess) || /* not worth caching, or... */
-	    !lws_tls_session_new_cb(tls->ssl, sess)) { /* ...cb didn't keep it */
+	    !aws_lws_tls_session_new_cb(tls->ssl, sess)) { /* ...cb didn't keep it */
 		/*
 		 * For now the policy if no session message after the wait,
 		 * is just let it be.  Typically the session info is sent
@@ -334,7 +334,7 @@ lws_sess_cache_synth_cb(lws_sorted_usec_list_t *sul)
 #endif
 
 void
-lws_tls_session_cache(struct lws_vhost *vh, uint32_t ttl)
+aws_lws_tls_session_cache(struct aws_lws_vhost *vh, uint32_t ttl)
 {
 	long cmode;
 
@@ -346,7 +346,7 @@ lws_tls_session_cache(struct lws_vhost *vh, uint32_t ttl)
 	SSL_CTX_set_session_cache_mode(vh->tls.ssl_client_ctx,
 				       (int)(cmode | SSL_SESS_CACHE_CLIENT));
 
-	SSL_CTX_sess_set_new_cb(vh->tls.ssl_client_ctx, lws_tls_session_new_cb);
+	SSL_CTX_sess_set_new_cb(vh->tls.ssl_client_ctx, aws_lws_tls_session_new_cb);
 
 	if (!ttl)
 		return;
@@ -359,21 +359,21 @@ lws_tls_session_cache(struct lws_vhost *vh, uint32_t ttl)
 }
 
 int
-lws_tls_session_dump_save(struct lws_vhost *vh, const char *host, uint16_t port,
-			  lws_tls_sess_cb_t cb_save, void *opq)
+aws_lws_tls_session_dump_save(struct aws_lws_vhost *vh, const char *host, uint16_t port,
+			  aws_lws_tls_sess_cb_t cb_save, void *opq)
 {
-	struct lws_tls_session_dump d;
-	lws_tls_sco_t *ts;
+	struct aws_lws_tls_session_dump d;
+	aws_lws_tls_sco_t *ts;
 	int ret = 1, bl;
 	void *v;
 
 	if (vh->options & LWS_SERVER_OPTION_DISABLE_TLS_SESSION_CACHE)
 		return 1;
 
-	lws_tls_session_tag_discrete(vh->name, host, port, d.tag, sizeof(d.tag));
+	aws_lws_tls_session_tag_discrete(vh->name, host, port, d.tag, sizeof(d.tag));
 
-	lws_context_lock(vh->context, __func__); /* -------------- cx { */
-	lws_vhost_lock(vh); /* -------------- vh { */
+	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
+	aws_lws_vhost_lock(vh); /* -------------- vh { */
 
 	ts = __lws_tls_session_lookup_by_name(vh, d.tag);
 	if (!ts)
@@ -386,7 +386,7 @@ lws_tls_session_dump_save(struct lws_vhost *vh, const char *host, uint16_t port,
 		goto bail;
 
 	d.blob_len = (size_t)bl;
-	v = d.blob = lws_malloc(d.blob_len, __func__);
+	v = d.blob = aws_lws_malloc(d.blob_len, __func__);
 
 	if (d.blob) {
 
@@ -396,26 +396,26 @@ lws_tls_session_dump_save(struct lws_vhost *vh, const char *host, uint16_t port,
 		d.opaque = opq;
 		d.blob = v;
 		if (cb_save(vh->context, &d))
-			lwsl_notice("%s: save failed\n", __func__);
+			aws_lwsl_notice("%s: save failed\n", __func__);
 		else
 			ret = 0;
 
-		lws_free(v);
+		aws_lws_free(v);
 	}
 
 bail:
-	lws_vhost_unlock(vh); /* } vh --------------  */
-	lws_context_unlock(vh->context); /* } cx --------------  */
+	aws_lws_vhost_unlock(vh); /* } vh --------------  */
+	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 
 	return ret;
 }
 
 int
-lws_tls_session_dump_load(struct lws_vhost *vh, const char *host, uint16_t port,
-			  lws_tls_sess_cb_t cb_load, void *opq)
+aws_lws_tls_session_dump_load(struct aws_lws_vhost *vh, const char *host, uint16_t port,
+			  aws_lws_tls_sess_cb_t cb_load, void *opq)
 {
-	struct lws_tls_session_dump d;
-	lws_tls_sco_t *ts;
+	struct aws_lws_tls_session_dump d;
+	aws_lws_tls_sco_t *ts;
 	SSL_SESSION *sess = NULL; /* allow it to "bail" early */
 	void *v;
 
@@ -423,10 +423,10 @@ lws_tls_session_dump_load(struct lws_vhost *vh, const char *host, uint16_t port,
 		return 1;
 
 	d.opaque = opq;
-	lws_tls_session_tag_discrete(vh->name, host, port, d.tag, sizeof(d.tag));
+	aws_lws_tls_session_tag_discrete(vh->name, host, port, d.tag, sizeof(d.tag));
 
-	lws_context_lock(vh->context, __func__); /* -------------- cx { */
-	lws_vhost_lock(vh); /* -------------- vh { */
+	aws_lws_context_lock(vh->context, __func__); /* -------------- cx { */
+	aws_lws_vhost_lock(vh); /* -------------- vh { */
 
 	ts = __lws_tls_session_lookup_by_name(vh, d.tag);
 
@@ -435,13 +435,13 @@ lws_tls_session_dump_load(struct lws_vhost *vh, const char *host, uint16_t port,
 		 * Since we are getting this out of cold storage, we should
 		 * not replace any existing session since it is likely newer
 		 */
-		lwsl_notice("%s: session already exists for %s\n", __func__,
+		aws_lwsl_notice("%s: session already exists for %s\n", __func__,
 				d.tag);
 		goto bail1;
 	}
 
 	if (cb_load(vh->context, &d)) {
-		lwsl_warn("%s: load failed\n", __func__);
+		aws_lwsl_warn("%s: load failed\n", __func__);
 
 		goto bail1;
 	}
@@ -454,24 +454,24 @@ lws_tls_session_dump_load(struct lws_vhost *vh, const char *host, uint16_t port,
 							(long)d.blob_len);
 	free(v); /* user code will have used malloc() */
 	if (!sess) {
-		lwsl_warn("%s: d2i_SSL_SESSION failed\n", __func__);
+		aws_lwsl_warn("%s: d2i_SSL_SESSION failed\n", __func__);
 		goto bail;
 	}
 
-	lws_vhost_lock(vh); /* -------------- vh { */
-	ts = lws_tls_session_add_entry(vh, d.tag);
-	lws_vhost_unlock(vh); /* } vh --------------  */
+	aws_lws_vhost_lock(vh); /* -------------- vh { */
+	ts = aws_lws_tls_session_add_entry(vh, d.tag);
+	aws_lws_vhost_unlock(vh); /* } vh --------------  */
 
 	if (!ts) {
-		lwsl_warn("%s: unable to add cache entry\n", __func__);
+		aws_lwsl_warn("%s: unable to add cache entry\n", __func__);
 		goto bail;
 	}
 
 	ts->session = sess;
-	lwsl_tlssess("%s: session loaded OK\n", __func__);
+	aws_lwsl_tlssess("%s: session loaded OK\n", __func__);
 
-	lws_vhost_unlock(vh); /* } vh --------------  */
-	lws_context_unlock(vh->context); /* } cx --------------  */
+	aws_lws_vhost_unlock(vh); /* } vh --------------  */
+	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 
 	return 0;
 
@@ -479,8 +479,8 @@ bail:
 	SSL_SESSION_free(sess);
 bail1:
 
-	lws_vhost_unlock(vh); /* } vh --------------  */
-	lws_context_unlock(vh->context); /* } cx --------------  */
+	aws_lws_vhost_unlock(vh); /* } vh --------------  */
+	aws_lws_context_unlock(vh->context); /* } cx --------------  */
 
 	return 1;
 }

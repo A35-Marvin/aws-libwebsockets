@@ -32,12 +32,12 @@
  */
 
 static int
-lws_struct_sq3_deser_cb(void *priv, int cols, char **cv, char **cn)
+aws_lws_struct_sq3_deser_cb(void *priv, int cols, char **cv, char **cn)
 {
-	lws_struct_args_t *a = (lws_struct_args_t *)priv;
-	char *u = lwsac_use_zero(&a->ac, a->dest_len, a->ac_block_size);
-	lws_dll2_owner_t *o = (lws_dll2_owner_t *)a->cb_arg;
-	const lws_struct_map_t *map = a->map_st[0];
+	aws_lws_struct_args_t *a = (aws_lws_struct_args_t *)priv;
+	char *u = aws_lwsac_use_zero(&a->ac, a->dest_len, a->ac_block_size);
+	aws_lws_dll2_owner_t *o = (aws_lws_dll2_owner_t *)a->cb_arg;
+	const aws_lws_struct_map_t *map = a->map_st[0];
 	int n, mems = (int)(ssize_t)a->map_entries_st[0];
 	long long li;
 	size_t lim;
@@ -45,12 +45,12 @@ lws_struct_sq3_deser_cb(void *priv, int cols, char **cv, char **cn)
 	char *s;
 
 	if (!u) {
-		lwsl_err("OOM\n");
+		aws_lwsl_err("OOM\n");
 
 		return 1;
 	}
 
-	lws_dll2_add_tail((lws_dll2_t *)((char *)u + a->toplevel_dll2_ofs), o);
+	aws_lws_dll2_add_tail((aws_lws_dll2_t *)((char *)u + a->toplevel_dll2_ofs), o);
 
 	while (mems--) {
 		for (n = 0; n < cols; n++) {
@@ -147,13 +147,13 @@ lws_struct_sq3_deser_cb(void *priv, int cols, char **cv, char **cn)
 			case LSMT_STRING_CHAR_ARRAY:
 				s = (char *)(u + map->ofs);
 				lim = map->aux;
-				lws_strncpy(s, cv[n], lim);
+				aws_lws_strncpy(s, cv[n], lim);
 				break;
 
 			case LSMT_STRING_PTR:
 				pp = (char **)(u + map->ofs);
 				lim = strlen(cv[n]);
-				s = lwsac_use(&a->ac, lim + 1, a->ac_block_size);
+				s = aws_lwsac_use(&a->ac, lim + 1, a->ac_block_size);
 				if (!s)
 					return 1;
 				*pp = s;
@@ -177,13 +177,13 @@ lws_struct_sq3_deser_cb(void *priv, int cols, char **cv, char **cn)
  */
 
 int
-lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *order,
-			   const lws_struct_map_t *schema, lws_dll2_owner_t *o,
-			   struct lwsac **ac, int start, int _limit)
+aws_lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *order,
+			   const aws_lws_struct_map_t *schema, aws_lws_dll2_owner_t *o,
+			   struct aws_lwsac **ac, int start, int _limit)
 {
 	int limit = _limit < 0 ? -_limit : _limit;
 	char s[768], results[512], where[250];
-	lws_struct_args_t a;
+	aws_lws_struct_args_t a;
 	int n, m;
 
 	if (!order)
@@ -191,13 +191,13 @@ lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *order,
 
 	memset(&a, 0, sizeof(a));
 	a.ac = *ac;
-	a.cb_arg = o; /* lws_dll2_owner tracking query result objects */
+	a.cb_arg = o; /* aws_lws_dll2_owner tracking query result objects */
 	a.map_st[0]  = schema->child_map;
 	a.map_entries_st[0] = schema->child_map_size;
 	a.dest_len = schema->aux; /* size of toplevel object to allocate */
 	a.toplevel_dll2_ofs = schema->ofs;
 
-	lws_dll2_owner_clear(o);
+	aws_lws_dll2_owner_clear(o);
 
 	/*
 	 * Explicitly list the columns instead of use *, so we can skip blobs
@@ -205,24 +205,24 @@ lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *order,
 
 	m = 0;
 	for (n = 0; n < (int)schema->child_map_size; n++)
-		m += lws_snprintf(&results[m], sizeof(results) - (unsigned int)n - 1,
+		m += aws_lws_snprintf(&results[m], sizeof(results) - (unsigned int)n - 1,
 				  "%s%c", schema->child_map[n].colname,
 				  n + 1 == (int)schema->child_map_size ? ' ' : ',');
 
 	where[0] = '\0';
-	lws_snprintf(where, sizeof(where), " where _lws_idx >= %llu %s",
+	aws_lws_snprintf(where, sizeof(where), " where _lws_idx >= %llu %s",
 			     (unsigned long long)start, filter ? filter : "");
 
-	lws_snprintf(s, sizeof(s) - 1, "select %s "
+	aws_lws_snprintf(s, sizeof(s) - 1, "select %s "
 		     "from %s %s order by %s %slimit %d;", results,
 		     schema->colname, where, order,
 				     _limit < 0 ? "desc " : "", limit);
 
 
 
-	if (sqlite3_exec(pdb, s, lws_struct_sq3_deser_cb, &a, NULL) != SQLITE_OK) {
-		lwsl_err("%s: %s: fail %s\n", __func__, sqlite3_errmsg(pdb), s);
-		lwsac_free(&a.ac);
+	if (sqlite3_exec(pdb, s, aws_lws_struct_sq3_deser_cb, &a, NULL) != SQLITE_OK) {
+		aws_lwsl_err("%s: %s: fail %s\n", __func__, sqlite3_errmsg(pdb), s);
+		aws_lwsac_free(&a.ac);
 		return -1;
 	}
 
@@ -237,10 +237,10 @@ lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *order,
  */
 
 static int
-_lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
+_lws_struct_sq3_ser_one(sqlite3 *pdb, const aws_lws_struct_map_t *schema,
 			uint32_t idx, void *st)
 {
-	const lws_struct_map_t *map = schema->child_map;
+	const aws_lws_struct_map_t *map = schema->child_map;
 	int n, m, pk = 0, nentries = (int)(ssize_t)schema->child_map_size, nef = 0, did;
 	size_t sql_est = 46 + strlen(schema->colname) + 1;
 		/* "insert into  (_lws_idx, ) values (00000001,);" ...
@@ -253,7 +253,7 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 	 * Figure out effective number of columns, exluding BLOB.
 	 *
 	 * The first UNSIGNED is a hidden index.  Blobs are not handled by
-	 * lws_struct except to create the column in the schema.
+	 * aws_lws_struct except to create the column in the schema.
 	 */
 
 	pk = 0;
@@ -301,13 +301,13 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 
 			break;
 		case LSMT_STRING_CHAR_ARRAY:
-			sql_est += (unsigned int)lws_sql_purify_len((const char *)st +
+			sql_est += (unsigned int)aws_lws_sql_purify_len((const char *)st +
 							map[n].ofs) + 2;
 			break;
 
 		case LSMT_STRING_PTR:
 			p = *((const char * const *)&stb[map[n].ofs]);
-			sql_est += (unsigned int)((p ? lws_sql_purify_len(p) : 0) + 2);
+			sql_est += (unsigned int)((p ? aws_lws_sql_purify_len(p) : 0) + 2);
 			break;
 
 		case LSMT_BLOB_PTR:
@@ -316,7 +316,7 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 			break;
 
 		default:
-			lwsl_err("%s: unsupported type\n", __func__);
+			aws_lwsl_err("%s: unsupported type\n", __func__);
 			assert(0);
 			break;
 		}
@@ -326,7 +326,7 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 	if (!sql)
 		return -1;
 
-	m = lws_snprintf(sql, sql_est, "insert into %s(_lws_idx, ",
+	m = aws_lws_snprintf(sql, sql_est, "insert into %s(_lws_idx, ",
 			 schema->colname);
 
 	/*
@@ -345,12 +345,12 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 			continue;
 
 		did++;
-		m += lws_snprintf(sql + m, sql_est - (unsigned int)m,
+		m += aws_lws_snprintf(sql + m, sql_est - (unsigned int)m,
 				  did == nef ? "%s" : "%s, ",
 				  map[n].colname);
 	}
 
-	m += lws_snprintf(sql + m, sql_est - (unsigned int)m, ") values(%u, ", idx);
+	m += aws_lws_snprintf(sql + m, sql_est - (unsigned int)m, ") values(%u, ", idx);
 
 	pk = 0;
 	did = 0;
@@ -374,16 +374,16 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 								(q << 3));
 
 			if (map[n].type == LSMT_SIGNED)
-				m += lws_snprintf(sql + m, sql_est - (unsigned int)m, "%lld",
+				m += aws_lws_snprintf(sql + m, sql_est - (unsigned int)m, "%lld",
 						  (long long)(int64_t)uu64);
 			else
-				m += lws_snprintf(sql + m, sql_est - (unsigned int)m, "%llu",
+				m += aws_lws_snprintf(sql + m, sql_est - (unsigned int)m, "%llu",
 						  (unsigned long long)uu64);
 			break;
 
 		case LSMT_STRING_CHAR_ARRAY:
 			sql[m++] = '\'';
-			lws_sql_purify(sql + m, (const char *)&stb[map[n].ofs],
+			aws_lws_sql_purify(sql + m, (const char *)&stb[map[n].ofs],
 				       sql_est - (size_t)(ssize_t)m - 4);
 			m += (int)(ssize_t)strlen(sql + m);
 			sql[m++] = '\'';
@@ -392,7 +392,7 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 			p = *((const char * const *)&stb[map[n].ofs]);
 			sql[m++] = '\'';
 			if (p) {
-				lws_sql_purify(sql + m, p, sql_est - (unsigned int)m - 4);
+				aws_lws_sql_purify(sql + m, p, sql_est - (unsigned int)m - 4);
 				m += (int)(ssize_t)strlen(sql + m);
 			}
 			sql[m++] = '\'';
@@ -402,7 +402,7 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 			continue;
 
 		default:
-			lwsl_err("%s: unsupported type\n", __func__);
+			aws_lwsl_err("%s: unsupported type\n", __func__);
 			assert(0);
 			break;
 		}
@@ -416,13 +416,13 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 		}
 	}
 
-	lws_snprintf(sql + m, sql_est - (unsigned int)m, ");");
+	aws_lws_snprintf(sql + m, sql_est - (unsigned int)m, ");");
 
 	n = sqlite3_exec(pdb, sql, NULL, NULL, NULL);
 	if (n != SQLITE_OK) {
-		lwsl_err("%s\n", sql);
+		aws_lwsl_err("%s\n", sql);
 		free(sql);
-		lwsl_err("%s: %s: fail\n", __func__, sqlite3_errmsg(pdb));
+		aws_lwsl_err("%s: %s: fail\n", __func__, sqlite3_errmsg(pdb));
 		return -1;
 	}
 	free(sql);
@@ -431,30 +431,30 @@ _lws_struct_sq3_ser_one(sqlite3 *pdb, const lws_struct_map_t *schema,
 }
 
 int
-lws_struct_sq3_serialize(sqlite3 *pdb, const lws_struct_map_t *schema,
-			 lws_dll2_owner_t *owner, uint32_t manual_idx)
+aws_lws_struct_sq3_serialize(sqlite3 *pdb, const aws_lws_struct_map_t *schema,
+			 aws_lws_dll2_owner_t *owner, uint32_t manual_idx)
 {
 	uint32_t idx = manual_idx;
 
-	lws_start_foreach_dll(struct lws_dll2 *, p, owner->head) {
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, owner->head) {
 		void *item = (void *)((uint8_t *)p - schema->ofs_clist);
 		if (_lws_struct_sq3_ser_one(pdb, schema, idx++, item))
 			return 1;
 
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	return 0;
 }
 
 int
-lws_struct_sq3_create_table(sqlite3 *pdb, const lws_struct_map_t *schema)
+aws_lws_struct_sq3_create_table(sqlite3 *pdb, const aws_lws_struct_map_t *schema)
 {
-	const lws_struct_map_t *map = schema->child_map;
+	const aws_lws_struct_map_t *map = schema->child_map;
 	int map_size = (int)(ssize_t)schema->child_map_size, subsequent = 0;
 	char s[2048], *p = s, *end = &s[sizeof(s) - 1],
 	     *pri = " primary key autoincrement", *use;
 
-	p += lws_snprintf(p, (unsigned int)lws_ptr_diff(end, p),
+	p += aws_lws_snprintf(p, (unsigned int)aws_lws_ptr_diff(end, p),
 			  "create table if not exists %s (_lws_idx integer, ",
 			  schema->colname);
 
@@ -470,29 +470,29 @@ lws_struct_sq3_create_table(sqlite3 *pdb, const lws_struct_map_t *schema)
 		subsequent = 1;
 		if (map->type == LSMT_BLOB_PTR) {
 
-			p += lws_snprintf(p, (unsigned int)lws_ptr_diff(end, p), "%s blob", map->colname);
+			p += aws_lws_snprintf(p, (unsigned int)aws_lws_ptr_diff(end, p), "%s blob", map->colname);
 
 		} else {
 			if (map->type < LSMT_STRING_CHAR_ARRAY) {
 				use = "";
 				if (map->colname[0] != '_') /* _lws_idx is not primary key */
 					use = pri;
-				p += lws_snprintf(p, (unsigned int)lws_ptr_diff(end, p), "%s integer%s",
+				p += aws_lws_snprintf(p, (unsigned int)aws_lws_ptr_diff(end, p), "%s integer%s",
 						map->colname, use);
 				if (map->colname[0] != '_')
 					pri = "";
 			} else
-				p += lws_snprintf(p, (unsigned int)lws_ptr_diff(end, p), "%s varchar",
+				p += aws_lws_snprintf(p, (unsigned int)aws_lws_ptr_diff(end, p), "%s varchar",
 						map->colname);
 		}
 
 		map++;
 	}
 
-	p += lws_snprintf(p, (unsigned int)lws_ptr_diff(end, p), ");");
+	p += aws_lws_snprintf(p, (unsigned int)aws_lws_ptr_diff(end, p), ");");
 
 	if (sqlite3_exec(pdb, s, NULL, NULL, NULL) != SQLITE_OK) {
-		lwsl_err("%s: %s: fail\n", __func__, sqlite3_errmsg(pdb));
+		aws_lwsl_err("%s: %s: fail\n", __func__, sqlite3_errmsg(pdb));
 
 		return -1;
 	}
@@ -501,7 +501,7 @@ lws_struct_sq3_create_table(sqlite3 *pdb, const lws_struct_map_t *schema)
 }
 
 int
-lws_struct_sq3_open(struct lws_context *context, const char *sqlite3_path,
+aws_lws_struct_sq3_open(struct aws_lws_context *context, const char *sqlite3_path,
 		    char create_if_missing, sqlite3 **pdb)
 {
 #if !defined(WIN32)
@@ -513,23 +513,23 @@ lws_struct_sq3_open(struct lws_context *context, const char *sqlite3_path,
 			    SQLITE_OPEN_READWRITE |
 			    (create_if_missing ? SQLITE_OPEN_CREATE : 0),
 			    NULL) != SQLITE_OK) {
-		lwsl_info("%s: Unable to open db %s: %s\n",
+		aws_lwsl_info("%s: Unable to open db %s: %s\n",
 			 __func__, sqlite3_path, sqlite3_errmsg(*pdb));
 
 		return 1;
 	}
 
 #if !defined(WIN32)
-	lws_get_effective_uid_gid(context, &uid, &gid);
+	aws_lws_get_effective_uid_gid(context, &uid, &gid);
 	if (uid)
 		if (chown(sqlite3_path, uid, gid))
-			lwsl_err("%s: failed to chown %s\n", __func__, sqlite3_path);
+			aws_lwsl_err("%s: failed to chown %s\n", __func__, sqlite3_path);
 	chmod(sqlite3_path, 0600);
 
-	lwsl_debug("%s: created %s owned by %u:%u mode 0600\n", __func__,
+	aws_lwsl_debug("%s: created %s owned by %u:%u mode 0600\n", __func__,
 			sqlite3_path, (unsigned int)uid, (unsigned int)gid);
 #else
-	lwsl_debug("%s: created %s\n", __func__, sqlite3_path);
+	aws_lwsl_debug("%s: created %s\n", __func__, sqlite3_path);
 #endif
 	sqlite3_extended_result_codes(*pdb, 1);
 
@@ -537,7 +537,7 @@ lws_struct_sq3_open(struct lws_context *context, const char *sqlite3_path,
 }
 
 int
-lws_struct_sq3_close(sqlite3 **pdb)
+aws_lws_struct_sq3_close(sqlite3 **pdb)
 {
 	int n;
 
@@ -549,7 +549,7 @@ lws_struct_sq3_close(sqlite3 **pdb)
 		/*
 		 * trouble...
 		 */
-		lwsl_err("%s: failed to close: %d\n", __func__, n);
+		aws_lwsl_err("%s: failed to close: %d\n", __func__, n);
 		return 1;
 	}
 	*pdb = NULL;

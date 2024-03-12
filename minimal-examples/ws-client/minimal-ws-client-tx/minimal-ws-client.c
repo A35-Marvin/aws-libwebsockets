@@ -39,18 +39,18 @@ struct msg {
 };
 
 struct per_vhost_data__minimal {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 	pthread_t pthread_spam[2];
 
-	lws_sorted_usec_list_t sul;
+	aws_lws_sorted_usec_list_t sul;
 
 	pthread_mutex_t lock_ring; /* serialize access to the ring buffer */
-	struct lws_ring *ring; /* ringbuffer holding unsent messages */
+	struct aws_lws_ring *ring; /* ringbuffer holding unsent messages */
 	uint32_t tail;
 
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 	struct lws *client_wsi;
 
 	int counter;
@@ -92,30 +92,30 @@ thread_spam(void *d)
 		pthread_mutex_lock(&vhd->lock_ring); /* --------- ring lock { */
 
 		/* only create if space in ringbuffer */
-		n = (int)lws_ring_get_count_free_elements(vhd->ring);
+		n = (int)aws_lws_ring_get_count_free_elements(vhd->ring);
 		if (!n) {
-			lwsl_user("dropping!\n");
+			aws_lwsl_user("dropping!\n");
 			goto wait_unlock;
 		}
 
 		amsg.payload = malloc((unsigned int)(LWS_PRE + len));
 		if (!amsg.payload) {
-			lwsl_user("OOM: dropping\n");
+			aws_lwsl_user("OOM: dropping\n");
 			goto wait_unlock;
 		}
-		n = lws_snprintf((char *)amsg.payload + LWS_PRE, (unsigned int)len,
+		n = aws_lws_snprintf((char *)amsg.payload + LWS_PRE, (unsigned int)len,
 			         "tid: %d, msg: %d", whoami, index++);
 		amsg.len = (unsigned int)n;
-		n = (int)lws_ring_insert(vhd->ring, &amsg, 1);
+		n = (int)aws_lws_ring_insert(vhd->ring, &amsg, 1);
 		if (n != 1) {
 			__minimal_destroy_message(&amsg);
-			lwsl_user("dropping!\n");
+			aws_lwsl_user("dropping!\n");
 		} else
 			/*
 			 * This will cause a LWS_CALLBACK_EVENT_WAIT_CANCELLED
 			 * in the lws service thread context.
 			 */
-			lws_cancel_service(vhd->context);
+			aws_lws_cancel_service(vhd->context);
 
 wait_unlock:
 		pthread_mutex_unlock(&vhd->lock_ring); /* } ring lock ------- */
@@ -125,7 +125,7 @@ wait:
 
 	} while (!vhd->finished);
 
-	lwsl_notice("thread_spam %d exiting\n", whoami);
+	aws_lwsl_notice("thread_spam %d exiting\n", whoami);
 
 	pthread_exit(NULL);
 
@@ -133,10 +133,10 @@ wait:
 }
 
 static void
-sul_connect_attempt(struct lws_sorted_usec_list *sul)
+sul_connect_attempt(struct aws_lws_sorted_usec_list *sul)
 {
 	struct per_vhost_data__minimal *vhd =
-		lws_container_of(sul, struct per_vhost_data__minimal, sul);
+		aws_lws_container_of(sul, struct per_vhost_data__minimal, sul);
 
 	vhd->i.context = vhd->context;
 	vhd->i.port = 7681;
@@ -149,19 +149,19 @@ sul_connect_attempt(struct lws_sorted_usec_list *sul)
 	vhd->i.protocol = "lws-minimal-broker";
 	vhd->i.pwsi = &vhd->client_wsi;
 
-	if (!lws_client_connect_via_info(&vhd->i))
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
+	if (!aws_lws_client_connect_via_info(&vhd->i))
+		aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, 10 * LWS_US_PER_SEC);
 }
 
 static int
-callback_minimal_broker(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal_broker(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_vhost_data__minimal *vhd =
 			(struct per_vhost_data__minimal *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					lws_get_protocol(wsi));
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi));
 	const struct msg *pmsg;
 	void *retval;
 	int n, m, r = 0;
@@ -171,14 +171,14 @@ callback_minimal_broker(struct lws *wsi, enum lws_callback_reasons reason,
 	/* --- protocol lifecycle callbacks --- */
 
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__minimal));
-		vhd->context = lws_get_context(wsi);
-		vhd->protocol = lws_get_protocol(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->protocol = aws_lws_get_protocol(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 
-		vhd->ring = lws_ring_create(sizeof(struct msg), 8,
+		vhd->ring = aws_lws_ring_create(sizeof(struct msg), 8,
 					    __minimal_destroy_message);
 		if (!vhd->ring)
 			return 1;
@@ -190,7 +190,7 @@ callback_minimal_broker(struct lws *wsi, enum lws_callback_reasons reason,
 		for (n = 0; n < (int)LWS_ARRAY_SIZE(vhd->pthread_spam); n++)
 			if (pthread_create(&vhd->pthread_spam[n], NULL,
 					   thread_spam, vhd)) {
-				lwsl_err("thread creation failed\n");
+				aws_lwsl_err("thread creation failed\n");
 				r = 1;
 				goto init_fail;
 			}
@@ -205,49 +205,49 @@ init_fail:
 			pthread_join(vhd->pthread_spam[n], &retval);
 
 		if (vhd->ring)
-			lws_ring_destroy(vhd->ring);
+			aws_lws_ring_destroy(vhd->ring);
 
-		lws_sul_cancel(&vhd->sul);
+		aws_lws_sul_cancel(&vhd->sul);
 		pthread_mutex_destroy(&vhd->lock_ring);
 
 		return r;
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		vhd->client_wsi = NULL;
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
+		aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, LWS_US_PER_SEC);
 		break;
 
 	/* --- client callbacks --- */
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		lwsl_user("%s: established\n", __func__);
+		aws_lwsl_user("%s: established\n", __func__);
 		vhd->established = 1;
 		break;
 
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
 		pthread_mutex_lock(&vhd->lock_ring); /* --------- ring lock { */
-		pmsg = lws_ring_get_element(vhd->ring, &vhd->tail);
+		pmsg = aws_lws_ring_get_element(vhd->ring, &vhd->tail);
 		if (!pmsg)
 			goto skip;
 
 		/* notice we allowed for LWS_PRE in the payload already */
-		m = lws_write(wsi, ((unsigned char *)pmsg->payload) + LWS_PRE,
+		m = aws_lws_write(wsi, ((unsigned char *)pmsg->payload) + LWS_PRE,
 			      pmsg->len, LWS_WRITE_TEXT);
 		if (m < (int)pmsg->len) {
 			pthread_mutex_unlock(&vhd->lock_ring); /* } ring lock */
-			lwsl_err("ERROR %d writing to ws socket\n", m);
+			aws_lwsl_err("ERROR %d writing to ws socket\n", m);
 			return -1;
 		}
 
-		lws_ring_consume_single_tail(vhd->ring, &vhd->tail, 1);
+		aws_lws_ring_consume_single_tail(vhd->ring, &vhd->tail, 1);
 
 		/* more to do for us? */
-		if (lws_ring_get_element(vhd->ring, &vhd->tail))
+		if (aws_lws_ring_get_element(vhd->ring, &vhd->tail))
 			/* come back as soon as we can write more */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 
 skip:
 		pthread_mutex_unlock(&vhd->lock_ring); /* } ring lock ------- */
@@ -256,7 +256,7 @@ skip:
 	case LWS_CALLBACK_CLIENT_CLOSED:
 		vhd->client_wsi = NULL;
 		vhd->established = 0;
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
+		aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_connect_attempt, LWS_US_PER_SEC);
 		break;
 
@@ -264,23 +264,23 @@ skip:
 		/*
 		 * When the "spam" threads add a message to the ringbuffer,
 		 * they create this event in the lws service thread context
-		 * using lws_cancel_service().
+		 * using aws_lws_cancel_service().
 		 *
 		 * We respond by scheduling a writable callback for the
 		 * connected client, if any.
 		 */
 		if (vhd && vhd->client_wsi && vhd->established)
-			lws_callback_on_writable(vhd->client_wsi);
+			aws_lws_callback_on_writable(vhd->client_wsi);
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"lws-minimal-broker",
 		callback_minimal_broker,
@@ -297,8 +297,8 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -310,12 +310,12 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws client tx\n");
-	lwsl_user("  Run minimal-ws-broker and browse to that\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws client tx\n");
+	aws_lwsl_user("  Run minimal-ws-broker and browse to that\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
@@ -329,17 +329,17 @@ int main(int argc, const char **argv)
 	 */
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
-	lwsl_user("Completed\n");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed\n");
 
 	return 0;
 }

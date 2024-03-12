@@ -45,15 +45,15 @@ enum {
 	ST_INNER_EXCESS,
 };
 
-typedef struct lws_cose_sig_alg {
-	lws_dll2_t			list;
+typedef struct aws_lws_cose_sig_alg {
+	aws_lws_dll2_t			list;
 	uint8_t				rhash[512];
-	const lws_cose_key_t		*cose_key;
-	struct lws_genhash_ctx		hash_ctx;
+	const aws_lws_cose_key_t		*cose_key;
+	struct aws_lws_genhash_ctx		hash_ctx;
 	union {
-		struct lws_genec_ctx	ecdsactx;
-		struct lws_genrsa_ctx	rsactx;
-		struct lws_genhmac_ctx	hmacctx;
+		struct aws_lws_genec_ctx	ecdsactx;
+		struct aws_lws_genrsa_ctx	rsactx;
+		struct aws_lws_genhmac_ctx	hmacctx;
 	} u;
 	cose_param_t			cose_alg;
 	int				keybits;
@@ -61,24 +61,24 @@ typedef struct lws_cose_sig_alg {
 
 	char				failed;
 	char				completed;
-} lws_cose_sig_alg_t;
+} aws_lws_cose_sig_alg_t;
 
-typedef struct lws_cose_validate_param_stack {
+typedef struct aws_lws_cose_validate_param_stack {
 	uint8_t				ph[4][MAX_BLOBBED_PARAMS];
 	int				ph_pos[4];
-	struct lws_gencrypto_keyelem	kid;
+	struct aws_lws_gencrypto_keyelem	kid;
 	cose_param_t			alg;
-} lws_cose_validate_param_stack_t;
+} aws_lws_cose_validate_param_stack_t;
 
-struct lws_cose_validate_context {
-	lws_cose_validate_create_info_t	info;
+struct aws_lws_cose_validate_context {
+	aws_lws_cose_validate_create_info_t	info;
 	uint8_t				mac[LWS_GENHASH_LARGEST];
 	uint8_t				sig_agg[512];
-	lws_cose_validate_param_stack_t	st[3];
-	lws_dll2_owner_t		algs;
-	lws_dll2_owner_t		results;
+	aws_lws_cose_validate_param_stack_t	st[3];
+	aws_lws_dll2_owner_t		algs;
+	aws_lws_dll2_owner_t		results;
 	uint8_t				*payload_stash;
-	struct lwsac			*ac;
+	struct aws_lwsac			*ac;
 	struct lecp_ctx			ctx;
 	void				*user;
 
@@ -100,14 +100,14 @@ struct lws_cose_validate_context {
 	uint8_t				sub;
 };
 
-struct lws_cose_sign_context {
-	lws_cose_sign_create_info_t	info;
+struct aws_lws_cose_sign_context {
+	aws_lws_cose_sign_create_info_t	info;
 
-	lws_dll2_owner_t		algs;
-	lws_cose_sig_alg_t		*alg;
+	aws_lws_dll2_owner_t		algs;
+	aws_lws_cose_sig_alg_t		*alg;
 
 	size_t				rem_pay;
-	enum lws_cose_sig_types 	type; /* computed */
+	enum aws_lws_cose_sig_types 	type; /* computed */
 	int				flags;
 
 	size_t				along;
@@ -121,28 +121,28 @@ extern const uint8_t *sig_mctx[];
 extern uint8_t sig_mctx_len[];
 extern const char *cose_sections[];
 
-lws_cose_sig_alg_t *
-lws_cose_val_alg_create(struct lws_context *cx, lws_cose_key_t *ck,
+aws_lws_cose_sig_alg_t *
+aws_lws_cose_val_alg_create(struct aws_lws_context *cx, aws_lws_cose_key_t *ck,
 		    cose_param_t cose_alg, int op);
 
 int
-lws_cose_val_alg_hash(lws_cose_sig_alg_t *alg, const uint8_t *in, size_t in_len);
+aws_lws_cose_val_alg_hash(aws_lws_cose_sig_alg_t *alg, const uint8_t *in, size_t in_len);
 
 void
-lws_cose_val_alg_destroy(struct lws_cose_validate_context *cps,
-		     lws_cose_sig_alg_t **_alg, const uint8_t *against,
+aws_lws_cose_val_alg_destroy(struct aws_lws_cose_validate_context *cps,
+		     aws_lws_cose_sig_alg_t **_alg, const uint8_t *against,
 		     size_t against_len);
 
-lws_cose_sig_alg_t *
-lws_cose_sign_alg_create(struct lws_context *cx, const lws_cose_key_t *ck,
+aws_lws_cose_sig_alg_t *
+aws_lws_cose_sign_alg_create(struct aws_lws_context *cx, const aws_lws_cose_key_t *ck,
 		    cose_param_t cose_alg, int op);
 
 int
-lws_cose_sign_alg_hash(lws_cose_sig_alg_t *alg, const uint8_t *in, size_t in_len);
+aws_lws_cose_sign_alg_hash(aws_lws_cose_sig_alg_t *alg, const uint8_t *in, size_t in_len);
 
 void
-lws_cose_sign_alg_complete(lws_cose_sig_alg_t *alg);
+aws_lws_cose_sign_alg_complete(aws_lws_cose_sig_alg_t *alg);
 
 void
-lws_cose_sign_alg_destroy(lws_cose_sig_alg_t **_alg);
+aws_lws_cose_sign_alg_destroy(aws_lws_cose_sig_alg_t **_alg);
 

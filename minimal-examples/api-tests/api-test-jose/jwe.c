@@ -67,43 +67,43 @@ static char
 ;
 
 static int
-test_jwe_a1(struct lws_context *context)
+test_jwe_a1(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[2048], compact[2048];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, ex_a1_jwk_json,
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, ex_a1_jwk_json,
 			   strlen(ex_a1_jwk_json)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode(ex_a1_compact, (int)strlen(ex_a1_compact),
+	if (aws_lws_jws_compact_decode(ex_a1_compact, (int)strlen(ex_a1_compact),
 				   &jwe.jws.map, &jwe.jws.map_b64, temp,
 				   &temp_len) != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < strlen(ex_a1_ptext) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ex_a1_ptext,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ex_a1_ptext,
 			        (uint32_t)strlen(ex_a1_ptext))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ex_a1_ptext, strlen(ex_a1_ptext));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ex_a1_ptext, strlen(ex_a1_ptext));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -112,29 +112,29 @@ test_jwe_a1(struct lws_context *context)
 	 * Canned decrypt worked properly... let's also try encoding the
 	 * plaintext ourselves and decoding that...
 	 */
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	temp_len = sizeof(temp);
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, ex_a1_jwk_json,
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, ex_a1_jwk_json,
 			   strlen(ex_a1_jwk_json)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
-	if (lws_gencrypto_jwe_alg_to_definition("RSA-OAEP", &jwe.jose.alg)) {
-		lwsl_err("Unknown cipher alg \"RSA-OAEP\"\n");
+	if (aws_lws_gencrypto_jwe_alg_to_definition("RSA-OAEP", &jwe.jose.alg)) {
+		aws_lwsl_err("Unknown cipher alg \"RSA-OAEP\"\n");
 		goto bail;
 	}
-	if (lws_gencrypto_jwe_enc_to_definition("A256GCM", &jwe.jose.enc_alg)) {
-		lwsl_err("Unknown payload enc alg \"A256GCM\"\n");
+	if (aws_lws_gencrypto_jwe_enc_to_definition("A256GCM", &jwe.jose.enc_alg)) {
+		aws_lwsl_err("Unknown payload enc alg \"A256GCM\"\n");
 		goto bail;
 	}
 
 	/* we require a JOSE-formatted header to do the encryption */
 
 	jwe.jws.map.buf[LJWS_JOSE] = temp;
-	jwe.jws.map.len[LJWS_JOSE] = (uint32_t)lws_snprintf(temp, (unsigned int)temp_len,
+	jwe.jws.map.len[LJWS_JOSE] = (uint32_t)aws_lws_snprintf(temp, (unsigned int)temp_len,
 			"{\"alg\":\"%s\",\"enc\":\"%s\"}", "RSA-OAEP", "A256GCM");
 	temp_len -= (int)jwe.jws.map.len[LJWS_JOSE];
 
@@ -143,33 +143,33 @@ test_jwe_a1(struct lws_context *context)
 	 * encrypted in-place to a ciphertext of the same length
 	 */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				ex_a1_ptext, strlen(ex_a1_ptext), 0)) {
-		lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
+		aws_lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
 		goto bail;
 	}
 
 	/* CEK size is determined by hash / hmac size */
 
-	n = lws_gencrypto_bits_to_bytes(jwe.jose.enc_alg->keybits_fixed);
-	if (lws_jws_randomize_element(context, &jwe.jws.map, LJWE_EKEY,
-				      lws_concat_temp(temp, temp_len),
+	n = aws_lws_gencrypto_bits_to_bytes(jwe.jose.enc_alg->keybits_fixed);
+	if (aws_lws_jws_randomize_element(context, &jwe.jws.map, LJWE_EKEY,
+				      aws_lws_concat_temp(temp, temp_len),
 				      &temp_len, (unsigned int)n,
 				      LWS_JWE_LIMIT_KEY_ELEMENT_BYTES)) {
-		lwsl_err("Problem getting random\n");
+		aws_lwsl_err("Problem getting random\n");
 		goto bail;
 	}
 
-	n = lws_jwe_encrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_encrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 			    &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt failed\n", __func__);
 		goto bail;
 	}
-	n = lws_jwe_render_compact(&jwe, compact, sizeof(compact));
+	n = aws_lws_jwe_render_compact(&jwe, compact, sizeof(compact));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_render_compact failed: %d\n",
+		aws_lwsl_err("%s: aws_lws_jwe_render_compact failed: %d\n",
 			 __func__, n);
 		goto bail;
 	}
@@ -180,27 +180,27 @@ test_jwe_a1(struct lws_context *context)
 	 * Okay... what happens when we try to decode what we created?
 	 */
 
-	lws_jwe_destroy(&jwe);
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_destroy(&jwe);
+	aws_lws_jwe_init(&jwe, context);
 	temp_len = sizeof(temp);
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode(compact, (int)strlen(compact), &jwe.jws.map,
+	if (aws_lws_jws_compact_decode(compact, (int)strlen(compact), &jwe.jws.map,
 				   &jwe.jws.map_b64, temp, &temp_len) != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, ex_a1_jwk_json,
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, ex_a1_jwk_json,
 			   strlen(ex_a1_jwk_json)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: generated lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: generated aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
@@ -208,11 +208,11 @@ test_jwe_a1(struct lws_context *context)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -232,7 +232,7 @@ ex_a2_ptext[] = {
 	76, 105, 118, 101, 32, 108, 111, 110,
 	103, 32, 97, 110, 100, 32,  112, 114,
 	111, 115, 112, 101, 114, 46
-}, *lws_jwe_ex_a2_jwk_json = (uint8_t *)
+}, *aws_lws_jwe_ex_a2_jwk_json = (uint8_t *)
 	"{"
 	 "\"kty\":\"RSA\","
 	 "\"n\":\"sXchDaQebHnPiGvyDOAT4saGEUetSyo9MKLOoWFsueri23bOdgWp4Dy1Wl"
@@ -283,44 +283,44 @@ ex_a2_ptext[] = {
 ;
 
 static int
-test_jwe_a2(struct lws_context *context)
+test_jwe_a2(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[2048];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)lws_jwe_ex_a2_jwk_json,
-			   strlen((char *)lws_jwe_ex_a2_jwk_json)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)aws_lws_jwe_ex_a2_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_a2_jwk_json)) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode((const char *)ex_a2_compact,
+	if (aws_lws_jws_compact_decode((const char *)ex_a2_compact,
 				   (int)strlen((char *)ex_a2_compact),
 				   &jwe.jws.map, &jwe.jws.map_b64,
 				   (char *)temp, &temp_len) != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(ex_a2_ptext) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ex_a2_ptext,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ex_a2_ptext,
 			        sizeof(ex_a2_ptext))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ex_a2_ptext, sizeof(ex_a2_ptext));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ex_a2_ptext, sizeof(ex_a2_ptext));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -328,11 +328,11 @@ test_jwe_a2(struct lws_context *context)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -490,102 +490,102 @@ r256a128_cek[] = {
 ;
 
 static int
-test_jwe_ra_ptext_1024(struct lws_context *context, char *jwk_txt, int jwk_len)
+test_jwe_ra_ptext_1024(struct aws_lws_context *context, char *jwk_txt, int jwk_len)
 {
 	char temp[4096], compact[4096];
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
 	/* reuse the rsa private key from the JWE Appendix 2 test above */
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* dup the plaintext, it will be replaced in-situ by the ciphertext */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				ra_ptext_1024, sizeof(ra_ptext_1024),
-				lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
+				aws_lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
 						      sizeof(ra_ptext_1024)))) {
-		lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
+		aws_lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
 		goto bail;
 	}
 
 	/* dup the cek, since it will be replaced by the encrypted key */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_EKEY,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_EKEY,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				r256a128_cek, sizeof(r256a128_cek),
 				LWS_JWE_LIMIT_KEY_ELEMENT_BYTES)) {
-		lwsl_notice("%s: Not enough temp space for EKEY\n", __func__);
+		aws_lwsl_notice("%s: Not enough temp space for EKEY\n", __func__);
 		goto bail;
 	}
 
 	jwe.jws.map.buf[LJWE_JOSE] = rsa256a128_jose;
 	jwe.jws.map.len[LJWE_JOSE] = (uint32_t)strlen(rsa256a128_jose);
 
-	n = lws_jwe_parse_jose(&jwe.jose, jwe.jws.map.buf[LJWE_JOSE],
+	n = aws_lws_jwe_parse_jose(&jwe.jose, jwe.jws.map.buf[LJWE_JOSE],
 			       (int)jwe.jws.map.len[LJWE_JOSE],
-			       lws_concat_temp(temp, temp_len), &temp_len);
+			       aws_lws_concat_temp(temp, temp_len), &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: JOSE parse failed\n", __func__);
+		aws_lwsl_err("%s: JOSE parse failed\n", __func__);
 
 		goto bail;
 	}
 
-	n = lws_jwe_encrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_encrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 			    &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_render_compact(&jwe, compact, sizeof(compact));
+	n = aws_lws_jwe_render_compact(&jwe, compact, sizeof(compact));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_render_compact failed: %d\n", __func__, n);
+		aws_lwsl_err("%s: aws_lws_jwe_render_compact failed: %d\n", __func__, n);
 		goto bail;
 	}
 
 	// puts(compact);
 
-	lws_jwe_destroy(&jwe);
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_destroy(&jwe);
+	aws_lws_jwe_init(&jwe, context);
 	temp_len = sizeof(temp);
 
 	/* now we created the encrypted version, see if we can decrypt it */
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
-	if (lws_jws_compact_decode(compact, n, &jwe.jws.map, &jwe.jws.map_b64,
+	if (aws_lws_jws_compact_decode(compact, n, &jwe.jws.map, &jwe.jws.map_b64,
 				   temp, &temp_len) != 5) {
-		lwsl_err("%s: failed to parse generated compact\n", __func__);
+		aws_lwsl_err("%s: failed to parse generated compact\n", __func__);
 
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(ra_ptext_1024) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
 			        sizeof(ra_ptext_1024))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -593,12 +593,12 @@ test_jwe_ra_ptext_1024(struct lws_context *context, char *jwk_txt, int jwk_len)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -617,18 +617,18 @@ static const uint8_t r256a192_cek[] = {
 ;
 
 static int
-test_jwe_r256a192_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
+test_jwe_r256a192_ptext(struct aws_lws_context *context, char *jwk_txt, int jwk_len)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[4096], compact[4096];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
 	/* reuse the rsa private key from the JWE Appendix 2 test above */
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
@@ -637,47 +637,47 @@ test_jwe_r256a192_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
 	 * encrypted in-place to a ciphertext of the same length + padding
 	 */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				ra_ptext_1024, sizeof(ra_ptext_1024),
-				lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
+				aws_lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
 						      sizeof(ra_ptext_1024)))) {
-		lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
+		aws_lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
 		goto bail;
 	}
 
 	/* copy the cek, since it will be replaced by the encrypted key */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_EKEY,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_EKEY,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				r256a192_cek, sizeof(r256a192_cek),
 				LWS_JWE_LIMIT_KEY_ELEMENT_BYTES)) {
-		lwsl_err("Problem getting random\n");
+		aws_lwsl_err("Problem getting random\n");
 		goto bail;
 	}
 
 	jwe.jws.map.buf[LJWE_JOSE] = rsa256a192_jose;
 	jwe.jws.map.len[LJWE_JOSE] = (uint32_t)strlen(rsa256a192_jose);
 
-	n = lws_jwe_parse_jose(&jwe.jose, jwe.jws.map.buf[LJWE_JOSE],
+	n = aws_lws_jwe_parse_jose(&jwe.jose, jwe.jws.map.buf[LJWE_JOSE],
 			       (int)jwe.jws.map.len[LJWE_JOSE],
-			       lws_concat_temp(temp, temp_len), &temp_len);
+			       aws_lws_concat_temp(temp, temp_len), &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: JOSE parse failed\n", __func__);
+		aws_lwsl_err("%s: JOSE parse failed\n", __func__);
 
 		goto bail;
 	}
 
-	n = lws_jwe_encrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_encrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 			    &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_render_compact(&jwe, compact, sizeof(compact));
+	n = aws_lws_jwe_render_compact(&jwe, compact, sizeof(compact));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_render_compact failed: %d\n", __func__, n);
+		aws_lwsl_err("%s: aws_lws_jwe_render_compact failed: %d\n", __func__, n);
 		goto bail;
 	}
 
@@ -685,36 +685,36 @@ test_jwe_r256a192_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
 
 	/* now we created the encrypted version, see if we can decrypt it */
 
-	lws_jwe_destroy(&jwe);
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_destroy(&jwe);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
-	if (lws_jws_compact_decode(compact, n, &jwe.jws.map, &jwe.jws.map_b64,
+	if (aws_lws_jws_compact_decode(compact, n, &jwe.jws.map, &jwe.jws.map_b64,
 				   temp, &temp_len) != 5) {
-		lwsl_err("%s: failed to parse generated compact\n", __func__);
+		aws_lwsl_err("%s: failed to parse generated compact\n", __func__);
 
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(ra_ptext_1024) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
 			        sizeof(ra_ptext_1024))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -722,12 +722,12 @@ test_jwe_r256a192_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -749,18 +749,18 @@ static const uint8_t r256a256_cek[] = {
 ;
 
 static int
-test_jwe_r256a256_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
+test_jwe_r256a256_ptext(struct aws_lws_context *context, char *jwk_txt, int jwk_len)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[4096], compact[4096];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
 	/* reuse the rsa private key from the JWE Appendix 2 test above */
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
@@ -769,47 +769,47 @@ test_jwe_r256a256_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
 	 * encrypted in-place to a ciphertext of the same length + padding
 	 */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				ra_ptext_1024, sizeof(ra_ptext_1024),
-				lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
+				aws_lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
 						      sizeof(ra_ptext_1024)))) {
-		lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
+		aws_lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
 		goto bail;
 	}
 
 	/* copy the cek, since it will be replaced by the encrypted key */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_EKEY,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_EKEY,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				r256a256_cek, sizeof(r256a256_cek),
 				LWS_JWE_LIMIT_KEY_ELEMENT_BYTES)) {
-		lwsl_err("Problem getting random\n");
+		aws_lwsl_err("Problem getting random\n");
 		goto bail;
 	}
 
 	jwe.jws.map.buf[LJWE_JOSE] = rsa256a256_jose;
 	jwe.jws.map.len[LJWE_JOSE] = (uint32_t)strlen(rsa256a256_jose);
 
-	n = lws_jwe_parse_jose(&jwe.jose, rsa256a256_jose,
+	n = aws_lws_jwe_parse_jose(&jwe.jose, rsa256a256_jose,
 			       (int)strlen(rsa256a256_jose),
-			       lws_concat_temp(temp, temp_len), &temp_len);
+			       aws_lws_concat_temp(temp, temp_len), &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: JOSE parse failed\n", __func__);
+		aws_lwsl_err("%s: JOSE parse failed\n", __func__);
 
 		goto bail;
 	}
 
-	n = lws_jwe_encrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_encrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 			    &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_render_compact(&jwe, compact, sizeof(compact));
+	n = aws_lws_jwe_render_compact(&jwe, compact, sizeof(compact));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_render_compact failed: %d\n", __func__, n);
+		aws_lwsl_err("%s: aws_lws_jwe_render_compact failed: %d\n", __func__, n);
 		goto bail;
 	}
 
@@ -817,36 +817,36 @@ test_jwe_r256a256_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
 
 	/* now we created the encrypted version, see if we can decrypt it */
 
-	lws_jwe_destroy(&jwe);
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_destroy(&jwe);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, jwk_txt, (unsigned int)jwk_len) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
-	if (lws_jws_compact_decode(compact, n, &jwe.jws.map, &jwe.jws.map_b64,
+	if (aws_lws_jws_compact_decode(compact, n, &jwe.jws.map, &jwe.jws.map_b64,
 				   temp, &temp_len) != 5) {
-		lwsl_err("%s: failed to parse generated compact\n", __func__);
+		aws_lwsl_err("%s: failed to parse generated compact\n", __func__);
 
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(ra_ptext_1024) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
 			        sizeof(ra_ptext_1024))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -854,12 +854,12 @@ test_jwe_r256a256_ptext(struct lws_context *context, char *jwk_txt, int jwk_len)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -1008,7 +1008,7 @@ static const char *rsa_key_4096_no_optional =
 	"}";
 
 /* This is a compact JWE containing the plaintext ra_ptext_1024 for the key
- * lws_jwe_ex_a2_jwk_json... produced by  test test above running on OpenSSL.
+ * aws_lws_jwe_ex_a2_jwk_json... produced by  test test above running on OpenSSL.
  */
 
 static char *jwe_compact_rsa_cbc_openssl =
@@ -1043,44 +1043,44 @@ static char *jwe_compact_rsa_cbc_openssl =
 
 
 static int
-test_jwe_r256a128_jwe_openssl(struct lws_context *context)
+test_jwe_r256a128_jwe_openssl(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[2048];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)lws_jwe_ex_a2_jwk_json,
-			   strlen((char *)lws_jwe_ex_a2_jwk_json)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)aws_lws_jwe_ex_a2_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_a2_jwk_json)) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode((const char *)jwe_compact_rsa_cbc_openssl,
+	if (aws_lws_jws_compact_decode((const char *)jwe_compact_rsa_cbc_openssl,
 				   (int)strlen((char *)jwe_compact_rsa_cbc_openssl),
 				   &jwe.jws.map, &jwe.jws.map_b64,
 				   temp, &temp_len) != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(ra_ptext_1024) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
 			        sizeof(ra_ptext_1024))) {
-		lwsl_err("%s: plaintext RSA/AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext RSA/AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -1088,18 +1088,18 @@ test_jwe_r256a128_jwe_openssl(struct lws_context *context)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
 
 
 /* This is a compact JWE containing the plaintext ra_ptext_1024 for the key
- * lws_jwe_ex_a2_jwk_json... produced by  test test above running on mbedTLS.
+ * aws_lws_jwe_ex_a2_jwk_json... produced by  test test above running on mbedTLS.
  */
 
 static char
@@ -1134,44 +1134,44 @@ static char
 ;
 
 static int
-test_jwe_r256a128_jwe_mbedtls(struct lws_context *context)
+test_jwe_r256a128_jwe_mbedtls(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[2048];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)lws_jwe_ex_a2_jwk_json,
-			   strlen((char *)lws_jwe_ex_a2_jwk_json)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)aws_lws_jwe_ex_a2_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_a2_jwk_json)) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode((const char *)jwe_compact_rsa_cbc_mbedtls,
+	if (aws_lws_jws_compact_decode((const char *)jwe_compact_rsa_cbc_mbedtls,
 				   (int)strlen((char *)jwe_compact_rsa_cbc_mbedtls),
 				   &jwe.jws.map, &jwe.jws.map_b64,
 				   temp, &temp_len) != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(ra_ptext_1024) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ra_ptext_1024,
 			        sizeof(ra_ptext_1024))) {
-		lwsl_err("%s: plaintext RSA/AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext RSA/AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ra_ptext_1024, sizeof(ra_ptext_1024));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -1179,12 +1179,12 @@ test_jwe_r256a128_jwe_mbedtls(struct lws_context *context)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -1225,44 +1225,44 @@ ex_a3_ptext[] = {
 ;
 
 static int
-test_jwe_a3(struct lws_context *context)
+test_jwe_a3(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[2048];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)ex_a3_key,
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)ex_a3_key,
 			   strlen((char *)ex_a3_key)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode((const char *)ex_a3_compact,
+	if (aws_lws_jws_compact_decode((const char *)ex_a3_compact,
 				   (int)strlen((char *)ex_a3_compact),
 				   &jwe.jws.map, &jwe.jws.map_b64, temp,
 				   &temp_len)  != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(ex_a3_ptext) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ex_a3_ptext,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], ex_a3_ptext,
 			        sizeof(ex_a3_ptext))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(ex_a3_ptext, sizeof(ex_a3_ptext));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ex_a3_ptext, sizeof(ex_a3_ptext));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -1270,11 +1270,11 @@ test_jwe_a3(struct lws_context *context)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -1359,13 +1359,13 @@ jwa_b2_tag[] = {
 ;
 
 static int
-test_jwa_b2(struct lws_context *context)
+test_jwa_b2(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	int n, ret = -1;
 	char buf[2048];
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
 	/*
 	 * normally all this is interpreted from the JWE blob.  But we don't
@@ -1375,7 +1375,7 @@ test_jwa_b2(struct lws_context *context)
 	 * See test_jwe_a3 above for a more normal usage pattern.
 	 */
 
-	lws_jwk_dup_oct(&jwe.jwk, jwa_b2_rawkey, sizeof(jwa_b2_rawkey));
+	aws_lws_jwk_dup_oct(&jwe.jwk, jwa_b2_rawkey, sizeof(jwa_b2_rawkey));
 
 	memcpy(buf, jwa_b2_e, sizeof(jwa_b2_e));
 
@@ -1393,27 +1393,27 @@ test_jwa_b2(struct lws_context *context)
 	 * doesn't have one... so...
 	 */
 
-	if (lws_gencrypto_jwe_alg_to_definition("A128KW", &jwe.jose.alg))
+	if (aws_lws_gencrypto_jwe_alg_to_definition("A128KW", &jwe.jose.alg))
 		goto bail;
-	if (lws_gencrypto_jwe_enc_to_definition("A192CBC-HS384",
+	if (aws_lws_gencrypto_jwe_enc_to_definition("A192CBC-HS384",
 						&jwe.jose.enc_alg))
 		goto bail;
 
-	n = lws_jwe_auth_and_decrypt_cbc_hs(&jwe, jwa_b2_rawkey,
+	n = aws_lws_jwe_auth_and_decrypt_cbc_hs(&jwe, jwa_b2_rawkey,
 						    jwa_b2_a, sizeof(jwa_b2_a));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_a_cbc_hs_decrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_a_cbc_hs_decrypt failed\n", __func__);
 
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(jwa_b2_ptext) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT],jwa_b2_ptext,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT],jwa_b2_ptext,
 			        sizeof(jwa_b2_ptext))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(jwa_b2_ptext, sizeof(jwa_b2_ptext));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(jwa_b2_ptext, sizeof(jwa_b2_ptext));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -1421,11 +1421,11 @@ test_jwa_b2(struct lws_context *context)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -1515,13 +1515,13 @@ jws_b3_tag[] = {
 ;
 
 static int
-test_jwa_b3(struct lws_context *context)
+test_jwa_b3(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char buf[2048];
 	int n, ret = -1;
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
 	/*
 	 * normally all this is interpreted from the JWE blob.  But we don't
@@ -1531,7 +1531,7 @@ test_jwa_b3(struct lws_context *context)
 	 * See test_jwe_a3 above for a more normal usage pattern.
 	 */
 
-	lws_jwk_dup_oct(&jwe.jwk, jwa_b3_rawkey, sizeof(jwa_b3_rawkey));
+	aws_lws_jwk_dup_oct(&jwe.jwk, jwa_b3_rawkey, sizeof(jwa_b3_rawkey));
 
 	memcpy(buf, jwa_b3_e, sizeof(jwa_b3_e));
 
@@ -1549,27 +1549,27 @@ test_jwa_b3(struct lws_context *context)
 	 * doesn't feature one...
 	 */
 
-	if (lws_gencrypto_jwe_alg_to_definition("A128KW", &jwe.jose.alg))
+	if (aws_lws_gencrypto_jwe_alg_to_definition("A128KW", &jwe.jose.alg))
 		goto bail;
-	if (lws_gencrypto_jwe_enc_to_definition("A256CBC-HS512",
+	if (aws_lws_gencrypto_jwe_enc_to_definition("A256CBC-HS512",
 						&jwe.jose.enc_alg))
 		goto bail;
 
-	n = lws_jwe_auth_and_decrypt_cbc_hs(&jwe, jwa_b3_rawkey,
+	n = aws_lws_jwe_auth_and_decrypt_cbc_hs(&jwe, jwa_b3_rawkey,
 						    jwa_b3_a, sizeof(jwa_b3_a));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_a_cbc_hs_decrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_a_cbc_hs_decrypt failed\n", __func__);
 
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < sizeof(jwa_b3_ptext) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT],jwa_b3_ptext,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT],jwa_b3_ptext,
 			        sizeof(jwa_b3_ptext))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(jwa_b3_ptext, sizeof(jwa_b3_ptext));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(jwa_b3_ptext, sizeof(jwa_b3_ptext));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -1577,12 +1577,12 @@ test_jwa_b3(struct lws_context *context)
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 
 	if (ret)
-		lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -1633,13 +1633,13 @@ ex_jwa_c_derived_key[] = {
 
 
 static int
-test_jwa_c(struct lws_context *context)
+test_jwa_c(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[2048], *p;
 	int ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
 	/*
 	 * again the JWA Appendix C test vectors are not in the form of a
@@ -1650,9 +1650,9 @@ test_jwa_c(struct lws_context *context)
 	 * See test_jwe_a3 above for a more normal usage pattern.
 	 */
 
-	if (lws_jwe_parse_jose(&jwe.jose, ex_jwa_c_jose, (int)strlen(ex_jwa_c_jose),
+	if (aws_lws_jwe_parse_jose(&jwe.jose, ex_jwa_c_jose, (int)strlen(ex_jwa_c_jose),
 			       temp, &temp_len) < 0) {
-		lwsl_err("%s: JOSE parse failed\n", __func__);
+		aws_lwsl_err("%s: JOSE parse failed\n", __func__);
 
 		goto bail;
 	}
@@ -1665,34 +1665,34 @@ test_jwa_c(struct lws_context *context)
 	 *  128-bit key ("enc" value "A128GCM").
 	 */
 
-	p = lws_concat_temp(temp, temp_len);
+	p = aws_lws_concat_temp(temp, temp_len);
 
-	if (lws_jwa_concat_kdf(&jwe, 1, (uint8_t *)p,
+	if (aws_lws_jwa_concat_kdf(&jwe, 1, (uint8_t *)p,
 			       ex_jwa_c_z, sizeof(ex_jwa_c_z))) {
-		lwsl_err("%s: lws_jwa_concat_kdf failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwa_concat_kdf failed\n", __func__);
 
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
-	if (lws_timingsafe_bcmp(p, ex_jwa_c_derived_key,
+	if (aws_lws_timingsafe_bcmp(p, ex_jwa_c_derived_key,
 			        sizeof(ex_jwa_c_derived_key))) {
-		lwsl_err("%s: ECDH-ES direct derived key wrong\n", __func__);
-		lwsl_hexdump_notice(ex_jwa_c_derived_key,
+		aws_lwsl_err("%s: ECDH-ES direct derived key wrong\n", __func__);
+		aws_lwsl_hexdump_notice(ex_jwa_c_derived_key,
 				    sizeof(ex_jwa_c_derived_key));
-		lwsl_hexdump_notice(p, sizeof(ex_jwa_c_derived_key));
+		aws_lwsl_hexdump_notice(p, sizeof(ex_jwa_c_derived_key));
 		goto bail;
 	}
 
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n", __func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
@@ -1782,34 +1782,34 @@ static const char
 ;
 
 static int
-test_ecdhes_t1(struct lws_context *context, const char *jose_hdr,
+test_ecdhes_t1(struct aws_lws_context *context, const char *jose_hdr,
 	       const char *peer_pubkey, const char *peer_privkey)
 {
 	char temp[3072], compact[2048];
 	int n, ret = -1, temp_len = sizeof(temp);
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
 	/* read and interpret our canned JOSE header, setting the algorithm */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWS_JOSE,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWS_JOSE,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				jose_hdr, strlen(jose_hdr), 0))
 		goto bail;
 
-	if (lws_jwe_parse_jose(&jwe.jose, jose_hdr, (int)strlen(jose_hdr),
+	if (aws_lws_jwe_parse_jose(&jwe.jose, jose_hdr, (int)strlen(jose_hdr),
 			       temp, &temp_len) < 0) {
-		lwsl_err("%s: JOSE parse failed\n", __func__);
+		aws_lwsl_err("%s: JOSE parse failed\n", __func__);
 
 		goto bail;
 	}
 
 	/* for ecdh-es encryption, we need the peer's pubkey */
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)peer_pubkey,
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)peer_pubkey,
 			   strlen((char *)peer_pubkey)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
@@ -1818,13 +1818,13 @@ test_ecdhes_t1(struct lws_context *context, const char *jose_hdr,
 	 * encrypted in-place to a ciphertext of the same length + padding
 	 */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				ecdhes_t1_plaintext,
 				strlen(ecdhes_t1_plaintext),
-				lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
+				aws_lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
 						strlen(ecdhes_t1_plaintext)))) {
-		lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
+		aws_lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
 		goto bail;
 	}
 
@@ -1832,9 +1832,9 @@ test_ecdhes_t1(struct lws_context *context, const char *jose_hdr,
 	 * perform the actual encryption
 	 */
 
-	n = lws_jwe_encrypt(&jwe, lws_concat_temp(temp, temp_len), &temp_len);
+	n = aws_lws_jwe_encrypt(&jwe, aws_lws_concat_temp(temp, temp_len), &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt failed\n", __func__);
 		goto bail;
 	}
 
@@ -1842,18 +1842,18 @@ test_ecdhes_t1(struct lws_context *context, const char *jose_hdr,
 	 * format for output
 	 */
 
-	n = lws_jwe_render_flattened(&jwe, compact, sizeof(compact));
+	n = aws_lws_jwe_render_flattened(&jwe, compact, sizeof(compact));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_render_compact failed: %d\n",
+		aws_lwsl_err("%s: aws_lws_jwe_render_compact failed: %d\n",
 			 __func__, n);
 		goto bail;
 	}
 
 	// puts(compact);
 
-	n = lws_jwe_render_compact(&jwe, compact, sizeof(compact));
+	n = aws_lws_jwe_render_compact(&jwe, compact, sizeof(compact));
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_render_compact failed: %d\n",
+		aws_lwsl_err("%s: aws_lws_jwe_render_compact failed: %d\n",
 			 __func__, n);
 		goto bail;
 	}
@@ -1863,27 +1863,27 @@ test_ecdhes_t1(struct lws_context *context, const char *jose_hdr,
 	/* okay, let's try to decrypt the whole thing, as the recipient
 	 * getting the compact.  jws->jwk needs to be our private key.  */
 
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	temp_len = sizeof(temp);
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)peer_privkey,
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, (char *)peer_privkey,
 			   strlen((char *)peer_privkey)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode(compact, (int)strlen(compact), &jwe.jws.map,
+	if (aws_lws_jws_compact_decode(compact, (int)strlen(compact), &jwe.jws.map,
 				   &jwe.jws.map_b64, temp, &temp_len) != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 				     &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
@@ -1891,12 +1891,12 @@ test_ecdhes_t1(struct lws_context *context, const char *jose_hdr,
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: %s selftest failed +++++++++++++++++++\n",
+		aws_lwsl_err("%s: %s selftest failed +++++++++++++++++++\n",
 			 __func__, jose_hdr);
 	else
-		lwsl_notice("%s: %s selftest OK\n", __func__, jose_hdr);
+		aws_lwsl_notice("%s: %s selftest OK\n", __func__, jose_hdr);
 
 	return ret;
 }
@@ -1961,42 +1961,42 @@ static const char
 ;
 
 static int
-test_akw_decrypt(struct lws_context *context, const char *test_name,
+test_akw_decrypt(struct aws_lws_context *context, const char *test_name,
 		 const char *ciphertext, const char *key)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[2048];
 	int n, ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, key, strlen(key)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, key, strlen(key)) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
 	/* converts a compact serialization to jws b64 + decoded maps */
-	if (lws_jws_compact_decode(ciphertext, (int)strlen(ciphertext),
+	if (aws_lws_jws_compact_decode(ciphertext, (int)strlen(ciphertext),
 				   &jwe.jws.map, &jwe.jws.map_b64,
 				   temp, &temp_len) != 5) {
-		lwsl_err("%s: lws_jws_compact_decode failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jws_compact_decode failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_auth_and_decrypt(&jwe, lws_concat_temp(temp, temp_len), &temp_len);
+	n = aws_lws_jwe_auth_and_decrypt(&jwe, aws_lws_concat_temp(temp, temp_len), &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt failed\n",
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt failed\n",
 			 __func__);
 		goto bail;
 	}
 
 	/* allowing for trailing padding, confirm the plaintext */
 	if (jwe.jws.map.len[LJWE_CTXT] < strlen(akw_ptext) ||
-	    lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], akw_ptext,
+	    aws_lws_timingsafe_bcmp(jwe.jws.map.buf[LJWE_CTXT], akw_ptext,
 			        (uint32_t)strlen(akw_ptext))) {
-		lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
-		lwsl_hexdump_notice(akw_ptext, strlen(akw_ptext));
-		lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
+		aws_lwsl_err("%s: plaintext AES decrypt wrong\n", __func__);
+		aws_lwsl_hexdump_notice(akw_ptext, strlen(akw_ptext));
+		aws_lwsl_hexdump_notice(jwe.jws.map.buf[LJWE_CTXT],
 				    jwe.jws.map.len[LJWE_CTXT]);
 		goto bail;
 	}
@@ -2004,45 +2004,45 @@ test_akw_decrypt(struct lws_context *context, const char *test_name,
 	ret = 0;
 
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest %s failed +++++++++++++++++++\n",
+		aws_lwsl_err("%s: selftest %s failed +++++++++++++++++++\n",
 			__func__, test_name);
 	else
-		lwsl_notice("%s: selftest %s OK\n", __func__, test_name);
+		aws_lwsl_notice("%s: selftest %s OK\n", __func__, test_name);
 
 	return ret;
 }
 
 static int
-test_akw_encrypt(struct lws_context *context, const char *test_name,
+test_akw_encrypt(struct aws_lws_context *context, const char *test_name,
 		 const char *alg, const char *enc, const char *ciphertext,
 		 const char *key, char *compact, int compact_len)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[4096];
 	int ret = -1, n, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwk_import(&jwe.jwk, NULL, NULL, key, strlen(key)) < 0) {
-		lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
+	if (aws_lws_jwk_import(&jwe.jwk, NULL, NULL, key, strlen(key)) < 0) {
+		aws_lwsl_notice("%s: Failed to decode JWK test key\n", __func__);
 		goto bail;
 	}
 
-	if (lws_gencrypto_jwe_alg_to_definition(alg, &jwe.jose.alg)) {
-		lwsl_err("Unknown cipher alg %s\n", alg);
+	if (aws_lws_gencrypto_jwe_alg_to_definition(alg, &jwe.jose.alg)) {
+		aws_lwsl_err("Unknown cipher alg %s\n", alg);
 		goto bail;
 	}
-	if (lws_gencrypto_jwe_enc_to_definition(enc, &jwe.jose.enc_alg)) {
-		lwsl_err("Unknown payload enc alg %s\n", enc);
+	if (aws_lws_gencrypto_jwe_enc_to_definition(enc, &jwe.jose.enc_alg)) {
+		aws_lwsl_err("Unknown payload enc alg %s\n", enc);
 		goto bail;
 	}
 
 	/* we require a JOSE-formatted header to do the encryption */
 
 	jwe.jws.map.buf[LJWS_JOSE] = temp;
-	jwe.jws.map.len[LJWS_JOSE] = (uint32_t)lws_snprintf(temp, (unsigned int)temp_len,
+	jwe.jws.map.len[LJWS_JOSE] = (uint32_t)aws_lws_snprintf(temp, (unsigned int)temp_len,
 			"{\"alg\":\"%s\", \"enc\":\"%s\"}", alg, enc);
 	temp_len -= (int)jwe.jws.map.len[LJWS_JOSE];
 
@@ -2051,48 +2051,48 @@ test_akw_encrypt(struct lws_context *context, const char *test_name,
 	 * encrypted in-place to a ciphertext of the same length + padding
 	 */
 
-	if (lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
-				lws_concat_temp(temp, temp_len), &temp_len,
+	if (aws_lws_jws_dup_element(&jwe.jws.map, LJWE_CTXT,
+				aws_lws_concat_temp(temp, temp_len), &temp_len,
 				akw_ptext, strlen(akw_ptext),
-				lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
+				aws_lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
 							  strlen(akw_ptext)))) {
-		lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
+		aws_lwsl_notice("%s: Not enough temp space for ptext\n", __func__);
 		goto bail;
 	}
 
 	/* CEK size is determined by hash / hmac size */
 
-	n = lws_gencrypto_bits_to_bytes(jwe.jose.enc_alg->keybits_fixed);
-	if (lws_jws_randomize_element(context, &jwe.jws.map, LJWE_EKEY,
-				      lws_concat_temp(temp, temp_len),
+	n = aws_lws_gencrypto_bits_to_bytes(jwe.jose.enc_alg->keybits_fixed);
+	if (aws_lws_jws_randomize_element(context, &jwe.jws.map, LJWE_EKEY,
+				      aws_lws_concat_temp(temp, temp_len),
 				      &temp_len, (unsigned int)n,
 				      LWS_JWE_LIMIT_KEY_ELEMENT_BYTES)) {
-		lwsl_err("Problem getting random\n");
+		aws_lwsl_err("Problem getting random\n");
 		goto bail;
 	}
 
-	n = lws_jwe_encrypt(&jwe, lws_concat_temp(temp, temp_len),
+	n = aws_lws_jwe_encrypt(&jwe, aws_lws_concat_temp(temp, temp_len),
 			    &temp_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_encrypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt failed\n", __func__);
 		goto bail;
 	}
 
-	n = lws_jwe_render_compact(&jwe, compact, (unsigned int)compact_len);
+	n = aws_lws_jwe_render_compact(&jwe, compact, (unsigned int)compact_len);
 	if (n < 0) {
-		lwsl_err("%s: lws_jwe_render_compact failed: %d\n",
+		aws_lwsl_err("%s: aws_lws_jwe_render_compact failed: %d\n",
 			 __func__, n);
 		goto bail;
 	}
 
 	ret = 0;
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest %s failed +++++++++++++++++++\n",
+		aws_lwsl_err("%s: selftest %s failed +++++++++++++++++++\n",
 			__func__, test_name);
 	else
-		lwsl_notice("%s: selftest %s OK\n", __func__, test_name);
+		aws_lwsl_notice("%s: selftest %s OK\n", __func__, test_name);
 
 	return ret;
 }
@@ -2134,41 +2134,41 @@ static char *complete =
 ;
 
 static int
-test_jwe_json_complete(struct lws_context *context)
+test_jwe_json_complete(struct aws_lws_context *context)
 {
-	struct lws_jwe jwe;
+	struct aws_lws_jwe jwe;
 	char temp[4096];
 	int ret = -1, temp_len = sizeof(temp);
 
-	lws_jwe_init(&jwe, context);
+	aws_lws_jwe_init(&jwe, context);
 
-	if (lws_jwe_parse_jose(&jwe.jose, complete, (int)strlen(complete),
+	if (aws_lws_jwe_parse_jose(&jwe.jose, complete, (int)strlen(complete),
 			       temp, &temp_len) < 0) {
-		lwsl_err("%s: JOSE parse failed\n", __func__);
+		aws_lwsl_err("%s: JOSE parse failed\n", __func__);
 
 		goto bail;
 	}
 
 	if (jwe.jose.recipients != 2) {
-		lwsl_err("%s: wrong recipients count %d\n", __func__,
+		aws_lwsl_err("%s: wrong recipients count %d\n", __func__,
 			 jwe.jose.recipients);
 		goto bail;
 	}
 
 	ret = 0;
 bail:
-	lws_jwe_destroy(&jwe);
+	aws_lws_jwe_destroy(&jwe);
 	if (ret)
-		lwsl_err("%s: selftest failed +++++++++++++++++++\n",
+		aws_lwsl_err("%s: selftest failed +++++++++++++++++++\n",
 			__func__);
 	else
-		lwsl_notice("%s: selftest OK\n", __func__);
+		aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return ret;
 }
 
 int
-test_jwe(struct lws_context *context)
+test_jwe(struct aws_lws_context *context)
 {
 	char compact[4096];
 	int n = 0;
@@ -2199,12 +2199,12 @@ test_jwe(struct lws_context *context)
 
 	n |= test_jwe_a2(context);
 
-	n |= test_jwe_ra_ptext_1024(context, (char *)lws_jwe_ex_a2_jwk_json,
-				    (int)strlen((char *)lws_jwe_ex_a2_jwk_json));
-	n |= test_jwe_r256a192_ptext(context, (char *)lws_jwe_ex_a2_jwk_json,
-			(int)strlen((char *)lws_jwe_ex_a2_jwk_json));
-	n |= test_jwe_r256a256_ptext(context, (char *)lws_jwe_ex_a2_jwk_json,
-			(int)strlen((char *)lws_jwe_ex_a2_jwk_json));
+	n |= test_jwe_ra_ptext_1024(context, (char *)aws_lws_jwe_ex_a2_jwk_json,
+				    (int)strlen((char *)aws_lws_jwe_ex_a2_jwk_json));
+	n |= test_jwe_r256a192_ptext(context, (char *)aws_lws_jwe_ex_a2_jwk_json,
+			(int)strlen((char *)aws_lws_jwe_ex_a2_jwk_json));
+	n |= test_jwe_r256a256_ptext(context, (char *)aws_lws_jwe_ex_a2_jwk_json,
+			(int)strlen((char *)aws_lws_jwe_ex_a2_jwk_json));
 	n |= test_jwe_ra_ptext_1024(context, (char *)rsa_key_2048,
 			(int)strlen((char *)rsa_key_2048));
 	n |= test_jwe_r256a192_ptext(context, (char *)rsa_key_2048,

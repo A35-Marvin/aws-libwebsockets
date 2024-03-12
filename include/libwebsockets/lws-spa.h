@@ -26,7 +26,7 @@
  * \ingroup http
  * ##POSTed form parsing functions
  *
- * These lws_spa (stateful post arguments) apis let you parse and urldecode
+ * These aws_lws_spa (stateful post arguments) apis let you parse and urldecode
  * POSTed form arguments, both using simple urlencoded and multipart transfer
  * encoding.
  *
@@ -42,8 +42,8 @@
  */
 ///@{
 
-/** enum lws_spa_fileupload_states */
-enum lws_spa_fileupload_states {
+/** enum aws_lws_spa_fileupload_states */
+enum aws_lws_spa_fileupload_states {
 	LWS_UFS_CONTENT,
 	/**< a chunk of file content has arrived */
 	LWS_UFS_FINAL_CONTENT,
@@ -55,9 +55,9 @@ enum lws_spa_fileupload_states {
 };
 
 /**
- * lws_spa_fileupload_cb() - callback to receive file upload data
+ * aws_lws_spa_fileupload_cb() - callback to receive file upload data
  *
- * \param data: opt_data pointer set in lws_spa_create
+ * \param data: opt_data pointer set in aws_lws_spa_create
  * \param name: name of the form field being uploaded
  * \param filename: original filename from client
  * \param buf: start of data to receive
@@ -67,16 +67,16 @@ enum lws_spa_fileupload_states {
  * Notice name and filename shouldn't be trusted, as they are passed from
  * HTTP provided by the client.
  */
-typedef int (*lws_spa_fileupload_cb)(void *data, const char *name,
+typedef int (*aws_lws_spa_fileupload_cb)(void *data, const char *name,
 				     const char *filename, char *buf, int len,
-				     enum lws_spa_fileupload_states state);
+				     enum aws_lws_spa_fileupload_states state);
 
-/** struct lws_spa - opaque urldecode parser capable of handling multipart
+/** struct aws_lws_spa - opaque urldecode parser capable of handling multipart
  *			and file uploads */
-struct lws_spa;
+struct aws_lws_spa;
 
 /**
- * lws_spa_create() - create urldecode parser
+ * aws_lws_spa_create() - create urldecode parser
  *
  * \param wsi: lws connection (used to find Content Type)
  * \param param_names: array of form parameter names, like "username"
@@ -87,7 +87,7 @@ struct lws_spa;
  *
  * Creates a urldecode parser and initializes it.
  *
- * It's recommended to use the newer api, lws_spa_create_via_info()
+ * It's recommended to use the newer api, aws_lws_spa_create_via_info()
  * instead.
  *
  * opt_cb can be NULL if you just want normal name=value parsing, however
@@ -96,26 +96,26 @@ struct lws_spa;
  * treat that urldecoded data separately.  The callback should return -1
  * in case of fatal error, and 0 if OK.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_spa *
-lws_spa_create(struct lws *wsi, const char * const *param_names,
-	       int count_params, int max_storage, lws_spa_fileupload_cb opt_cb,
+LWS_VISIBLE LWS_EXTERN struct aws_lws_spa *
+aws_lws_spa_create(struct lws *wsi, const char * const *param_names,
+	       int count_params, int max_storage, aws_lws_spa_fileupload_cb opt_cb,
 	       void *opt_data);
 
-typedef struct lws_spa_create_info {
+typedef struct aws_lws_spa_create_info {
 	const char * const *param_names; /* array of form parameter names, like "username" */
 	int count_params; /* count of param_names */
 	int max_storage; /* total amount of form parameter values we can store */
-	lws_spa_fileupload_cb opt_cb; /* NULL, or callback to receive file upload data. */
+	aws_lws_spa_fileupload_cb opt_cb; /* NULL, or callback to receive file upload data. */
 	void *opt_data; /* NULL, or user pointer provided to opt_cb. */
 	size_t param_names_stride; /* 0 if param_names is an array of char *.
 					Else stride to next char * */
-	struct lwsac **ac;	/* NULL, or pointer to lwsac * to contain all
+	struct aws_lwsac **ac;	/* NULL, or pointer to aws_lwsac * to contain all
 				   related heap allocations */
 	size_t ac_chunk_size;	/* 0 for default, or ac chunk size */
-} lws_spa_create_info_t;
+} aws_lws_spa_create_info_t;
 
 /**
- * lws_spa_create_via_info() - create urldecode parser
+ * aws_lws_spa_create_via_info() - create urldecode parser
  *
  * \param wsi: lws connection (used to find Content Type)
  * \param info: pointer to struct defining the arguments
@@ -128,49 +128,49 @@ typedef struct lws_spa_create_info {
  * treat that urldecoded data separately.  The callback should return -1
  * in case of fatal error, and 0 if OK.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_spa *
-lws_spa_create_via_info(struct lws *wsi, const lws_spa_create_info_t *info);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_spa *
+aws_lws_spa_create_via_info(struct lws *wsi, const aws_lws_spa_create_info_t *info);
 
 /**
- * lws_spa_process() - parses a chunk of input data
+ * aws_lws_spa_process() - parses a chunk of input data
  *
  * \param spa: the parser object previously created
  * \param in: incoming urlencoded data
  * \param len: count of bytes valid at \p in
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_spa_process(struct lws_spa *spa, const char *in, int len);
+aws_lws_spa_process(struct aws_lws_spa *spa, const char *in, int len);
 
 /**
- * lws_spa_finalize() - indicate incoming data completed
+ * aws_lws_spa_finalize() - indicate incoming data completed
  *
  * \param spa: the parser object previously created
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_spa_finalize(struct lws_spa *spa);
+aws_lws_spa_finalize(struct aws_lws_spa *spa);
 
 /**
- * lws_spa_get_length() - return length of parameter value
+ * aws_lws_spa_get_length() - return length of parameter value
  *
  * \param spa: the parser object previously created
  * \param n: parameter ordinal to return length of value for
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_spa_get_length(struct lws_spa *spa, int n);
+aws_lws_spa_get_length(struct aws_lws_spa *spa, int n);
 
 /**
- * lws_spa_get_string() - return pointer to parameter value
+ * aws_lws_spa_get_string() - return pointer to parameter value
  * \param spa: the parser object previously created
  * \param n: parameter ordinal to return pointer to value for
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_spa_get_string(struct lws_spa *spa, int n);
+aws_lws_spa_get_string(struct aws_lws_spa *spa, int n);
 
 /**
- * lws_spa_destroy() - destroy parser object
+ * aws_lws_spa_destroy() - destroy parser object
  *
  * \param spa: the parser object previously created
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_spa_destroy(struct lws_spa *spa);
+aws_lws_spa_destroy(struct aws_lws_spa *spa);
 ///@}

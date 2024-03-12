@@ -27,14 +27,14 @@
 #include <nvs_flash.h>
 
 int
-lws_settings_plat_get(lws_settings_instance_t *si, const char *name,
+aws_lws_settings_plat_get(aws_lws_settings_instance_t *si, const char *name,
 		      uint8_t *dest, size_t *max_actual)
 {
 	int n;
 
 	n = nvs_flash_init_partition((const char *)si->opaque_plat);
 
-	lwsl_notice("%s: init partition %d\n", __func__, n);
+	aws_lwsl_notice("%s: init partition %d\n", __func__, n);
 	if (n == ESP_ERR_NOT_FOUND)
 		return 1;
 
@@ -52,12 +52,12 @@ lws_settings_plat_get(lws_settings_instance_t *si, const char *name,
 }
 
 int
-lws_settings_plat_set(lws_settings_instance_t *si, const char *name,
+aws_lws_settings_plat_set(aws_lws_settings_instance_t *si, const char *name,
 		      const uint8_t *src, size_t len)
 {
 	int n = nvs_flash_init_partition((const char *)si->opaque_plat);
 
-	lwsl_notice("%s: init partition %d\n", __func__, n);
+	aws_lwsl_notice("%s: init partition %d\n", __func__, n);
 	if (n == ESP_ERR_NOT_FOUND)
 		return 1;
 

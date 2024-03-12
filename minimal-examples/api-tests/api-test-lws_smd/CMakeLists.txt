@@ -1,4 +1,4 @@
-project(lws-api-test-lws_smd C)
+project(lws-api-test-aws_lws_smd C)
 cmake_minimum_required(VERSION 2.8.12)
 find_package(libwebsockets CONFIG REQUIRED)
 list(APPEND CMAKE_MODULE_PATH ${LWS_CMAKE_DIR})
@@ -12,11 +12,11 @@ require_lws_config(LWS_WITH_SYS_STATE 1 requirements)
 
 if (requirements)
 	add_executable(${PROJECT_NAME} main.c)
-	add_test(NAME api-test-lws_smd COMMAND lws-api-test-lws_smd -d1151)
-	set_tests_properties(api-test-lws_smd
+	add_test(NAME api-test-aws_lws_smd COMMAND lws-api-test-aws_lws_smd -d1151)
+	set_tests_properties(api-test-aws_lws_smd
 			     PROPERTIES
 			     RUN_SERIAL TRUE
-			     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/minimal-examples/api-tests/api-test-lws_smd
+			     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/minimal-examples/api-tests/api-test-aws_lws_smd
 			     TIMEOUT 60)
 
 	if (websockets_shared)

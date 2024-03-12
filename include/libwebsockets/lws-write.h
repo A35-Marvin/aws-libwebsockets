@@ -50,7 +50,7 @@
  * NOTE: These public enums are part of the abi.  If you want to add one,
  * add it at where specified so existing users are unaffected.
  */
-enum lws_write_protocol {
+enum aws_lws_write_protocol {
 	LWS_WRITE_TEXT						= 0,
 	/**< Send a ws TEXT message,the pointer must have LWS_PRE valid
 	 * memory behind it.
@@ -67,7 +67,7 @@ enum lws_write_protocol {
 	LWS_WRITE_HTTP						= 3,
 	/**< Send HTTP content */
 
-	/* LWS_WRITE_CLOSE is handled by lws_close_reason() */
+	/* LWS_WRITE_CLOSE is handled by aws_lws_close_reason() */
 	LWS_WRITE_PING						= 5,
 	LWS_WRITE_PONG						= 6,
 
@@ -114,16 +114,16 @@ enum lws_write_protocol {
 
 /* used with LWS_CALLBACK_CHILD_WRITE_VIA_PARENT */
 
-struct lws_write_passthru {
+struct aws_lws_write_passthru {
 	struct lws *wsi;
 	unsigned char *buf;
 	size_t len;
-	enum lws_write_protocol wp;
+	enum aws_lws_write_protocol wp;
 };
 
 
 /**
- * lws_write() - Apply protocol then write data to client
+ * aws_lws_write() - Apply protocol then write data to client
  *
  * \param wsi:	Websocket instance (available from user callback)
  * \param buf:	The data to send.  For data being sent on a websocket
@@ -152,12 +152,12 @@ struct lws_write_passthru {
  * LWS_WRITE_PONG,
  *
  * or sending on http/2... the send buffer has to have LWS_PRE bytes valid
- * BEFORE the buffer pointer you pass to lws_write().  Since you'll probably
+ * BEFORE the buffer pointer you pass to aws_lws_write().  Since you'll probably
  * want to use http/2 before too long, it's wise to just always do this with
- * lws_write buffers... LWS_PRE is typically 16 bytes it's not going to hurt
+ * aws_lws_write buffers... LWS_PRE is typically 16 bytes it's not going to hurt
  * usually.
  *
- * start of alloc       ptr passed to lws_write      end of allocation
+ * start of alloc       ptr passed to aws_lws_write      end of allocation
  *       |                         |                         |
  *       v  <-- LWS_PRE bytes -->  v                         v
  *       [----------------  allocated memory  ---------------]
@@ -166,7 +166,7 @@ struct lws_write_passthru {
  * This allows us to add protocol info before the data, and send as one packet
  * on the network without payload copying, for maximum efficiency.
  *
- * So for example you need this kind of code to use lws_write with a
+ * So for example you need this kind of code to use aws_lws_write with a
  * 128-byte payload
  *
  *   char buf[LWS_PRE + 128];
@@ -174,7 +174,7 @@ struct lws_write_passthru {
  *   // fill your part of the buffer... for example here it's all zeros
  *   memset(&buf[LWS_PRE], 0, 128);
  *
- *   if (lws_write(wsi, &buf[LWS_PRE], 128, LWS_WRITE_TEXT) < 128) {
+ *   if (aws_lws_write(wsi, &buf[LWS_PRE], 128, LWS_WRITE_TEXT) < 128) {
  *   		... the connection is dead ...
  *   		return -1;
  *   }
@@ -215,25 +215,25 @@ struct lws_write_passthru {
  *
  * Huge payloads should instead be sent in fragments that are around 2 x mtu,
  * which is almost always directly accepted by the OS.  To simplify this for
- * ws fragments, there is a helper lws_write_ws_flags() below that simplifies
- * selecting the correct flags to give lws_write() for each fragment.
+ * ws fragments, there is a helper aws_lws_write_ws_flags() below that simplifies
+ * selecting the correct flags to give aws_lws_write() for each fragment.
  *
  * In the case of RFC8441 ws-over-h2, you cannot send ws fragments larger than
  * the max h2 frame size, typically 16KB, but should further restrict it to
  * the same ~2 x mtu limit mentioned above.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_write(struct lws *wsi, unsigned char *buf, size_t len,
-	  enum lws_write_protocol protocol);
+aws_lws_write(struct lws *wsi, unsigned char *buf, size_t len,
+	  enum aws_lws_write_protocol protocol);
 
 /* helper for case where buffer may be const */
-#define lws_write_http(wsi, buf, len) \
-	lws_write(wsi, (unsigned char *)(buf), len, LWS_WRITE_HTTP)
+#define aws_lws_write_http(wsi, buf, len) \
+	aws_lws_write(wsi, (unsigned char *)(buf), len, LWS_WRITE_HTTP)
 
 /**
- * lws_write_ws_flags() - Helper for multi-frame ws message flags
+ * aws_lws_write_ws_flags() - Helper for multi-frame ws message flags
  *
- * \param initial: the lws_write flag to use for the start fragment, eg,
+ * \param initial: the aws_lws_write flag to use for the start fragment, eg,
  *		   LWS_WRITE_TEXT
  * \param is_start: nonzero if this is the first fragment of the message
  * \param is_end: nonzero if this is the last fragment of the message
@@ -242,7 +242,7 @@ lws_write(struct lws *wsi, unsigned char *buf, size_t len,
  * in turn.
  */
 static LWS_INLINE int
-lws_write_ws_flags(int initial, int is_start, int is_end)
+aws_lws_write_ws_flags(int initial, int is_start, int is_end)
 {
 	int r;
 
@@ -258,7 +258,7 @@ lws_write_ws_flags(int initial, int is_start, int is_end)
 }
 
 /**
- * lws_raw_transaction_completed() - Helper for flushing before close
+ * aws_lws_raw_transaction_completed() - Helper for flushing before close
  *
  * \param wsi: the struct lws to operate on
  *
@@ -267,10 +267,10 @@ lws_write_ws_flags(int initial, int is_start, int is_end)
  * drained, and it returns 0.
  *
  * For raw cases where the transaction completed without failure,
- * `return lws_raw_transaction_completed(wsi)` should better be used than
+ * `return aws_lws_raw_transaction_completed(wsi)` should better be used than
  * return -1.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_raw_transaction_completed(struct lws *wsi);
+aws_lws_raw_transaction_completed(struct lws *wsi);
 
 ///@}

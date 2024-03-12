@@ -41,8 +41,8 @@ static const uint8_t
 static int
 test_genaes_cbc(void)
 {
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	uint8_t res[32], res1[32];
 
 	/*
@@ -52,56 +52,56 @@ test_genaes_cbc(void)
 	e.buf = (uint8_t *)cbc256_key;
 	e.len = sizeof(cbc256_key);
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CBC, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CBC, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
-	if (lws_genaes_crypt(&ctx, cbc256, 16, res, (uint8_t *)cbc256_iv,
+	if (aws_lws_genaes_crypt(&ctx, cbc256, 16, res, (uint8_t *)cbc256_iv,
 			     NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy enc failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy enc failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(cbc256_enc, res, 16)) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(cbc256_enc, res, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CBC, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create dec failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CBC, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)cbc256_iv,
+	if (aws_lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)cbc256_iv,
 			     NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt dec failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt dec failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy dec failed\n", __func__);
-		lwsl_hexdump_notice(res1, 16);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy dec failed\n", __func__);
+		aws_lwsl_hexdump_notice(res1, 16);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(cbc256, res1, 16)) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(cbc256, res1, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
@@ -134,64 +134,64 @@ cfb128_enc[] = {
 static int
 test_genaes_cfb128(void)
 {
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	uint8_t res[32], res1[32];
 	size_t iv_off = 0;
 
 	e.buf = (uint8_t *)cfb128_key;
 	e.len = sizeof(cfb128_key);
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CFB128, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CFB128, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
-	if (lws_genaes_crypt(&ctx, cfb128, 16, res, (uint8_t *)cfb128_iv,
+	if (aws_lws_genaes_crypt(&ctx, cfb128, 16, res, (uint8_t *)cfb128_iv,
 			     NULL, &iv_off, 0)) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(cfb128_enc, res, 16)) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(cfb128_enc, res, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
 	iv_off = 0;
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CFB128, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create dec failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CFB128, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)cfb128_iv,
+	if (aws_lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)cfb128_iv,
 			     NULL, &iv_off, 0)) {
-		lwsl_err("%s: lws_genaes_crypt dec failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt dec failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(cfb128, res1, 16)) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res1, 16);
+	if (aws_lws_timingsafe_bcmp(cfb128, res1, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res1, 16);
 		return -1;
 	}
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
@@ -225,61 +225,61 @@ cfb8_enc[] = {
 static int
 test_genaes_cfb8(void)
 {
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	uint8_t res[32], res1[32];
 
 	e.buf = (uint8_t *)cfb8_key;
 	e.len = sizeof(cfb8_key);
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CFB8, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CFB8, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
-	if (lws_genaes_crypt(&ctx, cfb8, 16, res, (uint8_t *)cfb8_iv,
+	if (aws_lws_genaes_crypt(&ctx, cfb8, 16, res, (uint8_t *)cfb8_iv,
 			     NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(cfb8_enc, res, 16)) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(cfb8_enc, res, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CFB8, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create dec failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CFB8, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)cfb8_iv,
+	if (aws_lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)cfb8_iv,
 			     NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt dec failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt dec failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(cfb8, res1, 16)) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res1, 16);
+	if (aws_lws_timingsafe_bcmp(cfb8, res1, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res1, 16);
 		return -1;
 	}
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
@@ -313,8 +313,8 @@ static int
 test_genaes_ctr(void)
 {
 	uint8_t nonce_counter[16], sb[16];
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	uint8_t res[32], res1[32];
 	size_t nc_off = 0;
 
@@ -324,24 +324,24 @@ test_genaes_ctr(void)
 	memset(sb, 0, sizeof(nonce_counter));
 	memcpy(nonce_counter, ctr_iv, sizeof(ctr_iv));
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CTR, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_CTR, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
-	if (lws_genaes_crypt(&ctx, ctr, 16, res, nonce_counter, sb, &nc_off, 0)) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+	if (aws_lws_genaes_crypt(&ctx, ctr, 16, res, nonce_counter, sb, &nc_off, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(ctr_enc, res, 16)) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(ctr_enc, res, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
@@ -349,33 +349,33 @@ test_genaes_ctr(void)
 	memset(sb , 0, sizeof(nonce_counter));
 	memcpy(nonce_counter, ctr_iv, sizeof(ctr_iv));
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CTR, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create dec failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_CTR, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genaes_crypt(&ctx, res, 16, res1, nonce_counter, sb, &nc_off, 0)) {
-		lwsl_err("%s: lws_genaes_crypt dec failed\n", __func__);
+	if (aws_lws_genaes_crypt(&ctx, res, 16, res1, nonce_counter, sb, &nc_off, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt dec failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(ctr, res1, 16)) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res1, 16);
+	if (aws_lws_timingsafe_bcmp(ctr, res1, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res1, 16);
 		return -1;
 	}
 
-	lws_explicit_bzero(sb, sizeof(sb));
+	aws_lws_explicit_bzero(sb, sizeof(sb));
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
@@ -406,8 +406,8 @@ ecb_enc[] = {
 static int
 test_genaes_ecb(void)
 {
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	uint8_t res[32], res1[32];
 
 	/*
@@ -417,52 +417,52 @@ test_genaes_ecb(void)
 	e.buf = (uint8_t *)ecb_key;
 	e.len = sizeof(ecb_key);
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_ECB, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_ECB, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
-	if (lws_genaes_crypt(&ctx, ecb, 16, res, NULL, NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+	if (aws_lws_genaes_crypt(&ctx, ecb, 16, res, NULL, NULL, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(ecb_enc, res, 16)) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(ecb_enc, res, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_ECB, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create dec failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_ECB, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genaes_crypt(&ctx, res, 16, res1, NULL, NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt dec failed\n", __func__);
+	if (aws_lws_genaes_crypt(&ctx, res, 16, res1, NULL, NULL, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt dec failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(ecb, res1, 16)) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(ecb, res1, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
@@ -501,64 +501,64 @@ static const uint8_t
 static int
 test_genaes_ofb(void)
 {
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	uint8_t res[32], res1[32];
 	size_t iv_off = 0;
 
 	e.buf = (uint8_t *)ofb_key;
 	e.len = sizeof(ofb_key);
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_OFB, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_OFB, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
-	if (lws_genaes_crypt(&ctx, ofb, 16, res, (uint8_t *)ofb_iv, NULL,
+	if (aws_lws_genaes_crypt(&ctx, ofb, 16, res, (uint8_t *)ofb_iv, NULL,
 			     &iv_off, 0)) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(ofb_enc, res, 16)) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(ofb_enc, res, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
 	iv_off = 0;
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_OFB, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create dec failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_OFB, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)ofb_iv, NULL,
+	if (aws_lws_genaes_crypt(&ctx, res, 16, res1, (uint8_t *)ofb_iv, NULL,
 			     &iv_off, 0)) {
-		lwsl_err("%s: lws_genaes_crypt dec failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt dec failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(ofb, res1, 16)) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(ofb, res1, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
@@ -595,8 +595,8 @@ static int
 test_genaes_xts(void)
 {
 
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	uint8_t res[32], res1[32], data_unit[16];
 
 	memset(data_unit, 0, sizeof(data_unit));
@@ -604,52 +604,52 @@ test_genaes_xts(void)
 	e.buf = (uint8_t *)xts_key;
 	e.len = sizeof(xts_key);
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_XTS, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_XTS, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
-	if (lws_genaes_crypt(&ctx, xts, 16, res, data_unit, NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+	if (aws_lws_genaes_crypt(&ctx, xts, 16, res, data_unit, NULL, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(xts_enc, res, 16)) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(xts_enc, res, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_XTS, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create dec failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_XTS, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_genaes_crypt(&ctx, res, 16, res1, data_unit, NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt dec failed\n", __func__);
+	if (aws_lws_genaes_crypt(&ctx, res, 16, res1, data_unit, NULL, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt dec failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_destroy failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, NULL, 0)) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(xts, res1, 16)) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, 16);
+	if (aws_lws_timingsafe_bcmp(xts, res1, 16)) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, 16);
 		return -1;
 	}
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
@@ -688,8 +688,8 @@ static int
 test_genaes_gcm(void)
 {
 	uint8_t res[sizeof(gcm_ct)], tag[sizeof(gcm_tag)];
-	struct lws_genaes_ctx ctx;
-	struct lws_gencrypto_keyelem e;
+	struct aws_lws_genaes_ctx ctx;
+	struct aws_lws_gencrypto_keyelem e;
 	size_t iv_off = 0;
 
 	e.buf = (uint8_t *)gcm_key;
@@ -697,81 +697,81 @@ test_genaes_gcm(void)
 
 	/* Encrypt */
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_GCM, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_ENC, LWS_GAESM_GCM, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
 	/* first we set the iv and aad */
 
 	iv_off = sizeof(gcm_iv);
-	if (lws_genaes_crypt(&ctx, gcm_aad, sizeof(gcm_aad), NULL,
+	if (aws_lws_genaes_crypt(&ctx, gcm_aad, sizeof(gcm_aad), NULL,
 			     (uint8_t *)gcm_iv, (uint8_t *)gcm_tag,
 			     &iv_off, sizeof(gcm_tag))) {
-		lwsl_err("%s: lws_genaes_crypt 1 failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt 1 failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_crypt(&ctx, gcm_pt, sizeof(gcm_pt), res,
+	if (aws_lws_genaes_crypt(&ctx, gcm_pt, sizeof(gcm_pt), res,
 			     NULL, NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt 2 failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt 2 failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, tag, sizeof(tag))) {
-		lwsl_err("%s: lws_genaes_destroy enc failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, tag, sizeof(tag))) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy enc failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(gcm_ct, res, sizeof(gcm_ct))) {
-		lwsl_err("%s: lws_genaes_crypt encoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, sizeof(gcm_ct));
+	if (aws_lws_timingsafe_bcmp(gcm_ct, res, sizeof(gcm_ct))) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt encoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, sizeof(gcm_ct));
 		return -1;
 	}
 
 
 	/* Decrypt */
 
-	if (lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_GCM, &e, 0, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+	if (aws_lws_genaes_create(&ctx, LWS_GAESO_DEC, LWS_GAESM_GCM, &e, 0, NULL)) {
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 		return 1;
 	}
 
 	iv_off = sizeof(gcm_iv); /* initial call sets iv + aad + tag */
-	if (lws_genaes_crypt(&ctx, gcm_aad, sizeof(gcm_aad), NULL,
+	if (aws_lws_genaes_crypt(&ctx, gcm_aad, sizeof(gcm_aad), NULL,
 			     (uint8_t *)gcm_iv, (uint8_t *)gcm_tag,
 			     &iv_off, sizeof(gcm_tag))) {
-		lwsl_err("%s: lws_genaes_crypt 1 failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt 1 failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_crypt(&ctx, gcm_ct, sizeof(gcm_ct), res,
+	if (aws_lws_genaes_crypt(&ctx, gcm_ct, sizeof(gcm_ct), res,
 			     NULL, NULL, NULL, 0)) {
-		lwsl_err("%s: lws_genaes_crypt 2 failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt 2 failed\n", __func__);
 		goto bail;
 	}
 
-	if (lws_genaes_destroy(&ctx, tag, sizeof(tag))) {
-		lwsl_err("%s: lws_genaes_destroy dec failed\n", __func__);
+	if (aws_lws_genaes_destroy(&ctx, tag, sizeof(tag))) {
+		aws_lwsl_err("%s: aws_lws_genaes_destroy dec failed\n", __func__);
 		return -1;
 	}
 
-	if (lws_timingsafe_bcmp(gcm_pt, res, sizeof(gcm_pt))) {
-		lwsl_err("%s: lws_genaes_crypt decoding mismatch\n", __func__);
-		lwsl_hexdump_notice(res, sizeof(gcm_ct));
+	if (aws_lws_timingsafe_bcmp(gcm_pt, res, sizeof(gcm_pt))) {
+		aws_lwsl_err("%s: aws_lws_genaes_crypt decoding mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(res, sizeof(gcm_ct));
 		return -1;
 	}
 
 	return 0;
 
 bail:
-	lws_genaes_destroy(&ctx, NULL, 0);
+	aws_lws_genaes_destroy(&ctx, NULL, 0);
 
 	return -1;
 }
 
 int
-test_genaes(struct lws_context *context)
+test_genaes(struct aws_lws_context *context)
 {
 #if (defined(LWS_WITH_MBEDTLS) && (!defined(MBEDTLS_CONFIG_H) || defined(MBEDTLS_CIPHER_MODE_CBC))) || \
     (!defined(LWS_WITH_MBEDTLS) && defined(LWS_HAVE_EVP_aes_128_cbc))
@@ -814,12 +814,12 @@ test_genaes(struct lws_context *context)
 
 	/* end */
 
-	lwsl_notice("%s: selftest OK\n", __func__);
+	aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return 0;
 
 bail:
-	lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
+	aws_lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
 
 	return 1;
 }

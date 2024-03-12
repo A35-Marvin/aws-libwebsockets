@@ -28,7 +28,7 @@
  * no dependency at all on any JOSE type.
  */
 
-enum lws_gencrypto_kty {
+enum aws_lws_gencrypto_kty {
 	LWS_GENCRYPTO_KTY_UNKNOWN,
 
 	LWS_GENCRYPTO_KTY_OCT,
@@ -43,13 +43,13 @@ enum lws_gencrypto_kty {
  * definitive keytype until the end.
  */
 
-enum lws_gencrypto_oct_tok {
+enum aws_lws_gencrypto_oct_tok {
 	LWS_GENCRYPTO_OCT_KEYEL_K, /* note... same offset as AES K */
 
 	LWS_GENCRYPTO_OCT_KEYEL_COUNT
 };
 
-enum lws_gencrypto_rsa_tok {
+enum aws_lws_gencrypto_rsa_tok {
 	LWS_GENCRYPTO_RSA_KEYEL_E,
 	LWS_GENCRYPTO_RSA_KEYEL_N,
 	LWS_GENCRYPTO_RSA_KEYEL_D, /* note... same offset as EC D */
@@ -69,7 +69,7 @@ enum lws_gencrypto_rsa_tok {
 	LWS_GENCRYPTO_RSA_KEYEL_COUNT
 };
 
-enum lws_gencrypto_ec_tok {
+enum aws_lws_gencrypto_ec_tok {
 	LWS_GENCRYPTO_EC_KEYEL_CRV,
 	LWS_GENCRYPTO_EC_KEYEL_X,
 	/* note... same offset as RSA D */
@@ -79,7 +79,7 @@ enum lws_gencrypto_ec_tok {
 	LWS_GENCRYPTO_EC_KEYEL_COUNT
 };
 
-enum lws_gencrypto_aes_tok {
+enum aws_lws_gencrypto_aes_tok {
 	/* note... same offset as OCT K */
 	LWS_GENCRYPTO_AES_KEYEL_K = LWS_GENCRYPTO_OCT_KEYEL_K,
 
@@ -96,14 +96,14 @@ enum lws_gencrypto_aes_tok {
  * type.
  */
 
-typedef struct lws_gencrypto_keyelem {
+typedef struct aws_lws_gencrypto_keyelem {
 	uint8_t *buf;
 	uint32_t len;
-} lws_gc_elem_t;
+} aws_lws_gc_elem_t;
 
 
 /**
- * lws_gencrypto_bits_to_bytes() - returns rounded up bytes needed for bits
+ * aws_lws_gencrypto_bits_to_bytes() - returns rounded up bytes needed for bits
  *
  * \param bits
  *
@@ -111,10 +111,10 @@ typedef struct lws_gencrypto_keyelem {
  * a byte is partially used, the byte count is rounded up.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_gencrypto_bits_to_bytes(int bits);
+aws_lws_gencrypto_bits_to_bytes(int bits);
 
 /**
- * lws_base64_size() - returns estimated size of base64 encoding
+ * aws_lws_base64_size() - returns estimated size of base64 encoding
  *
  * \param bytes
  *
@@ -122,10 +122,10 @@ lws_gencrypto_bits_to_bytes(int bits);
  * of the given amount of unencoded data.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_base64_size(int bytes);
+aws_lws_base64_size(int bytes);
 
 /**
- * lws_gencrypto_padded_length() - returns PKCS#5/#7 padded length
+ * aws_lws_gencrypto_padded_length() - returns PKCS#5/#7 padded length
  *
  * @param blocksize - blocksize to pad to
  * @param len - Length of input to pad
@@ -134,4 +134,4 @@ lws_base64_size(int bytes);
  * padding has been applied to it.
  */
 LWS_VISIBLE LWS_EXTERN size_t
-lws_gencrypto_padded_length(size_t block_size, size_t len);
+aws_lws_gencrypto_padded_length(size_t block_size, size_t len);

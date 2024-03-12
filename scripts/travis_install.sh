@@ -6,7 +6,7 @@ if [ "$TRAVIS_OS_NAME" == "linux" ];
 then
 	sudo apt-get update -qq
 
-	if [ "$LWS_METHOD" == "lwsws" -o "$LWS_METHOD" == "lwsws2" ];
+	if [ "$LWS_METHOD" == "aws_lwsws" -o "$LWS_METHOD" == "aws_lwsws2" ];
 	then
 		sudo apt-get install -y -qq realpath libjemalloc1 libev4 libuv-dev libdbus-1-dev valgrind mosquitto
 		sudo apt-get remove python-six
@@ -46,7 +46,7 @@ then
 		sudo apt-get install -y -qq libev-dev;
 	fi
 
-	if [ "$LWS_METHOD" == "libuv" -o "$LWS_METHOD" == "lwsws" -o "$LWS_METHOD" == "lwsws2" ];
+	if [ "$LWS_METHOD" == "libuv" -o "$LWS_METHOD" == "aws_lwsws" -o "$LWS_METHOD" == "aws_lwsws2" ];
 	then
 		sudo apt-get install -y -qq libuv-dev;
 #libuv1 libuv1-dev;
@@ -56,7 +56,7 @@ fi
 
 if [ "$TRAVIS_OS_NAME" == "osx" ];
 then
-	if [ "$LWS_METHOD" == "lwsws" -o "$LWS_METHOD" == "lwsws2" ];
+	if [ "$LWS_METHOD" == "aws_lwsws" -o "$LWS_METHOD" == "aws_lwsws2" ];
 	then
 		brew update;
 		brew install dbus;
@@ -68,7 +68,7 @@ then
 		brew install libev;
 	fi
 
-	if [ "$LWS_METHOD" == "libuv" -o "$LWS_METHOD" == "lwsws" -o "$LWS_METHOD" == "lwsws2" ];
+	if [ "$LWS_METHOD" == "libuv" -o "$LWS_METHOD" == "aws_lwsws" -o "$LWS_METHOD" == "aws_lwsws2" ];
 	then
 		brew update;
 		brew install libuv;

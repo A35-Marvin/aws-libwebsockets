@@ -28,15 +28,15 @@
 #include <private-lib-core.h>
 
 #if defined(LWS_WITH_SYS_SMD)
-const lws_ss_policy_t pol_smd = {
+const aws_lws_ss_policy_t pol_smd = {
 	.flags			= 0, /* have to set something for windows */
 };
 #endif
 
-const lws_ss_policy_t *
-lws_ss_policy_lookup(const struct lws_context *context, const char *streamtype)
+const aws_lws_ss_policy_t *
+aws_lws_ss_policy_lookup(const struct aws_lws_context *context, const char *streamtype)
 {
-	const lws_ss_policy_t *p = context->pss_policies;
+	const aws_lws_ss_policy_t *p = context->pss_policies;
 
 	if (!streamtype)
 		return NULL;
@@ -56,7 +56,7 @@ lws_ss_policy_lookup(const struct lws_context *context, const char *streamtype)
 }
 
 int
-_lws_ss_set_metadata(lws_ss_metadata_t *omd, const char *name,
+_lws_ss_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 		     const void *value, size_t len)
 {
 	/*
@@ -66,11 +66,11 @@ _lws_ss_set_metadata(lws_ss_metadata_t *omd, const char *name,
 	 */
 
 	if (omd->value_on_lws_heap) {
-		lws_free_set_NULL(omd->value__may_own_heap);
+		aws_lws_free_set_NULL(omd->value__may_own_heap);
 		omd->value_on_lws_heap = 0;
 	}
 
-	// lwsl_notice("%s: %s %s\n", __func__, name, (const char *)value);
+	// aws_lwsl_notice("%s: %s %s\n", __func__, name, (const char *)value);
 
 	omd->name = name;
 	omd->value__may_own_heap = (void *)value;
@@ -80,23 +80,23 @@ _lws_ss_set_metadata(lws_ss_metadata_t *omd, const char *name,
 }
 
 int
-lws_ss_set_metadata(struct lws_ss_handle *h, const char *name,
+aws_lws_ss_set_metadata(struct aws_lws_ss_handle *h, const char *name,
 		    const void *value, size_t len)
 {
-	lws_ss_metadata_t *omd = lws_ss_get_handle_metadata(h, name);
+	aws_lws_ss_metadata_t *omd = aws_lws_ss_get_handle_metadata(h, name);
 
-	lws_service_assert_loop_thread(h->context, h->tsi);
+	aws_lws_service_assert_loop_thread(h->context, h->tsi);
 
 	if (omd)
 		return _lws_ss_set_metadata(omd, name, value, len);
 
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
 	if (h->policy->flags & LWSSSPOLF_DIRECT_PROTO_STR) {
-		omd = lws_ss_get_handle_instant_metadata(h, name);
+		omd = aws_lws_ss_get_handle_instant_metadata(h, name);
 		if (!omd) {
-			omd = lws_zalloc(sizeof(*omd), "imetadata");
+			omd = aws_lws_zalloc(sizeof(*omd), "imetadata");
 			if (!omd) {
-				lwsl_err("%s OOM\n", __func__);
+				aws_lwsl_err("%s OOM\n", __func__);
 				return 1;
 			}
 			omd->name = name;
@@ -110,29 +110,29 @@ lws_ss_set_metadata(struct lws_ss_handle *h, const char *name,
 	}
 #endif
 
-	lwsl_info("%s: unknown metadata %s\n", __func__, name);
+	aws_lwsl_info("%s: unknown metadata %s\n", __func__, name);
 	return 1;
 }
 
 int
-_lws_ss_alloc_set_metadata(lws_ss_metadata_t *omd, const char *name,
+_lws_ss_alloc_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 			   const void *value, size_t len)
 {
 	uint8_t *p;
 	int n;
 
 	if (omd->value_on_lws_heap) {
-		lws_free_set_NULL(omd->value__may_own_heap);
+		aws_lws_free_set_NULL(omd->value__may_own_heap);
 		omd->value_on_lws_heap = 0;
 	}
 
-	p = lws_malloc(len, __func__);
+	p = aws_lws_malloc(len, __func__);
 	if (!p)
 		return 1;
 
 	n = _lws_ss_set_metadata(omd, name, p, len);
 	if (n) {
-		lws_free(p);
+		aws_lws_free(p);
 		return n;
 	}
 
@@ -144,15 +144,15 @@ _lws_ss_alloc_set_metadata(lws_ss_metadata_t *omd, const char *name,
 }
 
 int
-lws_ss_alloc_set_metadata(struct lws_ss_handle *h, const char *name,
+aws_lws_ss_alloc_set_metadata(struct aws_lws_ss_handle *h, const char *name,
 			  const void *value, size_t len)
 {
-	lws_ss_metadata_t *omd = lws_ss_get_handle_metadata(h, name);
+	aws_lws_ss_metadata_t *omd = aws_lws_ss_get_handle_metadata(h, name);
 
-	lws_service_assert_loop_thread(h->context, h->tsi);
+	aws_lws_service_assert_loop_thread(h->context, h->tsi);
 
 	if (!omd) {
-		lwsl_info("%s: unknown metadata %s\n", __func__, name);
+		aws_lwsl_info("%s: unknown metadata %s\n", __func__, name);
 		return 1;
 	}
 
@@ -160,15 +160,15 @@ lws_ss_alloc_set_metadata(struct lws_ss_handle *h, const char *name,
 }
 
 int
-lws_ss_get_metadata(struct lws_ss_handle *h, const char *name,
+aws_lws_ss_get_metadata(struct aws_lws_ss_handle *h, const char *name,
 		    const void **value, size_t *len)
 {
-	lws_ss_metadata_t *omd = lws_ss_get_handle_metadata(h, name);
+	aws_lws_ss_metadata_t *omd = aws_lws_ss_get_handle_metadata(h, name);
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
 	int n;
 #endif
 
-	lws_service_assert_loop_thread(h->context, h->tsi);
+	aws_lws_service_assert_loop_thread(h->context, h->tsi);
 
 	if (omd) {
 		*value = omd->value__may_own_heap;
@@ -180,28 +180,28 @@ lws_ss_get_metadata(struct lws_ss_handle *h, const char *name,
 	if (!(h->policy->flags & LWSSSPOLF_DIRECT_PROTO_STR))
 		goto bail;
 
-	n = lws_http_string_to_known_header(name, strlen(name));
+	n = aws_lws_http_string_to_known_header(name, strlen(name));
 	if (n != LWS_HTTP_NO_KNOWN_HEADER) {
-		*len = (size_t)lws_hdr_total_length(h->wsi, n);
+		*len = (size_t)aws_lws_hdr_total_length(h->wsi, n);
 		if (!*len)
 			goto bail;
-		*value = lws_hdr_simple_ptr(h->wsi, n);
+		*value = aws_lws_hdr_simple_ptr(h->wsi, n);
 		if (!*value)
 			goto bail;
 
 		return 0;
 	}
 #if defined(LWS_WITH_CUSTOM_HEADERS)
-	n = lws_hdr_custom_length(h->wsi, (const char *)name,
+	n = aws_lws_hdr_custom_length(h->wsi, (const char *)name,
 				  (int)strlen(name));
 	if (n <= 0)
 		goto bail;
-	*value = lwsac_use(&h->imd_ac, (size_t)(n+1), (size_t)(n+1));
+	*value = aws_lwsac_use(&h->imd_ac, (size_t)(n+1), (size_t)(n+1));
 	if (!*value) {
-		lwsl_err("%s ac OOM\n", __func__);
+		aws_lwsl_err("%s ac OOM\n", __func__);
 		return 1;
 	}
-	if (lws_hdr_custom_copy(h->wsi, (char *)(*value), n+1, name,
+	if (aws_lws_hdr_custom_copy(h->wsi, (char *)(*value), n+1, name,
 				(int)strlen(name))) {
 		/* waste n+1 bytes until ss is destryed */
 		goto bail;
@@ -213,17 +213,17 @@ lws_ss_get_metadata(struct lws_ss_handle *h, const char *name,
 
 bail:
 #endif
-	lwsl_info("%s: unknown metadata %s\n", __func__, name);
+	aws_lwsl_info("%s: unknown metadata %s\n", __func__, name);
 
 	return 1;
 }
 
-lws_ss_metadata_t *
-lws_ss_get_handle_metadata(struct lws_ss_handle *h, const char *name)
+aws_lws_ss_metadata_t *
+aws_lws_ss_get_handle_metadata(struct aws_lws_ss_handle *h, const char *name)
 {
 	int n;
 
-	lws_service_assert_loop_thread(h->context, h->tsi);
+	aws_lws_service_assert_loop_thread(h->context, h->tsi);
 
 	for (n = 0; n < h->policy->metadata_count; n++)
 		if (!strcmp(name, h->metadata[n].name))
@@ -233,10 +233,10 @@ lws_ss_get_handle_metadata(struct lws_ss_handle *h, const char *name)
 }
 
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
-lws_ss_metadata_t *
-lws_ss_get_handle_instant_metadata(struct lws_ss_handle *h, const char *name)
+aws_lws_ss_metadata_t *
+aws_lws_ss_get_handle_instant_metadata(struct aws_lws_ss_handle *h, const char *name)
 {
-	lws_ss_metadata_t *imd = h->instant_metadata;
+	aws_lws_ss_metadata_t *imd = h->instant_metadata;
 
 	while (imd) {
 		if (!strcmp(name, imd->name))
@@ -250,10 +250,10 @@ lws_ss_get_handle_instant_metadata(struct lws_ss_handle *h, const char *name)
 #endif
 
 
-lws_ss_metadata_t *
-lws_ss_policy_metadata(const lws_ss_policy_t *p, const char *name)
+aws_lws_ss_metadata_t *
+aws_lws_ss_policy_metadata(const aws_lws_ss_policy_t *p, const char *name)
 {
-	lws_ss_metadata_t *pmd = p->metadata;
+	aws_lws_ss_metadata_t *pmd = p->metadata;
 
 	while (pmd) {
 		if (pmd->name && !strcmp(name, pmd->name))
@@ -264,10 +264,10 @@ lws_ss_policy_metadata(const lws_ss_policy_t *p, const char *name)
 	return NULL;
 }
 
-lws_ss_metadata_t *
-lws_ss_policy_metadata_index(const lws_ss_policy_t *p, size_t index)
+aws_lws_ss_metadata_t *
+aws_lws_ss_policy_metadata_index(const aws_lws_ss_policy_t *p, size_t index)
 {
-	lws_ss_metadata_t *pmd = p->metadata;
+	aws_lws_ss_metadata_t *pmd = p->metadata;
 
 	while (pmd) {
 		if (pmd->length == index)
@@ -280,11 +280,11 @@ lws_ss_policy_metadata_index(const lws_ss_policy_t *p, size_t index)
 
 #if !defined(LWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY)
 static int
-fe_lws_ss_destroy(struct lws_dll2 *d, void *user)
+fe_lws_ss_destroy(struct aws_lws_dll2 *d, void *user)
 {
-	lws_ss_handle_t *h = lws_container_of(d, lws_ss_handle_t, list);
+	aws_lws_ss_handle_t *h = aws_lws_container_of(d, aws_lws_ss_handle_t, list);
 
-	lws_ss_destroy(&h);
+	aws_lws_ss_destroy(&h);
 
 	return 0;
 }
@@ -298,26 +298,26 @@ fe_lws_ss_destroy(struct lws_dll2 *d, void *user)
  * ss-refcount.
  */
 
-struct lws_vhost *
-lws_ss_policy_ref_trust_store(struct lws_context *context,
-			      const lws_ss_policy_t *pol, char doref)
+struct aws_lws_vhost *
+aws_lws_ss_policy_ref_trust_store(struct aws_lws_context *context,
+			      const aws_lws_ss_policy_t *pol, char doref)
 {
-	struct lws_context_creation_info i;
-	struct lws_vhost *v;
+	struct aws_lws_context_creation_info i;
+	struct aws_lws_vhost *v;
 	int n;
 
 	memset(&i, 0, sizeof(i));
 
 	if (!pol->trust.store) {
-		v = lws_get_vhost_by_name(context, "_ss_default");
+		v = aws_lws_get_vhost_by_name(context, "_ss_default");
 		if (!v) {
 			/* corner case... there's no trust store used */
 			i.options = context->options;
 			i.vhost_name = "_ss_default";
 			i.port = CONTEXT_PORT_NO_LISTEN;
-			v = lws_create_vhost(context, &i);
+			v = aws_lws_create_vhost(context, &i);
 			if (!v) {
-				lwsl_err("%s: failed to create vhost %s\n",
+				aws_lwsl_err("%s: failed to create vhost %s\n",
 					 __func__, i.vhost_name);
 
 				return NULL;
@@ -326,40 +326,40 @@ lws_ss_policy_ref_trust_store(struct lws_context *context,
 
 		goto accepted;
 	}
-	v = lws_get_vhost_by_name(context, pol->trust.store->name);
+	v = aws_lws_get_vhost_by_name(context, pol->trust.store->name);
 	if (v) {
-		lwsl_debug("%s: vh already exists\n", __func__);
+		aws_lwsl_debug("%s: vh already exists\n", __func__);
 		goto accepted;
 	}
 
 	i.options = context->options;
 	i.vhost_name = pol->trust.store->name;
-	lwsl_debug("%s: %s\n", __func__, i.vhost_name);
+	aws_lwsl_debug("%s: %s\n", __func__, i.vhost_name);
 #if defined(LWS_WITH_TLS) && defined(LWS_WITH_CLIENT)
 	i.client_ssl_ca_mem = pol->trust.store->ssx509[0]->ca_der;
 	i.client_ssl_ca_mem_len = (unsigned int)
 			pol->trust.store->ssx509[0]->ca_der_len;
 #endif
 	i.port = CONTEXT_PORT_NO_LISTEN;
-	lwsl_info("%s: %s trust store initial '%s'\n", __func__,
+	aws_lwsl_info("%s: %s trust store initial '%s'\n", __func__,
 		  i.vhost_name, pol->trust.store->ssx509[0]->vhost_name);
 
-	v = lws_create_vhost(context, &i);
+	v = aws_lws_create_vhost(context, &i);
 	if (!v) {
-		lwsl_err("%s: failed to create vhost %s\n",
+		aws_lwsl_err("%s: failed to create vhost %s\n",
 			 __func__, i.vhost_name);
 		return NULL;
 	} else
 		v->from_ss_policy = 1;
 
 	for (n = 1; v && n < pol->trust.store->count; n++) {
-		lwsl_info("%s: add '%s' to trust store\n", __func__,
+		aws_lwsl_info("%s: add '%s' to trust store\n", __func__,
 			  pol->trust.store->ssx509[n]->vhost_name);
 #if defined(LWS_WITH_TLS)
-		if (lws_tls_client_vhost_extra_cert_mem(v,
+		if (aws_lws_tls_client_vhost_extra_cert_mem(v,
 				pol->trust.store->ssx509[n]->ca_der,
 				pol->trust.store->ssx509[n]->ca_der_len)) {
-			lwsl_err("%s: add extra cert failed\n",
+			aws_lwsl_err("%s: add extra cert failed\n",
 					__func__);
 			return NULL;
 		}
@@ -377,16 +377,16 @@ accepted:
 
 #if defined(LWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY) || defined(LWS_WITH_SECURE_STREAMS_CPP)
 int
-lws_ss_policy_unref_trust_store(struct lws_context *context,
-				const lws_ss_policy_t *pol)
+aws_lws_ss_policy_unref_trust_store(struct aws_lws_context *context,
+				const aws_lws_ss_policy_t *pol)
 {
-	struct lws_vhost *v;
+	struct aws_lws_vhost *v;
 	const char *name = "_ss_default";
 
 	if (pol->trust.store)
 		name = pol->trust.store->name;
 
-	v = lws_get_vhost_by_name(context, name);
+	v = aws_lws_get_vhost_by_name(context, name);
 	if (!v || !v->from_ss_policy)
 		return 0;
 
@@ -394,8 +394,8 @@ lws_ss_policy_unref_trust_store(struct lws_context *context,
 
 	v->ss_refcount--;
 	if (!v->ss_refcount) {
-		lwsl_notice("%s: destroying vh %s\n", __func__, name);
-		lws_vhost_destroy(v);
+		aws_lwsl_notice("%s: destroying vh %s\n", __func__, name);
+		aws_lws_vhost_destroy(v);
 	}
 
 	return 1;
@@ -403,15 +403,15 @@ lws_ss_policy_unref_trust_store(struct lws_context *context,
 #endif
 
 int
-lws_ss_policy_set(struct lws_context *context, const char *name)
+aws_lws_ss_policy_set(struct aws_lws_context *context, const char *name)
 {
 	int ret = 0;
 
 #if !defined(LWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY)
 	struct policy_cb_args *args = (struct policy_cb_args *)context->pol_args;
-	const lws_ss_policy_t *pol;
-	struct lws_vhost *v;
-	lws_ss_x509_t *x;
+	const aws_lws_ss_policy_t *pol;
+	struct aws_lws_vhost *v;
+	aws_lws_ss_x509_t *x;
 	char buf[16];
 	int m;
 
@@ -429,14 +429,14 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 		int n;
 
 #if defined(LWS_WITH_SYS_METRICS)
-		lws_start_foreach_dll_safe(struct lws_dll2 *, d, d1,
+		aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 					   context->owner_mtr_dynpol.head) {
-			lws_metric_policy_dyn_t *dm =
-				lws_container_of(d, lws_metric_policy_dyn_t, list);
+			aws_lws_metric_policy_dyn_t *dm =
+				aws_lws_container_of(d, aws_lws_metric_policy_dyn_t, list);
 
-			lws_metric_policy_dyn_destroy(dm, 1); /* keep */
+			aws_lws_metric_policy_dyn_destroy(dm, 1); /* keep */
 
-		} lws_end_foreach_dll_safe(d, d1);
+		} aws_lws_end_foreach_dll_safe(d, d1);
 #endif
 
 		/*
@@ -446,9 +446,9 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 		 */
 
 		for (n = 0; n < context->count_threads; n++) {
-			struct lws_context_per_thread *pt = &context->pt[n];
+			struct aws_lws_context_per_thread *pt = &context->pt[n];
 
-			lws_dll2_foreach_safe(&pt->ss_owner, NULL, fe_lws_ss_destroy);
+			aws_lws_dll2_foreach_safe(&pt->ss_owner, NULL, fe_lws_ss_destroy);
 		}
 
 		/*
@@ -457,9 +457,9 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 		 * fetching the real policy, and we're doing that now.
 		 *
 		 * We can destroy all the policy-related direct allocations
-		 * easily because they're cleanly in a single lwsac...
+		 * easily because they're cleanly in a single aws_lwsac...
 		 */
-		lwsac_free(&context->ac_policy);
+		aws_lwsac_free(&context->ac_policy);
 
 		/*
 		 * ...but when we did the trust stores, we created vhosts for
@@ -486,9 +486,9 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 		v = context->vhost_list;
 		while (v) {
 			if (v->from_ss_policy) {
-				struct lws_vhost *vh = v->vhost_next;
-				lwsl_debug("%s: destroying %s\n", __func__, lws_vh_tag(v));
-				lws_vhost_destroy(v);
+				struct aws_lws_vhost *vh = v->vhost_next;
+				aws_lwsl_debug("%s: destroying %s\n", __func__, aws_lws_vh_tag(v));
+				aws_lws_vhost_destroy(v);
 				v = vh;
 				continue;
 			}
@@ -499,16 +499,16 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 	context->pss_policies = args->heads[LTY_POLICY].p;
 	context->ac_policy = args->ac;
 
-	lws_humanize(buf, sizeof(buf), lwsac_total_alloc(args->ac),
+	aws_lws_humanize(buf, sizeof(buf), aws_lwsac_total_alloc(args->ac),
 			humanize_schema_si_bytes);
-	if (lwsac_total_alloc(args->ac))
-		m = (int)((lwsac_total_overhead(args->ac) * 100) /
-				lwsac_total_alloc(args->ac));
+	if (aws_lwsac_total_alloc(args->ac))
+		m = (int)((aws_lwsac_total_overhead(args->ac) * 100) /
+				aws_lwsac_total_alloc(args->ac));
 	else
 		m = 0;
 
 	(void)m;
-	lwsl_info("%s: %s, pad %d%c: %s\n", __func__, buf, m, '%', name);
+	aws_lwsl_info("%s: %s, pad %d%c: %s\n", __func__, buf, m, '%', name);
 
 	/* Create vhosts for each type of trust store */
 
@@ -524,7 +524,7 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 	pol = context->pss_policies;
 	while (pol) {
 		if (!(pol->flags & LWSSSPOLF_SERVER)) {
-			v = lws_ss_policy_ref_trust_store(context, pol,
+			v = aws_lws_ss_policy_ref_trust_store(context, pol,
 						  0 /* no refcount inc */);
 			if (!v)
 				ret = 1;
@@ -542,14 +542,14 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 
 	v = context->vhost_list;
 	while (v) {
-		lws_set_socks(v, args->socks5_proxy);
+		aws_lws_set_socks(v, args->socks5_proxy);
 		v = v->vhost_next;
 	}
 	if (context->vhost_system)
-		lws_set_socks(context->vhost_system, args->socks5_proxy);
+		aws_lws_set_socks(context->vhost_system, args->socks5_proxy);
 
 	if (args->socks5_proxy)
-		lwsl_notice("%s: global socks5 proxy: %s\n", __func__,
+		aws_lwsl_notice("%s: global socks5 proxy: %s\n", __func__,
 			    args->socks5_proxy);
 #endif
 
@@ -566,7 +566,7 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 		 * into tls library X.509 objects
 		 */
 		if (!x->keep) { /* used for server */
-			lws_free((void *)x->ca_der);
+			aws_lws_free((void *)x->ca_der);
 			x->ca_der = NULL;
 		}
 
@@ -576,21 +576,21 @@ lws_ss_policy_set(struct lws_context *context, const char *name)
 	context->last_policy = time(NULL);
 #if defined(LWS_WITH_SYS_METRICS)
 	if (context->pss_policies)
-		((lws_ss_policy_t *)context->pss_policies)->metrics =
+		((aws_lws_ss_policy_t *)context->pss_policies)->metrics =
 						args->heads[LTY_METRICS].m;
 #endif
 
 	/* and we can discard the parsing args object now, invalidating args */
 
-	lws_free_set_NULL(context->pol_args);
+	aws_lws_free_set_NULL(context->pol_args);
 #endif
 
 #if defined(LWS_WITH_SYS_METRICS)
-	lws_metric_rebind_policies(context);
+	aws_lws_metric_rebind_policies(context);
 #endif
 
 #if defined(LWS_WITH_SYS_SMD)
-	(void)lws_smd_msg_printf(context, LWSSMDCL_SYSTEM_STATE,
+	(void)aws_lws_smd_msg_printf(context, LWSSMDCL_SYSTEM_STATE,
 				 "{\"policy\":\"updated\",\"ts\":%lu}",
 				   (long)context->last_policy);
 #endif

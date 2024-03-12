@@ -125,10 +125,10 @@ int FN_NAME( const mbedtls_asn1_buf *oid, ATTR1_TYPE * ATTR1 )                  
 }
 
 FN_OID_TYPED_FROM_ASN1(oid_x509_ext_t, x509_ext, oid_x509_ext)
-FN_OID_GET_ATTR1(lws_mbedtls_oid_get_x509_ext_type,
+FN_OID_GET_ATTR1(aws_lws_mbedtls_oid_get_x509_ext_type,
 		 oid_x509_ext_t, x509_ext, int, ext_type)
 
-typedef struct lws_mbedtls_x509_san_other_name
+typedef struct aws_lws_mbedtls_x509_san_other_name
 {
     /**
      * The type_id is an OID as deifned in RFC 5280.
@@ -153,19 +153,19 @@ typedef struct lws_mbedtls_x509_san_other_name
     }
     value;
 }
-lws_mbedtls_x509_san_other_name;
+aws_lws_mbedtls_x509_san_other_name;
 
 
-typedef struct lws_mbedtls_x509_subject_alternative_name
+typedef struct aws_lws_mbedtls_x509_subject_alternative_name
 {
 	int type;                              /**< The SAN type, value of LWS_MBEDTLS_X509_SAN_XXX. */
 	union {
-	 lws_mbedtls_x509_san_other_name other_name; /**< The otherName supported type. */
+	 aws_lws_mbedtls_x509_san_other_name other_name; /**< The otherName supported type. */
 	 mbedtls_x509_buf   unstructured_name; /**< The buffer for the un constructed types. Only dnsName currently supported */
 	}
 	san; /**< A union of the supported SAN types */
 }
-lws_mbedtls_x509_subject_alternative_name;
+aws_lws_mbedtls_x509_subject_alternative_name;
 
 static int
 x509_get_skid(uint8_t **p, const uint8_t *end, mbedtls_x509_buf *skid)
@@ -197,7 +197,7 @@ x509_get_skid(uint8_t **p, const uint8_t *end, mbedtls_x509_buf *skid)
  */
 
 static void
-lws_x509_clean_name(mbedtls_x509_name *name)
+aws_lws_x509_clean_name(mbedtls_x509_name *name)
 {
 	mbedtls_x509_name *n1;
 
@@ -214,8 +214,8 @@ lws_x509_clean_name(mbedtls_x509_name *name)
 }
 
 static int
-lws_mbedtls_x509_parse_general_name(const mbedtls_x509_buf *name_buf,
-				    lws_mbedtls_x509_subject_alternative_name *name)
+aws_lws_mbedtls_x509_parse_general_name(const mbedtls_x509_buf *name_buf,
+				    aws_lws_mbedtls_x509_subject_alternative_name *name)
 {
 	// mbedtls_x509_name_other_name other_name;
 	uint8_t *bufferPointer, **p, *end;
@@ -252,7 +252,7 @@ lws_mbedtls_x509_parse_general_name(const mbedtls_x509_buf *name_buf,
 		rfc822Name.MBEDTLS_PRIVATE(next) = NULL;
 		ret = mbedtls_x509_get_name( p, end, &rfc822Name );
 		if (ret) {
-			lws_x509_clean_name(&rfc822Name);
+			aws_lws_x509_clean_name(&rfc822Name);
 			return ret;
 		}
 
@@ -278,7 +278,7 @@ lws_mbedtls_x509_parse_general_name(const mbedtls_x509_buf *name_buf,
 }
 
 static int
-lws_x509_get_general_names(uint8_t **p, const uint8_t *end,
+aws_lws_x509_get_general_names(uint8_t **p, const uint8_t *end,
 			   mbedtls_x509_sequence *name )
 {
 	mbedtls_asn1_sequence *cur = name;
@@ -297,7 +297,7 @@ lws_x509_get_general_names(uint8_t **p, const uint8_t *end,
 		return 1;
 
 	while (*p < end) {
-		lws_mbedtls_x509_subject_alternative_name dnb;
+		aws_lws_mbedtls_x509_subject_alternative_name dnb;
 		memset(&dnb, 0, sizeof(dnb));
 
 		tag = **p;
@@ -317,7 +317,7 @@ lws_x509_get_general_names(uint8_t **p, const uint8_t *end,
 		/*
 		 * Check that the name is structured correctly.
 		 */
-		r = lws_mbedtls_x509_parse_general_name(
+		r = aws_lws_mbedtls_x509_parse_general_name(
 					&cur->MBEDTLS_PRIVATE(buf), &dnb);
 		/*
 		 * In case the extension is malformed, return an error,
@@ -330,8 +330,8 @@ lws_x509_get_general_names(uint8_t **p, const uint8_t *end,
 			while( seq_cur != NULL ) {
 				seq_prv = seq_cur;
 				seq_cur = seq_cur->MBEDTLS_PRIVATE(next);
-				lws_explicit_bzero(seq_prv, sizeof(*seq_cur));
-				lws_free(seq_prv);
+				aws_lws_explicit_bzero(seq_prv, sizeof(*seq_cur));
+				aws_lws_free(seq_prv);
 			}
 
 			name->MBEDTLS_PRIVATE(next) = NULL;
@@ -345,7 +345,7 @@ lws_x509_get_general_names(uint8_t **p, const uint8_t *end,
 				return 1;
 
 			cur->MBEDTLS_PRIVATE(next) =
-					lws_zalloc(sizeof(*cur), __func__);
+					aws_lws_zalloc(sizeof(*cur), __func__);
 
 			if (!cur->MBEDTLS_PRIVATE(next))
 				return 1;
@@ -368,7 +368,7 @@ lws_x509_get_general_names(uint8_t **p, const uint8_t *end,
 }
 
 static int
-x509_get_akid(uint8_t **p, uint8_t *end, lws_mbedtls_x509_authority *akid)
+x509_get_akid(uint8_t **p, uint8_t *end, aws_lws_mbedtls_x509_authority *akid)
 {
 	size_t len = 0u;
 	int r;
@@ -404,7 +404,7 @@ x509_get_akid(uint8_t **p, uint8_t *end, lws_mbedtls_x509_authority *akid)
 
 			/* "end" also includes the CertSerialNumber field
 			 * so "len" shall be used */
-			r = lws_x509_get_general_names(p, (*p + len),
+			r = aws_lws_x509_get_general_names(p, (*p + len),
 						    &akid->authorityCertIssuer);
 		}
 	}
@@ -431,8 +431,8 @@ x509_get_akid(uint8_t **p, uint8_t *end, lws_mbedtls_x509_authority *akid)
  */
 
 int
-lws_x509_get_crt_ext(mbedtls_x509_crt *crt, mbedtls_x509_buf *skid,
-		     lws_mbedtls_x509_authority *akid)
+aws_lws_x509_get_crt_ext(mbedtls_x509_crt *crt, mbedtls_x509_buf *skid,
+		     aws_lws_mbedtls_x509_authority *akid)
 {
 	uint8_t *p = crt->MBEDTLS_PRIVATE(v3_ext).MBEDTLS_PRIVATE(p),
 					*end_ext_data, *end_ext_octet;
@@ -482,7 +482,7 @@ lws_x509_get_crt_ext(mbedtls_x509_crt *crt, mbedtls_x509_buf *skid,
 		if (end_ext_octet != end_ext_data)
 			return 1;
 
-		r = lws_mbedtls_oid_get_x509_ext_type(&extn_oid, &ext_type);
+		r = aws_lws_mbedtls_oid_get_x509_ext_type(&extn_oid, &ext_type);
 		if (r) {
 			p = end_ext_octet;
 			continue;

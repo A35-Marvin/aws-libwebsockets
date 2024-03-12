@@ -32,10 +32,10 @@ int main(int argc, char **argv)
 {
 	int n, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	int fd, fi, ft, createindex = 0, flags = LWSFTS_F_QUERY_AUTOCOMPLETE;
-	struct lws_fts_search_params params;
-	struct lws_fts_result *result;
-	struct lws_fts_file *jtf;
-	struct lws_fts *t;
+	struct aws_lws_fts_search_params params;
+	struct aws_lws_fts_result *result;
+	struct aws_lws_fts_file *jtf;
+	struct aws_lws_fts *t;
 	char buf[16384];
 
 	do {
@@ -76,12 +76,12 @@ int main(int argc, char **argv)
 		}
 	} while (n >= 0);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: full-text search\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: full-text search\n");
 
 	if (createindex) {
 
-		lwsl_notice("Creating index\n");
+		aws_lwsl_notice("Creating index\n");
 
 		/*
 		 * create an index by shifting through argv and indexing each
@@ -90,25 +90,25 @@ int main(int argc, char **argv)
 
 		ft = open(index_filepath, O_CREAT | O_WRONLY | O_TRUNC, 0600);
 		if (ft < 0) {
-			lwsl_err("%s: can't open index %s\n", __func__,
+			aws_lwsl_err("%s: can't open index %s\n", __func__,
 				 index_filepath);
 
 			goto bail;
 		}
 
-		t = lws_fts_create(ft);
+		t = aws_lws_fts_create(ft);
 		if (!t) {
-			lwsl_err("%s: Unable to allocate trie\n", __func__);
+			aws_lwsl_err("%s: Unable to allocate trie\n", __func__);
 
 			goto bail1;
 		}
 
 		while (optind < argc) {
 
-			fi = lws_fts_file_index(t, argv[optind],
+			fi = aws_lws_fts_file_index(t, argv[optind],
 						(int)strlen(argv[optind]), 1);
 			if (fi < 0) {
-				lwsl_err("%s: Failed to get file idx for %s\n",
+				aws_lwsl_err("%s: Failed to get file idx for %s\n",
 					 __func__, argv[optind]);
 
 				goto bail1;
@@ -116,7 +116,7 @@ int main(int argc, char **argv)
 
 			fd = open(argv[optind], O_RDONLY);
 			if (fd < 0) {
-				lwsl_err("unable to open %s for read\n",
+				aws_lwsl_err("unable to open %s for read\n",
 						argv[optind]);
 				goto bail;
 			}
@@ -127,8 +127,8 @@ int main(int argc, char **argv)
 				if (n <= 0)
 					break;
 
-				if (lws_fts_fill(t, (uint32_t)fi, buf, (size_t)n)) {
-					lwsl_err("%s: lws_fts_fill failed\n",
+				if (aws_lws_fts_fill(t, (uint32_t)fi, buf, (size_t)n)) {
+					aws_lwsl_err("%s: aws_lws_fts_fill failed\n",
 						 __func__);
 					close(fd);
 
@@ -141,13 +141,13 @@ int main(int argc, char **argv)
 			optind++;
 		}
 
-		if (lws_fts_serialize(t)) {
-			lwsl_err("%s: serialize failed\n", __func__);
+		if (aws_lws_fts_serialize(t)) {
+			aws_lwsl_err("%s: serialize failed\n", __func__);
 
 			goto bail;
 		}
 
-		lws_fts_destroy(&t);
+		aws_lws_fts_destroy(&t);
 		close(ft);
 
 		return 0;
@@ -157,14 +157,14 @@ int main(int argc, char **argv)
 	 * shift through argv searching for each token
 	 */
 
-	jtf = lws_fts_open(index_filepath);
+	jtf = aws_lws_fts_open(index_filepath);
 	if (!jtf)
 		goto bail;
 
 	while (optind < argc) {
 
-		struct lws_fts_result_autocomplete *ac;
-		struct lws_fts_result_filepath *fp;
+		struct aws_lws_fts_result_autocomplete *ac;
+		struct aws_lws_fts_result_filepath *fp;
 		uint32_t *l, n;
 
 		memset(&params, 0, sizeof(params));
@@ -174,11 +174,11 @@ int main(int argc, char **argv)
 		params.max_autocomplete = 20;
 		params.max_files = 20;
 
-		result = lws_fts_search(jtf, &params);
+		result = aws_lws_fts_search(jtf, &params);
 
 		if (!result) {
-			lwsl_err("%s: search failed\n", __func__);
-			lws_fts_close(jtf);
+			aws_lwsl_err("%s: search failed\n", __func__);
+			aws_lws_fts_close(jtf);
 			goto bail;
 		}
 
@@ -186,20 +186,20 @@ int main(int argc, char **argv)
 		fp = result->filepath_head;
 
 		if (!ac)
-			lwsl_notice("%s: no autocomplete results\n", __func__);
+			aws_lwsl_notice("%s: no autocomplete results\n", __func__);
 
 		while (ac) {
-			lwsl_notice("%s: AC %s: %d agg hits\n", __func__,
+			aws_lwsl_notice("%s: AC %s: %d agg hits\n", __func__,
 				((char *)(ac + 1)), ac->instances);
 
 			ac = ac->next;
 		}
 
 		if (!fp)
-			lwsl_notice("%s: no filepath results\n", __func__);
+			aws_lwsl_notice("%s: no filepath results\n", __func__);
 
 		while (fp) {
-			lwsl_notice("%s: %s: (%d lines) %d hits \n", __func__,
+			aws_lwsl_notice("%s: %s: (%d lines) %d hits \n", __func__,
 				(((char *)(fp + 1)) + fp->matches_length),
 				fp->lines_in_file, fp->matches);
 
@@ -207,24 +207,24 @@ int main(int argc, char **argv)
 				l = (uint32_t *)(fp + 1);
 				n = 0;
 				while ((int)n++ < fp->matches)
-					lwsl_notice(" %d\n", *l++);
+					aws_lwsl_notice(" %d\n", *l++);
 			}
 			fp = fp->next;
 		}
 
-		lwsac_free(&params.results_head);
+		aws_lwsac_free(&params.results_head);
 
 		optind++;
 	}
 
-	lws_fts_close(jtf);
+	aws_lws_fts_close(jtf);
 
 	return 0;
 
 bail1:
 	close(ft);
 bail:
-	lwsl_user("FAILED\n");
+	aws_lwsl_user("FAILED\n");
 
 	return 1;
 }

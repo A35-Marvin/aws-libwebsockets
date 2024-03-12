@@ -16,12 +16,12 @@
 
 #include "private.h"
 
-struct lws_ss_handle *hss_avs_event, *hss_avs_sync;
+struct aws_lws_ss_handle *hss_avs_event, *hss_avs_sync;
 
 /* this is the type for the long poll event channel */
 
 typedef struct ss_avs_event {
-	struct lws_ss_handle 	*ss;
+	struct aws_lws_ss_handle 	*ss;
 	void			*opaque_data;
 	/* ... application specific state ... */
 
@@ -37,18 +37,18 @@ enum {
 /* this is the type for the utterance metadata (and audio rideshares) */
 
 typedef struct ss_avs_metadata {
-	struct lws_ss_handle 	*ss;
+	struct aws_lws_ss_handle 	*ss;
 	void			*opaque_data;
 	/* ... application specific state ... */
 
-	struct lws_buflist	*dribble; /* next mp3 data while draining last */
+	struct aws_lws_buflist	*dribble; /* next mp3 data while draining last */
 
 	struct lejp_ctx		jctx;
 	size_t			pos;
 	size_t			mp3_in;
 	mpg123_handle		*mh;
 
-	lws_sorted_usec_list_t	sul;
+	aws_lws_sorted_usec_list_t	sul;
 
 	uint8_t			stash_eom[16];
 
@@ -98,20 +98,20 @@ static const char *metadata = "{"
  */
 
 static void
-use_buffer_250ms(lws_sorted_usec_list_t *sul)
+use_buffer_250ms(aws_lws_sorted_usec_list_t *sul)
 {
-	ss_avs_metadata_t *m = lws_container_of(sul, ss_avs_metadata_t, sul);
-	struct lws_context *context = (struct lws_context *)m->opaque_data;
-	int est = lws_ss_get_est_peer_tx_credit(m->ss);
+	ss_avs_metadata_t *m = aws_lws_container_of(sul, ss_avs_metadata_t, sul);
+	struct aws_lws_context *context = (struct aws_lws_context *)m->opaque_data;
+	int est = aws_lws_ss_get_est_peer_tx_credit(m->ss);
 
-	lwsl_notice("%s: est txcr %d\n", __func__, est);
+	aws_lwsl_notice("%s: est txcr %d\n", __func__, est);
 
 	if (est < MAX_MP3_IN_BUFFERING_BYTES - (MAX_MP3_IN_BUFFERING_BYTES / 4)) {
-		lwsl_notice("   adding %d\n", MAX_MP3_IN_BUFFERING_BYTES / 4);
-		lws_ss_add_peer_tx_credit(m->ss, MAX_MP3_IN_BUFFERING_BYTES / 4);
+		aws_lwsl_notice("   adding %d\n", MAX_MP3_IN_BUFFERING_BYTES / 4);
+		aws_lws_ss_add_peer_tx_credit(m->ss, MAX_MP3_IN_BUFFERING_BYTES / 4);
 	}
 
-	lws_sul_schedule(context, 0, &m->sul, use_buffer_250ms,
+	aws_lws_sul_schedule(context, 0, &m->sul, use_buffer_250ms,
 			 250 * LWS_US_PER_MS);
 }
 
@@ -123,12 +123,12 @@ ss_avs_mp3_open(ss_avs_metadata_t *m)
 {
 	int r;
 
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 
 	m->first_mp3 = 1;
 	m->mh = mpg123_new(NULL, NULL);
 	if (!m->mh) {
-		lwsl_err("%s: unable to make new mp3\n",
+		aws_lwsl_err("%s: unable to make new mp3\n",
 				__func__);
 		goto bail;
 	}
@@ -136,13 +136,13 @@ ss_avs_mp3_open(ss_avs_metadata_t *m)
 	r = mpg123_format(m->mh, 16000, MPG123_M_MONO,
 			  MPG123_ENC_SIGNED_16);
 	if (r) {
-		lwsl_err("%s: mpg123 format failed %d\n",
+		aws_lwsl_err("%s: mpg123 format failed %d\n",
 				__func__, r);
 		goto bail1;
 	}
 	r = mpg123_open_feed(m->mh);
 	if (r) {
-		lwsl_err("%s: mpg123 open feed failed %d\n",
+		aws_lwsl_err("%s: mpg123 open feed failed %d\n",
 				__func__, r);
 		goto bail1;
 	}
@@ -157,7 +157,7 @@ bail:
 	return 1;
 }
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags);
 
 /*
@@ -169,10 +169,10 @@ static int
 drain_end_cb(void *v)
 {
 	ss_avs_metadata_t *m = (ss_avs_metadata_t *)v;
-	struct lws_context *context = (struct lws_context *)m->opaque_data;
+	struct aws_lws_context *context = (struct aws_lws_context *)m->opaque_data;
 	int tot = 0;
 
-	lwsl_err("%s\n", __func__);
+	aws_lwsl_err("%s\n", __func__);
 
 	/*
 	 * We have drained and destroyed the existing mp3 session.  Is there
@@ -182,11 +182,11 @@ drain_end_cb(void *v)
 	m->first_mp3 = 1;
 	m->mp3_state = LAMP3STATE_IDLE;
 
-	if (lws_buflist_total_len(&m->dribble)) {
+	if (aws_lws_buflist_total_len(&m->dribble)) {
 		/* we started another one */
 
 		/* resume tx credit top up */
-		lws_sul_schedule(context, 0, &m->sul, use_buffer_250ms, 1);
+		aws_lws_sul_schedule(context, 0, &m->sul, use_buffer_250ms, 1);
 
 		if (ss_avs_mp3_open(m))
 			return 1;
@@ -197,16 +197,16 @@ drain_end_cb(void *v)
 		 * Dump what we stashed from draining into the new mp3
 		 */
 
-		while (lws_buflist_total_len(&m->dribble)) {
+		while (aws_lws_buflist_total_len(&m->dribble)) {
 			size_t s;
 			uint8_t *u, t;
 
-			s = lws_buflist_next_segment_len(&m->dribble, &u);
+			s = aws_lws_buflist_next_segment_len(&m->dribble, &u);
 			t = m->stash_eom[m->se_tail];
-			lwsl_notice("%s: preload %d: %d\n", __func__, (int)s, t);
+			aws_lwsl_notice("%s: preload %d: %d\n", __func__, (int)s, t);
 
 			mpg123_feed(m->mh, u, s);
-			lws_buflist_use_segment(&m->dribble, s);
+			aws_lws_buflist_use_segment(&m->dribble, s);
 			if (m->first_mp3) {
 				play_mp3(m->mh, NULL, NULL);
 				m->first_mp3 = 0;
@@ -216,7 +216,7 @@ drain_end_cb(void *v)
 
 			m->se_tail = (m->se_tail + 1) % sizeof(m->stash_eom);
 			if (t) {
-				lwsl_notice("%s: preloaded EOM\n", __func__);
+				aws_lwsl_notice("%s: preloaded EOM\n", __func__);
 
 				/*
 				 * We stashed the whole of the message, we need
@@ -229,12 +229,12 @@ drain_end_cb(void *v)
 				if (m->mh)
 					play_mp3(NULL, drain_end_cb, m);
 
-				lws_ss_add_peer_tx_credit(m->ss, tot);
+				aws_lws_ss_add_peer_tx_credit(m->ss, tot);
 #if 0
 				/*
 				 * Put a hold on bringing in any more data
 				 */
-				lws_sul_cancel(&m->sul);
+				aws_lws_sul_cancel(&m->sul);
 #endif
 				/* destroy our copy of the handle */
 				m->mh = NULL;
@@ -243,23 +243,23 @@ drain_end_cb(void *v)
 			}
 		}
 
-		lws_ss_add_peer_tx_credit(m->ss, tot);
+		aws_lws_ss_add_peer_tx_credit(m->ss, tot);
 	}
 
 	return 0;
 }
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	ss_avs_metadata_t *m = (ss_avs_metadata_t *)userobj;
-	struct lws_context *context = (struct lws_context *)m->opaque_data;
+	struct aws_lws_context *context = (struct aws_lws_context *)m->opaque_data;
 	int n = 0, hit = 0;
 
-	lwsl_notice("%s: len %d, flags %d (est peer txcr %d)\n", __func__,
-		    (int)len, flags, lws_ss_get_est_peer_tx_credit(m->ss));
+	aws_lwsl_notice("%s: len %d, flags %d (est peer txcr %d)\n", __func__,
+		    (int)len, flags, aws_lws_ss_get_est_peer_tx_credit(m->ss));
 
-	// lwsl_hexdump_warn(buf, len);
+	// aws_lwsl_hexdump_warn(buf, len);
 
 	if ((flags & LWSSS_FLAG_SOM) && !m->mh && !m->seen) {
 		m->mp3_mime_match = 0;
@@ -294,7 +294,7 @@ ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 						n++;
 						buf += n;
 						len -= n;
-						lwsl_notice("identified reply...\n");
+						aws_lwsl_notice("identified reply...\n");
 						m->inside_mp3 = 1;
 						break;
 					}
@@ -306,29 +306,29 @@ ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 		}
 
 		if (!hit) {
-			lws_ss_add_peer_tx_credit(m->ss, len);
+			aws_lws_ss_add_peer_tx_credit(m->ss, len);
 			return 0;
 		}
 	}
 
-	// lwsl_notice("%s: state %d\n", __func__, m->mp3_state);
+	// aws_lwsl_notice("%s: state %d\n", __func__, m->mp3_state);
 
 	switch (m->mp3_state) {
 	case LAMP3STATE_IDLE:
 
 		if (hit) {
 
-			lws_ss_add_peer_tx_credit(m->ss, n);
+			aws_lws_ss_add_peer_tx_credit(m->ss, n);
 
 			if (ss_avs_mp3_open(m))
 				goto bail;
 
-			lws_sul_schedule(context, 0, &m->sul, use_buffer_250ms, 1);
+			aws_lws_sul_schedule(context, 0, &m->sul, use_buffer_250ms, 1);
 			m->mp3_state = LAMP3STATE_SPOOLING;
 			break;
 		}
 
-		lws_ss_add_peer_tx_credit(m->ss, len);
+		aws_lws_ss_add_peer_tx_credit(m->ss, len);
 
 		if (!m->inside_mp3)
 			break;
@@ -350,17 +350,17 @@ ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 			 * run a sul that allows an additional 2KB tx credit
 			 * every 250ms, with 4KB initial credit.
 			 */
-			lwsl_notice("%s: SPOOL %d\n", __func__, (int)len);
+			aws_lwsl_notice("%s: SPOOL %d\n", __func__, (int)len);
 			mpg123_feed(m->mh, buf, len);
 
 			if (m->first_mp3) {
-				lws_sul_schedule(context, 0, &m->sul,
+				aws_lws_sul_schedule(context, 0, &m->sul,
 						 use_buffer_250ms, 1);
-		//		lws_ss_add_peer_tx_credit(m->ss,
+		//		aws_lws_ss_add_peer_tx_credit(m->ss,
 		//			len + (MAX_MP3_IN_BUFFERING_BYTES / 2));
 				play_mp3(m->mh, NULL, NULL);
 			} //else
-		//		lws_ss_add_peer_tx_credit(m->ss, len);
+		//		aws_lws_ss_add_peer_tx_credit(m->ss, len);
 			m->first_mp3 = 0;
 		}
 
@@ -378,7 +378,7 @@ ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 			 * so it's going to spam us with the next part before we
 			 * have the new mp3 sink for it.
 			 */
-			lwsl_notice("%s: EOM\n", __func__);
+			aws_lwsl_notice("%s: EOM\n", __func__);
 			m->mp3_mime_match = 0;
 			m->seen = 0;
 			m->mp3_state = LAMP3STATE_DRAINING;
@@ -390,7 +390,7 @@ ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 			/*
 			 * Put a hold on bringing in any more data
 			 */
-			lws_sul_cancel(&m->sul);
+			aws_lws_sul_cancel(&m->sul);
 #endif
 			/* destroy our copy of the handle */
 			m->mh = NULL;
@@ -401,28 +401,28 @@ ss_avs_metadata_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 
 draining:
 		if (buf && len && m->inside_mp3) {
-			lwsl_notice("%s: DRAINING: stashing %d: %d %d %d\n",
+			aws_lwsl_notice("%s: DRAINING: stashing %d: %d %d %d\n",
 				    __func__, (int)len, !!(flags & LWSSS_FLAG_EOM),
 				    m->se_head, m->se_tail);
-			lwsl_hexdump_notice(buf, len);
-			if (lws_buflist_append_segment(&m->dribble, buf, len) < 0)
+			aws_lwsl_hexdump_notice(buf, len);
+			if (aws_lws_buflist_append_segment(&m->dribble, buf, len) < 0)
 				goto bail;
 
 			m->stash_eom[m->se_head] = !!(flags & LWSSS_FLAG_EOM);
 			m->se_head = (m->se_head + 1) % sizeof(m->stash_eom);
-			lwsl_notice("%s: next head %d\n", __func__, m->se_head);
+			aws_lwsl_notice("%s: next head %d\n", __func__, m->se_head);
 
-			lws_ss_add_peer_tx_credit(m->ss, len);
+			aws_lws_ss_add_peer_tx_credit(m->ss, len);
 		}
 
 		if (flags & LWSSS_FLAG_EOM) {
 			if (!len && m->se_head != m->se_tail) {
 				/* 0-len EOM... retrospectively mark last stash */
-				lwsl_notice("%s: retro EOM\n", __func__);
+				aws_lwsl_notice("%s: retro EOM\n", __func__);
 				m->stash_eom[(m->se_head - 1) % sizeof(m->stash_eom)] = 1;
 			}
 
-			lwsl_notice("%s: Draining EOM\n", __func__);
+			aws_lwsl_notice("%s: Draining EOM\n", __func__);
 			m->inside_mp3 = 0;
 		}
 		/*
@@ -447,23 +447,23 @@ bail:
  * calls for it.
  */
 
-static lws_ss_state_return_t
-ss_avs_metadata_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
+static aws_lws_ss_state_return_t
+ss_avs_metadata_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 		   size_t *len, int *flags)
 {
 	ss_avs_metadata_t *m = (ss_avs_metadata_t *)userobj;
 	size_t tot;
 	int n;
 
-	// lwsl_notice("%s %d\n", __func__, (int)m->pos);
+	// aws_lwsl_notice("%s %d\n", __func__, (int)m->pos);
 
 	if ((long)m->pos < 0) {
 		*len = 0;
-		lwsl_info("%s: skip\n", __func__);
+		aws_lwsl_info("%s: skip\n", __func__);
 		return 1;
 	}
 
-	if (!strcmp(lws_ss_rideshare(m->ss), "avs_audio")) {
+	if (!strcmp(aws_lws_ss_rideshare(m->ss), "avs_audio")) {
 
 		/* audio rideshare part */
 
@@ -476,7 +476,7 @@ ss_avs_metadata_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
 		else
 			*len = 0;
 		if (!n) {
-			lwsl_info("%s: trying to skip tx\n", __func__);
+			aws_lwsl_info("%s: trying to skip tx\n", __func__);
 			return 1;
 		}
 
@@ -487,13 +487,13 @@ ss_avs_metadata_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
 			m->pos = (long)-1l; /* ban subsequent until new stream */
 		}
 
-		lwsl_notice("%s: tx audio %d\n", __func__, (int)*len);
+		aws_lwsl_notice("%s: tx audio %d\n", __func__, (int)*len);
 
 #if 0
 		{
 			int ff = open("/tmp/z1", O_RDWR | O_CREAT | O_APPEND, 0666);
 			if (ff == -1)
-				lwsl_err("%s: errno %d\n", __func__, errno);
+				aws_lwsl_err("%s: errno %d\n", __func__, errno);
 			write(ff, buf, *len);
 			close(ff);
 		}
@@ -517,7 +517,7 @@ ss_avs_metadata_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
 	m->pos += *len;
 
 	if (m->pos == tot) {
-		lwsl_notice("metadata done\n");
+		aws_lwsl_notice("metadata done\n");
 		*flags |= LWSSS_FLAG_EOM;
 		m->pos = 0; /* for next time */
 	}
@@ -525,29 +525,29 @@ ss_avs_metadata_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
 	return 0;
 }
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_avs_metadata_state(void *userobj, void *sh,
-		      lws_ss_constate_t state, lws_ss_tx_ordinal_t ack)
+		      aws_lws_ss_constate_t state, aws_lws_ss_tx_ordinal_t ack)
 {
 	ss_avs_metadata_t *m = (ss_avs_metadata_t *)userobj;
-	struct lws_context *context = (struct lws_context *)m->opaque_data;
+	struct aws_lws_context *context = (struct aws_lws_context *)m->opaque_data;
 
-	lwsl_notice("%s: %p: %s, ord 0x%x\n", __func__, m->ss,
-		    lws_ss_state_name(state), (unsigned int)ack);
+	aws_lwsl_notice("%s: %p: %s, ord 0x%x\n", __func__, m->ss,
+		    aws_lws_ss_state_name(state), (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_CREATING:
-		return lws_ss_client_connect(m->ss);
+		return aws_lws_ss_client_connect(m->ss);
 
 	case LWSSSCS_CONNECTING:
 		m->pos = 0;
 		break;
 	case LWSSSCS_CONNECTED:
-		lwsl_info("%s: CONNECTED\n", __func__);
-		return lws_ss_request_tx(m->ss);
+		aws_lwsl_info("%s: CONNECTED\n", __func__);
+		return aws_lws_ss_request_tx(m->ss);
 
 	case LWSSSCS_DISCONNECTED:
-		lws_sul_cancel(&m->sul);
+		aws_lws_sul_cancel(&m->sul);
 		//if (m->mh) {
 			play_mp3(NULL, NULL, NULL);
 			m->mh = NULL;
@@ -559,7 +559,7 @@ ss_avs_metadata_state(void *userobj, void *sh,
 		return 1;
 
 	case LWSSSCS_DESTROYING:
-		lws_buflist_destroy_all_segments(&m->dribble);
+		aws_lws_buflist_destroy_all_segments(&m->dribble);
 		break;
 	default:
 		break;
@@ -572,24 +572,24 @@ ss_avs_metadata_state(void *userobj, void *sh,
  * avs event
  */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_avs_event_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	return 0;
 }
 
-static lws_ss_state_return_t
-ss_avs_event_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
+static aws_lws_ss_state_return_t
+ss_avs_event_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 		      size_t *len, int *flags)
 {
 	return 1; /* don't transmit anything */
 }
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_avs_event_state(void *userobj, void *sh,
-		   lws_ss_constate_t state, lws_ss_tx_ordinal_t ack)
+		   aws_lws_ss_constate_t state, aws_lws_ss_tx_ordinal_t ack)
 {
-	lwsl_info("%s: %s, ord 0x%x\n", __func__, lws_ss_state_name(state),
+	aws_lwsl_info("%s: %s, ord 0x%x\n", __func__, aws_lws_ss_state_name(state),
 		  (unsigned int)ack);
 
 	switch (state) {
@@ -599,10 +599,10 @@ ss_avs_event_state(void *userobj, void *sh,
 	case LWSSSCS_CONNECTING:
 		break;
 	case LWSSSCS_CONNECTED:
-		lwsl_user("Connected to Alexa... speak \"Alexa, ...\"\n");
+		aws_lwsl_user("Connected to Alexa... speak \"Alexa, ...\"\n");
 		break;
 	case LWSSSCS_DISCONNECTED:
-		lwsl_user("Disconnected from Alexa\n");
+		aws_lwsl_user("Disconnected from Alexa\n");
 		break;
 	case LWSSSCS_DESTROYING:
 		mpg123_exit();
@@ -615,11 +615,11 @@ ss_avs_event_state(void *userobj, void *sh,
 }
 
 int
-avs_query_start(struct lws_context *context)
+avs_query_start(struct aws_lws_context *context)
 {
-	lws_ss_info_t ssi;
+	aws_lws_ss_info_t ssi;
 
-	lwsl_notice("%s:\n", __func__);
+	aws_lwsl_notice("%s:\n", __func__);
 
 	memset(&ssi, 0, sizeof(ssi));
 	ssi.handle_offset	    = offsetof(ss_avs_metadata_t, ss);
@@ -632,27 +632,27 @@ avs_query_start(struct lws_context *context)
 
 	ssi.manual_initial_tx_credit = 8192;
 
-	if (lws_ss_create(context, 0, &ssi, context, &hss_avs_sync, NULL, NULL)) {
-		lwsl_err("%s: failed to create avs metadata secstream\n",
+	if (aws_lws_ss_create(context, 0, &ssi, context, &hss_avs_sync, NULL, NULL)) {
+		aws_lwsl_err("%s: failed to create avs metadata secstream\n",
 			 __func__);
 
 		return 1;
 	}
 
-	lwsl_user("%s: created query stream %p\n", __func__, hss_avs_sync);
+	aws_lwsl_user("%s: created query stream %p\n", __func__, hss_avs_sync);
 
 	return 0;
 }
 
 int
-avs_example_start(struct lws_context *context)
+avs_example_start(struct aws_lws_context *context)
 {
-	lws_ss_info_t ssi;
+	aws_lws_ss_info_t ssi;
 
 	if (hss_avs_event)
 		return 0;
 
-	lwsl_info("%s: Starting AVS stream\n", __func__);
+	aws_lwsl_info("%s: Starting AVS stream\n", __func__);
 
 	/* AVS wants us to establish the long poll event stream first */
 
@@ -665,8 +665,8 @@ avs_example_start(struct lws_context *context)
 	ssi.user_alloc		    = sizeof(ss_avs_event_t);
 	ssi.streamtype		    = "avs_event";
 
-	if (lws_ss_create(context, 0, &ssi, context, &hss_avs_event, NULL, NULL)) {
-		lwsl_err("%s: failed to create avs event secure stream\n",
+	if (aws_lws_ss_create(context, 0, &ssi, context, &hss_avs_event, NULL, NULL)) {
+		aws_lwsl_err("%s: failed to create avs event secure stream\n",
 			 __func__);
 		return 1;
 	}

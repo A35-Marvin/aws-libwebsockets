@@ -29,19 +29,19 @@
 
 
 int
-_lws_plat_service_forced_tsi(struct lws_context *context, int tsi)
+_lws_plat_service_forced_tsi(struct aws_lws_context *context, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
 	int m, n, r;
 
-	r = lws_service_flag_pending(context, tsi);
+	r = aws_lws_service_flag_pending(context, tsi);
 
 	/* any socket with events to service? */
 	for (n = 0; n < (int)pt->fds_count; n++) {
 		if (!pt->fds[n].revents)
 			continue;
 
-		m = lws_service_fd_tsi(context, &pt->fds[n], tsi);
+		m = aws_lws_service_fd_tsi(context, &pt->fds[n], tsi);
 		if (m < 0)
 			return -1;
 		/* if something closed, retry this slot */
@@ -49,19 +49,19 @@ _lws_plat_service_forced_tsi(struct lws_context *context, int tsi)
 			n--;
 	}
 
-	lws_service_do_ripe_rxflow(pt);
+	aws_lws_service_do_ripe_rxflow(pt);
 
 	return r;
 }
 
-extern void lws_client_conn_wait_timeout(lws_sorted_usec_list_t *sul);
+extern void aws_lws_client_conn_wait_timeout(aws_lws_sorted_usec_list_t *sul);
 
 int
-_lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
+_lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 {
-	struct lws_context_per_thread *pt;
-	struct lws_pollfd *pfd;
-	lws_usec_t timeout_us;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_pollfd *pfd;
+	aws_lws_usec_t timeout_us;
 	struct lws *wsi;
 	unsigned int i;
 	int n;
@@ -73,9 +73,9 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 	pt = &context->pt[tsi];
 
 	if (!pt->service_tid_detected && context->vhost_list) {
-		lws_fakewsi_def_plwsa(pt);
+		aws_lws_fakewsi_def_plwsa(pt);
 
-		lws_fakewsi_prep_plwsa_ctx(context);
+		aws_lws_fakewsi_prep_plwsa_ctx(context);
 
 		pt->service_tid = context->vhost_list->
 			protocols[0].callback((struct lws *)plwsa,
@@ -89,7 +89,7 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 	else
 		/* force a default timeout of 23 days */
 		timeout_ms = 2000000000;
-	timeout_us = ((lws_usec_t)timeout_ms) * LWS_US_PER_MS;
+	timeout_us = ((aws_lws_usec_t)timeout_ms) * LWS_US_PER_MS;
 
 	if (context->event_loop_ops->run_pt)
 		context->event_loop_ops->run_pt(context, tsi);
@@ -106,7 +106,7 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 		if (wsi->sock_send_blocking)
 			continue;
 		pfd->revents = LWS_POLLOUT;
-		n = lws_service_fd(context, pfd);
+		n = aws_lws_service_fd(context, pfd);
 		if (n < 0)
 			return -1;
 
@@ -125,13 +125,13 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 	 * service pending callbacks and get maximum wait time
 	 */
 	{
-		lws_usec_t us;
+		aws_lws_usec_t us;
 
-		lws_pt_lock(pt, __func__);
+		aws_lws_pt_lock(pt, __func__);
 		/* don't stay in poll wait longer than next hr timeout */
 		us = __lws_sul_service_ripe(pt->pt_sul_owner,
 					    LWS_COUNT_PT_SUL_OWNERS,
-					    lws_now_usecs());
+					    aws_lws_now_usecs());
 		if (us && us < timeout_us)
 			/*
 			 * If something wants zero wait, that's OK, but if the next sul
@@ -141,7 +141,7 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 			timeout_us = us < context->us_wait_resolution ?
 					context->us_wait_resolution : us;
 
-		lws_pt_unlock(pt);
+		aws_lws_pt_unlock(pt);
 	}
 
 	if (_lws_plat_service_forced_tsi(context, tsi))
@@ -151,18 +151,18 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 	 * is there anybody with pending stuff that needs service forcing?
 	 */
 
-	if (!lws_service_adjust_timeout(context, 1, tsi))
+	if (!aws_lws_service_adjust_timeout(context, 1, tsi))
 		timeout_us = 0;
 
-//	lwsl_notice("%s: in %dms, count %d\n", __func__, (int)(timeout_us / 1000), pt->fds_count);
+//	aws_lwsl_notice("%s: in %dms, count %d\n", __func__, (int)(timeout_us / 1000), pt->fds_count);
 //	for (n = 0; n < (int)pt->fds_count; n++)
-//		lwsl_notice("%s: fd %d ev 0x%x POLLIN %d, POLLOUT %d\n", __func__, (int)pt->fds[n].fd, (int)pt->fds[n].events, POLLIN, POLLOUT);
+//		aws_lwsl_notice("%s: fd %d ev 0x%x POLLIN %d, POLLOUT %d\n", __func__, (int)pt->fds[n].fd, (int)pt->fds[n].events, POLLIN, POLLOUT);
 	int d = WSAPoll((WSAPOLLFD *)&pt->fds[0], pt->fds_count, (int)(timeout_us / LWS_US_PER_MS));
 	if (d < 0) {
-		lwsl_err("%s: WSAPoll failed: count %d, err %d: %d\n", __func__, pt->fds_count, d, WSAGetLastError());
+		aws_lwsl_err("%s: WSAPoll failed: count %d, err %d: %d\n", __func__, pt->fds_count, d, WSAGetLastError());
 		return 0;
 	}
-//	lwsl_notice("%s: out\n", __func__);
+//	aws_lwsl_notice("%s: out\n", __func__);
 
 #if defined(LWS_WITH_TLS)
 	if (pt->context->tls_ops &&
@@ -172,15 +172,15 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 
 	for (n = 0; n < (int)pt->fds_count; n++)
 		if (pt->fds[n].fd != LWS_SOCK_INVALID && pt->fds[n].revents) {
-//			lwsl_notice("%s: idx %d, revents 0x%x\n", __func__, n, pt->fds[n].revents);
-			lws_service_fd_tsi(context, &pt->fds[n], tsi);
+//			aws_lwsl_notice("%s: idx %d, revents 0x%x\n", __func__, n, pt->fds[n].revents);
+			aws_lws_service_fd_tsi(context, &pt->fds[n], tsi);
 		}
 
 	return 0;
 }
 
 int
-lws_plat_service(struct lws_context *context, int timeout_ms)
+aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 {
 	return _lws_plat_service_tsi(context, timeout_ms, 0);
 }

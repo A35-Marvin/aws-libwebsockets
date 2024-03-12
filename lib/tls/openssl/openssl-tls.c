@@ -32,7 +32,7 @@ static char openssl_ex_indexes_acquired;
 #endif
 
 void
-lws_tls_err_describe_clear(void)
+aws_lws_tls_err_describe_clear(void)
 {
 	char buf[160];
 	unsigned long l;
@@ -47,9 +47,9 @@ lws_tls_err_describe_clear(void)
 				(uint32_t)
 #endif
 				l, buf, sizeof(buf));
-		lwsl_info("   openssl error: %s\n", buf);
+		aws_lwsl_info("   openssl error: %s\n", buf);
 	} while (l);
-	lwsl_info("\n");
+	aws_lwsl_info("\n");
 }
 
 #if LWS_MAX_SMP != 1
@@ -57,7 +57,7 @@ lws_tls_err_describe_clear(void)
 static pthread_mutex_t *openssl_mutexes = NULL;
 
 static void
-lws_openssl_lock_callback(int mode, int type, const char *file, int line)
+aws_lws_openssl_lock_callback(int mode, int type, const char *file, int line)
 {
 	(void)file;
 	(void)line;
@@ -69,7 +69,7 @@ lws_openssl_lock_callback(int mode, int type, const char *file, int line)
 }
 
 static unsigned long
-lws_openssl_thread_id(void)
+aws_lws_openssl_thread_id(void)
 {
 #ifdef __PTW32_H
 	return (unsigned long)(intptr_t)(pthread_self()).p;
@@ -80,31 +80,31 @@ lws_openssl_thread_id(void)
 #endif
 
 int
-lws_context_init_ssl_library(struct lws_context *cx,
-                             const struct lws_context_creation_info *info)
+aws_lws_context_init_ssl_library(struct aws_lws_context *cx,
+                             const struct aws_lws_context_creation_info *info)
 {
 #ifdef USE_WOLFSSL
 #ifdef USE_OLD_CYASSL
-	lwsl_cx_info(cx, " Compiled with CyaSSL support");
+	aws_lwsl_cx_info(cx, " Compiled with CyaSSL support");
 #else
-	lwsl_cx_info(cx, " Compiled with wolfSSL support");
+	aws_lwsl_cx_info(cx, " Compiled with wolfSSL support");
 #endif
 #else
 #if defined(LWS_WITH_BORINGSSL)
-	lwsl_cx_info(cx, " Compiled with BoringSSL support");
+	aws_lwsl_cx_info(cx, " Compiled with BoringSSL support");
 #else
-	lwsl_cx_info(cx, " Compiled with OpenSSL support");
+	aws_lwsl_cx_info(cx, " Compiled with OpenSSL support");
 #endif
 #endif
-	if (!lws_check_opt(info->options, LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT)) {
-		lwsl_cx_info(cx, " SSL disabled: no "
+	if (!aws_lws_check_opt(info->options, LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT)) {
+		aws_lwsl_cx_info(cx, " SSL disabled: no "
 			  "LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT");
 		return 0;
 	}
 
 	/* basic openssl init */
 
-	lwsl_cx_info(cx, "Doing SSL library init");
+	aws_lwsl_cx_info(cx, "Doing SSL library init");
 
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
 	SSL_library_init();
@@ -141,11 +141,11 @@ lws_context_init_ssl_library(struct lws_context *cx,
 		 * already threadsafe.
 		 */
 
-		(void)lws_openssl_thread_id;
-		(void)lws_openssl_lock_callback;
+		(void)aws_lws_openssl_thread_id;
+		(void)aws_lws_openssl_lock_callback;
 
-		CRYPTO_set_id_callback(lws_openssl_thread_id);
-		CRYPTO_set_locking_callback(lws_openssl_lock_callback);
+		CRYPTO_set_id_callback(aws_lws_openssl_thread_id);
+		CRYPTO_set_locking_callback(aws_lws_openssl_lock_callback);
 	}
 #endif
 
@@ -153,12 +153,12 @@ lws_context_init_ssl_library(struct lws_context *cx,
 }
 
 void
-lws_context_deinit_ssl_library(struct lws_context *context)
+aws_lws_context_deinit_ssl_library(struct aws_lws_context *context)
 {
 #if LWS_MAX_SMP != 1
 	int n;
 
-	if (!lws_check_opt(context->options,
+	if (!aws_lws_check_opt(context->options,
 			   LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT))
 		return;
 

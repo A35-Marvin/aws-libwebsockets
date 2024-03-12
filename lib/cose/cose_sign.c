@@ -25,24 +25,24 @@
 #include "private-lib-core.h"
 #include "private-lib-cose.h"
 
-struct lws_cose_sign_context *
-lws_cose_sign_create(const lws_cose_sign_create_info_t *info)
+struct aws_lws_cose_sign_context *
+aws_lws_cose_sign_create(const aws_lws_cose_sign_create_info_t *info)
 {
-	struct lws_cose_sign_context *csc;
+	struct aws_lws_cose_sign_context *csc;
 
 	/* you have to have prepared a cbor output context for us to use */
 	assert(info->lec);
 	/* you have to provide at least one key in a cose_keyset */
 	assert(info->keyset);
-	/* you have to provide an lws_context (for crypto random) */
+	/* you have to provide an aws_lws_context (for crypto random) */
 	assert(info->cx);
 
 	if (info->sigtype == SIGTYPE_MAC) {
-		lwsl_err("%s: only mac0 supported for signing\n", __func__);
+		aws_lwsl_err("%s: only mac0 supported for signing\n", __func__);
 		return NULL;
 	}
 
-	csc = lws_zalloc(sizeof(*csc), __func__);
+	csc = aws_lws_zalloc(sizeof(*csc), __func__);
 	if (!csc)
 		return NULL;
 
@@ -52,16 +52,16 @@ lws_cose_sign_create(const lws_cose_sign_create_info_t *info)
 }
 
 int
-lws_cose_sign_add(struct lws_cose_sign_context *csc, cose_param_t alg,
-		  const lws_cose_key_t *ck)
+aws_lws_cose_sign_add(struct aws_lws_cose_sign_context *csc, cose_param_t alg,
+		  const aws_lws_cose_key_t *ck)
 {
-	lws_cose_sig_alg_t *si = lws_cose_sign_alg_create(csc->info.cx, ck, alg,
+	aws_lws_cose_sig_alg_t *si = aws_lws_cose_sign_alg_create(csc->info.cx, ck, alg,
 							  LWSCOSE_WKKO_SIGN);
 
 	if (!si)
 		return 1;
 
-	lws_dll2_add_tail(&si->list, &csc->algs);
+	aws_lws_dll2_add_tail(&si->list, &csc->algs);
 
 	return 0;
 }
@@ -76,21 +76,21 @@ static signed char cose_tags[] = {
 };
 
 static void
-lws_cose_sign_hashing(struct lws_cose_sign_context *csc,
+aws_lws_cose_sign_hashing(struct aws_lws_cose_sign_context *csc,
 		      const uint8_t *in, size_t in_len)
 {
-	//lwsl_hexdump_warn(in, in_len);
+	//aws_lwsl_hexdump_warn(in, in_len);
 
 	assert(in_len);
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, p, tp,
-				   lws_dll2_get_head(&csc->algs)) {
-		lws_cose_sig_alg_t *alg = lws_container_of(p,
-						lws_cose_sig_alg_t, list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, tp,
+				   aws_lws_dll2_get_head(&csc->algs)) {
+		aws_lws_cose_sig_alg_t *alg = aws_lws_container_of(p,
+						aws_lws_cose_sig_alg_t, list);
 
-		if (lws_cose_sign_alg_hash(alg, in, in_len))
+		if (aws_lws_cose_sign_alg_hash(alg, in, in_len))
 			alg->failed = 1;
-	} lws_end_foreach_dll_safe(p, tp);
+	} aws_lws_end_foreach_dll_safe(p, tp);
 }
 
 /*
@@ -100,15 +100,15 @@ lws_cose_sign_hashing(struct lws_cose_sign_context *csc,
  * deal with the whole in_len in one step.
  */
 
-enum lws_lec_pctx_ret
-lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
+enum aws_lws_lec_pctx_ret
+aws_lws_cose_sign_payload_chunk(struct aws_lws_cose_sign_context *csc,
 			    const uint8_t *in, size_t in_len)
 {
 	uint8_t lbuf[MAX_BLOBBED_PARAMS], lb[9];
-	const struct lws_gencrypto_keyelem *ke;
-	enum lws_lec_pctx_ret ret;
-	lws_lec_pctx_t lec, lec1;
-	lws_cose_sig_alg_t *alg;
+	const struct aws_lws_gencrypto_keyelem *ke;
+	enum aws_lws_lec_pctx_ret ret;
+	aws_lws_lec_pctx_t lec, lec1;
+	aws_lws_cose_sig_alg_t *alg;
 	uint8_t c;
 	size_t s;
 
@@ -121,12 +121,12 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 		 */
 
 		if (!csc->algs.count) {
-			lwsl_err("%s: must add at least one signature\n", __func__);
+			aws_lwsl_err("%s: must add at least one signature\n", __func__);
 			return 1;
 		}
 
 		csc->type = SIGTYPE_MULTI;
-		alg = lws_container_of(csc->algs.head, lws_cose_sig_alg_t, list);
+		alg = aws_lws_container_of(csc->algs.head, aws_lws_cose_sig_alg_t, list);
 
 		switch (alg->cose_alg) {
 		case LWSCOSE_WKAHMAC_256_64:
@@ -150,14 +150,14 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 					csc->type = SIGTYPE_SINGLE;
 		}
 
-		lwsl_notice("%s: decided on type %d\n", __func__, csc->type);
+		aws_lwsl_notice("%s: decided on type %d\n", __func__, csc->type);
 
 		/*
 		 * Start emitting the appropriate tag if that's requested
 		 */
 
 		if (csc->info.flags & LCSC_FL_ADD_CBOR_TAG) {
-			ret = lws_lec_printf(csc->info.lec, "%t(",
+			ret = aws_lws_lec_printf(csc->info.lec, "%t(",
 					       cose_tags[csc->type]);
 
 			if (ret != LWS_LECPCTX_RET_FINISHED)
@@ -186,7 +186,7 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 		 * Then, let's start hashing with the sigtype constant part
 		 */
 
-		lws_cose_sign_hashing(csc, sig_mctx[csc->type],
+		aws_lws_cose_sign_hashing(csc, sig_mctx[csc->type],
 					   sig_mctx_len[csc->type]);
 
 		csc->tli = ST_OUTER_PROTECTED;
@@ -204,24 +204,24 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 		switch (csc->type) {
 		case SIGTYPE_SINGLE:
 		case SIGTYPE_MAC0:
-			alg = lws_container_of(csc->algs.head,
-					       lws_cose_sig_alg_t, list);
+			alg = aws_lws_container_of(csc->algs.head,
+					       aws_lws_cose_sig_alg_t, list);
 
-			lws_lec_init(&lec, lbuf, sizeof(lbuf));
+			aws_lws_lec_init(&lec, lbuf, sizeof(lbuf));
 
 			/* we know it will fit */
-			lws_lec_printf(&lec, "{1:%lld}",
+			aws_lws_lec_printf(&lec, "{1:%lld}",
 					     (long long)alg->cose_alg);
-			lws_lec_scratch(&lec);
+			aws_lws_lec_scratch(&lec);
 
 			if (!csc->subsequent) {
-				lws_lec_init(&lec1, lb, sizeof(lb));
-				lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
+				aws_lws_lec_init(&lec1, lb, sizeof(lb));
+				aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
 						lec.used);
-				lws_cose_sign_hashing(csc, lec1.scratch,
+				aws_lws_cose_sign_hashing(csc, lec1.scratch,
 							   lec1.scratch_len);
-				lws_cose_sign_hashing(csc, lec.start, lec.used);
-				ret = lws_lec_printf(csc->info.lec, "%.*b",
+				aws_lws_cose_sign_hashing(csc, lec.start, lec.used);
+				ret = aws_lws_lec_printf(csc->info.lec, "%.*b",
 						     (int)lec.used, lec.start);
 
 				if (ret != LWS_LECPCTX_RET_FINISHED)
@@ -231,12 +231,12 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 			break;
 		case SIGTYPE_MAC:
 		case SIGTYPE_MULTI:
-			lws_lec_init(&lec, lbuf, sizeof(lbuf));
-			lws_lec_int(&lec, LWS_CBOR_MAJTYP_BSTR, 0, 0);
-			lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_BSTR, 0, 0);
-			lws_lec_scratch(&lec);
-			lec.used = lws_ptr_diff_size_t(lec.buf, lec.start);
-			lws_cose_sign_hashing(csc, lec.start,
+			aws_lws_lec_init(&lec, lbuf, sizeof(lbuf));
+			aws_lws_lec_int(&lec, LWS_CBOR_MAJTYP_BSTR, 0, 0);
+			aws_lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_BSTR, 0, 0);
+			aws_lws_lec_scratch(&lec);
+			lec.used = aws_lws_ptr_diff_size_t(lec.buf, lec.start);
+			aws_lws_cose_sign_hashing(csc, lec.start,
 						   lec.used);
 			break;
 		default:
@@ -258,11 +258,11 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 		switch (csc->type) {
 		case SIGTYPE_SINGLE:
 		case SIGTYPE_MAC0:
-			alg = lws_container_of(csc->algs.head,
-					       lws_cose_sig_alg_t, list);
+			alg = aws_lws_container_of(csc->algs.head,
+					       aws_lws_cose_sig_alg_t, list);
 			ke = &alg->cose_key->meta[COSEKEY_META_KID];
 			if (ke->len) {
-				ret = lws_lec_printf(csc->info.lec, "{%d:%.*b}",
+				ret = aws_lws_lec_printf(csc->info.lec, "{%d:%.*b}",
 						     LWSCOSE_WKL_KID,
 						     (int)ke->len, ke->buf);
 
@@ -271,15 +271,15 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 			}
 			/* hack for no extra data */
 
-			lws_lec_init(&lec1, lb, sizeof(lb));
-			lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0, 0);
-			lws_cose_sign_hashing(csc, lec1.scratch,
+			aws_lws_lec_init(&lec1, lb, sizeof(lb));
+			aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0, 0);
+			aws_lws_cose_sign_hashing(csc, lec1.scratch,
 						   lec1.scratch_len);
 			break;
 		case SIGTYPE_MAC:
 		case SIGTYPE_MULTI:
 
-			lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_BSTR, 0, 0);
+			aws_lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_BSTR, 0, 0);
 
 			/*
 			 * For cose-sign, we need to feed each sig alg its alg-
@@ -287,39 +287,39 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 			 * all the hashes see the payload
 			 */
 
-			lws_start_foreach_dll_safe(struct lws_dll2 *, p, tp,
-						   lws_dll2_get_head(&csc->algs)) {
-				alg = lws_container_of(p, lws_cose_sig_alg_t, list);
+			aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, tp,
+						   aws_lws_dll2_get_head(&csc->algs)) {
+				alg = aws_lws_container_of(p, aws_lws_cose_sig_alg_t, list);
 
-				lws_lec_init(&lec, lbuf, sizeof(lbuf));
+				aws_lws_lec_init(&lec, lbuf, sizeof(lbuf));
 
 				/* we know it will fit */
-				lws_lec_printf(&lec, "{1:%lld}",
+				aws_lws_lec_printf(&lec, "{1:%lld}",
 						     (long long)alg->cose_alg);
 
-				lws_lec_init(&lec1, lb, sizeof(lb));
-				lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
+				aws_lws_lec_init(&lec1, lb, sizeof(lb));
+				aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
 						lec.used);
 
-				// lwsl_hexdump_warn(lec1.scratch, lec1.scratch_len);
-				// lwsl_hexdump_warn(lec.start, lec.used);
-				if (lws_cose_sign_alg_hash(alg, lec1.scratch,
+				// aws_lwsl_hexdump_warn(lec1.scratch, lec1.scratch_len);
+				// aws_lwsl_hexdump_warn(lec.start, lec.used);
+				if (aws_lws_cose_sign_alg_hash(alg, lec1.scratch,
 							   lec1.scratch_len))
 					alg->failed = 1;
-				if (lws_cose_sign_alg_hash(alg, lec.start,
+				if (aws_lws_cose_sign_alg_hash(alg, lec.start,
 							   lec.used))
 					alg->failed = 1;
 
-			} lws_end_foreach_dll_safe(p, tp);
+			} aws_lws_end_foreach_dll_safe(p, tp);
 
-			lws_lec_init(&lec1, lb, sizeof(lb));
-			lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0, 0);
-			lws_cose_sign_hashing(csc, lec1.scratch,
+			aws_lws_lec_init(&lec1, lb, sizeof(lb));
+			aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0, 0);
+			aws_lws_cose_sign_hashing(csc, lec1.scratch,
 						   lec1.scratch_len);
 
 			break;
 		default:
-			ret = lws_lec_printf(csc->info.lec, "{}");
+			ret = aws_lws_lec_printf(csc->info.lec, "{}");
 			if (ret != LWS_LECPCTX_RET_FINISHED)
 				return ret;
 			break;
@@ -330,16 +330,16 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 
 		/* Prepare the payload BSTR */
 
-		lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_BSTR, 0,
+		aws_lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_BSTR, 0,
 					   csc->info.inline_payload_len);
 
-		lws_lec_init(&lec1, lb, sizeof(lb));
-		lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
+		aws_lws_lec_init(&lec1, lb, sizeof(lb));
+		aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
 			    csc->info.inline_payload_len);
-		lws_cose_sign_hashing(csc, lec1.scratch,
+		aws_lws_cose_sign_hashing(csc, lec1.scratch,
 					   lec1.scratch_len);
 
-		lws_lec_scratch(csc->info.lec);
+		aws_lws_lec_scratch(csc->info.lec);
 
 		csc->rem_pay = csc->info.inline_payload_len;
 
@@ -352,17 +352,17 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 			in_len -= csc->along;
 		}
 
-		lws_lec_scratch(csc->info.lec);
+		aws_lws_lec_scratch(csc->info.lec);
 
 		if (csc->rem_pay) {
 
-			lws_cose_sign_hashing(csc, in, in_len);
+			aws_lws_cose_sign_hashing(csc, in, in_len);
 
 			/*
 			 * in / in_len is the payload chunk
 			 */
 
-			s = lws_ptr_diff_size_t(csc->info.lec->end,
+			s = aws_lws_ptr_diff_size_t(csc->info.lec->end,
 						csc->info.lec->buf);
 			if (s > (size_t)csc->rem_pay)
 				s = (size_t)csc->rem_pay;
@@ -371,7 +371,7 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 
 			memcpy(csc->info.lec->buf, in, s);
 			csc->info.lec->buf += s;
-			csc->info.lec->used = lws_ptr_diff_size_t(
+			csc->info.lec->used = aws_lws_ptr_diff_size_t(
 					csc->info.lec->buf,
 					csc->info.lec->start);
 			csc->rem_pay -= s;
@@ -385,12 +385,12 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 
 		if (csc->type == SIGTYPE_MULTI) {
 
-			csc->alg = lws_container_of(csc->algs.head,
-						lws_cose_sig_alg_t, list);
-			lws_lec_init(&lec1, lb, sizeof(lb));
-			lws_lec_int(&lec1, LWS_CBOR_MAJTYP_ARRAY, 0,
+			csc->alg = aws_lws_container_of(csc->algs.head,
+						aws_lws_cose_sig_alg_t, list);
+			aws_lws_lec_init(&lec1, lb, sizeof(lb));
+			aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_ARRAY, 0,
 				    csc->algs.count);
-			lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_ARRAY, 0,
+			aws_lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_ARRAY, 0,
 					csc->algs.count);
 			csc->tli = ST_INNER_PROTECTED;
 			goto inner_protected;
@@ -402,26 +402,26 @@ lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
 
 	case ST_OUTER_SIGN1_SIGNATURE:
 
-		alg = lws_container_of(lws_dll2_get_head(&csc->algs),
-				       lws_cose_sig_alg_t, list);
+		alg = aws_lws_container_of(aws_lws_dll2_get_head(&csc->algs),
+				       aws_lws_cose_sig_alg_t, list);
 
 		if (!alg->completed)
-			lws_cose_sign_alg_complete(alg);
+			aws_lws_cose_sign_alg_complete(alg);
 		if (alg->failed)
 			return LWS_LECPCTX_RET_FAIL;
 
-		ret = lws_lec_printf(csc->info.lec, "%.*b",
+		ret = aws_lws_lec_printf(csc->info.lec, "%.*b",
 				     (int)alg->rhash_len, alg->rhash);
 		if (ret != LWS_LECPCTX_RET_FINISHED)
 				return ret;
 
 		if (csc->type == SIGTYPE_MAC) {
-			csc->alg = lws_container_of(csc->algs.head,
-						lws_cose_sig_alg_t, list);
-			lws_lec_init(&lec1, lb, sizeof(lb));
-			lws_lec_int(&lec1, LWS_CBOR_MAJTYP_ARRAY, 0,
+			csc->alg = aws_lws_container_of(csc->algs.head,
+						aws_lws_cose_sig_alg_t, list);
+			aws_lws_lec_init(&lec1, lb, sizeof(lb));
+			aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_ARRAY, 0,
 				    csc->algs.count);
-			lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_ARRAY, 0,
+			aws_lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_ARRAY, 0,
 					csc->algs.count);
 			csc->tli = ST_INNER_PROTECTED;
 			goto inner_protected;
@@ -440,21 +440,21 @@ inner_protected:
 		switch (csc->type) {
 		case SIGTYPE_MAC:
 		case SIGTYPE_MULTI:
-			lws_lec_init(&lec1, lb, sizeof(lb));
-			lws_lec_int(&lec1, LWS_CBOR_MAJTYP_ARRAY, 0, 3);
+			aws_lws_lec_init(&lec1, lb, sizeof(lb));
+			aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_ARRAY, 0, 3);
 
-			lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_ARRAY, 0, 3);
+			aws_lws_lec_int(csc->info.lec, LWS_CBOR_MAJTYP_ARRAY, 0, 3);
 
-			lws_lec_init(&lec, lbuf, sizeof(lbuf));
+			aws_lws_lec_init(&lec, lbuf, sizeof(lbuf));
 
 			/* we know it will fit */
-			lws_lec_printf(&lec, "{1:%lld}",
+			aws_lws_lec_printf(&lec, "{1:%lld}",
 					     (long long)csc->alg->cose_alg);
 
-			lws_lec_init(&lec1, lb, sizeof(lb));
-			lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
+			aws_lws_lec_init(&lec1, lb, sizeof(lb));
+			aws_lws_lec_int(&lec1, LWS_CBOR_MAJTYP_BSTR, 0,
 					lec.used);
-			lws_lec_printf(csc->info.lec, "{1:%lld}",
+			aws_lws_lec_printf(csc->info.lec, "{1:%lld}",
 					     (long long)csc->alg->cose_alg);
 			break;
 		default:
@@ -471,11 +471,11 @@ inner_protected:
 
 		switch (csc->type) {
 		case SIGTYPE_MULTI:
-			alg = lws_container_of(csc->algs.head,
-					       lws_cose_sig_alg_t, list);
+			alg = aws_lws_container_of(csc->algs.head,
+					       aws_lws_cose_sig_alg_t, list);
 			ke = &alg->cose_key->meta[COSEKEY_META_KID];
 			if (ke->len) {
-				ret = lws_lec_printf(csc->info.lec, "{%d:%.*b}",
+				ret = aws_lws_lec_printf(csc->info.lec, "{%d:%.*b}",
 						     LWSCOSE_WKL_KID,
 						     (int)ke->len, ke->buf);
 
@@ -484,13 +484,13 @@ inner_protected:
 			}
 			break;
 		default:
-			ret = lws_lec_printf(csc->info.lec, "{}");
+			ret = aws_lws_lec_printf(csc->info.lec, "{}");
 			if (ret != LWS_LECPCTX_RET_FINISHED)
 				return ret;
 			break;
 		}
 
-		lws_cose_sign_alg_complete(csc->alg);
+		aws_lws_cose_sign_alg_complete(csc->alg);
 		if (csc->alg->failed)
 			return LWS_LECPCTX_RET_FAIL;
 		csc->tli = ST_INNER_SIGNATURE;
@@ -499,13 +499,13 @@ inner_protected:
 
 	case ST_INNER_SIGNATURE:
 
-		ret = lws_lec_printf(csc->info.lec, "%.*b",
+		ret = aws_lws_lec_printf(csc->info.lec, "%.*b",
 				     (int)csc->alg->rhash_len, csc->alg->rhash);
 		if (ret != LWS_LECPCTX_RET_FINISHED)
 			return ret;
 
 		if (csc->alg->list.next) {
-			csc->alg = (lws_cose_sig_alg_t *)csc->alg->list.next;
+			csc->alg = (aws_lws_cose_sig_alg_t *)csc->alg->list.next;
 			csc->tli = ST_INNER_PROTECTED;
 		}
 		break;
@@ -516,21 +516,21 @@ inner_protected:
 }
 
 void
-lws_cose_sign_destroy(struct lws_cose_sign_context **_csc)
+aws_lws_cose_sign_destroy(struct aws_lws_cose_sign_context **_csc)
 {
-	struct lws_cose_sign_context *csc = *_csc;
+	struct aws_lws_cose_sign_context *csc = *_csc;
 
 	if (!csc)
 		return;
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, p, tp,
-				   lws_dll2_get_head(&csc->algs)) {
-		lws_cose_sig_alg_t *alg = lws_container_of(p,
-						lws_cose_sig_alg_t, list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, tp,
+				   aws_lws_dll2_get_head(&csc->algs)) {
+		aws_lws_cose_sig_alg_t *alg = aws_lws_container_of(p,
+						aws_lws_cose_sig_alg_t, list);
 
-		lws_dll2_remove(p);
-		lws_cose_sign_alg_destroy(&alg);
-	} lws_end_foreach_dll_safe(p, tp);
+		aws_lws_dll2_remove(p);
+		aws_lws_cose_sign_alg_destroy(&alg);
+	} aws_lws_end_foreach_dll_safe(p, tp);
 
-	lws_free_set_NULL(*_csc);
+	aws_lws_free_set_NULL(*_csc);
 }

@@ -15,7 +15,7 @@
 
 extern int interrupted, bad;
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_s3_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	// ss_s3_put_t *m = (ss_s3_put_t *)userobj;
@@ -26,14 +26,14 @@ ss_s3_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 		return LWSSSSRET_DESTROY_ME;
 	}
 
-	lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
-	lwsl_hexdump_err(buf, len);
+	aws_lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
+	aws_lwsl_hexdump_err(buf, len);
 
 	return LWSSSSRET_OK;
 }
 
-static lws_ss_state_return_t
-ss_s3_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+ss_s3_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	 int *flags)
 {
 	ss_s3_put_t *m = (ss_s3_put_t *)userobj;
@@ -41,7 +41,7 @@ ss_s3_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	if (!m->pos)
 		*flags |= LWSSS_FLAG_SOM;
 
-	lwsl_user("%s: Send... total: %ld, pos: %ld\n", __func__,
+	aws_lwsl_user("%s: Send... total: %ld, pos: %ld\n", __func__,
 		  (long)m->total, (long)m->pos);
 
 	if (*len > m->total - m->pos)
@@ -57,7 +57,7 @@ ss_s3_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 		*flags |= LWSSS_FLAG_EOM;
 		// m->pos = 0; /* we only want to send once */
 	} else
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	return LWSSSSRET_OK;
 }
@@ -112,22 +112,22 @@ static void bin2hex(uint8_t *in, size_t len, char *out)
 
 static void sigv4_sha256hash_payload(uint8_t *payload, size_t len, char *hash)
 {
-	struct lws_genhash_ctx hash_ctx;
+	struct aws_lws_genhash_ctx hash_ctx;
 	uint8_t hash_bin[32];
 
-	if (lws_genhash_init(&hash_ctx, LWS_GENHASH_TYPE_SHA256) ||
+	if (aws_lws_genhash_init(&hash_ctx, LWS_GENHASH_TYPE_SHA256) ||
 		/*
 		 * If there is no payload, you must provide the hash of an
 		 * empty string...
 		 */
-	    lws_genhash_update(&hash_ctx,
+	    aws_lws_genhash_update(&hash_ctx,
 			       payload ? (void *)payload : (void *)"",
 			       payload ? len : 0u) ||
-	    lws_genhash_destroy(&hash_ctx, hash_bin))
+	    aws_lws_genhash_destroy(&hash_ctx, hash_bin))
 	{
 
-		lws_genhash_destroy(&hash_ctx, NULL);
-		lwsl_err("%s lws_genhash failed\n", __func__);
+		aws_lws_genhash_destroy(&hash_ctx, NULL);
+		aws_lwsl_err("%s aws_lws_genhash failed\n", __func__);
 
 		return;
 	}
@@ -135,14 +135,14 @@ static void sigv4_sha256hash_payload(uint8_t *payload, size_t len, char *hash)
 	bin2hex(hash_bin, 32, hash);
 }
 
-static lws_ss_state_return_t
-ss_s3_state(void *userobj, void *sh, lws_ss_constate_t state,
-                    lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+ss_s3_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+                    aws_lws_ss_tx_ordinal_t ack)
 {
 	ss_s3_put_t *m = (ss_s3_put_t *)userobj;
 
-	lwsl_user("%s: %s %s, ord 0x%x\n", __func__, lws_ss_tag(m->ss),
-		  lws_ss_state_name((int)state), (unsigned int)ack);
+	aws_lwsl_user("%s: %s %s, ord 0x%x\n", __func__, aws_lws_ss_tag(m->ss),
+		  aws_lws_ss_state_name((int)state), (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_CREATING:
@@ -154,29 +154,29 @@ ss_s3_state(void *userobj, void *sh, lws_ss_constate_t state,
 		memset(timestamp, 0, sizeof(timestamp));
 		set_time(timestamp);
 
-		if (lws_ss_set_metadata(m->ss, "s3bucket",
+		if (aws_lws_ss_set_metadata(m->ss, "s3bucket",
 				    s3bucketName, strlen(s3bucketName)) ||
-		   lws_ss_set_metadata(m->ss, "s3Obj",
+		   aws_lws_ss_set_metadata(m->ss, "s3Obj",
 				    s3ObjName, strlen(s3ObjName)) ||
-		   lws_ss_set_metadata(m->ss, "ctype",
+		   aws_lws_ss_set_metadata(m->ss, "ctype",
 				    "text/plain", strlen("text/plain")) ||
-		   lws_ss_set_metadata(m->ss, "region",
+		   aws_lws_ss_set_metadata(m->ss, "region",
 				    awsRegion, strlen(awsRegion)) ||
-		   lws_ss_set_metadata(m->ss, "service",
+		   aws_lws_ss_set_metadata(m->ss, "service",
 				    awsService, strlen(awsService)) ||
-		   lws_ss_set_metadata(m->ss, "xacl",
+		   aws_lws_ss_set_metadata(m->ss, "xacl",
 				    "bucket-owner-full-control",
 				    strlen("bucket-owner-full-control")) ||
-		   lws_ss_set_metadata(m->ss, "xcsha256",
+		   aws_lws_ss_set_metadata(m->ss, "xcsha256",
 				    payload_hash, strlen(payload_hash)) ||
-		   lws_ss_set_metadata(m->ss, "xdate",
+		   aws_lws_ss_set_metadata(m->ss, "xdate",
 				    timestamp, strlen(timestamp)))
 			return LWSSSSRET_DESTROY_ME;
 
-		return lws_ss_request_tx_len(m->ss, m->total);
+		return aws_lws_ss_request_tx_len(m->ss, m->total);
 
 	case LWSSSCS_CONNECTED:
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	case LWSSSCS_DISCONNECTED:
 		return LWSSSSRET_DESTROY_ME;
@@ -205,7 +205,7 @@ ss_s3_state(void *userobj, void *sh, lws_ss_constate_t state,
 	return 0;
 }
 
-const lws_ss_info_t s3_ssi = {
+const aws_lws_ss_info_t s3_ssi = {
 	.handle_offset		 = offsetof(ss_s3_put_t, ss),
 	.opaque_user_data_offset = offsetof(ss_s3_put_t, opaque_data),
 	.rx			 = ss_s3_rx,

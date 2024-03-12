@@ -9,7 +9,7 @@ if [ "$COVERITY_SCAN_BRANCH" != 1 -a "$TRAVIS_OS_NAME" = "osx" ]; then
 else
 	if [ "$COVERITY_SCAN_BRANCH" != 1 -a "$TRAVIS_OS_NAME" = "linux" ]; then
 		mkdir build && cd build &&
-		if [ "$LWS_METHOD" = "lwsws" ] ; then
+		if [ "$LWS_METHOD" = "aws_lwsws" ] ; then
 			cmake -DLWS_OPENSSL_LIBRARIES="/usr/local/lib/libssl.so;/usr/local/lib/libcrypto.so" \
 			      -DLWS_OPENSSL_INCLUDE_DIRS="/usr/local/include/openssl" $CMAKE_ARGS .. &&
 			cmake --build . &&
@@ -21,7 +21,7 @@ else
 			../scripts/autobahn-test-server.sh &&
 			../scripts/autobahn-test-client.sh
 		else
-			if [ "$LWS_METHOD" = "lwsws2" ] ; then
+			if [ "$LWS_METHOD" = "aws_lwsws2" ] ; then
 				cmake -DLWS_OPENSSL_LIBRARIES="/usr/local/lib/libssl.so;/usr/local/lib/libcrypto.so" \
 				      -DLWS_OPENSSL_INCLUDE_DIRS="/usr/local/include/openssl" $CMAKE_ARGS .. &&
 				cmake --build . &&

@@ -31,7 +31,7 @@ Commandline option|Meaning
 [2018/04/05 21:39:26:5882] USER: LWS minimal http client
 [2018/04/05 21:39:26:5897] NOTICE: Creating Vhost 'default' (serving disabled), 1 protocols, IPv6 on
 [2018/04/05 21:39:26:5955] NOTICE: created client ssl context for default
-[2018/04/05 21:39:28:0824] NOTICE: lws_http_client_http_response 200
+[2018/04/05 21:39:28:0824] NOTICE: aws_lws_http_client_http_response 200
 [2018/04/05 21:39:28:0824] NOTICE:  Peer Cert CN        : warmcat.com
 [2018/04/05 21:39:28:0824] NOTICE:  Peer Cert issuer    : /C=GB/ST=Greater Manchester/L=Salford/O=COMODO CA Limited
 [2018/04/05 21:39:28:0825] NOTICE:  Peer Cert Valid from: Mon Nov  3 00:00:00 2014

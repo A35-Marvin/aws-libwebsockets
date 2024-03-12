@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 int
-lws_plat_service(struct lws_context *context, int timeout_ms)
+aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 {
 	int n = _lws_plat_service_tsi(context, timeout_ms, 0);
 
@@ -38,11 +38,11 @@ lws_plat_service(struct lws_context *context, int timeout_ms)
 
 
 int
-_lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
+_lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 {
-	volatile struct lws_context_per_thread *vpt;
-	struct lws_context_per_thread *pt;
-	lws_usec_t timeout_us;
+	volatile struct aws_lws_context_per_thread *vpt;
+	struct aws_lws_context_per_thread *pt;
+	aws_lws_usec_t timeout_us;
 	int n = -1, m, c, a = 0;
 
 	/* stay dead once we are dead */
@@ -51,10 +51,10 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 		return 1;
 
 	pt = &context->pt[tsi];
-	vpt = (volatile struct lws_context_per_thread *)pt;
+	vpt = (volatile struct aws_lws_context_per_thread *)pt;
 
 	{
-		unsigned long m = lws_now_secs();
+		unsigned long m = aws_lws_now_secs();
 
 		if (m > context->time_last_state_dump) {
 			context->time_last_state_dump = m;
@@ -65,12 +65,12 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 #endif
 			if ((unsigned int)n != context->last_free_heap) {
 				if ((unsigned int)n > context->last_free_heap)
-					lwsl_debug(" heap :%ld (+%ld)\n",
+					aws_lwsl_debug(" heap :%ld (+%ld)\n",
 						    (unsigned long)n,
 						    (unsigned long)(n -
 						      context->last_free_heap));
 				else
-					lwsl_debug(" heap :%ld (-%ld)\n",
+					aws_lwsl_debug(" heap :%ld (-%ld)\n",
 						    (unsigned long)n,
 						    (unsigned long)(
 						      context->last_free_heap -
@@ -85,12 +85,12 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 	else
 		/* force a default timeout of 23 days */
 		timeout_ms = 2000000000;
-	timeout_us = ((lws_usec_t)timeout_ms) * LWS_US_PER_MS;
+	timeout_us = ((aws_lws_usec_t)timeout_ms) * LWS_US_PER_MS;
 
 	if (!pt->service_tid_detected && context->vhost_list) {
-		lws_fakewsi_def_plwsa(pt);
+		aws_lws_fakewsi_def_plwsa(pt);
 
-		lws_fakewsi_prep_plwsa_ctx(context);
+		aws_lws_fakewsi_prep_plwsa_ctx(context);
 
 		pt->service_tid = context->vhost_list->protocols[0].callback(
 			(struct lws *)plwsa, LWS_CALLBACK_GET_THREAD_ID,
@@ -105,24 +105,24 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 again:
 #endif
 	n = 0;
-	if (lws_service_adjust_timeout(context, 1, tsi)) {
+	if (aws_lws_service_adjust_timeout(context, 1, tsi)) {
 #if defined(LWS_AMAZON_RTOS)
 again:
 #endif /* LWS_AMAZON_RTOS */
 
 		a = 0;
 		if (timeout_us) {
-			lws_usec_t us;
+			aws_lws_usec_t us;
 
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 			/* don't stay in poll wait longer than next hr timeout */
 			us = __lws_sul_service_ripe(pt->pt_sul_owner,
 						    LWS_COUNT_PT_SUL_OWNERS,
-						    lws_now_usecs());
+						    aws_lws_now_usecs());
 			if (us && us < timeout_us)
 				timeout_us = us;
 
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 		}
 
 	//	n = poll(pt->fds, pt->fds_count, timeout_ms);
@@ -147,10 +147,10 @@ again:
 			}
 
 			vpt->inside_poll = 1;
-			lws_memory_barrier();
+			aws_lws_memory_barrier();
 			n = select(max_fd + 1, &readfds, &writefds, &errfds, ptv);
 			vpt->inside_poll = 0;
-			lws_memory_barrier();
+			aws_lws_memory_barrier();
 			n = 0;
 
 			for (m = 0; m < (int)pt->fds_count; m++) {
@@ -164,7 +164,7 @@ again:
 					c = 1;
 				}
 				if (FD_ISSET(pt->fds[m].fd, &errfds)) {
-					// lwsl_notice("errfds %d\n", pt->fds[m].fd);
+					// aws_lwsl_notice("errfds %d\n", pt->fds[m].fd);
 					pt->fds[m].revents |= LWS_POLLHUP;
 					c = 1;
 				}
@@ -190,7 +190,7 @@ again:
 	} else
 		a = 1;
 
-	m = lws_service_flag_pending(context, tsi);
+	m = aws_lws_service_flag_pending(context, tsi);
 	c = m ? -1 : n;
 
 	/* any socket with events to service? */
@@ -200,7 +200,7 @@ again:
 
 		c--;
 
-		m = lws_service_fd_tsi(context, &pt->fds[n], tsi);
+		m = aws_lws_service_fd_tsi(context, &pt->fds[n], tsi);
 		if (m < 0)
 			return -1;
 		/* if something closed, retry this slot */

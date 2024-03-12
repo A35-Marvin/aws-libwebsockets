@@ -43,13 +43,13 @@
 #include <errno.h>
 #include <sys/types.h>
 
-struct lws_fts_entry;
+struct aws_lws_fts_entry;
 
-/* notice these are stored in t->lwsac_input_head which has input file scope */
+/* notice these are stored in t->aws_lwsac_input_head which has input file scope */
 
-struct lws_fts_filepath {
-	struct lws_fts_filepath *next;
-	struct lws_fts_filepath *prev;
+struct aws_lws_fts_filepath {
+	struct aws_lws_fts_filepath *next;
+	struct aws_lws_fts_filepath *prev;
 	char filepath[256];
 	jg2_file_offset ofs;
 	jg2_file_offset line_table_ofs;
@@ -59,16 +59,16 @@ struct lws_fts_filepath {
 	int priority;
 };
 
-/* notice these are stored in t->lwsac_input_head which has input file scope */
+/* notice these are stored in t->aws_lwsac_input_head which has input file scope */
 
-struct lws_fts_lines {
-	struct lws_fts_lines *lines_next;
+struct aws_lws_fts_lines {
+	struct aws_lws_fts_lines *lines_next;
 	/*
 	 * amount of line numbers needs to meet average count for best
 	 * efficiency.
 	 *
 	 * Line numbers are stored in VLI format since if we don't, around half
-	 * the total lac allocation consists of struct lws_fts_lines...
+	 * the total lac allocation consists of struct aws_lws_fts_lines...
 	 * size chosen to maintain 8-byte struct alignment
 	 */
 	uint8_t vli[119];
@@ -77,17 +77,17 @@ struct lws_fts_lines {
 
 /* this represents the instances of a symbol inside a given filepath */
 
-struct lws_fts_instance_file {
+struct aws_lws_fts_instance_file {
 	/* linked-list of tifs generated for current file */
-	struct lws_fts_instance_file *inst_file_next;
-	struct lws_fts_entry *owner;
-	struct lws_fts_lines *lines_list, *lines_tail;
+	struct aws_lws_fts_instance_file *inst_file_next;
+	struct aws_lws_fts_entry *owner;
+	struct aws_lws_fts_lines *lines_list, *lines_tail;
 	uint32_t file_index;
 	uint32_t total;
 
 	/*
 	 * optimization for the common case there's only 1 - ~3 matches, so we
-	 * don't have to allocate any lws_fts_lines struct
+	 * don't have to allocate any aws_lws_fts_lines struct
 	 *
 	 * Using 8 bytes total for this maintains 8-byte struct alignment...
 	 */
@@ -100,17 +100,17 @@ struct lws_fts_instance_file {
  * this is the main trie in-memory allocation object
  */
 
-struct lws_fts_entry {
-	struct lws_fts_entry *parent;
+struct aws_lws_fts_entry {
+	struct aws_lws_fts_entry *parent;
 
-	struct lws_fts_entry *child_list;
-	struct lws_fts_entry *sibling;
+	struct aws_lws_fts_entry *child_list;
+	struct aws_lws_fts_entry *sibling;
 
 	/*
-	 * care... this points to content in t->lwsac_input_head, it goes
+	 * care... this points to content in t->aws_lwsac_input_head, it goes
 	 * out of scope when the input file being indexed completes
 	 */
-	struct lws_fts_instance_file *inst_file_list;
+	struct aws_lws_fts_instance_file *inst_file_list;
 
 	jg2_file_offset ofs_last_inst_file;
 
@@ -126,21 +126,21 @@ struct lws_fts_entry {
 
 /* there's only one of these per trie file */
 
-struct lws_fts {
-	struct lwsac *lwsac_head;
-	struct lwsac *lwsac_input_head;
-	struct lws_fts_entry *root;
-	struct lws_fts_filepath *filepath_list;
-	struct lws_fts_filepath *fp;
+struct aws_lws_fts {
+	struct aws_lwsac *aws_lwsac_head;
+	struct aws_lwsac *aws_lwsac_input_head;
+	struct aws_lws_fts_entry *root;
+	struct aws_lws_fts_filepath *filepath_list;
+	struct aws_lws_fts_filepath *fp;
 
-	struct lws_fts_entry *parser;
-	struct lws_fts_entry *root_lookup[256];
+	struct aws_lws_fts_entry *parser;
+	struct aws_lws_fts_entry *root_lookup[256];
 
 	/*
 	 * head of linked-list of tifs generated for current file
-	 * care... this points to content in t->lwsac_input_head
+	 * care... this points to content in t->aws_lwsac_input_head
 	 */
-	struct lws_fts_instance_file *tif_list;
+	struct aws_lws_fts_instance_file *tif_list;
 
 	jg2_file_offset c; /* length of output file so far */
 
@@ -170,7 +170,7 @@ struct lws_fts {
 #define spill(margin, force) \
 	if (bp && ((uint32_t)bp >= (sizeof(buf) - (size_t)(margin)) || (force))) { \
 		if ((int)write(t->fd, buf, (size_t)bp) != bp) { \
-			lwsl_err("%s: write %d failed (%d)\n", __func__, \
+			aws_lwsl_err("%s: write %d failed (%d)\n", __func__, \
 				 bp, errno); \
 			return 1; \
 		} \
@@ -217,7 +217,7 @@ wq32(unsigned char *b, uint32_t d)
 
 	*b++ = (uint8_t)(d & 0x7f);
 
-	return lws_ptr_diff(b, ob);
+	return aws_lws_ptr_diff(b, ob);
 }
 
 
@@ -249,22 +249,22 @@ rq32(unsigned char *b, uint32_t *d)
 	return (int)(b - ob);
 }
 
-struct lws_fts *
-lws_fts_create(int fd)
+struct aws_lws_fts *
+aws_lws_fts_create(int fd)
 {
-	struct lws_fts *t;
-	struct lwsac *lwsac_head = NULL;
+	struct aws_lws_fts *t;
+	struct aws_lwsac *aws_lwsac_head = NULL;
 	unsigned char buf[TRIE_FILE_HDR_SIZE];
 
-	t = lwsac_use(&lwsac_head, sizeof(*t), TRIE_LWSAC_BLOCK_SIZE);
+	t = aws_lwsac_use(&aws_lwsac_head, sizeof(*t), TRIE_LWSAC_BLOCK_SIZE);
 	if (!t)
 		return NULL;
 
 	memset(t, 0, sizeof(*t));
 
 	t->fd = fd;
-	t->lwsac_head = lwsac_head;
-	t->root = lwsac_use(&lwsac_head, sizeof(*t->root),
+	t->aws_lwsac_head = aws_lwsac_head;
+	t->root = aws_lwsac_use(&aws_lwsac_head, sizeof(*t->root),
 			    TRIE_LWSAC_BLOCK_SIZE);
 	if (!t->root)
 		goto unwind;
@@ -296,7 +296,7 @@ lws_fts_create(int fd)
 	g32(&buf[0x10], 0);
 
 	if (write(t->fd, buf, TRIE_FILE_HDR_SIZE) != TRIE_FILE_HDR_SIZE) {
-		lwsl_err("%s: trie header write failed\n", __func__);
+		aws_lwsl_err("%s: trie header write failed\n", __func__);
 		goto unwind;
 	}
 
@@ -305,25 +305,25 @@ lws_fts_create(int fd)
 	return t;
 
 unwind:
-	lwsac_free(&lwsac_head);
+	aws_lwsac_free(&aws_lwsac_head);
 
 	return NULL;
 }
 
 void
-lws_fts_destroy(struct lws_fts **trie)
+aws_lws_fts_destroy(struct aws_lws_fts **trie)
 {
-	struct lwsac *lwsac_head = (*trie)->lwsac_head;
-	lwsac_free(&(*trie)->lwsac_input_head);
-	lwsac_free(&lwsac_head);
+	struct aws_lwsac *aws_lwsac_head = (*trie)->aws_lwsac_head;
+	aws_lwsac_free(&(*trie)->aws_lwsac_input_head);
+	aws_lwsac_free(&aws_lwsac_head);
 	*trie = NULL;
 }
 
 int
-lws_fts_file_index(struct lws_fts *t, const char *filepath, int filepath_len,
+aws_lws_fts_file_index(struct aws_lws_fts *t, const char *filepath, int filepath_len,
 		    int priority)
 {
-	struct lws_fts_filepath *fp = t->filepath_list;
+	struct aws_lws_fts_filepath *fp = t->filepath_list;
 #if 0
 	while (fp) {
 		if (fp->filepath_len == filepath_len &&
@@ -333,7 +333,7 @@ lws_fts_file_index(struct lws_fts *t, const char *filepath, int filepath_len,
 		fp = fp->next;
 	}
 #endif
-	fp = lwsac_use(&t->lwsac_head, sizeof(*fp), TRIE_LWSAC_BLOCK_SIZE);
+	fp = aws_lwsac_use(&t->aws_lwsac_head, sizeof(*fp), TRIE_LWSAC_BLOCK_SIZE);
 	if (!fp)
 		return -1;
 
@@ -351,13 +351,13 @@ lws_fts_file_index(struct lws_fts *t, const char *filepath, int filepath_len,
 	return fp->file_index;
 }
 
-static struct lws_fts_entry *
-lws_fts_entry_child_add(struct lws_fts *t, unsigned char c,
-			struct lws_fts_entry *parent)
+static struct aws_lws_fts_entry *
+aws_lws_fts_entry_child_add(struct aws_lws_fts *t, unsigned char c,
+			struct aws_lws_fts_entry *parent)
 {
-	struct lws_fts_entry *e, **pe;
+	struct aws_lws_fts_entry *e, **pe;
 
-	e = lwsac_use(&t->lwsac_head, sizeof(*e), TRIE_LWSAC_BLOCK_SIZE);
+	e = aws_lwsac_use(&t->aws_lwsac_head, sizeof(*e), TRIE_LWSAC_BLOCK_SIZE);
 	if (!e)
 		return NULL;
 
@@ -392,11 +392,11 @@ lws_fts_entry_child_add(struct lws_fts *t, unsigned char c,
 }
 
 static int
-finalize_per_input(struct lws_fts *t)
+finalize_per_input(struct aws_lws_fts *t)
 {
-	struct lws_fts_instance_file *tif;
+	struct aws_lws_fts_instance_file *tif;
 	unsigned char buf[8192];
-	uint64_t lwsac_input_size;
+	uint64_t aws_lwsac_input_size;
 	jg2_file_offset temp;
 	int bp = 0;
 
@@ -426,7 +426,7 @@ finalize_per_input(struct lws_fts *t)
 
 	tif = t->tif_list;
 	while (tif) {
-		struct lws_fts_lines *i;
+		struct aws_lws_fts_lines *i;
 
 		spill((3 * MAX_VLI) + tif->count, 0);
 
@@ -463,17 +463,17 @@ finalize_per_input(struct lws_fts *t)
 
 	assert(lseek(t->fd, 0, SEEK_END) == (off_t)t->c);
 
-	if (t->lwsac_input_head) {
-		lwsac_input_size = lwsac_total_alloc(t->lwsac_input_head);
-		if (lwsac_input_size > t->worst_lwsac_input_size)
-			t->worst_lwsac_input_size = lwsac_input_size;
+	if (t->aws_lwsac_input_head) {
+		aws_lwsac_input_size = aws_lwsac_total_alloc(t->aws_lwsac_input_head);
+		if (aws_lwsac_input_size > t->worst_lwsac_input_size)
+			t->worst_lwsac_input_size = aws_lwsac_input_size;
 	}
 
 	/*
 	 * those per-file allocations are all on a separate lac so we can
 	 * free it cleanly afterwards
 	 */
-	lwsac_free(&t->lwsac_input_head);
+	aws_lwsac_free(&t->aws_lwsac_input_head);
 
 	/* and lose the pointer into the deallocated lac */
 	t->tif_list = NULL;
@@ -508,9 +508,9 @@ static char classify[] = {
 
 #if 0
 static const char *
-name_entry(struct lws_fts_entry *e1, char *s, int len)
+name_entry(struct aws_lws_fts_entry *e1, char *s, int len)
 {
-	struct lws_fts_entry *e2;
+	struct aws_lws_fts_entry *e2;
 	int n = len;
 
 	s[--n] = '\0';
@@ -540,16 +540,16 @@ name_entry(struct lws_fts_entry *e1, char *s, int len)
  */
 
 int
-lws_fts_fill(struct lws_fts *t, uint32_t file_index, const char *buf,
+aws_lws_fts_fill(struct aws_lws_fts *t, uint32_t file_index, const char *buf,
 	     size_t len)
 {
-	unsigned long long tf = (unsigned long long)lws_now_usecs();
+	unsigned long long tf = (unsigned long long)aws_lws_now_usecs();
 	unsigned char c, linetable[256], vlibuf[8];
-	struct lws_fts_entry *e, *e1, *dcl;
-	struct lws_fts_instance_file *tif;
+	struct aws_lws_fts_entry *e, *e1, *dcl;
+	struct aws_lws_fts_instance_file *tif;
 	int bp = 0, sline, chars, m;
 	char *osuff, skipline = 0;
-	struct lws_fts_lines *tl;
+	struct aws_lws_fts_lines *tl;
 	unsigned int olen, n;
 	off_t lbh;
 
@@ -592,7 +592,7 @@ resume:
 			bp += wq32(&linetable[bp], (uint32_t)t->chars_in_line);
 			if ((unsigned int)bp > sizeof(linetable) - 6) {
 				if ((int)write(t->fd, linetable, (unsigned int)bp) != bp) {
-					lwsl_err("%s: linetable write failed\n",
+					aws_lwsl_err("%s: linetable write failed\n",
 							__func__);
 					return 1;
 				}
@@ -701,9 +701,9 @@ resume:
 		 * the whole suffix that couldn't be matched until now.
 		 */
 
-		e = lws_fts_entry_child_add(t, c, t->parser);
+		e = aws_lws_fts_entry_child_add(t, c, t->parser);
 		if (!e) {
-			lwsl_err("%s: lws_fts_entry_child_add failed\n",
+			aws_lwsl_err("%s: aws_lws_fts_entry_child_add failed\n",
 					__func__);
 			return 1;
 		}
@@ -717,7 +717,7 @@ resume:
 		t->parser = e;
 
 		{
-			struct lws_fts_entry **pe = &e->child_list;
+			struct aws_lws_fts_entry **pe = &e->child_list;
 			while (*pe) {
 				assert((*pe)->parent == e);
 
@@ -831,10 +831,10 @@ seal:
 			t->parser->child_list = NULL;
 			t->parser->child_count = 0;
 
-			e = lws_fts_entry_child_add(t, (unsigned char)
+			e = aws_lws_fts_entry_child_add(t, (unsigned char)
 					osuff[t->str_match_pos - 1], t->parser);
 			if (!e) {
-				lwsl_err("%s: lws_fts_entry_child_add fail1\n",
+				aws_lwsl_err("%s: aws_lws_fts_entry_child_add fail1\n",
 						__func__);
 				return 1;
 			}
@@ -902,9 +902,9 @@ seal:
 				 * via the aggregation stuff
 				 */
 
-				e = lws_fts_entry_child_add(t, c, t->parser);
+				e = aws_lws_fts_entry_child_add(t, c, t->parser);
 				if (!e) {
-					lwsl_err("%s: child_add fail2\n",
+					aws_lwsl_err("%s: child_add fail2\n",
 						 __func__);
 					return 1;
 				}
@@ -932,11 +932,11 @@ seal:
 			/* if nothing in agg[]: leave as single char match */
 
 			/* otherwise copy out the symbol aggregation */
-			t->parser->suffix = lwsac_use(&t->lwsac_head,
+			t->parser->suffix = aws_lwsac_use(&t->aws_lwsac_head,
 						    t->agg_pos + 1,
 						    TRIE_LWSAC_BLOCK_SIZE);
 			if (!t->parser->suffix) {
-				lwsl_err("%s: lac for suffix failed\n",
+				aws_lwsl_err("%s: lac for suffix failed\n",
 						__func__);
 				return 1;
 			}
@@ -954,10 +954,10 @@ seal:
 
 		if (!t->parser->inst_file_list ||
 		    t->parser->inst_file_list->file_index != file_index) {
-			tif = lwsac_use(&t->lwsac_input_head, sizeof(*tif),
+			tif = aws_lwsac_use(&t->aws_lwsac_input_head, sizeof(*tif),
 				      TRIE_LWSAC_BLOCK_SIZE);
 			if (!tif) {
-				lwsl_err("%s: lac for tif failed\n",
+				aws_lwsl_err("%s: lac for tif failed\n",
 						__func__);
 				return 1;
 			}
@@ -1014,10 +1014,10 @@ seal:
 		/* either no existing line numbers struct at tail, or full */
 
 		/* have to create a(nother) line numbers struct */
-		tl = lwsac_use(&t->lwsac_input_head, sizeof(*tl),
+		tl = aws_lwsac_use(&t->aws_lwsac_input_head, sizeof(*tl),
 			     TRIE_LWSAC_BLOCK_SIZE);
 		if (!tl) {
-			lwsl_err("%s: lac for tl failed\n", __func__);
+			aws_lwsl_err("%s: lac for tl failed\n", __func__);
 			return 1;
 		}
 		tl->lines_next = NULL;
@@ -1037,7 +1037,7 @@ after:
 			const char *ne = name_entry(t->parser, s, sizeof(s));
 
 			if (!strcmp(ne, "describ")) {
-				lwsl_err("     %s %d\n", ne, t->str_match_pos);
+				aws_lwsl_err("     %s %d\n", ne, t->str_match_pos);
 				write(1, buf - 10, 20);
 			}
 		}
@@ -1057,7 +1057,7 @@ after:
 	}
 
 	if (lseek(t->fd, lbh, SEEK_SET) < 0) {
-		lwsl_err("%s: seek to 0x%llx failed\n", __func__,
+		aws_lwsl_err("%s: seek to 0x%llx failed\n", __func__,
 				(unsigned long long)lbh);
 		return 1;
 	}
@@ -1066,14 +1066,14 @@ after:
 	g16(linetable + 2, (uint16_t)(t->line_number - sline));
 	g32(linetable + 4, (uint32_t)chars);
 	if ((int)write(t->fd, linetable, 8) != 8) {
-		lwsl_err("%s: write linetable header failed\n", __func__);
+		aws_lwsl_err("%s: write linetable header failed\n", __func__);
 		return 1;
 	}
 
 	assert(lseek(t->fd, 0, SEEK_END) == (off_t)t->c);
 
 	if (lseek(t->fd, (off_t)t->c, SEEK_SET) < 0) {
-		lwsl_err("%s: end seek failed\n", __func__);
+		aws_lwsl_err("%s: end seek failed\n", __func__);
 		return 1;
 	}
 
@@ -1086,7 +1086,7 @@ after:
 
 	/* dump the collected per-input instance and line data, and free it */
 
-	t->agg_trie_creation_us += (uint64_t)((uint64_t)lws_now_usecs() - tf);
+	t->agg_trie_creation_us += (uint64_t)((uint64_t)aws_lws_now_usecs() - tf);
 
 	return 0;
 }
@@ -1094,11 +1094,11 @@ after:
 /* refer to ./README.md */
 
 int
-lws_fts_serialize(struct lws_fts *t)
+aws_lws_fts_serialize(struct aws_lws_fts *t)
 {
-	struct lws_fts_filepath *fp = t->filepath_list, *ofp;
-	unsigned long long tf = (unsigned long long)lws_now_usecs();
-	struct lws_fts_entry *e, *e1, *s[256];
+	struct aws_lws_fts_filepath *fp = t->filepath_list, *ofp;
+	unsigned long long tf = (unsigned long long)aws_lws_now_usecs();
+	struct aws_lws_fts_entry *e, *e1, *s[256];
 	unsigned char buf[8192], stasis;
 	int n, bp, sp = 0, do_parent;
 
@@ -1137,7 +1137,7 @@ lws_fts_serialize(struct lws_fts *t)
 
 		if (s[sp]->child_list) {
 			if (sp + 1 == LWS_ARRAY_SIZE(s)) {
-				lwsl_err("Stack too deep\n");
+				aws_lwsl_err("Stack too deep\n");
 
 				goto bail;
 			}
@@ -1222,7 +1222,7 @@ lws_fts_serialize(struct lws_fts *t)
 		if (!do_parent && s[sp]->child_list) {
 
 			if (sp + 1 == LWS_ARRAY_SIZE(s)) {
-				lwsl_err("Stack too deep\n");
+				aws_lwsl_err("Stack too deep\n");
 
 				goto bail;
 			}
@@ -1249,7 +1249,7 @@ lws_fts_serialize(struct lws_fts *t)
 		/* sort the children in order of highest aggregate hits first */
 
 		do {
-			struct lws_fts_entry **pe, *te1, *te2;
+			struct aws_lws_fts_entry **pe, *te1, *te2;
 
 			stasis = 1;
 
@@ -1297,19 +1297,19 @@ lws_fts_serialize(struct lws_fts *t)
 #if 0
 			if (e1->suffix && e1->suffix_len == 3 &&
 			    !memcmp(e1->suffix, "cri", 3)) {
-				struct lws_fts_entry *e2;
+				struct aws_lws_fts_entry *e2;
 
 				e2 = e1;
 				while (e2){
 					if (e2->suffix)
-						lwsl_notice("%s\n", e2->suffix);
+						aws_lwsl_notice("%s\n", e2->suffix);
 					else
-						lwsl_notice("%c\n", e2->c);
+						aws_lwsl_notice("%c\n", e2->c);
 
 					e2 = e2->parent;
 				}
 
-				lwsl_err("*** %c CRI inst %d ch %d\n", e1->parent->c,
+				aws_lwsl_err("*** %c CRI inst %d ch %d\n", e1->parent->c,
 						e1->instance_count, e1->child_count);
 			}
 #endif
@@ -1339,7 +1339,7 @@ lws_fts_serialize(struct lws_fts *t)
 	/* drop the correct root trie offset + file length into the header */
 
 	if (lseek(t->fd, 4, SEEK_SET) < 0) {
-		lwsl_err("%s: unable to seek\n", __func__);
+		aws_lwsl_err("%s: unable to seek\n", __func__);
 
 		goto bail;
 	}
@@ -1349,21 +1349,21 @@ lws_fts_serialize(struct lws_fts *t)
 	if (write(t->fd, buf, 0x8) != 0x8)
 		goto bail;
 
-	lwsl_notice("%s: index %d files (%uMiB) cpu time %dms, "
+	aws_lwsl_notice("%s: index %d files (%uMiB) cpu time %dms, "
 		    "alloc: %dKiB + %dKiB, "
 		    "serialize: %dms, file: %dKiB\n", __func__,
 		    t->next_file_index,
 		    (int)(t->agg_raw_input / (1024 * 1024)),
 		    (int)(t->agg_trie_creation_us / 1000),
-		    (int)(lwsac_total_alloc(t->lwsac_head) / 1024),
+		    (int)(aws_lwsac_total_alloc(t->aws_lwsac_head) / 1024),
 		    (int)(t->worst_lwsac_input_size / 1024),
-		    (int)(((uint64_t)lws_now_usecs() - tf) / 1000),
+		    (int)(((uint64_t)aws_lws_now_usecs() - tf) / 1000),
 		    (int)(t->c / 1024));
 
 	return 0;
 
 bail_seek:
-	lwsl_err("%s: problem seekings\n", __func__);
+	aws_lwsl_err("%s: problem seekings\n", __func__);
 
 bail:
 	return 1;

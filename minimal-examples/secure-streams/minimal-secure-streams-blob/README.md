@@ -31,7 +31,7 @@ Commandline option|Meaning
 [2019/08/12 07:16:11:0045] USR: LWS minimal secure streams [-d<verbosity>] [-f]
 [2019/08/12 07:16:12:6102] USR: myss_state: LWSSSCS_CREATING, ord 0x0
 [2019/08/12 07:16:12:6107] USR: myss_state: LWSSSCS_POLL, ord 0x0
-[2019/08/12 07:16:12:6117] N: lws_ss_client_connect: connecting h1get warmcat.com /
+[2019/08/12 07:16:12:6117] N: aws_lws_ss_client_connect: connecting h1get warmcat.com /
 [2019/08/12 07:16:12:6118] USR: myss_state: LWSSSCS_CONNECTING, ord 0x0
 [2019/08/12 07:16:13:4171] USR: myss_state: LWSSSCS_CONNECTED, ord 0x0
 [2019/08/12 07:16:13:4222] USR: myss_rx: len 1024, flags: 1

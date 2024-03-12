@@ -46,15 +46,15 @@ uint16_t cie[] = {
  * per-led to eg, normalize intensity of different leds
  */
 
-static lws_led_intensity_t
-cie_antilog(lws_led_intensity_t lin)
+static aws_lws_led_intensity_t
+cie_antilog(aws_lws_led_intensity_t lin)
 {
         return (cie[lin >> 10]       * (0x3ff - (lin & 0x3ff)) +
         	cie[(lin >> 10) + 1] * (lin & 0x3ff)) / 0x3ff;
 }
 
 static void
-lws_seq_advance(lws_led_state_t *lcs, lws_led_state_ch_t *ch)
+aws_lws_seq_advance(aws_lws_led_state_t *lcs, aws_lws_led_state_ch_t *ch)
 {
 	if (!ch->seq)
 		return;
@@ -79,8 +79,8 @@ lws_seq_advance(lws_led_state_t *lcs, lws_led_state_ch_t *ch)
 		ch->phase_budget -= ch->step;
 }
 
-static lws_led_intensity_t
-lws_seq_sample(const lws_led_gpio_map_t *map, lws_led_state_chs_t *chs)
+static aws_lws_led_intensity_t
+aws_lws_seq_sample(const aws_lws_led_gpio_map_t *map, aws_lws_led_state_chs_t *chs)
 {
 	unsigned int i;
 
@@ -101,7 +101,7 @@ lws_seq_sample(const lws_led_gpio_map_t *map, lws_led_state_chs_t *chs)
 			chs->seqs[LLSI_NEXT].last = chs->seqs[LLSI_NEXT].seq->
 						  func(chs->seqs[LLSI_NEXT].ph);
 
-		i = (lws_led_intensity_t)(((
+		i = (aws_lws_led_intensity_t)(((
 				(unsigned int)chs->seqs[LLSI_CURR].last *
 				(65535 - chs->seqs[LLSI_TRANS].last) >> 16) +
 			(((unsigned int)chs->seqs[LLSI_NEXT].last *
@@ -110,27 +110,27 @@ lws_seq_sample(const lws_led_gpio_map_t *map, lws_led_state_chs_t *chs)
 		i = chs->seqs[LLSI_CURR].last;
 
 	return map->intensity_correction ? map->intensity_correction(i) :
-					   cie_antilog((lws_led_intensity_t)i);
+					   cie_antilog((aws_lws_led_intensity_t)i);
 }
 
 void
-lws_seq_timer_handle(lws_led_state_t *lcs)
+aws_lws_seq_timer_handle(aws_lws_led_state_t *lcs)
 {
-	lws_led_gpio_controller_t *lgc = lcs->controller;
-	lws_led_state_chs_t *chs = (lws_led_state_chs_t *)&lcs[1];
-	const lws_led_gpio_map_t *map = &lgc->led_map[0];
+	aws_lws_led_gpio_controller_t *lgc = lcs->controller;
+	aws_lws_led_state_chs_t *chs = (aws_lws_led_state_chs_t *)&lcs[1];
+	const aws_lws_led_gpio_map_t *map = &lgc->led_map[0];
 	unsigned int n;
 
 	for (n = 0; n < lgc->count_leds; n++) {
 
 		lgc->led_ops.intensity(&lgc->led_ops, map->name,
-				       lws_seq_sample(map, chs));
+				       aws_lws_seq_sample(map, chs));
 
-		lws_seq_advance(lcs, &chs->seqs[LLSI_CURR]);
+		aws_lws_seq_advance(lcs, &chs->seqs[LLSI_CURR]);
 
 		if (chs->seqs[LLSI_TRANS].seq) {
-			lws_seq_advance(lcs, &chs->seqs[LLSI_NEXT]);
-			lws_seq_advance(lcs, &chs->seqs[LLSI_TRANS]);
+			aws_lws_seq_advance(lcs, &chs->seqs[LLSI_NEXT]);
+			aws_lws_seq_advance(lcs, &chs->seqs[LLSI_TRANS]);
 
 			/*
 			 * When we finished the transition, we can make the
@@ -150,8 +150,8 @@ lws_seq_timer_handle(lws_led_state_t *lcs)
 }
 
 static int
-lws_led_set_chs_seq(struct lws_led_state *lcs, lws_led_state_ch_t *dest,
-		    const lws_led_sequence_def_t *def)
+aws_lws_led_set_chs_seq(struct aws_lws_led_state *lcs, aws_lws_led_state_ch_t *dest,
+		    const aws_lws_led_sequence_def_t *def)
 {
 	int steps;
 
@@ -183,18 +183,18 @@ lws_led_set_chs_seq(struct lws_led_state *lcs, lws_led_state_ch_t *dest,
 }
 
 int
-lws_led_transition(struct lws_led_state *lcs, const char *name,
-		   const lws_led_sequence_def_t *next,
-		   const lws_led_sequence_def_t *trans)
+aws_lws_led_transition(struct aws_lws_led_state *lcs, const char *name,
+		   const aws_lws_led_sequence_def_t *next,
+		   const aws_lws_led_sequence_def_t *trans)
 {
-	lws_led_state_chs_t *chs = (lws_led_state_chs_t *)&lcs[1];
-	int index = lws_led_gpio_lookup(&lcs->controller->led_ops, name);
+	aws_lws_led_state_chs_t *chs = (aws_lws_led_state_chs_t *)&lcs[1];
+	int index = aws_lws_led_gpio_lookup(&lcs->controller->led_ops, name);
 
 	if (index < 0)
 		return 1;
 
-	lws_led_set_chs_seq(lcs, &chs[index].seqs[LLSI_TRANS], trans);
-	lws_led_set_chs_seq(lcs, &chs[index].seqs[LLSI_NEXT], next);
+	aws_lws_led_set_chs_seq(lcs, &chs[index].seqs[LLSI_TRANS], trans);
+	aws_lws_led_set_chs_seq(lcs, &chs[index].seqs[LLSI_NEXT], next);
 
 	return 0;
 }

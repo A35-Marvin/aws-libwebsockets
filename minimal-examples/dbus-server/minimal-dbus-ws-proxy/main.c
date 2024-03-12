@@ -24,25 +24,25 @@
 #include "protocol_lws_minimal_dbus_ws_proxy.c"
 
 static int interrupted;
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	LWS_PLUGIN_PROTOCOL_MINIMAL_DBUS_WSPROXY,
 	LWS_PROTOCOL_LIST_TERM
 };
 
 /*
  * we pass the dbus address to connect to proxy with from outside the
- * protocol plugin... eg if built as a plugin for lwsws, you would instead
- * set this pvo in the lwsws JSON config.
+ * protocol plugin... eg if built as a plugin for aws_lwsws, you would instead
+ * set this pvo in the aws_lwsws JSON config.
  */
 
-static const struct lws_protocol_vhost_options pvo_ads = {
+static const struct aws_lws_protocol_vhost_options pvo_ads = {
 	NULL,
 	NULL,
 	"ads",				/* pvo name */
 	(void *)"unix:abstract=org.libwebsockets.wsclientproxy"	/* pvo value */
 };
 
-static const struct lws_protocol_vhost_options pvo = {
+static const struct aws_lws_protocol_vhost_options pvo = {
 	NULL,				/* "next" pvo linked-list */
 	&pvo_ads,			/* "child" pvo linked-list */
 	"lws-minimal-dbus-wsproxy",	/* protocol name we belong to on this vhost */
@@ -56,8 +56,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	static struct lws_context *context;
-	struct lws_context_creation_info info;
+	static struct aws_lws_context *context;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -69,11 +69,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS DBUS ws client proxy\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS DBUS ws client proxy\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
@@ -82,20 +82,20 @@ int main(int argc, const char **argv)
 	info.protocols = protocols;
 	info.pvo = &pvo;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	/* lws event loop (default poll one) */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_notice("Exiting cleanly\n");
+	aws_lwsl_notice("Exiting cleanly\n");
 
 	return 0;
 }

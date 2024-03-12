@@ -28,9 +28,9 @@
 #include "private-lib-core.h"
 
 int
-lws_plat_pipe_create(struct lws *wsi)
+aws_lws_plat_pipe_create(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	int n;
 
 #if defined(LWS_HAVE_EVENTFD)
@@ -62,9 +62,9 @@ set:
 }
 
 int
-lws_plat_pipe_signal(struct lws_context *ctx, int tsi)
+aws_lws_plat_pipe_signal(struct aws_lws_context *ctx, int tsi)
 {
-	struct lws_context_per_thread *pt = &ctx->pt[tsi];
+	struct aws_lws_context_per_thread *pt = &ctx->pt[tsi];
 #if defined(LWS_HAVE_EVENTFD)
 	eventfd_t value = 1;
 
@@ -80,9 +80,9 @@ lws_plat_pipe_signal(struct lws_context *ctx, int tsi)
 }
 
 void
-lws_plat_pipe_close(struct lws *wsi)
+aws_lws_plat_pipe_close(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	if (pt->dummy_pipe_fds[0] && pt->dummy_pipe_fds[0] != -1)
 		close(pt->dummy_pipe_fds[0]);

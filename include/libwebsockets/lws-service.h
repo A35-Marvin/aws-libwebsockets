@@ -32,7 +32,7 @@
 ///@{
 
 /**
- * lws_service() - Service any pending websocket activity
+ * aws_lws_service() - Service any pending websocket activity
  * \param context:	Websocket context
  * \param timeout_ms:	Set to 0; ignored; for backward compatibility
  *
@@ -49,34 +49,34 @@
  *  smart enough to stay asleep until an event is queued.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_service(struct lws_context *context, int timeout_ms);
+aws_lws_service(struct aws_lws_context *context, int timeout_ms);
 
 /**
- * lws_service_tsi() - Service any pending websocket activity
+ * aws_lws_service_tsi() - Service any pending websocket activity
  *
  * \param context:	Websocket context
  * \param timeout_ms:	Set to 0; ignored; for backwards compatibility
  * \param tsi:		Thread service index, starting at 0
  *
- * Same as lws_service(), but for a specific thread service index.  Only needed
- * if you are spawning multiple service threads that operate on the same lws_context.
+ * Same as aws_lws_service(), but for a specific thread service index.  Only needed
+ * if you are spawning multiple service threads that operate on the same aws_lws_context.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_service_tsi(struct lws_context *context, int timeout_ms, int tsi);
+aws_lws_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi);
 
 /**
- * lws_cancel_service_pt() - Cancel servicing of pending socket activity
+ * aws_lws_cancel_service_pt() - Cancel servicing of pending socket activity
  *				on one thread
  * \param wsi:	Cancel service on the thread this wsi is serviced by
  *
- * Same as lws_cancel_service(), but targets a single service thread, the one
- * the wsi belongs to.  You probably want to use lws_cancel_service() instead.
+ * Same as aws_lws_cancel_service(), but targets a single service thread, the one
+ * the wsi belongs to.  You probably want to use aws_lws_cancel_service() instead.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_cancel_service_pt(struct lws *wsi);
+aws_lws_cancel_service_pt(struct lws *wsi);
 
 /**
- * lws_cancel_service() - Cancel wait for new pending socket activity
+ * aws_lws_cancel_service() - Cancel wait for new pending socket activity
  * \param context:	Websocket context
  *
  * This function creates an immediate "synchronous interrupt" to the lws poll()
@@ -84,14 +84,14 @@ lws_cancel_service_pt(struct lws *wsi);
  * a LWS_CALLBACK_EVENT_WAIT_CANCELLED callback is sent to every protocol on
  * every vhost.
  *
- * lws_cancel_service() may be called from another thread while the context
+ * aws_lws_cancel_service() may be called from another thread while the context
  * exists, and its effect will be immediately serialized.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_cancel_service(struct lws_context *context);
+aws_lws_cancel_service(struct aws_lws_context *context);
 
 /**
- * lws_service_fd() - Service polled socket with something waiting
+ * aws_lws_service_fd() - Service polled socket with something waiting
  * \param context:	Websocket context
  * \param pollfd:	The pollfd entry describing the socket fd and which events
  *		happened
@@ -104,7 +104,7 @@ lws_cancel_service(struct lws_context *context);
  * including listen accepts, http files as well as websocket protocol.
  *
  * If a pollfd says it has something, you can just pass it to
- * lws_service_fd() whether it is a socket handled by lws or not.
+ * aws_lws_service_fd() whether it is a socket handled by lws or not.
  * If it sees it is a lws socket, the traffic will be handled and
  * pollfd->revents will be zeroed now.
  *
@@ -114,26 +114,26 @@ lws_cancel_service(struct lws_context *context);
  *
  * lws before v3.2 allowed pollfd to be NULL, to indicate that background
  * periodic processing should be done.  Since v3.2, lws schedules any items
- * that need handling in the future using lws_sul and NULL is no longer valid.
+ * that need handling in the future using aws_lws_sul and NULL is no longer valid.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_service_fd(struct lws_context *context, struct lws_pollfd *pollfd);
+aws_lws_service_fd(struct aws_lws_context *context, struct aws_lws_pollfd *pollfd);
 
 /**
- * lws_service_fd_tsi() - Service polled socket in specific service thread
+ * aws_lws_service_fd_tsi() - Service polled socket in specific service thread
  * \param context:	Websocket context
  * \param pollfd:	The pollfd entry describing the socket fd and which events
  *		happened.
  * \param tsi: thread service index
  *
- * Same as lws_service_fd() but used with multiple service threads
+ * Same as aws_lws_service_fd() but used with multiple service threads
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd,
+aws_lws_service_fd_tsi(struct aws_lws_context *context, struct aws_lws_pollfd *pollfd,
 		   int tsi);
 
 /**
- * lws_service_adjust_timeout() - Check for any connection needing forced service
+ * aws_lws_service_adjust_timeout() - Check for any connection needing forced service
  * \param context:	Websocket context
  * \param timeout_ms:	The original poll timeout value.  You can just set this
  *			to 1 if you don't really have a poll timeout.
@@ -146,17 +146,17 @@ lws_service_fd_tsi(struct lws_context *context, struct lws_pollfd *pollfd,
  * access to the apis.
  *
  * If anybody needs "forced service", returned timeout is zero.  In that case,
- * you can call lws_service_tsi() with a timeout of -1 to only service
+ * you can call aws_lws_service_tsi() with a timeout of -1 to only service
  * guys who need forced service.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_service_adjust_timeout(struct lws_context *context, int timeout_ms, int tsi);
+aws_lws_service_adjust_timeout(struct aws_lws_context *context, int timeout_ms, int tsi);
 
 /* Backwards compatibility */
-#define lws_plat_service_tsi lws_service_tsi
+#define aws_lws_plat_service_tsi aws_lws_service_tsi
 
 LWS_VISIBLE LWS_EXTERN int
-lws_handle_POLLOUT_event(struct lws *wsi, struct lws_pollfd *pollfd);
+aws_lws_handle_POLLOUT_event(struct lws *wsi, struct aws_lws_pollfd *pollfd);
 
 ///@}
 
@@ -173,10 +173,10 @@ lws_handle_POLLOUT_event(struct lws *wsi, struct lws_pollfd *pollfd);
  * Any direct libuv allocations in lws protocol handlers must participate in the
  * lws reference counting scheme.  Two apis are provided:
  *
- * - lws_libuv_static_refcount_add(handle, context, tsi) to mark the handle with
+ * - aws_lws_libuv_static_refcount_add(handle, context, tsi) to mark the handle with
  *  a pointer to the context and increment the global uv object counter
  *
- * - lws_libuv_static_refcount_del() which should be used as the close callback
+ * - aws_lws_libuv_static_refcount_del() which should be used as the close callback
  *   for your own libuv objects declared in the protocol scope.
  *
  * Using the apis allows lws to detach itself from a libuv loop completely
@@ -184,19 +184,19 @@ lws_handle_POLLOUT_event(struct lws *wsi, struct lws_pollfd *pollfd);
  */
 
 LWS_VISIBLE LWS_EXTERN uv_loop_t *
-lws_uv_getloop(struct lws_context *context, int tsi);
+aws_lws_uv_getloop(struct aws_lws_context *context, int tsi);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_libuv_static_refcount_add(uv_handle_t *, struct lws_context *context,
+aws_lws_libuv_static_refcount_add(uv_handle_t *, struct aws_lws_context *context,
 				int tsi);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_libuv_static_refcount_del(uv_handle_t *);
+aws_lws_libuv_static_refcount_del(uv_handle_t *);
 
 #endif /* LWS_WITH_LIBUV */
 
 #if defined(LWS_PLAT_FREERTOS)
-#define lws_libuv_static_refcount_add(_a, _b, _c)
-#define lws_libuv_static_refcount_del NULL
+#define aws_lws_libuv_static_refcount_add(_a, _b, _c)
+#define aws_lws_libuv_static_refcount_del NULL
 #endif
 ///@}

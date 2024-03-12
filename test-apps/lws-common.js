@@ -5,11 +5,11 @@
  *
  * Init like this in your main html script, this also reapplies the gray
  *
- *    lws_gray_out(true,{'zindex':'499'});
+ *    aws_lws_gray_out(true,{'zindex':'499'});
  *
  * To remove the gray
  *
- *    lws_gray_out(false);
+ *    aws_lws_gray_out(false);
  *
  */
 
@@ -60,7 +60,7 @@ function removeEvent( obj, type, fn ) {
 		obj.removeEventListener(type, fn, false);
 }
 
-function lws_gray_out(vis, _options) {
+function aws_lws_gray_out(vis, _options) {
 
 	var options = _options || {};
 	var zindex = options.zindex || 50;
@@ -116,7 +116,7 @@ function new_ws(urlpath, protocol)
 	return new WebSocket(urlpath, protocol);
 }
  
-function lws_san(s)
+function aws_lws_san(s)
 {
 	if (s.search("<") !== -1)
 		return "invalid string";

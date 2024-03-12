@@ -15,7 +15,7 @@ The handler for state changes and payloads for "s3PutObj" is in ss-s3-ss.c
 
 ## credentials
 credentials are read from ~/.aws/credentials, make sure you have valid keyid and
-key.  One need to call lws_ss_sigv4_set_aws_key() to plug in aws credentials into
+key.  One need to call aws_lws_ss_sigv4_set_aws_key() to plug in aws credentials into
 Secure Streams and the index need to be match of the "blob_index" in entry of "auth"
 the policy.  In addition, you need to change the S3 bucket name to your own, as
 bucket name is unique globally in S3.

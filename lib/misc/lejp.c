@@ -169,7 +169,7 @@ lejp_check_path_match(struct lejp_ctx *ctx)
 				q++;
 				continue;
 			}
-			ctx->wild[ctx->wildcount++] = (uint16_t)lws_ptr_diff_size_t(p, ctx->path);
+			ctx->wild[ctx->wildcount++] = (uint16_t)aws_lws_ptr_diff_size_t(p, ctx->path);
 			q++;
 			/*
 			 * if * has something after it, match to .
@@ -850,7 +850,7 @@ lejp_parser_push(struct lejp_ctx *ctx, void *user, const char * const *paths,
 	ctx->path_match = 0;
 	lejp_check_path_match(ctx);
 
-	lwsl_debug("%s: pushed parser stack to %d (path %s)\n", __func__,
+	aws_lwsl_debug("%s: pushed parser stack to %d (path %s)\n", __func__,
 		   ctx->pst_sp, ctx->path);
 
 	return 0;
@@ -863,7 +863,7 @@ lejp_parser_pop(struct lejp_ctx *ctx)
 		return -1;
 
 	ctx->pst_sp--;
-	lwsl_debug("%s: popped parser stack to %d\n", __func__, ctx->pst_sp);
+	aws_lwsl_debug("%s: popped parser stack to %d\n", __func__, ctx->pst_sp);
 
 	ctx->path_match = 0; /* force it to check */
 	lejp_check_path_match(ctx);

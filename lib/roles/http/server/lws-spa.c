@@ -51,14 +51,14 @@ static struct mp_hdr {
 	{ "\x0d\x0a", 2 }
 };
 
-struct lws_spa;
+struct aws_lws_spa;
 
-typedef int (*lws_urldecode_stateful_cb)(struct lws_spa *spa,
+typedef int (*aws_lws_urldecode_stateful_cb)(struct aws_lws_spa *spa,
 		const char *name, char **buf, int len, int final);
 
-struct lws_urldecode_stateful {
+struct aws_lws_urldecode_stateful {
 	char *out;
-	struct lws_spa *data;
+	struct aws_lws_spa *data;
 	struct lws *wsi;
 	char name[LWS_MAX_ELEM_NAME];
 	char temp[LWS_MAX_ELEM_NAME];
@@ -81,12 +81,12 @@ struct lws_urldecode_stateful {
 
 	enum urldecode_stateful state;
 
-	lws_urldecode_stateful_cb output;
+	aws_lws_urldecode_stateful_cb output;
 };
 
-struct lws_spa {
-	struct lws_urldecode_stateful *s;
-	lws_spa_create_info_t i;
+struct aws_lws_spa {
+	struct aws_lws_urldecode_stateful *s;
+	aws_lws_spa_create_info_t i;
 	int *param_length;
 	char finalized;
 	char **params;
@@ -94,18 +94,18 @@ struct lws_spa {
 	char *end;
 };
 
-static struct lws_urldecode_stateful *
-lws_urldecode_s_create(struct lws_spa *spa, struct lws *wsi, char *out,
-		       int out_len, lws_urldecode_stateful_cb output)
+static struct aws_lws_urldecode_stateful *
+aws_lws_urldecode_s_create(struct aws_lws_spa *spa, struct lws *wsi, char *out,
+		       int out_len, aws_lws_urldecode_stateful_cb output)
 {
-	struct lws_urldecode_stateful *s;
+	struct aws_lws_urldecode_stateful *s;
 	char buf[205], *p;
 	int m = 0;
 
 	if (spa->i.ac)
-		s = lwsac_use_zero(spa->i.ac, sizeof(*s), spa->i.ac_chunk_size);
+		s = aws_lwsac_use_zero(spa->i.ac, sizeof(*s), spa->i.ac_chunk_size);
 	else
-		s = lws_zalloc(sizeof(*s), "stateful urldecode");
+		s = aws_lws_zalloc(sizeof(*s), "stateful urldecode");
 
 	if (!s)
 		return NULL;
@@ -121,7 +121,7 @@ lws_urldecode_s_create(struct lws_spa *spa, struct lws *wsi, char *out,
 	s->data = spa;
 	s->wsi = wsi;
 
-	if (lws_hdr_copy(wsi, buf, sizeof(buf),
+	if (aws_lws_hdr_copy(wsi, buf, sizeof(buf),
 			 WSI_TOKEN_HTTP_CONTENT_TYPE) > 0) {
 	/* multipart/form-data;
 	 * boundary=----WebKitFormBoundarycc7YgAPEIHvgE9Bf */
@@ -145,7 +145,7 @@ lws_urldecode_s_create(struct lws_spa *spa, struct lws *wsi, char *out,
 					s->mime_boundary[m++] = *p++;
 				s->mime_boundary[m] = '\0';
 
-				// lwsl_notice("boundary '%s'\n", s->mime_boundary);
+				// aws_lwsl_notice("boundary '%s'\n", s->mime_boundary);
 			}
 		}
 	}
@@ -154,7 +154,7 @@ lws_urldecode_s_create(struct lws_spa *spa, struct lws *wsi, char *out,
 }
 
 static int
-lws_urldecode_s_process(struct lws_urldecode_stateful *s, const char *in,
+aws_lws_urldecode_s_process(struct aws_lws_urldecode_stateful *s, const char *in,
 			int len)
 {
 	int n, hit;
@@ -193,8 +193,8 @@ lws_urldecode_s_process(struct lws_urldecode_stateful *s, const char *in,
 				continue;
 			}
 			if (s->pos >= (int)sizeof(s->name) - 1) {
-				lwsl_hexdump_notice(s->name, (size_t)s->pos);
-				lwsl_notice("Name too long...\n");
+				aws_lwsl_hexdump_notice(s->name, (size_t)s->pos);
+				aws_lwsl_notice("Name too long...\n");
 				return -1;
 			}
 			s->name[s->pos++] = *in++;
@@ -454,7 +454,7 @@ done:
 }
 
 static int
-lws_urldecode_s_destroy(struct lws_spa *spa, struct lws_urldecode_stateful *s)
+aws_lws_urldecode_s_destroy(struct aws_lws_spa *spa, struct aws_lws_urldecode_stateful *s)
 {
 	int ret = 0;
 
@@ -470,13 +470,13 @@ lws_urldecode_s_destroy(struct lws_spa *spa, struct lws_urldecode_stateful *s)
 		return -1;
 
 	if (!spa->i.ac)
-		lws_free(s);
+		aws_lws_free(s);
 
 	return ret;
 }
 
 static int
-lws_urldecode_spa_lookup(struct lws_spa *spa, const char *name)
+aws_lws_urldecode_spa_lookup(struct aws_lws_spa *spa, const char *name)
 {
 	const char * const *pp = spa->i.param_names;
 	int n;
@@ -495,7 +495,7 @@ lws_urldecode_spa_lookup(struct lws_spa *spa, const char *name)
 }
 
 static int
-lws_urldecode_spa_cb(struct lws_spa *spa, const char *name, char **buf, int len,
+aws_lws_urldecode_spa_cb(struct aws_lws_spa *spa, const char *name, char **buf, int len,
 		     int final)
 {
 	int n;
@@ -504,14 +504,14 @@ lws_urldecode_spa_cb(struct lws_spa *spa, const char *name, char **buf, int len,
 		if (spa->i.opt_cb) {
 			n = spa->i.opt_cb(spa->i.opt_data, name,
 					spa->s->content_disp_filename,
-					buf ? *buf : NULL, len, (enum lws_spa_fileupload_states)final);
+					buf ? *buf : NULL, len, (enum aws_lws_spa_fileupload_states)final);
 
 			if (n < 0)
 				return -1;
 		}
 		return 0;
 	}
-	n = lws_urldecode_spa_lookup(spa, name);
+	n = aws_lws_urldecode_spa_lookup(spa, name);
 	if (n == -1 || !len) /* unrecognized */
 		return 0;
 
@@ -520,7 +520,7 @@ lws_urldecode_spa_cb(struct lws_spa *spa, const char *name, char **buf, int len,
 			spa->params[n] = *buf;
 
 		if ((*buf) + len >= spa->end) {
-			lwsl_info("%s: exceeded storage\n", __func__);
+			aws_lwsl_info("%s: exceeded storage\n", __func__);
 			return -1;
 		}
 
@@ -530,7 +530,7 @@ lws_urldecode_spa_cb(struct lws_spa *spa, const char *name, char **buf, int len,
 
 		spa->s->out_len -= len + 1;
 	} else {
-		spa->params[n] = lwsac_use(spa->i.ac, (unsigned int)len + 1,
+		spa->params[n] = aws_lwsac_use(spa->i.ac, (unsigned int)len + 1,
 					   spa->i.ac_chunk_size);
 		if (!spa->params[n])
 			return -1;
@@ -544,15 +544,15 @@ lws_urldecode_spa_cb(struct lws_spa *spa, const char *name, char **buf, int len,
 	return 0;
 }
 
-struct lws_spa *
-lws_spa_create_via_info(struct lws *wsi, const lws_spa_create_info_t *i)
+struct aws_lws_spa *
+aws_lws_spa_create_via_info(struct lws *wsi, const aws_lws_spa_create_info_t *i)
 {
-	struct lws_spa *spa;
+	struct aws_lws_spa *spa;
 
 	if (i->ac)
-		spa = lwsac_use_zero(i->ac, sizeof(*spa), i->ac_chunk_size);
+		spa = aws_lwsac_use_zero(i->ac, sizeof(*spa), i->ac_chunk_size);
 	else
-		spa = lws_zalloc(sizeof(*spa), "spa");
+		spa = aws_lws_zalloc(sizeof(*spa), "spa");
 
 	if (!spa)
 		return NULL;
@@ -562,10 +562,10 @@ lws_spa_create_via_info(struct lws *wsi, const lws_spa_create_info_t *i)
 		spa->i.max_storage = 512;
 
 	if (i->ac)
-		spa->storage = lwsac_use(i->ac, (unsigned int)spa->i.max_storage,
+		spa->storage = aws_lwsac_use(i->ac, (unsigned int)spa->i.max_storage,
 					 i->ac_chunk_size);
 	else
-		spa->storage = lws_malloc((unsigned int)spa->i.max_storage, "spa");
+		spa->storage = aws_lws_malloc((unsigned int)spa->i.max_storage, "spa");
 
 	if (!spa->storage)
 		goto bail2;
@@ -574,59 +574,59 @@ lws_spa_create_via_info(struct lws *wsi, const lws_spa_create_info_t *i)
 
 	if (i->count_params) {
 		if (i->ac)
-			spa->params = lwsac_use_zero(i->ac,
+			spa->params = aws_lwsac_use_zero(i->ac,
 				sizeof(char *) * (unsigned int)i->count_params, i->ac_chunk_size);
 		else
-			spa->params = lws_zalloc(sizeof(char *) * (unsigned int)i->count_params,
+			spa->params = aws_lws_zalloc(sizeof(char *) * (unsigned int)i->count_params,
 					 "spa params");
 		if (!spa->params)
 			goto bail3;
 	}
 
-	spa->s = lws_urldecode_s_create(spa, wsi, spa->storage, i->max_storage,
-					lws_urldecode_spa_cb);
+	spa->s = aws_lws_urldecode_s_create(spa, wsi, spa->storage, i->max_storage,
+					aws_lws_urldecode_spa_cb);
 	if (!spa->s)
 		goto bail4;
 
 	if (i->count_params) {
 		if (i->ac)
-			spa->param_length = lwsac_use_zero(i->ac,
+			spa->param_length = aws_lwsac_use_zero(i->ac,
 				sizeof(int) * (unsigned int)i->count_params, i->ac_chunk_size);
 		else
-			spa->param_length = lws_zalloc(sizeof(int) * (unsigned int)i->count_params,
+			spa->param_length = aws_lws_zalloc(sizeof(int) * (unsigned int)i->count_params,
 						"spa param len");
 		if (!spa->param_length)
 			goto bail5;
 	}
 
-	// lwsl_notice("%s: Created SPA %p\n", __func__, spa);
+	// aws_lwsl_notice("%s: Created SPA %p\n", __func__, spa);
 
 	return spa;
 
 bail5:
-	lws_urldecode_s_destroy(spa, spa->s);
+	aws_lws_urldecode_s_destroy(spa, spa->s);
 bail4:
 	if (!i->ac)
-		lws_free(spa->params);
+		aws_lws_free(spa->params);
 bail3:
 	if (!i->ac)
-		lws_free(spa->storage);
+		aws_lws_free(spa->storage);
 bail2:
 	if (!i->ac)
-		lws_free(spa);
+		aws_lws_free(spa);
 
 	if (i->ac)
-		lwsac_free(i->ac);
+		aws_lwsac_free(i->ac);
 
 	return NULL;
 }
 
-struct lws_spa *
-lws_spa_create(struct lws *wsi, const char * const *param_names,
+struct aws_lws_spa *
+aws_lws_spa_create(struct lws *wsi, const char * const *param_names,
 	       int count_params, int max_storage,
-	       lws_spa_fileupload_cb opt_cb, void *opt_data)
+	       aws_lws_spa_fileupload_cb opt_cb, void *opt_data)
 {
-	lws_spa_create_info_t i;
+	aws_lws_spa_create_info_t i;
 
 	memset(&i, 0, sizeof(i));
 	i.count_params = count_params;
@@ -635,25 +635,25 @@ lws_spa_create(struct lws *wsi, const char * const *param_names,
 	i.opt_data = opt_data;
 	i.param_names = param_names;
 
-	return lws_spa_create_via_info(wsi, &i);
+	return aws_lws_spa_create_via_info(wsi, &i);
 }
 
 int
-lws_spa_process(struct lws_spa *spa, const char *in, int len)
+aws_lws_spa_process(struct aws_lws_spa *spa, const char *in, int len)
 {
 	if (!spa) {
-		lwsl_err("%s: NULL spa\n", __func__);
+		aws_lwsl_err("%s: NULL spa\n", __func__);
 		return -1;
 	}
 	/* we reject any junk after the last part arrived and we finalized */
 	if (spa->finalized)
 		return 0;
 
-	return lws_urldecode_s_process(spa->s, in, len);
+	return aws_lws_urldecode_s_process(spa->s, in, len);
 }
 
 int
-lws_spa_get_length(struct lws_spa *spa, int n)
+aws_lws_spa_get_length(struct aws_lws_spa *spa, int n)
 {
 	if (n >= spa->i.count_params)
 		return 0;
@@ -662,7 +662,7 @@ lws_spa_get_length(struct lws_spa *spa, int n)
 }
 
 const char *
-lws_spa_get_string(struct lws_spa *spa, int n)
+aws_lws_spa_get_string(struct aws_lws_spa *spa, int n)
 {
 	if (n >= spa->i.count_params)
 		return NULL;
@@ -671,13 +671,13 @@ lws_spa_get_string(struct lws_spa *spa, int n)
 }
 
 int
-lws_spa_finalize(struct lws_spa *spa)
+aws_lws_spa_finalize(struct aws_lws_spa *spa)
 {
 	if (!spa)
 		return 0;
 
 	if (spa->s) {
-		lws_urldecode_s_destroy(spa, spa->s);
+		aws_lws_urldecode_s_destroy(spa, spa->s);
 		spa->s = NULL;
 	}
 
@@ -687,22 +687,22 @@ lws_spa_finalize(struct lws_spa *spa)
 }
 
 int
-lws_spa_destroy(struct lws_spa *spa)
+aws_lws_spa_destroy(struct aws_lws_spa *spa)
 {
 	int n = 0;
 
-	lwsl_info("%s: destroy spa %p\n", __func__, spa);
+	aws_lwsl_info("%s: destroy spa %p\n", __func__, spa);
 
 	if (spa->s)
-		lws_urldecode_s_destroy(spa, spa->s);
+		aws_lws_urldecode_s_destroy(spa, spa->s);
 
 	if (spa->i.ac)
-		lwsac_free(spa->i.ac);
+		aws_lwsac_free(spa->i.ac);
 	else {
-		lws_free(spa->param_length);
-		lws_free(spa->params);
-		lws_free(spa->storage);
-		lws_free(spa);
+		aws_lws_free(spa->param_length);
+		aws_lws_free(spa->params);
+		aws_lws_free(spa->storage);
+		aws_lws_free(spa);
 	}
 
 	return n;

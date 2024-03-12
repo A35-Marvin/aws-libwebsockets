@@ -26,40 +26,40 @@
 #include "private-lib-system-dhcpclient.h"
 
 void
-lws_dhcpc_retry_write(struct lws_sorted_usec_list *sul)
+aws_lws_dhcpc_retry_write(struct aws_lws_sorted_usec_list *sul)
 {
-	lws_dhcpc_req_t *r = lws_container_of(sul, lws_dhcpc_req_t, sul_write);
+	aws_lws_dhcpc_req_t *r = aws_lws_container_of(sul, aws_lws_dhcpc_req_t, sul_write);
 
-	lwsl_debug("%s\n", __func__);
+	aws_lwsl_debug("%s\n", __func__);
 
 	if (r && r->wsi_raw)
-		lws_callback_on_writable(r->wsi_raw);
+		aws_lws_callback_on_writable(r->wsi_raw);
 }
 
 static void
-lws_dhcpc_destroy(lws_dhcpc_req_t **pr)
+aws_lws_dhcpc_destroy(aws_lws_dhcpc_req_t **pr)
 {
-	lws_dhcpc_req_t *r = *pr;
+	aws_lws_dhcpc_req_t *r = *pr;
 
-	lws_sul_cancel(&r->sul_conn);
-	lws_sul_cancel(&r->sul_write);
-	lws_sul_cancel(&r->sul_renew);
+	aws_lws_sul_cancel(&r->sul_conn);
+	aws_lws_sul_cancel(&r->sul_write);
+	aws_lws_sul_cancel(&r->sul_renew);
 
 	if (r->wsi_raw)
-		lws_set_timeout(r->wsi_raw, 1, LWS_TO_KILL_ASYNC);
+		aws_lws_set_timeout(r->wsi_raw, 1, LWS_TO_KILL_ASYNC);
 
-	lws_dll2_remove(&r->list);
+	aws_lws_dll2_remove(&r->list);
 
-	lws_free_set_NULL(r);
+	aws_lws_free_set_NULL(r);
 }
 
 int
-lws_dhcpc_status(struct lws_context *context, lws_sockaddr46 *sa46)
+aws_lws_dhcpc_status(struct aws_lws_context *context, aws_lws_sockaddr46 *sa46)
 {
-	lws_dhcpc_req_t *r;
+	aws_lws_dhcpc_req_t *r;
 
-	lws_start_foreach_dll(struct lws_dll2 *, p, context->dhcpc_owner.head) {
-		r = (lws_dhcpc_req_t *)p;
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, context->dhcpc_owner.head) {
+		r = (aws_lws_dhcpc_req_t *)p;
 
 		if (r->state == LDHC_BOUND) {
 			if (sa46) {
@@ -69,25 +69,25 @@ lws_dhcpc_status(struct lws_context *context, lws_sockaddr46 *sa46)
 			return 1;
 		}
 
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	return 0;
 }
 
-static lws_dhcpc_req_t *
-lws_dhcpc_find(struct lws_context *context, const char *iface, int af)
+static aws_lws_dhcpc_req_t *
+aws_lws_dhcpc_find(struct aws_lws_context *context, const char *iface, int af)
 {
-	lws_dhcpc_req_t *r;
+	aws_lws_dhcpc_req_t *r;
 
 	/* see if we are already looking after this af / iface combination */
 
-	lws_start_foreach_dll(struct lws_dll2 *, p, context->dhcpc_owner.head) {
-		r = (lws_dhcpc_req_t *)p;
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, context->dhcpc_owner.head) {
+		r = (aws_lws_dhcpc_req_t *)p;
 
 		if (!strcmp((const char *)&r[1], iface) && af == r->af)
 			return r; /* yes...  */
 
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	return NULL;
 }
@@ -98,10 +98,10 @@ lws_dhcpc_find(struct lws_context *context, const char *iface, int af)
  */
 
 int
-lws_dhcpc_request(struct lws_context *context, const char *iface, int af,
+aws_lws_dhcpc_request(struct aws_lws_context *context, const char *iface, int af,
 		  dhcpc_cb_t cb, void *opaque)
 {
-	lws_dhcpc_req_t *r = lws_dhcpc_find(context, iface, af);
+	aws_lws_dhcpc_req_t *r = aws_lws_dhcpc_find(context, iface, af);
 	int n;
 
 	/* see if we are already looking after this af / iface combination */
@@ -112,7 +112,7 @@ lws_dhcpc_request(struct lws_context *context, const char *iface, int af,
 	/* nope... let's create a request object as he asks */
 
 	n = (int)strlen(iface);
-	r = lws_zalloc(sizeof(*r) + (unsigned int)n + 1u, __func__);
+	r = aws_lws_zalloc(sizeof(*r) + (unsigned int)n + 1u, __func__);
 	if (!r)
 		return 1;
 
@@ -123,11 +123,11 @@ lws_dhcpc_request(struct lws_context *context, const char *iface, int af,
 	r->context = context;
 	r->state = LDHC_INIT;
 
-	lws_strncpy(r->is.ifname, iface, sizeof(r->is.ifname));
+	aws_lws_strncpy(r->is.ifname, iface, sizeof(r->is.ifname));
 
-	lws_dll2_add_head(&r->list, &context->dhcpc_owner); /* add him to list */
+	aws_lws_dll2_add_head(&r->list, &context->dhcpc_owner); /* add him to list */
 
-	lws_dhcpc4_retry_conn(&r->sul_conn);
+	aws_lws_dhcpc4_retry_conn(&r->sul_conn);
 
 	return 0;
 }
@@ -137,20 +137,20 @@ lws_dhcpc_request(struct lws_context *context, const char *iface, int af,
  */
 
 static int
-_remove_if(struct lws_dll2 *d, void *opaque)
+_remove_if(struct aws_lws_dll2 *d, void *opaque)
 {
-	lws_dhcpc_req_t *r = lws_container_of(d, lws_dhcpc_req_t, list);
+	aws_lws_dhcpc_req_t *r = aws_lws_container_of(d, aws_lws_dhcpc_req_t, list);
 
 	if (!opaque || !strcmp((const char *)&r[1], (const char *)opaque))
-		lws_dhcpc_destroy(&r);
+		aws_lws_dhcpc_destroy(&r);
 
 	return 0;
 }
 
 int
-lws_dhcpc_remove(struct lws_context *context, const char *iface)
+aws_lws_dhcpc_remove(struct aws_lws_context *context, const char *iface)
 {
-	lws_dll2_foreach_safe(&context->dhcpc_owner, (void *)iface, _remove_if);
+	aws_lws_dll2_foreach_safe(&context->dhcpc_owner, (void *)iface, _remove_if);
 
 	return 0;
 }

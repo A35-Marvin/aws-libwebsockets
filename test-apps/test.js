@@ -423,7 +423,7 @@ function ws_open_mirror()
 			document.getElementById("wslm_status").innerHTML =
 								" <b>websocket connection opened</b><br>" +
 								san(socket_lm.extensions);
-			lws_gray_out(false);
+			aws_lws_gray_out(false);
 		};
 
 		socket_lm.onmessage =function got_packet(msg) {
@@ -454,7 +454,7 @@ function ws_open_mirror()
 																	"#ff4040";
 			document.getElementById("wslm_status").textContent =
 											" websocket connection CLOSED ";
-			lws_gray_out(true,{"zindex":"499"});
+			aws_lws_gray_out(true,{"zindex":"499"});
 		};
 	} catch(exception) {
 		alert("<p>Error" + exception);  
@@ -490,7 +490,7 @@ function update_color() {
 
 window.addEventListener("load", function() {
 	
-	lws_gray_out(true,{"zindex":"499"});
+	aws_lws_gray_out(true,{"zindex":"499"});
 
 	document.getElementById("file").onchange = check_file;
 	document.getElementById("offset").onclick = reset;

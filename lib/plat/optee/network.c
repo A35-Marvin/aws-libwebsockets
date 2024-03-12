@@ -33,29 +33,29 @@
 #endif
 
 int
-lws_plat_pipe_create(struct lws *wsi)
+aws_lws_plat_pipe_create(struct lws *wsi)
 {
 	return 1;
 }
 
 int
-lws_plat_pipe_signal(struct lws *wsi)
+aws_lws_plat_pipe_signal(struct lws *wsi)
 {
 	return 1;
 }
 
 void
-lws_plat_pipe_close(struct lws *wsi)
+aws_lws_plat_pipe_close(struct lws *wsi)
 {
 }
 
 int
-lws_send_pipe_choked(struct lws *wsi)
+aws_lws_send_pipe_choked(struct lws *wsi)
 {
 	struct lws *wsi_eff;
 
 #if defined(LWS_WITH_HTTP2)
-	wsi_eff = lws_get_network_wsi(wsi);
+	wsi_eff = aws_lws_get_network_wsi(wsi);
 #else
 	wsi_eff = wsi;
 #endif
@@ -64,7 +64,7 @@ lws_send_pipe_choked(struct lws *wsi)
 	wsi_eff->could_have_pending = 0;
 
 	/* treat the fact we got a truncated send pending as if we're choked */
-	if (lws_has_buffered_out(wsi_eff)
+	if (aws_lws_has_buffered_out(wsi_eff)
 #if defined(LWS_WITH_HTTP_STREAM_COMPRESSION)
 	    || wsi->http.comp_ctx.buflist_comp ||
 	       wsi->http.comp_ctx.may_have_more
@@ -78,7 +78,7 @@ lws_send_pipe_choked(struct lws *wsi)
 }
 
 int
-lws_poll_listen_fd(struct lws_pollfd *fd)
+aws_lws_poll_listen_fd(struct aws_lws_pollfd *fd)
 {
 //	return poll(fd, 1, 0);
 
@@ -87,10 +87,10 @@ lws_poll_listen_fd(struct lws_pollfd *fd)
 
 
 int
-_lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
+_lws_plat_service_tsi(struct aws_lws_context *context, int timeout_ms, int tsi)
 {
-	lws_usec_t timeout_us = timeout_ms * LWS_US_PER_MS;
-	struct lws_context_per_thread *pt;
+	aws_lws_usec_t timeout_us = timeout_ms * LWS_US_PER_MS;
+	struct aws_lws_context_per_thread *pt;
 	int n = -1, m, c, a = 0;
 	//char buf;
 
@@ -120,21 +120,21 @@ _lws_plat_service_tsi(struct lws_context *context, int timeout_ms, int tsi)
 	/*
 	 * is there anybody with pending stuff that needs service forcing?
 	 */
-	if (lws_service_adjust_timeout(context, 1, tsi)) {
+	if (aws_lws_service_adjust_timeout(context, 1, tsi)) {
 again:
 		a = 0;
 		if (timeout_us) {
-			lws_usec_t us;
+			aws_lws_usec_t us;
 
-			lws_pt_lock(pt, __func__);
+			aws_lws_pt_lock(pt, __func__);
 			/* don't stay in poll wait longer than next hr timeout */
 			us = __lws_sul_service_ripe(pt->pt_sul_owner,
 						    LWS_COUNT_PT_SUL_OWNERS,
-						    lws_now_usecs());
+						    aws_lws_now_usecs());
 			if (us && us < timeout_us)
 				timeout_us = us;
 
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 		}
 
 		n = poll(pt->fds, pt->fds_count, timeout_us / LWS_US_PER_MS);
@@ -150,7 +150,7 @@ again:
 	} else
 		a = 1;
 
-	m = lws_service_flag_pending(context, tsi);
+	m = aws_lws_service_flag_pending(context, tsi);
 	if (m)
 		c = -1; /* unknown limit */
 	else
@@ -170,11 +170,11 @@ again:
 #if 0
 		if (pt->fds[n].fd == pt->dummy_pipe_fds[0]) {
 			if (read(pt->fds[n].fd, &buf, 1) != 1)
-				lwsl_err("Cannot read from dummy pipe.");
+				aws_lwsl_err("Cannot read from dummy pipe.");
 			continue;
 		}
 #endif
-		m = lws_service_fd_tsi(context, &pt->fds[n], tsi);
+		m = aws_lws_service_fd_tsi(context, &pt->fds[n], tsi);
 		if (m < 0)
 			return -1;
 		/* if something closed, retry this slot */
@@ -189,20 +189,20 @@ again:
 }
 
 int
-lws_plat_service(struct lws_context *context, int timeout_ms)
+aws_lws_plat_service(struct aws_lws_context *context, int timeout_ms)
 {
 	return _lws_plat_service_tsi(context, timeout_ms, 0);
 }
 
 int
-lws_plat_set_socket_options(struct lws_vhost *vhost, int fd, int unix_skt)
+aws_lws_plat_set_socket_options(struct aws_lws_vhost *vhost, int fd, int unix_skt)
 {
 	return 0;
 }
 
 
 int
-lws_plat_write_cert(struct lws_vhost *vhost, int is_key, int fd, void *buf,
+aws_lws_plat_write_cert(struct aws_lws_vhost *vhost, int is_key, int fd, void *buf,
 			size_t len)
 {
 	return 1;
@@ -212,65 +212,65 @@ lws_plat_write_cert(struct lws_vhost *vhost, int is_key, int fd, void *buf,
 /* cast a struct sockaddr_in6 * into addr for ipv6 */
 
 int
-lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
+aws_lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 		    size_t addrlen)
 {
 	return -1;
 }
 
 void
-lws_plat_insert_socket_into_fds(struct lws_context *context, struct lws *wsi)
+aws_lws_plat_insert_socket_into_fds(struct aws_lws_context *context, struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
 	pt->fds[pt->fds_count++].revents = 0;
 }
 
 void
-lws_plat_delete_socket_from_fds(struct lws_context *context,
+aws_lws_plat_delete_socket_from_fds(struct aws_lws_context *context,
 						struct lws *wsi, int m)
 {
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 
 	pt->fds_count--;
 }
 
 int
-lws_plat_change_pollfd(struct lws_context *context,
-		      struct lws *wsi, struct lws_pollfd *pfd)
+aws_lws_plat_change_pollfd(struct aws_lws_context *context,
+		      struct lws *wsi, struct aws_lws_pollfd *pfd)
 {
 	return 0;
 }
 
 const char *
-lws_plat_inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
+aws_lws_plat_inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
 {
 	//return inet_ntop(af, src, dst, cnt);
-	return "lws_plat_inet_ntop";
+	return "aws_lws_plat_inet_ntop";
 }
 
 int
-lws_plat_inet_pton(int af, const char *src, void *dst)
+aws_lws_plat_inet_pton(int af, const char *src, void *dst)
 {
 	//return inet_pton(af, src, dst);
 	return 1;
 }
 
 int
-lws_plat_set_socket_options_ip(int fd, uint8_t pri, unsigned int lws_flags)
+aws_lws_plat_set_socket_options_ip(int fd, uint8_t pri, unsigned int aws_lws_flags)
 {
 	return 0;
 }
 
 int
-lws_plat_vhost_tls_client_ctx_init(struct lws_vhost *vhost)
+aws_lws_plat_vhost_tls_client_ctx_init(struct aws_lws_vhost *vhost)
 {
 	return 0;
 }
 
 #if defined(LWS_WITH_MBEDTLS)
 int
-lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
+aws_lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
 {
 	int fd = ((mbedtls_net_context *) ctx)->fd;
 	int ret;
@@ -295,7 +295,7 @@ lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
 }
 
 int
-lws_plat_mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
+aws_lws_plat_mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
 {
 	int fd = ((mbedtls_net_context *) ctx)->fd;
 	int ret;

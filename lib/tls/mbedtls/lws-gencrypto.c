@@ -28,7 +28,7 @@
 #include "private-lib-tls-mbedtls.h"
 
 mbedtls_md_type_t
-lws_gencrypto_mbedtls_hash_to_MD_TYPE(enum lws_genhash_types hash_type)
+aws_lws_gencrypto_mbedtls_hash_to_MD_TYPE(enum aws_lws_genhash_types hash_type)
 {
 	mbedtls_md_type_t h = (mbedtls_md_type_t)-1;
 
@@ -56,12 +56,12 @@ lws_gencrypto_mbedtls_hash_to_MD_TYPE(enum lws_genhash_types hash_type)
 }
 
 int
-lws_gencrypto_mbedtls_rngf(void *context, unsigned char *buf, size_t len)
+aws_lws_gencrypto_mbedtls_rngf(void *context, unsigned char *buf, size_t len)
 {
-	if ((size_t)lws_get_random(context, buf, len) == len) {
-		// lwsl_hexdump_err(buf, len);
+	if ((size_t)aws_lws_get_random(context, buf, len) == len) {
+		// aws_lwsl_hexdump_err(buf, len);
 		return 0;
 	}
-	lwsl_err("%s: rng failed\n", __func__);
+	aws_lwsl_err("%s: rng failed\n", __func__);
 	return -1;
 }

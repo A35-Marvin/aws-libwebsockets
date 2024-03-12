@@ -49,7 +49,7 @@ static const char *ec_names[] = {
 static const char ec_b64[] = { 0, 1, 1, 1 };
 
 int
-lws_jwk_dump(struct lws_jwk *jwk)
+aws_lws_jwk_dump(struct aws_lws_jwk *jwk)
 {
 	const char **enames, *b64;
 	int elems;
@@ -61,7 +61,7 @@ lws_jwk_dump(struct lws_jwk *jwk)
 	switch (jwk->kty) {
 	default:
 	case LWS_GENCRYPTO_KTY_UNKNOWN:
-		lwsl_err("%s: jwk %p: unknown type\n", __func__, jwk);
+		aws_lwsl_err("%s: jwk %p: unknown type\n", __func__, jwk);
 
 		return 1;
 	case LWS_GENCRYPTO_KTY_OCT:
@@ -81,34 +81,34 @@ lws_jwk_dump(struct lws_jwk *jwk)
 		break;
 	}
 
-	lwsl_info("%s: jwk %p\n", __func__, jwk);
+	aws_lwsl_info("%s: jwk %p\n", __func__, jwk);
 
 	for (n = 0; n < LWS_COUNT_JWK_ELEMENTS; n++) {
 		if (jwk->meta[n].buf && meta_b64[n]) {
-			lwsl_info("  meta: %s\n", meta_names[n]);
-			lwsl_hexdump_info(jwk->meta[n].buf, jwk->meta[n].len);
+			aws_lwsl_info("  meta: %s\n", meta_names[n]);
+			aws_lwsl_hexdump_info(jwk->meta[n].buf, jwk->meta[n].len);
 		}
 		if (jwk->meta[n].buf && !meta_b64[n])
-			lwsl_info("  meta: %s: '%s'\n", meta_names[n],
+			aws_lwsl_info("  meta: %s: '%s'\n", meta_names[n],
 					jwk->meta[n].buf);
 	}
 
 	for (n = 0; n < elems; n++) {
 		if (jwk->e[n].buf && b64[n]) {
-			lwsl_info("  e: %s\n", enames[n]);
-			lwsl_hexdump_info(jwk->e[n].buf, jwk->e[n].len);
+			aws_lwsl_info("  e: %s\n", enames[n]);
+			aws_lwsl_hexdump_info(jwk->e[n].buf, jwk->e[n].len);
 		}
 		if (jwk->e[n].buf && !b64[n])
-			lwsl_info("  e: %s: '%s'\n", enames[n], jwk->e[n].buf);
+			aws_lwsl_info("  e: %s: '%s'\n", enames[n], jwk->e[n].buf);
 	}
 
 	return 0;
 }
 
 int
-_lws_jwk_set_el_jwk(struct lws_gencrypto_keyelem *e, char *in, size_t len)
+_lws_jwk_set_el_jwk(struct aws_lws_gencrypto_keyelem *e, char *in, size_t len)
 {
-	e->buf = lws_malloc(len + 1, "jwk");
+	e->buf = aws_lws_malloc(len + 1, "jwk");
 	if (!e->buf)
 		return -1;
 
@@ -120,29 +120,29 @@ _lws_jwk_set_el_jwk(struct lws_gencrypto_keyelem *e, char *in, size_t len)
 }
 
 void
-lws_jwk_destroy_elements(struct lws_gencrypto_keyelem *el, int m)
+aws_lws_jwk_destroy_elements(struct aws_lws_gencrypto_keyelem *el, int m)
 {
 	int n;
 
 	for (n = 0; n < m; n++)
 		if (el[n].buf) {
 			/* wipe all key material when it goes out of scope */
-			lws_explicit_bzero(el[n].buf, el[n].len);
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_explicit_bzero(el[n].buf, el[n].len);
+			aws_lws_free_set_NULL(el[n].buf);
 			el[n].len = 0;
 		}
 }
 
 void
-lws_jwk_destroy(struct lws_jwk *jwk)
+aws_lws_jwk_destroy(struct aws_lws_jwk *jwk)
 {
-	lws_jwk_destroy_elements(jwk->e, LWS_ARRAY_SIZE(jwk->e));
-	lws_jwk_destroy_elements(jwk->meta, LWS_ARRAY_SIZE(jwk->meta));
+	aws_lws_jwk_destroy_elements(jwk->e, LWS_ARRAY_SIZE(jwk->e));
+	aws_lws_jwk_destroy_elements(jwk->meta, LWS_ARRAY_SIZE(jwk->meta));
 }
 
 void
-lws_jwk_init_jps(struct lws_jwk_parse_state *jps,
-		 struct lws_jwk *jwk, lws_jwk_key_import_callback cb,
+aws_lws_jwk_init_jps(struct aws_lws_jwk_parse_state *jps,
+		 struct aws_lws_jwk *jwk, aws_lws_jwk_key_import_callback cb,
 		 void *user)
 {
 	if (jwk)
@@ -158,11 +158,11 @@ lws_jwk_init_jps(struct lws_jwk_parse_state *jps,
 }
 
 int
-lws_jwk_dup_oct(struct lws_jwk *jwk, const void *key, int len)
+aws_lws_jwk_dup_oct(struct aws_lws_jwk *jwk, const void *key, int len)
 {
 	unsigned int ulen = (unsigned int)len;
 
-	jwk->e[LWS_GENCRYPTO_KTY_OCT].buf = lws_malloc(ulen, __func__);
+	jwk->e[LWS_GENCRYPTO_KTY_OCT].buf = aws_lws_malloc(ulen, __func__);
 	if (!jwk->e[LWS_GENCRYPTO_KTY_OCT].buf)
 		return -1;
 
@@ -175,8 +175,8 @@ lws_jwk_dup_oct(struct lws_jwk *jwk, const void *key, int len)
 }
 
 int
-lws_jwk_generate(struct lws_context *context, struct lws_jwk *jwk,
-	         enum lws_gencrypto_kty kty, int bits, const char *curve)
+aws_lws_jwk_generate(struct aws_lws_context *context, struct aws_lws_jwk *jwk,
+	         enum aws_lws_gencrypto_kty kty, int bits, const char *curve)
 {
 	size_t sn;
 	int n;
@@ -189,50 +189,50 @@ lws_jwk_generate(struct lws_context *context, struct lws_jwk *jwk,
 	switch (kty) {
 	case LWS_GENCRYPTO_KTY_RSA:
 	{
-		struct lws_genrsa_ctx ctx;
+		struct aws_lws_genrsa_ctx ctx;
 
-		lwsl_notice("%s: generating %d bit RSA key\n", __func__, bits);
-		n = lws_genrsa_new_keypair(context, &ctx, LGRSAM_PKCS1_1_5,
+		aws_lwsl_notice("%s: generating %d bit RSA key\n", __func__, bits);
+		n = aws_lws_genrsa_new_keypair(context, &ctx, LGRSAM_PKCS1_1_5,
 					    jwk->e, bits);
-		lws_genrsa_destroy(&ctx);
+		aws_lws_genrsa_destroy(&ctx);
 		if (n) {
-			lwsl_err("%s: problem generating RSA key\n", __func__);
+			aws_lwsl_err("%s: problem generating RSA key\n", __func__);
 			return 1;
 		}
 	}
 		break;
 	case LWS_GENCRYPTO_KTY_OCT:
-		sn = (unsigned int)lws_gencrypto_bits_to_bytes(bits);
-		jwk->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf = lws_malloc(sn, "oct");
+		sn = (unsigned int)aws_lws_gencrypto_bits_to_bytes(bits);
+		jwk->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf = aws_lws_malloc(sn, "oct");
 		if (!jwk->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf)
 			return 1;
 		jwk->e[LWS_GENCRYPTO_OCT_KEYEL_K].len = (uint32_t)sn;
-		if (lws_get_random(context,
+		if (aws_lws_get_random(context,
 			     jwk->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf, sn) != sn) {
-			lwsl_err("%s: problem getting random\n", __func__);
+			aws_lwsl_err("%s: problem getting random\n", __func__);
 			return 1;
 		}
 		break;
 	case LWS_GENCRYPTO_KTY_EC:
 	{
-		struct lws_genec_ctx ctx;
+		struct aws_lws_genec_ctx ctx;
 
 		if (!curve) {
-			lwsl_err("%s: must have a named curve\n", __func__);
+			aws_lwsl_err("%s: must have a named curve\n", __func__);
 
 			return 1;
 		}
 
-		if (lws_genecdsa_create(&ctx, context, NULL))
+		if (aws_lws_genecdsa_create(&ctx, context, NULL))
 			return 1;
 
-		lwsl_notice("%s: generating ECDSA key on curve %s\n", __func__,
+		aws_lwsl_notice("%s: generating ECDSA key on curve %s\n", __func__,
 				curve);
 
-		n = lws_genecdsa_new_keypair(&ctx, curve, jwk->e);
-		lws_genec_destroy(&ctx);
+		n = aws_lws_genecdsa_new_keypair(&ctx, curve, jwk->e);
+		aws_lws_genec_destroy(&ctx);
 		if (n) {
-			lwsl_err("%s: problem generating ECDSA key\n", __func__);
+			aws_lwsl_err("%s: problem generating ECDSA key\n", __func__);
 			return 1;
 		}
 	}
@@ -240,7 +240,7 @@ lws_jwk_generate(struct lws_context *context, struct lws_jwk *jwk,
 
 	case LWS_GENCRYPTO_KTY_UNKNOWN:
 	default:
-		lwsl_err("%s: unknown kty\n", __func__);
+		aws_lwsl_err("%s: unknown kty\n", __func__);
 		return 1;
 	}
 
@@ -248,45 +248,45 @@ lws_jwk_generate(struct lws_context *context, struct lws_jwk *jwk,
 }
 
 int
-lws_jwk_rfc7638_fingerprint(struct lws_jwk *jwk, char *digest32)
+aws_lws_jwk_rfc7638_fingerprint(struct aws_lws_jwk *jwk, char *digest32)
 {
-	struct lws_genhash_ctx hash_ctx;
+	struct aws_lws_genhash_ctx hash_ctx;
 	size_t tmpsize = 2536;
 	char *tmp;
 	int n, m = (int)tmpsize;
 
-	tmp = lws_malloc(tmpsize, "rfc7638 tmp");
+	tmp = aws_lws_malloc(tmpsize, "rfc7638 tmp");
 
-	n = lws_jwk_export(jwk, LWSJWKF_EXPORT_NOCRLF, tmp, &m);
+	n = aws_lws_jwk_export(jwk, LWSJWKF_EXPORT_NOCRLF, tmp, &m);
 	if (n < 0)
 		goto bail;
 
-	if (lws_genhash_init(&hash_ctx, LWS_GENHASH_TYPE_SHA256))
+	if (aws_lws_genhash_init(&hash_ctx, LWS_GENHASH_TYPE_SHA256))
 		goto bail;
 
-	if (lws_genhash_update(&hash_ctx, tmp, (unsigned int)n)) {
-		lws_genhash_destroy(&hash_ctx, NULL);
+	if (aws_lws_genhash_update(&hash_ctx, tmp, (unsigned int)n)) {
+		aws_lws_genhash_destroy(&hash_ctx, NULL);
 
 		goto bail;
 	}
-	lws_free(tmp);
+	aws_lws_free(tmp);
 
-	if (lws_genhash_destroy(&hash_ctx, digest32))
+	if (aws_lws_genhash_destroy(&hash_ctx, digest32))
 		return -1;
 
 	return 0;
 
 bail:
-	lws_free(tmp);
+	aws_lws_free(tmp);
 
 	return -1;
 }
 
 int
-lws_jwk_strdup_meta(struct lws_jwk *jwk, enum enum_jwk_meta_tok idx,
+aws_lws_jwk_strdup_meta(struct aws_lws_jwk *jwk, enum enum_jwk_meta_tok idx,
 		    const char *in, int len)
 {
-	jwk->meta[idx].buf = lws_malloc((unsigned int)len, __func__);
+	jwk->meta[idx].buf = aws_lws_malloc((unsigned int)len, __func__);
 	if (!jwk->meta[idx].buf)
 		return 1;
 	jwk->meta[idx].len = (uint32_t)(unsigned int)len;

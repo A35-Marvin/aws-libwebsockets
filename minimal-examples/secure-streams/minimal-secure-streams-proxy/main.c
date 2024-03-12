@@ -33,8 +33,8 @@
 
 static int interrupted, bad = 1, port = 0 /* unix domain socket */;
 static const char *ibind = NULL; /* default to unix domain skt "proxy.ss.lws" */
-static lws_state_notify_link_t nl;
-static struct lws_context *context;
+static aws_lws_state_notify_link_t nl;
+static struct aws_lws_context *context;
 
 /*
  * We just define enough policy so it can fetch the latest one securely
@@ -151,11 +151,11 @@ static char *aws_keyid = NULL,
 #endif
 
 static int
-app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+app_system_state_nf(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		    int current, int target)
 {
-	struct lws_context *context = lws_system_context_from_system_mgr(mgr);
-	lws_system_blob_t *ab = lws_system_get_blob(context,
+	struct aws_lws_context *context = aws_lws_system_context_from_system_mgr(mgr);
+	aws_lws_system_blob_t *ab = aws_lws_system_get_blob(context,
 				LWS_SYSBLOB_TYPE_AUTH, 1 /* AUTH_IDX_ROOT */);
 	size_t size;
 
@@ -166,12 +166,12 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	 */
 	switch (target) {
 	case LWS_SYSTATE_REGISTERED:
-		size = lws_system_blob_get_size(ab);
+		size = aws_lws_system_blob_get_size(ab);
 		if (size)
 			break;
 
 		/* let's register our canned root token so auth can use it */
-		lws_system_blob_direct_set(ab,
+		aws_lws_system_blob_direct_set(ab,
 				(const uint8_t *)canned_root_token_payload,
 				strlen(canned_root_token_payload));
 		break;
@@ -179,21 +179,21 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 		if (current == LWS_SYSTATE_OPERATIONAL) {
 #if defined(LWS_WITH_SECURE_STREAMS_AUTH_SIGV4)
 
-			if (lws_aws_filesystem_credentials_helper(
+			if (aws_lws_aws_filesystem_credentials_helper(
 						  "~/.aws/credentials",
 						  "aws_access_key_id",
 						  "aws_secret_access_key",
 						  &aws_keyid, &aws_key))
 				return -1;
 
-			lws_ss_sigv4_set_aws_key(context, 0, aws_keyid, aws_key);
+			aws_lws_ss_sigv4_set_aws_key(context, 0, aws_keyid, aws_key);
 #endif
 			/*
 			 * At this point we have DHCP, ntp, system auth token
 			 * and we can reasonably create the proxy
 			 */
-			if (lws_ss_proxy_create(context, ibind, port)) {
-				lwsl_err("%s: failed to create ss proxy\n",
+			if (aws_lws_ss_proxy_create(context, ibind, port)) {
+				aws_lwsl_err("%s: failed to create ss proxy\n",
 						__func__);
 				return -1;
 			}
@@ -205,7 +205,7 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 		 * system this could easily change to be done on the heap, then
 		 * this would be important
 		 */
-		lws_system_blob_destroy(lws_system_get_blob(context,
+		aws_lws_system_blob_destroy(aws_lws_system_get_blob(context,
 					LWS_SYSBLOB_TYPE_AUTH,
 					1 /* AUTH_IDX_ROOT */));
 		break;
@@ -214,21 +214,21 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	return 0;
 }
 
-static lws_state_notify_link_t * const app_notifier_list[] = {
+static aws_lws_state_notify_link_t * const app_notifier_list[] = {
 	&nl, NULL
 };
 
 #if defined(LWS_WITH_SYS_METRICS)
 
 static int
-my_metric_report(lws_metric_pub_t *mp)
+my_metric_report(aws_lws_metric_pub_t *mp)
 {
-	lws_metric_bucket_t *sub = mp->u.hist.head;
+	aws_lws_metric_bucket_t *sub = mp->u.hist.head;
 	char buf[192];
 
 	do {
-		if (lws_metrics_format(mp, &sub, buf, sizeof(buf)))
-			lwsl_user("%s: %s\n", __func__, buf);
+		if (aws_lws_metrics_format(mp, &sub, buf, sizeof(buf)))
+			aws_lwsl_user("%s: %s\n", __func__, buf);
 	} while ((mp->flags & LWSMTFL_REPORT_HIST) && sub);
 
 	/* 0 = leave metric to accumulate, 1 = reset the metric */
@@ -236,7 +236,7 @@ my_metric_report(lws_metric_pub_t *mp)
 	return 1;
 }
 
-static const lws_system_ops_t system_ops = {
+static const aws_lws_system_ops_t system_ops = {
 	.metric_report = my_metric_report,
 };
 
@@ -245,32 +245,32 @@ static const lws_system_ops_t system_ops = {
 static void
 sigint_handler(int sig)
 {
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 	interrupted = 1;
-	lws_cancel_service(context);
+	aws_lws_cancel_service(context);
 }
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 0;
 
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
 	signal(SIGINT, sigint_handler);
 
 	/* connect to ssproxy via UDS by default, else via tcp with this port */
-	if ((p = lws_cmdline_option(argc, argv, "-p")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-p")))
 		port = atoi(p);
 
 	/* UDS "proxy.ss.lws" in abstract namespace, else this socket path;
 	 * when -p given this can specify the network interface to bind to */
-	if ((p = lws_cmdline_option(argc, argv, "-i")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-i")))
 		ibind = p;
 
-	lwsl_user("LWS secure streams Proxy [-d<verb>]\n");
+	aws_lwsl_user("LWS secure streams Proxy [-d<verb>]\n");
 
 	info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
 		       LWS_SERVER_OPTION_H2_JUST_FIX_WINDOW_UPDATE_OVERFLOW |
@@ -292,16 +292,16 @@ int main(int argc, const char **argv)
 	info.metrics_prefix = "ssproxy";
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	/* the event loop */
 
 	do {
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 	} while (n >= 0 && !interrupted);
 
 	bad = 0;
@@ -313,8 +313,8 @@ int main(int argc, const char **argv)
 		free(aws_key);
 #endif
 
-	lws_context_destroy(context);
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

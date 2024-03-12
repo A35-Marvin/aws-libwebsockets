@@ -57,10 +57,10 @@ typedef struct lssbuf {
 class lssAc
 {
 private:
-	struct lwsac			*ac;
-	struct lwsac			*iter;
+	struct aws_lwsac			*ac;
+	struct aws_lwsac			*iter;
 	lssAc() { ac = NULL; }
-	~lssAc() { lwsac_free(&ac); }
+	~lssAc() { aws_lwsac_free(&ac); }
 
 public:
 	void append(lssbuf_t *lb);
@@ -76,7 +76,7 @@ public:
 class lssPriv
 {
 public:
-	struct lws_ss_handle		*m_ss;
+	struct aws_lws_ss_handle		*m_ss;
 	void				*m_plss;
 };
 
@@ -91,7 +91,7 @@ public:
  * LWSSSCS_QOS_NACK_REMOTE:     "
  */
 
-typedef int (*lsscomp_t)(lss *lss, lws_ss_constate_t state, void *arg);
+typedef int (*lsscomp_t)(lss *lss, aws_lws_ss_constate_t state, void *arg);
 
 /*
  * Base class for Secure Stream objects
@@ -100,20 +100,20 @@ typedef int (*lsscomp_t)(lss *lss, lws_ss_constate_t state, void *arg);
 class lss
 {
 public:
-	lss(lws_ctx_t _ctx, std::string _uri, lsscomp_t _comp, bool _psh,
-	    lws_sscb_rx rx, lws_sscb_tx tx, lws_sscb_state state);
+	lss(aws_lws_ctx_t _ctx, std::string _uri, lsscomp_t _comp, bool _psh,
+	    aws_lws_sscb_rx rx, aws_lws_sscb_tx tx, aws_lws_sscb_state state);
 	virtual ~lss();
-	int call_completion(lws_ss_constate_t state);
+	int call_completion(aws_lws_ss_constate_t state);
 
 	lsscomp_t			comp;
-	struct lws_ss_handle		*m_ss;
+	struct aws_lws_ss_handle		*m_ss;
 	uint64_t			rxlen;
-	lws_usec_t			us_start;
+	aws_lws_usec_t			us_start;
 
 private:
-	lws_ctx_t			ctx;
+	aws_lws_ctx_t			ctx;
 	char				*uri;
-	lws_ss_policy_t			pol;
+	aws_lws_ss_policy_t			pol;
 	bool				comp_done;
 };
 
@@ -124,7 +124,7 @@ private:
 class lssMsg : public lss
 {
 public:
-	lssMsg(lws_ctx_t _ctx, lsscomp_t _comp, std::string _uri);
+	lssMsg(aws_lws_ctx_t _ctx, lsscomp_t _comp, std::string _uri);
 	virtual ~lssMsg();
 };
 
@@ -135,14 +135,14 @@ public:
 class lssFile : public lss
 {
 public:
-	lssFile(lws_ctx_t _ctx, std::string _uri, std::string _path,
+	lssFile(aws_lws_ctx_t _ctx, std::string _uri, std::string _path,
 		lsscomp_t _comp, bool _psh);
 	virtual ~lssFile();
-	lws_ss_state_return_t write(const uint8_t *buf, size_t len, int flags);
+	aws_lws_ss_state_return_t write(const uint8_t *buf, size_t len, int flags);
 
 	std::string			path;
 
 private:
-	lws_filefd_type			fd;
+	aws_lws_filefd_type			fd;
 	bool				push;
 };

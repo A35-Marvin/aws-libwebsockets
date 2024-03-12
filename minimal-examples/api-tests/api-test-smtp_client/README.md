@@ -28,10 +28,10 @@ Commandline option|Meaning
 [2019/06/28 21:56:41:0711] USER: LWS API selftest: SMTP client unit tests
 [2019/06/28 21:56:41:1114] NOTICE: test_sequencer_cb: test-seq: created
 [2019/06/28 21:56:41:1259] NOTICE: unit_test_sequencer_cb: unit-test-seq: created
-[2019/06/28 21:56:41:1272] NOTICE: lws_atcut_client_conn: smtp: test 'sending': start
+[2019/06/28 21:56:41:1272] NOTICE: aws_lws_atcut_client_conn: smtp: test 'sending': start
 [2019/06/28 21:56:41:1441] NOTICE: unit_test_sequencer_cb: unit-test-seq: created
-[2019/06/28 21:56:41:1442] NOTICE: lws_atcut_client_conn: smtp: test 'rejected': start
-[2019/06/28 21:56:41:1453] NOTICE: lws_smtp_client_abs_rx: bad response from server: 500 (state 4) 500 Service Unavailable
+[2019/06/28 21:56:41:1442] NOTICE: aws_lws_atcut_client_conn: smtp: test 'rejected': start
+[2019/06/28 21:56:41:1453] NOTICE: aws_lws_smtp_client_abs_rx: bad response from server: 500 (state 4) 500 Service Unavailable
 [2019/06/28 21:56:41:1467] USER: test_sequencer_cb: sequence completed OK
 [2019/06/28 21:56:41:1474] USER: main: 2 tests 0 fail
 [2019/06/28 21:56:41:1476] USER:   test 0: PASS

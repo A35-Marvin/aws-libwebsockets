@@ -52,7 +52,7 @@ typedef enum {
 #endif
 
 	LWS_SYSBLOB_TYPE_COUNT /* ... always last */
-} lws_system_blob_item_t;
+} aws_lws_system_blob_item_t;
 
 /* opaque generic blob whose content may be on-the-heap or pointed-to
  * directly case by case.  When it's on the heap, it can be produced by
@@ -60,37 +60,37 @@ typedef enum {
  * copying out a given length from a given offset.
  */
 
-typedef struct lws_system_blob lws_system_blob_t;
+typedef struct aws_lws_system_blob aws_lws_system_blob_t;
 
 LWS_EXTERN LWS_VISIBLE void
-lws_system_blob_direct_set(lws_system_blob_t *b, const uint8_t *ptr, size_t len);
+aws_lws_system_blob_direct_set(aws_lws_system_blob_t *b, const uint8_t *ptr, size_t len);
 
 LWS_EXTERN LWS_VISIBLE void
-lws_system_blob_heap_empty(lws_system_blob_t *b);
+aws_lws_system_blob_heap_empty(aws_lws_system_blob_t *b);
 
 LWS_EXTERN LWS_VISIBLE int
-lws_system_blob_heap_append(lws_system_blob_t *b, const uint8_t *ptr, size_t len);
+aws_lws_system_blob_heap_append(aws_lws_system_blob_t *b, const uint8_t *ptr, size_t len);
 
 LWS_EXTERN LWS_VISIBLE size_t
-lws_system_blob_get_size(lws_system_blob_t *b);
+aws_lws_system_blob_get_size(aws_lws_system_blob_t *b);
 
 /* return 0 and sets *ptr to point to blob data if possible, nonzero = fail */
 LWS_EXTERN LWS_VISIBLE int
-lws_system_blob_get_single_ptr(lws_system_blob_t *b, const uint8_t **ptr);
+aws_lws_system_blob_get_single_ptr(aws_lws_system_blob_t *b, const uint8_t **ptr);
 
 LWS_EXTERN LWS_VISIBLE int
-lws_system_blob_get(lws_system_blob_t *b, uint8_t *ptr, size_t *len, size_t ofs);
+aws_lws_system_blob_get(aws_lws_system_blob_t *b, uint8_t *ptr, size_t *len, size_t ofs);
 
 LWS_EXTERN LWS_VISIBLE void
-lws_system_blob_destroy(lws_system_blob_t *b);
+aws_lws_system_blob_destroy(aws_lws_system_blob_t *b);
 
 /*
  * Get the opaque blob for index idx of various system blobs.  Returns 0 if
  * *b was set otherwise nonzero means out of range
  */
 
-LWS_EXTERN LWS_VISIBLE lws_system_blob_t *
-lws_system_get_blob(struct lws_context *context, lws_system_blob_item_t type,
+LWS_EXTERN LWS_VISIBLE aws_lws_system_blob_t *
+aws_lws_system_get_blob(struct aws_lws_context *context, aws_lws_system_blob_item_t type,
                     int idx);
 
 /*
@@ -113,7 +113,7 @@ typedef enum { /* keep system_state_names[] in sync in context.c */
 	LWS_SYSTATE_CPD_PRE_TIME,	 /* Captive portal detect without valid
 					  * time, good for non-https tests... if
 					  * you care about it, implement and
-					  * call lws_system_ops_t
+					  * call aws_lws_system_ops_t
 					  * .captive_portal_detect_request()
 					  * and move the state forward according
 					  * to the result. */
@@ -123,7 +123,7 @@ typedef enum { /* keep system_state_names[] in sync in context.c */
 	LWS_SYSTATE_CPD_POST_TIME,	 /* Captive portal detect after time was
 					  * time, good for https tests... if
 					  * you care about it, implement and
-					  * call lws_system_ops_t
+					  * call aws_lws_system_ops_t
 					  * .captive_portal_detect_request()
 					  * and move the state forward according
 					  * to the result. */
@@ -140,7 +140,7 @@ typedef enum { /* keep system_state_names[] in sync in context.c */
 					  * policy, switch to new then enter
 					  * LWS_SYSTATE_POLICY_VALID */
 	LWS_SYSTATE_CONTEXT_DESTROYING,	 /* Context is being destroyed */
-} lws_system_states_t;
+} aws_lws_system_states_t;
 
 /* Captive Portal Detect -related */
 
@@ -150,22 +150,22 @@ typedef enum {
 				 * we can go out on the internet */
 	LWS_CPD_CAPTIVE_PORTAL,	/* we inferred we're behind a captive portal */
 	LWS_CPD_NO_INTERNET,	/* we couldn't touch anything */
-} lws_cpd_result_t;
+} aws_lws_cpd_result_t;
 
-typedef void (*lws_attach_cb_t)(struct lws_context *context, int tsi, void *opaque);
-struct lws_attach_item;
+typedef void (*aws_lws_attach_cb_t)(struct aws_lws_context *context, int tsi, void *opaque);
+struct aws_lws_attach_item;
 
 LWS_EXTERN LWS_VISIBLE int
-lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
+aws_lws_tls_jit_trust_got_cert_cb(struct aws_lws_context *cx, void *got_opaque,
 			      const uint8_t *skid, size_t skid_len,
 			      const uint8_t *der, size_t der_len);
 
-typedef struct lws_system_ops {
+typedef struct aws_lws_system_ops {
 	int (*reboot)(void);
-	int (*set_clock)(lws_usec_t us);
-	int (*attach)(struct lws_context *context, int tsi, lws_attach_cb_t cb,
-		      lws_system_states_t state, void *opaque,
-		      struct lws_attach_item **get);
+	int (*set_clock)(aws_lws_usec_t us);
+	int (*attach)(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t cb,
+		      aws_lws_system_states_t state, void *opaque,
+		      struct aws_lws_attach_item **get);
 	/**< if \p get is NULL, add an attach callback request to the pt for
 	 * \p cb with arg \p opaque, that should be called when we're at or past
 	 * system state \p state.
@@ -180,44 +180,44 @@ typedef struct lws_system_ops {
 	 * __lws_system_attach() is provided to do the actual work inside the
 	 * system-specific locking.
 	 */
-	int (*captive_portal_detect_request)(struct lws_context *context);
+	int (*captive_portal_detect_request)(struct aws_lws_context *context);
 	/**< Check if we can go out on the internet cleanly, or if we are being
 	 * redirected or intercepted by a captive portal.
 	 * Start the check that proceeds asynchronously, and report the results
-	 * by calling lws_captive_portal_detect_result() api
+	 * by calling aws_lws_captive_portal_detect_result() api
 	 */
 
-	int (*metric_report)(lws_metric_pub_t *mdata);
+	int (*metric_report)(aws_lws_metric_pub_t *mdata);
 	/**< metric \p item is reporting an event of kind \p rpt,
 	 * held in \p mdata... return 0 to leave the metric object as it is,
 	 * or nonzero to reset it. */
 
-	int (*jit_trust_query)(struct lws_context *cx, const uint8_t *skid,
+	int (*jit_trust_query)(struct aws_lws_context *cx, const uint8_t *skid,
 			       size_t skid_len, void *got_opaque);
 	/**< user defined trust store search, if we do trust a cert with SKID
 	 * matching skid / skid_len, then it should get hold of the DER for the
 	 * matching root CA and call
-	 * lws_tls_jit_trust_got_cert_cb(..., got_opaque) before cleaning up and
+	 * aws_lws_tls_jit_trust_got_cert_cb(..., got_opaque) before cleaning up and
 	 * returning.  The DER should be destroyed if in heap before returning.
 	 */
 
 	uint32_t	wake_latency_us;
 	/**< time taken for this device to wake from suspend, in us
 	 */
-} lws_system_ops_t;
+} aws_lws_system_ops_t;
 
 #if defined(LWS_WITH_SYS_STATE)
 
 /**
- * lws_system_get_state_manager() - return the state mgr object for system state
+ * aws_lws_system_get_state_manager() - return the state mgr object for system state
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  *
- * The returned pointer can be used with the lws_state_ apis
+ * The returned pointer can be used with the aws_lws_state_ apis
  */
 
-LWS_EXTERN LWS_VISIBLE lws_state_manager_t *
-lws_system_get_state_manager(struct lws_context *context);
+LWS_EXTERN LWS_VISIBLE aws_lws_state_manager_t *
+aws_lws_system_get_state_manager(struct aws_lws_context *context);
 
 #endif
 
@@ -226,28 +226,28 @@ lws_system_get_state_manager(struct lws_context *context);
 #define LWSSYSGAUTH_HEX (1 << 0)
 
 /**
- * lws_system_get_ops() - get ahold of the system ops struct from the context
+ * aws_lws_system_get_ops() - get ahold of the system ops struct from the context
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  *
  * Returns the system ops struct.  It may return NULL and if not, anything in
  * there may be NULL.
  */
-LWS_EXTERN LWS_VISIBLE const lws_system_ops_t *
-lws_system_get_ops(struct lws_context *context);
+LWS_EXTERN LWS_VISIBLE const aws_lws_system_ops_t *
+aws_lws_system_get_ops(struct aws_lws_context *context);
 
 #if defined(LWS_WITH_SYS_STATE)
 
 /**
- * lws_system_context_from_system_mgr() - return context from system state mgr
+ * aws_lws_system_context_from_system_mgr() - return context from system state mgr
  *
  * \param mgr: pointer to specifically the system state mgr
  *
- * Returns the context from the system state mgr.  Helper since the lws_context
+ * Returns the context from the system state mgr.  Helper since the aws_lws_context
  * is opaque.
  */
-LWS_EXTERN LWS_VISIBLE struct lws_context *
-lws_system_context_from_system_mgr(lws_state_manager_t *mgr);
+LWS_EXTERN LWS_VISIBLE struct aws_lws_context *
+aws_lws_system_context_from_system_mgr(aws_lws_state_manager_t *mgr);
 
 #endif
 
@@ -257,7 +257,7 @@ lws_system_context_from_system_mgr(lws_state_manager_t *mgr);
  * \param context: context to get or set attach items to
  * \param tsi: thread service index (normally 0)
  * \param cb: callback to call from context event loop thread
- * \param state: the lws_system state we have to be in or have passed through
+ * \param state: the aws_lws_system state we have to be in or have passed through
  * \param opaque: optional pointer to user specific info given to callback
  * \param get: NULL, or pointer to pointer to take detached tail item on exit
  *
@@ -267,7 +267,7 @@ lws_system_context_from_system_mgr(lws_state_manager_t *mgr);
  * attach list.
  *
  * This api is the no-locking core function for getting and setting items on the
- * pt's attach list.  The lws_system operation (*attach) is the actual
+ * pt's attach list.  The aws_lws_system operation (*attach) is the actual
  * api that user and internal code calls for this feature, it should perform
  * system-specific locking, call this helper, release the locking and then
  * return the result.  This api is public only so it can be used in the locked
@@ -279,13 +279,13 @@ lws_system_context_from_system_mgr(lws_state_manager_t *mgr);
  * from the list.
  *
  * This is a non-threadsafe helper only designed to be called from
- * implementations of struct lws_system's (*attach) operation where system-
+ * implementations of struct aws_lws_system's (*attach) operation where system-
  * specific locking has been applied around it, making it threadsafe.
  */
 LWS_EXTERN LWS_VISIBLE int
-__lws_system_attach(struct lws_context *context, int tsi, lws_attach_cb_t cb,
-		    lws_system_states_t state, void *opaque,
-		    struct lws_attach_item **get);
+__lws_system_attach(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t cb,
+		    aws_lws_system_states_t state, void *opaque,
+		    struct aws_lws_attach_item **get);
 
 
 enum {
@@ -309,20 +309,20 @@ enum {
 	_LWSDH_SA46_COUNT,
 };
 
-typedef struct lws_dhcpc_ifstate {
+typedef struct aws_lws_dhcpc_ifstate {
 	char				ifname[16];
 	char				domain[64];
 	uint8_t				mac[6];
 	uint32_t			nums[_LWSDH_NUMS_COUNT];
-	lws_sockaddr46			sa46[_LWSDH_SA46_COUNT];
-} lws_dhcpc_ifstate_t;
+	aws_lws_sockaddr46			sa46[_LWSDH_SA46_COUNT];
+} aws_lws_dhcpc_ifstate_t;
 
-typedef int (*dhcpc_cb_t)(void *opaque, lws_dhcpc_ifstate_t *is);
+typedef int (*dhcpc_cb_t)(void *opaque, aws_lws_dhcpc_ifstate_t *is);
 
 /**
- * lws_dhcpc_request() - add a network interface to dhcpc management
+ * aws_lws_dhcpc_request() - add a network interface to dhcpc management
  *
- * \param c: the lws_context
+ * \param c: the aws_lws_context
  * \param i: the interface name, like "eth0"
  * \param af: address family
  * \param cb: the change callback
@@ -332,68 +332,68 @@ typedef int (*dhcpc_cb_t)(void *opaque, lws_dhcpc_ifstate_t *is);
  * try to acquire an IP.  Requires LWS_WITH_SYS_DHCP_CLIENT at cmake.
  */
 LWS_EXTERN LWS_VISIBLE int
-lws_dhcpc_request(struct lws_context *c, const char *i, int af, dhcpc_cb_t cb,
+aws_lws_dhcpc_request(struct aws_lws_context *c, const char *i, int af, dhcpc_cb_t cb,
 		void *opaque);
 
 /**
- * lws_dhcpc_remove() - remove a network interface to dhcpc management
+ * aws_lws_dhcpc_remove() - remove a network interface to dhcpc management
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  * \param iface: the interface name, like "eth0"
  *
  * Remove handling of the network interface from dhcp.
  */
 LWS_EXTERN LWS_VISIBLE int
-lws_dhcpc_remove(struct lws_context *context, const char *iface);
+aws_lws_dhcpc_remove(struct aws_lws_context *context, const char *iface);
 
 /**
- * lws_dhcpc_status() - has any interface reached BOUND state
+ * aws_lws_dhcpc_status() - has any interface reached BOUND state
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  * \param sa46: set to a DNS server from a bound interface, or NULL
  *
  * Returns 1 if any network interface managed by dhcpc has reached the BOUND
  * state (has acquired an IP, gateway and DNS server), otherwise 0.
  */
 LWS_EXTERN LWS_VISIBLE int
-lws_dhcpc_status(struct lws_context *context, lws_sockaddr46 *sa46);
+aws_lws_dhcpc_status(struct aws_lws_context *context, aws_lws_sockaddr46 *sa46);
 
 /**
- * lws_system_cpd_start() - helper to initiate captive portal detection
+ * aws_lws_system_cpd_start() - helper to initiate captive portal detection
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  *
  * Resets the context's captive portal state to LWS_CPD_UNKNOWN and calls the
- * lws_system_ops_t captive_portal_detect_request() implementation to begin
+ * aws_lws_system_ops_t captive_portal_detect_request() implementation to begin
  * testing the captive portal state.
  */
 LWS_EXTERN LWS_VISIBLE int
-lws_system_cpd_start(struct lws_context *context);
+aws_lws_system_cpd_start(struct aws_lws_context *context);
 
 LWS_EXTERN LWS_VISIBLE void
-lws_system_cpd_start_defer(struct lws_context *cx, lws_usec_t defer_us);
+aws_lws_system_cpd_start_defer(struct aws_lws_context *cx, aws_lws_usec_t defer_us);
 
 
 /**
- * lws_system_cpd_set() - report the result of the captive portal detection
+ * aws_lws_system_cpd_set() - report the result of the captive portal detection
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  * \param result: one of the LWS_CPD_ constants representing captive portal state
  *
  * Sets the context's captive portal detection state to result.  User captive
  * portal detection code would call this once it had a result from its test.
  */
 LWS_EXTERN LWS_VISIBLE void
-lws_system_cpd_set(struct lws_context *context, lws_cpd_result_t result);
+aws_lws_system_cpd_set(struct aws_lws_context *context, aws_lws_cpd_result_t result);
 
 
 /**
- * lws_system_cpd_state_get() - returns the last tested captive portal state
+ * aws_lws_system_cpd_state_get() - returns the last tested captive portal state
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  *
  * Returns one of the LWS_CPD_ constants indicating the system's understanding
  * of the current captive portal situation.
  */
-LWS_EXTERN LWS_VISIBLE lws_cpd_result_t
-lws_system_cpd_state_get(struct lws_context *context);
+LWS_EXTERN LWS_VISIBLE aws_lws_cpd_result_t
+aws_lws_system_cpd_state_get(struct aws_lws_context *context);

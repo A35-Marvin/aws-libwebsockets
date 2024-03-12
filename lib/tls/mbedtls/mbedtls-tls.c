@@ -26,25 +26,25 @@
 #include "private-lib-tls-mbedtls.h"
 
 void
-lws_tls_err_describe_clear(void)
+aws_lws_tls_err_describe_clear(void)
 {
 }
 
 int
-lws_context_init_ssl_library(struct lws_context *cx,
-			     const struct lws_context_creation_info *info)
+aws_lws_context_init_ssl_library(struct aws_lws_context *cx,
+			     const struct aws_lws_context_creation_info *info)
 {
-	lwsl_info(" Compiled with MbedTLS support");
+	aws_lwsl_info(" Compiled with MbedTLS support");
 
-	if (!lws_check_opt(info->options, LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT))
-		lwsl_info(" SSL disabled: no "
+	if (!aws_lws_check_opt(info->options, LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT))
+		aws_lwsl_info(" SSL disabled: no "
 			  "LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT");
 
 	return 0;
 }
 
 void
-lws_context_deinit_ssl_library(struct lws_context *context)
+aws_lws_context_deinit_ssl_library(struct aws_lws_context *context)
 {
 
 }

@@ -229,7 +229,7 @@
 static const uint32_t _rbo_bo_0[] = {
  1000,  2000,  3000,  5000,  10000, 
 };
-static const lws_retry_bo_t _rbo_0 = {
+static const aws_lws_retry_bo_t _rbo_0 = {
 	.retry_ms_table = _rbo_bo_0,
 	.retry_ms_table_count = 5,
 	.conceal_count = 5,
@@ -344,7 +344,7 @@ static const uint8_t _ss_der_amazon_root_ca_1[] = {
 	/* 0x338 */ 0x6C, 0x1B, 0x8A, 0xB9, 0x59, 0x33, 0xF8, 0xEB, 
 	/* 0x340 */ 0xC4, 0x90, 0xBE, 0xF1, 0xB9, 
 };
-static const lws_ss_x509_t _ss_x509_amazon_root_ca_1 = {
+static const aws_lws_ss_x509_t _ss_x509_amazon_root_ca_1 = {
 	.vhost_name = "amazon_root_ca_1",
 	.ca_der = _ss_der_amazon_root_ca_1,
 	.ca_der_len = 837,
@@ -482,7 +482,7 @@ static const uint8_t _ss_der_starfield_class_2_ca[] = {
 	/* 0x408 */ 0x0E, 0x62, 0xBF, 0x0F, 0x97, 0xEC, 0xE0, 0x2F, 
 	/* 0x410 */ 0x1F, 0x17, 0x94, 
 };
-static const lws_ss_x509_t _ss_x509_starfield_class_2_ca = {
+static const aws_lws_ss_x509_t _ss_x509_starfield_class_2_ca = {
 	.vhost_name = "starfield_class_2_ca",
 	.ca_der = _ss_der_starfield_class_2_ca,
 	.ca_der_len = 1043,
@@ -616,12 +616,12 @@ static const uint8_t _ss_der_starfield_services_root_ca[] = {
 	/* 0x3e8 */ 0x71, 0xDA, 0x20, 0xFC, 0xC1, 0x4A, 0x50, 0x8D, 
 	/* 0x3f0 */ 0xB1, 0x28, 0xBA, 
 };
-static const lws_ss_x509_t _ss_x509_starfield_services_root_ca = {
+static const aws_lws_ss_x509_t _ss_x509_starfield_services_root_ca = {
 	.vhost_name = "starfield_services_root_ca",
 	.ca_der = _ss_der_starfield_services_root_ca,
 	.ca_der_len = 1011,
 };
-static const lws_ss_trust_store_t _ss_ts_mqtt_amz_iot = {
+static const aws_lws_ss_trust_store_t _ss_ts_mqtt_amz_iot = {
 	.name = "mqtt_amz_iot",
 	.ssx509 = {
 		&_ss_x509_starfield_services_root_ca,
@@ -805,7 +805,7 @@ static const uint8_t _ss_der_isrg_root_x1[] = {
 	/* 0x560 */ 0xFE, 0x8E, 0x1E, 0x57, 0xA2, 0xCD, 0x40, 0x9D, 
 	/* 0x568 */ 0x7E, 0x62, 0x22, 0xDA, 0xDE, 0x18, 0x27, 
 };
-static const lws_ss_x509_t _ss_x509_isrg_root_x1 = {
+static const aws_lws_ss_x509_t _ss_x509_isrg_root_x1 = {
 	.vhost_name = "isrg_root_x1",
 	.ca_der = _ss_der_isrg_root_x1,
 	.ca_der_len = 1391,
@@ -991,12 +991,12 @@ static const uint8_t _ss_der_LEX3_isrg_root_x1[] = {
 	/* 0x588 */ 0x02, 0x29, 0xD6, 0x12, 0xC8, 0xA4, 0xC6, 0xA1, 
 	/* 0x590 */ 0x2D, 
 };
-static const lws_ss_x509_t _ss_x509_LEX3_isrg_root_x1 = {
+static const aws_lws_ss_x509_t _ss_x509_LEX3_isrg_root_x1 = {
 	.vhost_name = "LEX3_isrg_root_x1",
 	.ca_der = _ss_der_LEX3_isrg_root_x1,
 	.ca_der_len = 1425,
 };
-static const lws_ss_trust_store_t _ss_ts_le_via_isrg = {
+static const aws_lws_ss_trust_store_t _ss_ts_le_via_isrg = {
 	.name = "le_via_isrg",
 	.ssx509 = {
 		&_ss_x509_LEX3_isrg_root_x1,
@@ -1004,7 +1004,7 @@ static const lws_ss_trust_store_t _ss_ts_le_via_isrg = {
 	}
 };
 
-static const lws_ss_metadata_t _md_mintest_xctype = {
+static const aws_lws_ss_metadata_t _md_mintest_xctype = {
 	.name = "xctype",
 	.value__may_own_heap = (void *)"X-Content-Type:",
 	.length = 0,
@@ -1022,7 +1022,7 @@ _md_mintest_uptag = {
 	.length = 2,
 };
 
-static const lws_ss_trust_store_t _ss_ts_avs_via_starfield = {
+static const aws_lws_ss_trust_store_t _ss_ts_avs_via_starfield = {
 	.name = "avs_via_starfield",
 	.ssx509 = {
 		&_ss_x509_starfield_services_root_ca,
@@ -1177,7 +1177,7 @@ static const uint8_t _ss_der_digicert_global_ca_g2[] = {
 	/* 0x480 */ 0xF7, 0x68, 0x62, 0x1E, 0xEC, 0x19, 0xE1, 0x24, 
 	/* 0x488 */ 0xF2, 0x87, 0x11, 0xAC, 0xE9, 0x08, 0x80, 
 };
-static const lws_ss_x509_t _ss_x509_digicert_global_ca_g2 = {
+static const aws_lws_ss_x509_t _ss_x509_digicert_global_ca_g2 = {
 	.vhost_name = "digicert_global_ca_g2",
 	.ca_der = _ss_der_digicert_global_ca_g2,
 	.ca_der_len = 1167,
@@ -1299,12 +1299,12 @@ static const uint8_t _ss_der_digicert_global_root_g2[] = {
 	/* 0x388 */ 0xA2, 0xD9, 0x66, 0x6E, 0xB3, 0x35, 0x37, 0xE5, 
 	/* 0x390 */ 0x32, 0xB6, 
 };
-static const lws_ss_x509_t _ss_x509_digicert_global_root_g2 = {
+static const aws_lws_ss_x509_t _ss_x509_digicert_global_root_g2 = {
 	.vhost_name = "digicert_global_root_g2",
 	.ca_der = _ss_der_digicert_global_root_g2,
 	.ca_der_len = 914,
 };
-static const lws_ss_trust_store_t _ss_ts_api_amazon_com = {
+static const aws_lws_ss_trust_store_t _ss_ts_api_amazon_com = {
 	.name = "api_amazon_com",
 	.ssx509 = {
 		&_ss_x509_digicert_global_root_g2,
@@ -1312,7 +1312,7 @@ static const lws_ss_trust_store_t _ss_ts_api_amazon_com = {
 	}
 };
 
-static const lws_ss_policy_t _ssp_captive_portal_detect = {
+static const aws_lws_ss_policy_t _ssp_captive_portal_detect = {
 	.streamtype = "captive_portal_detect",
 	.endpoint = "connectivitycheck.android.com",
 	.u = {

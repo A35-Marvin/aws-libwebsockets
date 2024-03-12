@@ -75,22 +75,22 @@ void
 
 #endif
 
-void *lws_realloc(void *ptr, size_t size, const char *reason)
+void *aws_lws_realloc(void *ptr, size_t size, const char *reason)
 {
 	return TEE_Realloc(ptr, size);
 }
 
-void *lws_malloc(size_t size, const char *reason)
+void *aws_lws_malloc(size_t size, const char *reason)
 {
 	return TEE_Malloc(size, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 }
 
-void lws_free(void *p)
+void aws_lws_free(void *p)
 {
 	TEE_Free(p);
 }
 
-void *lws_zalloc(size_t size, const char *reason)
+void *aws_lws_zalloc(size_t size, const char *reason)
 {
 	void *ptr = TEE_Malloc(size, TEE_USER_MEM_HINT_NO_FILL_ZERO);
 	if (ptr)
@@ -98,7 +98,7 @@ void *lws_zalloc(size_t size, const char *reason)
 	return ptr;
 }
 
-void lws_set_allocator(void *(*cb)(void *ptr, size_t size, const char *reason))
+void aws_lws_set_allocator(void *(*cb)(void *ptr, size_t size, const char *reason))
 {
 	(void)cb;
 }
@@ -111,14 +111,14 @@ _realloc(void *ptr, size_t size, const char *reason)
 
 	if (size) {
 #if defined(LWS_PLAT_FREERTOS)
-		lwsl_debug("%s: size %lu: %s (free heap %d)\n", __func__,
+		aws_lwsl_debug("%s: size %lu: %s (free heap %d)\n", __func__,
 #if defined(LWS_AMAZON_RTOS)
 			    (unsigned long)size, reason, (unsigned int)xPortGetFreeHeapSize() - (int)size);
 #else
 			    (unsigned long)size, reason, (unsigned int)esp_get_free_heap_size() - (int)size);
 #endif
 #else
-		lwsl_debug("%s: size %lu: %s\n", __func__,
+		aws_lwsl_debug("%s: size %lu: %s\n", __func__,
 			   (unsigned long)size, reason);
 #endif
 
@@ -149,12 +149,12 @@ _realloc(void *ptr, size_t size, const char *reason)
 
 void *(*_lws_realloc)(void *ptr, size_t size, const char *reason) = _realloc;
 
-void *lws_realloc(void *ptr, size_t size, const char *reason)
+void *aws_lws_realloc(void *ptr, size_t size, const char *reason)
 {
 	return _lws_realloc(ptr, size, reason);
 }
 
-void *lws_zalloc(size_t size, const char *reason)
+void *aws_lws_zalloc(size_t size, const char *reason)
 {
 	void *ptr = _lws_realloc(NULL, size, reason);
 
@@ -164,12 +164,12 @@ void *lws_zalloc(size_t size, const char *reason)
 	return ptr;
 }
 
-void lws_set_allocator(void *(*cb)(void *ptr, size_t size, const char *reason))
+void aws_lws_set_allocator(void *(*cb)(void *ptr, size_t size, const char *reason))
 {
 	_lws_realloc = cb;
 }
 
-size_t lws_get_allocated_heap(void)
+size_t aws_lws_get_allocated_heap(void)
 {
 #if defined(LWS_HAVE_MALLOC_USABLE_SIZE)
 	return allocated;

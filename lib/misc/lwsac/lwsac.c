@@ -26,8 +26,8 @@
 #include "private-lib-misc-lwsac.h"
 
 void
-lws_list_ptr_insert(lws_list_ptr *head, lws_list_ptr *add,
-		    lws_list_ptr_sort_func_t sort_func)
+aws_lws_list_ptr_insert(aws_lws_list_ptr *head, aws_lws_list_ptr *add,
+		    aws_lws_list_ptr_sort_func_t sort_func)
 {
 	while (sort_func && *head) {
 		if (sort_func(add, *head) <= 0)
@@ -41,7 +41,7 @@ lws_list_ptr_insert(lws_list_ptr *head, lws_list_ptr *add,
 }
 
 size_t
-lwsac_align(size_t length)
+aws_lwsac_align(size_t length)
 {
 	size_t align = sizeof(int *);
 
@@ -52,57 +52,57 @@ lwsac_align(size_t length)
 }
 
 size_t
-lwsac_sizeof(int first)
+aws_lwsac_sizeof(int first)
 {
-	return sizeof(struct lwsac) + (first ? sizeof(struct lwsac_head) : 0);
+	return sizeof(struct aws_lwsac) + (first ? sizeof(struct aws_lwsac_head) : 0);
 }
 
 size_t
-lwsac_get_tail_pos(struct lwsac *lac)
+aws_lwsac_get_tail_pos(struct aws_lwsac *lac)
 {
 	return lac->ofs;
 }
 
-struct lwsac *
-lwsac_get_next(struct lwsac *lac)
+struct aws_lwsac *
+aws_lwsac_get_next(struct aws_lwsac *lac)
 {
 	return lac->next;
 }
 
 int
-lwsac_extend(struct lwsac *head, size_t amount)
+aws_lwsac_extend(struct aws_lwsac *head, size_t amount)
 {
-	struct lwsac_head *lachead;
-	struct lwsac *bf;
+	struct aws_lwsac_head *lachead;
+	struct aws_lwsac *bf;
 
 	assert(head);
-	lachead = (struct lwsac_head *)&head[1];
+	lachead = (struct aws_lwsac_head *)&head[1];
 
 	bf = lachead->curr;
 	assert(bf);
 
-	if (bf->alloc_size - bf->ofs < lwsac_align(amount))
+	if (bf->alloc_size - bf->ofs < aws_lwsac_align(amount))
 		return 1;
 
 	/* memset so constant folding never sees uninitialized data */
 
-	memset(((uint8_t *)bf) + bf->ofs, 0, lwsac_align(amount));
-	bf->ofs += lwsac_align(amount);
+	memset(((uint8_t *)bf) + bf->ofs, 0, aws_lwsac_align(amount));
+	bf->ofs += aws_lwsac_align(amount);
 
 	return 0;
 }
 
 static void *
-_lwsac_use(struct lwsac **head, size_t ensure, size_t chunk_size, char backfill)
+_lwsac_use(struct aws_lwsac **head, size_t ensure, size_t chunk_size, char backfill)
 {
-	struct lwsac_head *lachead = NULL;
+	struct aws_lwsac_head *lachead = NULL;
 	size_t ofs, alloc, al, hp;
-	struct lwsac *bf = *head;
+	struct aws_lwsac *bf = *head;
 
 	if (bf)
-		lachead = (struct lwsac_head *)&bf[1];
+		lachead = (struct aws_lwsac_head *)&bf[1];
 
-	al = lwsac_align(ensure);
+	al = aws_lwsac_align(ensure);
 
 	/* backfill into earlier chunks if that is allowed */
 
@@ -131,7 +131,7 @@ _lwsac_use(struct lwsac **head, size_t ensure, size_t chunk_size, char backfill)
 
 	hp = sizeof(*bf); /* always need the normal header part... */
 	if (!*head)
-		hp += sizeof(struct lwsac_head);
+		hp += sizeof(struct aws_lwsac_head);
 
 	if (!chunk_size)
 		alloc = LWSAC_CHUNK_SIZE + hp;
@@ -146,10 +146,10 @@ _lwsac_use(struct lwsac **head, size_t ensure, size_t chunk_size, char backfill)
 	if (al >= alloc - hp)
 		alloc = al + hp;
 
-	lwsl_debug("%s: alloc %d for %d\n", __func__, (int)alloc, (int)ensure);
+	aws_lwsl_debug("%s: alloc %d for %d\n", __func__, (int)alloc, (int)ensure);
 	bf = malloc(alloc);
 	if (!bf) {
-		lwsl_err("%s: OOM trying to alloc %llud\n", __func__,
+		aws_lwsl_err("%s: OOM trying to alloc %llud\n", __func__,
 				(unsigned long long)alloc);
 		return NULL;
 	}
@@ -169,7 +169,7 @@ _lwsac_use(struct lwsac **head, size_t ensure, size_t chunk_size, char backfill)
 		 * ... allocate for the special head block
 		 */
 		bf->ofs += sizeof(*lachead);
-		lachead = (struct lwsac_head *)&bf[1];
+		lachead = (struct aws_lwsac_head *)&bf[1];
 		memset(lachead, 0, sizeof(*lachead));
 	} else
 		if (lachead->curr)
@@ -199,19 +199,19 @@ do_use:
 }
 
 void *
-lwsac_use(struct lwsac **head, size_t ensure, size_t chunk_size)
+aws_lwsac_use(struct aws_lwsac **head, size_t ensure, size_t chunk_size)
 {
 	return _lwsac_use(head, ensure, chunk_size, 0);
 }
 
 void *
-lwsac_use_backfill(struct lwsac **head, size_t ensure, size_t chunk_size)
+aws_lwsac_use_backfill(struct aws_lwsac **head, size_t ensure, size_t chunk_size)
 {
 	return _lwsac_use(head, ensure, chunk_size, 1);
 }
 
 uint8_t *
-lwsac_scan_extant(struct lwsac *head, uint8_t *find, size_t len, int nul)
+aws_lwsac_scan_extant(struct aws_lwsac *head, uint8_t *find, size_t len, int nul)
 {
 	while (head) {
 		uint8_t *pos = (uint8_t *)&head[1],
@@ -234,7 +234,7 @@ lwsac_scan_extant(struct lwsac *head, uint8_t *find, size_t len, int nul)
 }
 
 uint64_t
-lwsac_total_overhead(struct lwsac *head)
+aws_lwsac_total_overhead(struct aws_lwsac *head)
 {
 	uint64_t overhead = 0;
 
@@ -248,9 +248,9 @@ lwsac_total_overhead(struct lwsac *head)
 }
 
 void *
-lwsac_use_zero(struct lwsac **head, size_t ensure, size_t chunk_size)
+aws_lwsac_use_zero(struct aws_lwsac **head, size_t ensure, size_t chunk_size)
 {
-	void *p = lwsac_use(head, ensure, chunk_size);
+	void *p = aws_lwsac_use(head, ensure, chunk_size);
 
 	if (p)
 		memset(p, 0, ensure);
@@ -259,15 +259,15 @@ lwsac_use_zero(struct lwsac **head, size_t ensure, size_t chunk_size)
 }
 
 void
-lwsac_free(struct lwsac **head)
+aws_lwsac_free(struct aws_lwsac **head)
 {
-	struct lwsac *it = *head;
+	struct aws_lwsac *it = *head;
 
 	*head = NULL;
-	lwsl_debug("%s: head %p\n", __func__, *head);
+	aws_lwsl_debug("%s: head %p\n", __func__, *head);
 
 	while (it) {
-		struct lwsac *tmp = it->next;
+		struct aws_lwsac *tmp = it->next;
 
 		free(it);
 		it = tmp;
@@ -275,84 +275,84 @@ lwsac_free(struct lwsac **head)
 }
 
 void
-lwsac_info(struct lwsac *head)
+aws_lwsac_info(struct aws_lwsac *head)
 {
 #if _LWS_ENABLED_LOGS & LLL_DEBUG
-	struct lwsac_head *lachead;
+	struct aws_lwsac_head *lachead;
 
 	if (!head) {
-		lwsl_debug("%s: empty\n", __func__);
+		aws_lwsl_debug("%s: empty\n", __func__);
 		return;
 	}
 
-	lachead = (struct lwsac_head *)&head[1];
+	lachead = (struct aws_lwsac_head *)&head[1];
 
-	lwsl_debug("%s: lac %p: %dKiB in %d blocks\n", __func__, head,
+	aws_lwsl_debug("%s: lac %p: %dKiB in %d blocks\n", __func__, head,
 		   (int)(lachead->total_alloc_size >> 10), lachead->total_blocks);
 #endif
 }
 
 uint64_t
-lwsac_total_alloc(struct lwsac *head)
+aws_lwsac_total_alloc(struct aws_lwsac *head)
 {
-	struct lwsac_head *lachead;
+	struct aws_lwsac_head *lachead;
 
 	if (!head)
 		return 0;
 
-	lachead = (struct lwsac_head *)&head[1];
+	lachead = (struct aws_lwsac_head *)&head[1];
 	return lachead->total_alloc_size;
 }
 
 void
-lwsac_reference(struct lwsac *head)
+aws_lwsac_reference(struct aws_lwsac *head)
 {
-	struct lwsac_head *lachead = (struct lwsac_head *)&head[1];
+	struct aws_lwsac_head *lachead = (struct aws_lwsac_head *)&head[1];
 
 	lachead->refcount++;
-	lwsl_debug("%s: head %p: (det %d) refcount -> %d\n",
+	aws_lwsl_debug("%s: head %p: (det %d) refcount -> %d\n",
 		    __func__, head, lachead->detached, lachead->refcount);
 }
 
 void
-lwsac_unreference(struct lwsac **head)
+aws_lwsac_unreference(struct aws_lwsac **head)
 {
-	struct lwsac_head *lachead;
+	struct aws_lwsac_head *lachead;
 
 	if (!(*head))
 		return;
 
-	lachead = (struct lwsac_head *)&(*head)[1];
+	lachead = (struct aws_lwsac_head *)&(*head)[1];
 
 	if (!lachead->refcount)
-		lwsl_warn("%s: refcount going below zero\n", __func__);
+		aws_lwsl_warn("%s: refcount going below zero\n", __func__);
 
 	lachead->refcount--;
 
-	lwsl_debug("%s: head %p: (det %d) refcount -> %d\n",
+	aws_lwsl_debug("%s: head %p: (det %d) refcount -> %d\n",
 		    __func__, *head, lachead->detached, lachead->refcount);
 
 	if (lachead->detached && !lachead->refcount) {
-		lwsl_debug("%s: head %p: FREED\n", __func__, *head);
-		lwsac_free(head);
+		aws_lwsl_debug("%s: head %p: FREED\n", __func__, *head);
+		aws_lwsac_free(head);
 	}
 }
 
 void
-lwsac_detach(struct lwsac **head)
+aws_lwsac_detach(struct aws_lwsac **head)
 {
-	struct lwsac_head *lachead;
+	struct aws_lwsac_head *lachead;
 
 	if (!(*head))
 		return;
 
-	lachead = (struct lwsac_head *)&(*head)[1];
+	lachead = (struct aws_lwsac_head *)&(*head)[1];
 
 	lachead->detached = 1;
 	if (!lachead->refcount) {
-		lwsl_debug("%s: head %p: FREED\n", __func__, *head);
-		lwsac_free(head);
+		aws_lwsl_debug("%s: head %p: FREED\n", __func__, *head);
+		aws_lwsac_free(head);
 	} else
-		lwsl_debug("%s: head %p: refcount %d: Marked as detached\n",
+		aws_lwsl_debug("%s: head %p: refcount %d: Marked as detached\n",
 			    __func__, *head, lachead->refcount);
 }

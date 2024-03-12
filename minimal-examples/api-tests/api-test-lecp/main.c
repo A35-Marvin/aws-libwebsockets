@@ -4499,31 +4499,31 @@ test_cb(struct lecp_ctx *ctx, char reason)
 	size_t i = priv->idx++;
 
 #if defined(VERBOSE)
-	 lwsl_notice("%s: %s, ctx->path %s\n", __func__,
+	 aws_lwsl_notice("%s: %s, ctx->path %s\n", __func__,
 			 reason_names[(int)reason & 0x1f], ctx->path);
 #endif
 
 	// if (ctx->npos)
-	//	lwsl_hexdump_notice(ctx->buf, ctx->npos);
+	//	aws_lwsl_hexdump_notice(ctx->buf, ctx->npos);
 
 	if (!priv->cbt->seq)
 		return 0;
 
 	if (i >= priv->cbt->seq_size) {
-		lwsl_warn("%s: unexpected parse states\n", __func__);
+		aws_lwsl_warn("%s: unexpected parse states\n", __func__);
 		return 1;
 	}
 
 	if (priv->cbt->seq[i].reason != reason) {
-		lwsl_warn("%s: reason mismatch\n", __func__);
+		aws_lwsl_warn("%s: reason mismatch\n", __func__);
 		return 1;
 	}
 
 	if (priv->cbt->seq[i].buf &&
 	    (priv->cbt->seq[i].buf_len != ctx->npos ||
 	     memcmp(priv->cbt->seq[i].buf, ctx->buf, ctx->npos))) {
-		lwsl_warn("%s: buf mismatch\n", __func__);
-		lwsl_hexdump_notice(ctx->buf, (size_t)ctx->npos);
+		aws_lwsl_warn("%s: buf mismatch\n", __func__);
+		aws_lwsl_hexdump_notice(ctx->buf, (size_t)ctx->npos);
 		return 1;
 	}
 
@@ -4532,7 +4532,7 @@ test_cb(struct lecp_ctx *ctx, char reason)
 	case LECPCB_VAL_NUM_UINT:
 	case LECPCB_VAL_NUM_INT:
 		if (ctx->item.u.u64 != priv->cbt->seq[i].item.u.u64) {
-			lwsl_warn("%s: number mismatch %llu %llu\n", __func__,
+			aws_lwsl_warn("%s: number mismatch %llu %llu\n", __func__,
 				(unsigned long long)ctx->item.u.u64,
 				(unsigned long long)priv->cbt->seq[i].item.u.u64);
 			return 1;
@@ -4541,7 +4541,7 @@ test_cb(struct lecp_ctx *ctx, char reason)
 
 	case LECPCB_VAL_FLOAT16:
 		if (ctx->item.u.hf != priv->cbt->seq[i].item.u.hf) {
-			lwsl_warn("%s: number mismatch %llu %llu\n", __func__,
+			aws_lwsl_warn("%s: number mismatch %llu %llu\n", __func__,
 				(unsigned long long)ctx->item.u.hf,
 				(unsigned long long)priv->cbt->seq[i].item.u.hf);
 			return 1;
@@ -4558,11 +4558,11 @@ test_cb(struct lecp_ctx *ctx, char reason)
 #endif
 		if (ctx->item.u.f != priv->cbt->seq[i].item.u.f) {
 #if defined(LWS_WITH_CBOR_FLOAT)
-			lwsl_warn("%s: number mismatch %f %f\n", __func__,
+			aws_lwsl_warn("%s: number mismatch %f %f\n", __func__,
 				ctx->item.u.f,
 				priv->cbt->seq[i].item.u.f);
 #else
-			lwsl_warn("%s: f32 number mismatch %llu %llu\n", __func__,
+			aws_lwsl_warn("%s: f32 number mismatch %llu %llu\n", __func__,
 				(unsigned long long)ctx->item.u.f,
 				(unsigned long long)priv->cbt->seq[i].item.u.f);
 #endif
@@ -4580,11 +4580,11 @@ test_cb(struct lecp_ctx *ctx, char reason)
 #endif
 		if (ctx->item.u.d != priv->cbt->seq[i].item.u.d) {
 #if defined(LWS_WITH_CBOR_FLOAT)
-			lwsl_warn("%s: f64 number mismatch %f %f\n", __func__,
+			aws_lwsl_warn("%s: f64 number mismatch %f %f\n", __func__,
 				ctx->item.u.d,
 				priv->cbt->seq[i].item.u.d);
 #else
-			lwsl_warn("%s: number mismatch %llu %llu\n", __func__,
+			aws_lwsl_warn("%s: number mismatch %llu %llu\n", __func__,
 				(unsigned long long)ctx->item.u.d,
 				(unsigned long long)priv->cbt->seq[i].item.u.d);
 #endif
@@ -4608,11 +4608,11 @@ int main(int argc, const char **argv)
 	struct lecp_ctx ctx;
 	const char *p;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: LECP CBOR parser\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: LECP CBOR parser\n");
 
 	for (m = 0; m < (int)LWS_ARRAY_SIZE(cbor_tests); m++) {
 
@@ -4621,18 +4621,18 @@ int main(int argc, const char **argv)
 		priv.cbt = &cbor_tests[m];
 		priv.idx = 0;
 
-		lwsl_notice("%s: ++++++++++++++++ test %d\n", __func__, m + 1);
+		aws_lwsl_notice("%s: ++++++++++++++++ test %d\n", __func__, m + 1);
 
 		lecp_construct(&ctx, test_cb, &priv, tok, LWS_ARRAY_SIZE(tok));
 
-		lwsl_hexdump_info(cbor_tests[m].b, cbor_tests[m].blen);
+		aws_lwsl_hexdump_info(cbor_tests[m].b, cbor_tests[m].blen);
 
 #if 0
 		{
 			char fn[128];
 			int fd;
 
-			lws_snprintf(fn, sizeof(fn), "/tmp/cbor-%d", m + 1);
+			aws_lws_snprintf(fn, sizeof(fn), "/tmp/cbor-%d", m + 1);
 			fd = open(fn, LWS_O_CREAT | LWS_O_TRUNC | LWS_O_WRONLY, 0600);
 			if (fd != -1) {
 				write(fd,  cbor_tests[m].b,
@@ -4648,7 +4648,7 @@ int main(int argc, const char **argv)
 		lecp_destruct(&ctx);
 
 		if (n < 0 && m + 1 != 46 /* expected to fail */) {
-			lwsl_err("%s: test %d: CBOR decode failed %d '%s'\n",
+			aws_lwsl_err("%s: test %d: CBOR decode failed %d '%s'\n",
 					__func__, m + 1, n,
 					lecp_error_to_string(n));
 			e++;
@@ -4656,213 +4656,213 @@ int main(int argc, const char **argv)
 	}
 
 	{
-		lws_lec_pctx_t ctx;
+		aws_lws_lec_pctx_t ctx;
 		uint8_t buf[64];
 
-		lws_lec_init(&ctx, buf, sizeof(buf));
+		aws_lws_lec_init(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "'hello'") !=
+		if (aws_lws_lec_printf(&ctx, "'hello'") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w1) || memcmp(w1, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "2()") !=
+		if (aws_lws_lec_printf(&ctx, "2()") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w2) || memcmp(w2, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "['abc','def']") !=
+		if (aws_lws_lec_printf(&ctx, "['abc','def']") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w3) || memcmp(w3, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test4\n", __func__);
+		aws_lwsl_user("%s: test4\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "{'ghi':1,'jkl':2}") !=
+		if (aws_lws_lec_printf(&ctx, "{'ghi':1,'jkl':2}") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w4) || memcmp(w4, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test5\n", __func__);
+		aws_lwsl_user("%s: test5\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "123({'ghi':1,'jkl':2})") !=
+		if (aws_lws_lec_printf(&ctx, "123({'ghi':1,'jkl':2})") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w5) || memcmp(w5, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test6\n", __func__);
+		aws_lwsl_user("%s: test6\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "12({'ghi':1,'jkl':['a', 'b']})") !=
+		if (aws_lws_lec_printf(&ctx, "12({'ghi':1,'jkl':['a', 'b']})") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w6) || memcmp(w6, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test7\n", __func__);
+		aws_lwsl_user("%s: test7\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%d", -1) !=
+		if (aws_lws_lec_printf(&ctx, "%d", -1) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w7) || memcmp(w7, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test8\n", __func__);
+		aws_lwsl_user("%s: test8\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%ld", -1l) !=
+		if (aws_lws_lec_printf(&ctx, "%ld", -1l) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w7) || memcmp(w7, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test9\n", __func__);
+		aws_lwsl_user("%s: test9\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%lld", -1ll) !=
+		if (aws_lws_lec_printf(&ctx, "%lld", -1ll) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w7) || memcmp(w7, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test10\n", __func__);
+		aws_lwsl_user("%s: test10\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%u", 12) !=
+		if (aws_lws_lec_printf(&ctx, "%u", 12) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w8) || memcmp(w8, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test11\n", __func__);
+		aws_lwsl_user("%s: test11\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%ld", 12l) !=
+		if (aws_lws_lec_printf(&ctx, "%ld", 12l) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w8) || memcmp(w8, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test12\n", __func__);
+		aws_lwsl_user("%s: test12\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%lld", 12ll) !=
+		if (aws_lws_lec_printf(&ctx, "%lld", 12ll) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w8) || memcmp(w8, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test13\n", __func__);
+		aws_lwsl_user("%s: test13\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%u", 0x34u) !=
+		if (aws_lws_lec_printf(&ctx, "%u", 0x34u) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w13) || memcmp(w13, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test14\n", __func__);
+		aws_lwsl_user("%s: test14\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%ld", 0x1234ul) !=
+		if (aws_lws_lec_printf(&ctx, "%ld", 0x1234ul) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w14) || memcmp(w14, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test15\n", __func__);
+		aws_lwsl_user("%s: test15\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%lld", 0x12345678ull) !=
+		if (aws_lws_lec_printf(&ctx, "%lld", 0x12345678ull) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w15) || memcmp(w15, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test16\n", __func__);
+		aws_lwsl_user("%s: test16\n", __func__);
 
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%lld", 0x123456789abcdef0ull) !=
+		if (aws_lws_lec_printf(&ctx, "%lld", 0x123456789abcdef0ull) !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w16) || memcmp(w16, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test17\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test17\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%s", "hello") !=
+		if (aws_lws_lec_printf(&ctx, "%s", "hello") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w17) || memcmp(w17, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test18\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test18\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "-6") !=
+		if (aws_lws_lec_printf(&ctx, "-6") !=
 						LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w18) || memcmp(w18, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
@@ -4874,101 +4874,101 @@ int main(int argc, const char **argv)
 		 * were completed are skipped on the subsequent calls
 		 */
 
-		lwsl_user("%s: test19\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test19\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "123(%.*b)", (int)sizeof(test106), test106) !=
+		if (aws_lws_lec_printf(&ctx, "123(%.*b)", (int)sizeof(test106), test106) !=
 				LWS_LECPCTX_RET_AGAIN ||
 		    ctx.used != sizeof(w19) || memcmp(w19, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test20\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test20\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "123(%.*b)", (int)sizeof(test106), test106) !=
+		if (aws_lws_lec_printf(&ctx, "123(%.*b)", (int)sizeof(test106), test106) !=
 				LWS_LECPCTX_RET_AGAIN ||
 		    ctx.used != sizeof(w19a) || memcmp(w19a, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test21\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test21\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "123(%.*b)", (int)sizeof(test106), test106) !=
+		if (aws_lws_lec_printf(&ctx, "123(%.*b)", (int)sizeof(test106), test106) !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w19b) || memcmp(w19b, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test22\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test22\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%t(456)", 123) !=
+		if (aws_lws_lec_printf(&ctx, "%t(456)", 123) !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w22) || memcmp(w22, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test23\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test23\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%lt(456)", 123ul) !=
+		if (aws_lws_lec_printf(&ctx, "%lt(456)", 123ul) !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w22) || memcmp(w22, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test24\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test24\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%llt(456)", 0x123456789abcedf0ull) !=
+		if (aws_lws_lec_printf(&ctx, "%llt(456)", 0x123456789abcedf0ull) !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w24) || memcmp(w24, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test25\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test25\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%f", 1.0) !=
+		if (aws_lws_lec_printf(&ctx, "%f", 1.0) !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w25) || memcmp(w25, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test26\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test26\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%f", 1.5) !=
+		if (aws_lws_lec_printf(&ctx, "%f", 1.5) !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w26) || memcmp(w26, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
 
-		lwsl_user("%s: test27\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test27\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "%f", 1.123) !=
+		if (aws_lws_lec_printf(&ctx, "%f", 1.123) !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w27) || memcmp(w27, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
@@ -4976,27 +4976,27 @@ int main(int argc, const char **argv)
 		{
 			int args[3] = { 1, 2, 3 };
 
-			lwsl_user("%s: test28\n", __func__);
-			lws_lec_setbuf(&ctx, buf, sizeof(buf));
+			aws_lwsl_user("%s: test28\n", __func__);
+			aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-			if (lws_lec_printf(&ctx, "{'a':%d,'b':[%d,%d]}",
+			if (aws_lws_lec_printf(&ctx, "{'a':%d,'b':[%d,%d]}",
 						args[0], args[1], args[2]) !=
 					LWS_LECPCTX_RET_FINISHED ||
 			    ctx.used != sizeof(w28) ||
 			    memcmp(w28, buf, ctx.used)) {
-				lwsl_hexdump_notice(ctx.start, ctx.used);
+				aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 				e++;
 			} else
 				pass++;
 		}
 
-		lwsl_user("%s: test29\n", __func__);
-		lws_lec_setbuf(&ctx, buf, sizeof(buf));
+		aws_lwsl_user("%s: test29\n", __func__);
+		aws_lws_lec_setbuf(&ctx, buf, sizeof(buf));
 
-		if (lws_lec_printf(&ctx, "<t'hello'>") !=
+		if (aws_lws_lec_printf(&ctx, "<t'hello'>") !=
 				LWS_LECPCTX_RET_FINISHED ||
 		    ctx.used != sizeof(w29) || memcmp(w29, buf, ctx.used)) {
-			lwsl_hexdump_notice(ctx.start, ctx.used);
+			aws_lwsl_hexdump_notice(ctx.start, ctx.used);
 			e++;
 		} else
 			pass++;
@@ -5008,12 +5008,12 @@ int main(int argc, const char **argv)
 	if (pass != expected)
 		goto bail;
 
-	lwsl_user("Completed: PASS %d / %d\n", pass, expected);
+	aws_lwsl_user("Completed: PASS %d / %d\n", pass, expected);
 
 	return 0;
 
 bail:
-	lwsl_user("Completed: FAIL, passed %d / %d (e %d)\n", pass,
+	aws_lwsl_user("Completed: FAIL, passed %d / %d (e %d)\n", pass,
 				expected, e);
 
 	return 1;

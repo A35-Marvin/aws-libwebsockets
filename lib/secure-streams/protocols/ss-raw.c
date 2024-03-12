@@ -27,16 +27,16 @@
 #include <private-lib-core.h>
 
 int
-secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+secstream_raw(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	      void *in, size_t len)
 {
 #if defined(LWS_WITH_SERVER)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 #endif
-	lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
+	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
 	uint8_t buf[LWS_PRE + 1520], *p = &buf[LWS_PRE],
 		*end = &buf[sizeof(buf) - 1];
-	lws_ss_state_return_t r;
+	aws_lws_ss_state_return_t r;
 	size_t buflen;
 	int f = 0;
 
@@ -45,18 +45,18 @@ secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		assert(h);
 		assert(h->policy);
-		lwsl_info("%s: %s, %s CLIENT_CONNECTION_ERROR: %s\n", __func__,
-			  lws_ss_tag(h), h->policy->streamtype, in ? (char *)in : "(null)");
+		aws_lwsl_info("%s: %s, %s CLIENT_CONNECTION_ERROR: %s\n", __func__,
+			  aws_lws_ss_tag(h), h->policy->streamtype, in ? (char *)in : "(null)");
 
 #if defined(LWS_WITH_CONMON)
-		lws_conmon_ss_json(h);
+		aws_lws_conmon_ss_json(h);
 #endif
 
-		r = lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
 		if (r == LWSSSSRET_DESTROY_ME)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		h->wsi = NULL;
-		r = lws_ss_backoff(h);
+		r = aws_lws_ss_backoff(h);
 		if (r != LWSSSSRET_OK)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		break;
@@ -64,23 +64,23 @@ secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	case LWS_CALLBACK_RAW_CLOSE:
 		if (!h)
 			break;
-		lws_sul_cancel(&h->sul_timeout);
+		aws_lws_sul_cancel(&h->sul_timeout);
 
 #if defined(LWS_WITH_CONMON)
-		lws_conmon_ss_json(h);
+		aws_lws_conmon_ss_json(h);
 #endif
 
-		lwsl_info("%s: %s, %s RAW_CLOSE\n", __func__, lws_ss_tag(h),
+		aws_lwsl_info("%s: %s, %s RAW_CLOSE\n", __func__, aws_lws_ss_tag(h),
 			  h->policy ? h->policy->streamtype : "no policy");
 		h->wsi = NULL;
 #if defined(LWS_WITH_SERVER)
-		lws_pt_lock(pt, __func__);
-		lws_dll2_remove(&h->cli_list);
-		lws_pt_unlock(pt);
+		aws_lws_pt_lock(pt, __func__);
+		aws_lws_dll2_remove(&h->cli_list);
+		aws_lws_pt_unlock(pt);
 #endif
 
 		/* wsi is going down anyway */
-		r = lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
 		if (r == LWSSSSRET_DESTROY_ME)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
@@ -89,7 +89,7 @@ secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			    !(h->info.flags & LWSSSINFLAGS_ACCEPTED) && /* not server */
 #endif
 		    !h->txn_ok && !wsi->a.context->being_destroyed) {
-			r = lws_ss_backoff(h);
+			r = aws_lws_ss_backoff(h);
 			if (r != LWSSSSRET_OK)
 				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			break;
@@ -98,26 +98,26 @@ secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 
 	case LWS_CALLBACK_RAW_CONNECTED:
-		lwsl_info("%s: RAW_CONNECTED\n", __func__);
+		aws_lwsl_info("%s: RAW_CONNECTED\n", __func__);
 
 		h->retry = 0;
 		h->seqstate = SSSEQ_CONNECTED;
-		lws_sul_cancel(&h->sul);
+		aws_lws_sul_cancel(&h->sul);
 #if defined(LWS_WITH_SYS_METRICS)
 		/*
 		 * If any hanging caliper measurement, dump it, and free any tags
 		 */
-		lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
 #endif
-		r = lws_ss_event_helper(h, LWSSSCS_CONNECTED);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 		if (r != LWSSSSRET_OK)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
-		lws_validity_confirmed(wsi);
+		aws_lws_validity_confirmed(wsi);
 		break;
 
 	case LWS_CALLBACK_RAW_ADOPT:
-		lwsl_info("%s: RAW_ADOPT\n", __func__);
+		aws_lwsl_info("%s: RAW_ADOPT\n", __func__);
 		break;
 
 	/* chunks of chunked content, with header removed */
@@ -132,11 +132,11 @@ secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_RAW_WRITEABLE:
-		lwsl_info("%s: RAW_WRITEABLE\n", __func__);
+		aws_lwsl_info("%s: RAW_WRITEABLE\n", __func__);
 		if (!h || !h->info.tx)
 			return 0;
 
-		buflen = lws_ptr_diff_size_t(end, p);
+		buflen = aws_lws_ptr_diff_size_t(end, p);
 		r = h->info.tx(ss_to_userobj(h),  h->txord++, p, &buflen, &f);
 		if (r == LWSSSSRET_TX_DONT_SEND)
 			return 0;
@@ -149,13 +149,13 @@ secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 */
 
 		p += buflen;
-		if (lws_write(wsi, buf + LWS_PRE, lws_ptr_diff_size_t(p, buf + LWS_PRE),
-			 LWS_WRITE_HTTP) != lws_ptr_diff(p, buf + LWS_PRE)) {
-			lwsl_err("%s: write failed\n", __func__);
+		if (aws_lws_write(wsi, buf + LWS_PRE, aws_lws_ptr_diff_size_t(p, buf + LWS_PRE),
+			 LWS_WRITE_HTTP) != aws_lws_ptr_diff(p, buf + LWS_PRE)) {
+			aws_lwsl_err("%s: write failed\n", __func__);
 			return -1;
 		}
 
-		lws_set_timeout(wsi, 0, 0);
+		aws_lws_set_timeout(wsi, 0, 0);
 		break;
 
 	default:
@@ -166,9 +166,9 @@ secstream_raw(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 }
 
 static int
-secstream_connect_munge_raw(lws_ss_handle_t *h, char *buf, size_t len,
-			   struct lws_client_connect_info *i,
-			   union lws_ss_contemp *ct)
+secstream_connect_munge_raw(aws_lws_ss_handle_t *h, char *buf, size_t len,
+			   struct aws_lws_client_connect_info *i,
+			   union aws_lws_ss_contemp *ct)
 {
 	i->method = "RAW";
 
@@ -176,7 +176,7 @@ secstream_connect_munge_raw(lws_ss_handle_t *h, char *buf, size_t len,
 }
 
 
-const struct lws_protocols protocol_secstream_raw = {
+const struct aws_lws_protocols protocol_secstream_raw = {
 	"lws-secstream-raw",
 	secstream_raw,
 	0,

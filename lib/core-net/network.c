@@ -27,7 +27,7 @@
 
 #if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE)
 static int
-interface_to_sa(struct lws_vhost *vh, const char *ifname,
+interface_to_sa(struct aws_lws_vhost *vh, const char *ifname,
 		struct sockaddr_in *addr, size_t addrlen, int allow_ipv6)
 {
 	int ipv6 = 0;
@@ -37,13 +37,13 @@ interface_to_sa(struct lws_vhost *vh, const char *ifname,
 #endif
 	(void)vh;
 
-	return lws_interface_to_sa(ipv6, ifname, addr, addrlen);
+	return aws_lws_interface_to_sa(ipv6, ifname, addr, addrlen);
 }
 #endif
 
 #ifndef LWS_PLAT_OPTEE
 static int
-lws_get_addresses(struct lws_vhost *vh, void *ads, char *name,
+aws_lws_get_addresses(struct aws_lws_vhost *vh, void *ads, char *name,
 		  int name_len, char *rip, int rip_len)
 {
 	struct addrinfo ai, *res;
@@ -55,10 +55,10 @@ lws_get_addresses(struct lws_vhost *vh, void *ads, char *name,
 
 #ifdef LWS_WITH_IPV6
 	if (LWS_IPV6_ENABLED(vh)) {
-		if (!lws_plat_inet_ntop(AF_INET6,
+		if (!aws_lws_plat_inet_ntop(AF_INET6,
 					&((struct sockaddr_in6 *)ads)->sin6_addr,
 					rip, (socklen_t)rip_len)) {
-			lwsl_vhost_err(vh, "inet_ntop: %s", strerror(LWS_ERRNO));
+			aws_lwsl_vhost_err(vh, "inet_ntop: %s", strerror(LWS_ERRNO));
 			return -1;
 		}
 
@@ -118,7 +118,7 @@ lws_get_addresses(struct lws_vhost *vh, void *ads, char *name,
 	if (addr4.sin_family == AF_UNSPEC)
 		return -1;
 
-	if (lws_plat_inet_ntop(AF_INET, &addr4.sin_addr, rip,
+	if (aws_lws_plat_inet_ntop(AF_INET, &addr4.sin_addr, rip,
 			       (socklen_t)rip_len) == NULL)
 		return -1;
 
@@ -126,32 +126,32 @@ lws_get_addresses(struct lws_vhost *vh, void *ads, char *name,
 }
 
 const char *
-lws_get_peer_simple_fd(lws_sockfd_type fd, char *name, size_t namelen)
+aws_lws_get_peer_simple_fd(aws_lws_sockfd_type fd, char *name, size_t namelen)
 {
-	lws_sockaddr46 sa46;
+	aws_lws_sockaddr46 sa46;
 	socklen_t len = sizeof(sa46);
 
 	if (getpeername(fd, (struct sockaddr *)&sa46, &len) < 0) {
-		lws_snprintf(name, namelen, "getpeername: %s",
+		aws_lws_snprintf(name, namelen, "getpeername: %s",
 				strerror(LWS_ERRNO));
 		return name;
 	}
 
-	lws_sa46_write_numeric_address(&sa46, name, namelen);
+	aws_lws_sa46_write_numeric_address(&sa46, name, namelen);
 
 	return name;
 }
 
 const char *
-lws_get_peer_simple(struct lws *wsi, char *name, size_t namelen)
+aws_lws_get_peer_simple(struct lws *wsi, char *name, size_t namelen)
 {
-	wsi = lws_get_network_wsi(wsi);
-	return lws_get_peer_simple_fd(wsi->desc.sockfd, name, namelen);
+	wsi = aws_lws_get_network_wsi(wsi);
+	return aws_lws_get_peer_simple_fd(wsi->desc.sockfd, name, namelen);
 }
 #endif
 
 void
-lws_get_peer_addresses(struct lws *wsi, lws_sockfd_type fd, char *name,
+aws_lws_get_peer_addresses(struct lws *wsi, aws_lws_sockfd_type fd, char *name,
 		       int name_len, char *rip, int rip_len)
 {
 #ifndef LWS_PLAT_OPTEE
@@ -177,11 +177,11 @@ lws_get_peer_addresses(struct lws *wsi, lws_sockfd_type fd, char *name,
 	}
 
 	if (getpeername(fd, p, &len) < 0) {
-		lwsl_wsi_warn(wsi, "getpeername: %s", strerror(LWS_ERRNO));
+		aws_lwsl_wsi_warn(wsi, "getpeername: %s", strerror(LWS_ERRNO));
 		goto bail;
 	}
 
-	lws_get_addresses(wsi->a.vhost, p, name, name_len, rip, rip_len);
+	aws_lws_get_addresses(wsi->a.vhost, p, name, name_len, rip, rip_len);
 
 bail:
 #endif
@@ -204,8 +204,8 @@ bail:
  */
 
 int
-lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
-		lws_sockfd_type sockfd, int port, const char *iface,
+aws_lws_socket_bind(struct aws_lws_vhost *vhost, struct lws *wsi,
+		aws_lws_sockfd_type sockfd, int port, const char *iface,
 		int af)
 {
 #ifdef LWS_WITH_UNIX_SOCK
@@ -240,7 +240,7 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 		if (!iface)
 			return LWS_ITOSA_NOT_EXIST;
 		if (sizeof(serv_unix.sun_path) <= strlen(iface)) {
-			lwsl_wsi_err(wsi, "\"%s\" too long for UNIX domain socket",
+			aws_lwsl_wsi_err(wsi, "\"%s\" too long for UNIX domain socket",
 			         iface);
 			return LWS_ITOSA_NOT_EXIST;
 		}
@@ -251,7 +251,7 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 		else
 			unlink(serv_unix.sun_path);
 
-		// lwsl_hexdump_notice(v, n);
+		// aws_lwsl_hexdump_notice(v, n);
 		break;
 #endif
 #if defined(LWS_WITH_IPV6) && !defined(LWS_PLAT_FREERTOS)
@@ -265,17 +265,17 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 			m = interface_to_sa(vhost, iface,
 				    (struct sockaddr_in *)v, (unsigned int)n, 1);
 			if (m == LWS_ITOSA_NOT_USABLE) {
-				lwsl_wsi_info(wsi, "netif %s: Not usable",
+				aws_lwsl_wsi_info(wsi, "netif %s: Not usable",
 						   iface);
 				return m;
 			}
 			if (m == LWS_ITOSA_NOT_EXIST) {
-				lwsl_wsi_info(wsi, "netif %s: Does not exist",
+				aws_lwsl_wsi_info(wsi, "netif %s: Does not exist",
 						   iface);
 				return m;
 			}
 			serv_addr6.sin6_scope_id = (unsigned int)htonl((uint32_t)
-					lws_get_addr_scope(wsi, iface));
+					aws_lws_get_addr_scope(wsi, iface));
 		}
 
 		serv_addr6.sin6_port = (uint16_t)htons((uint16_t)port);
@@ -294,12 +294,12 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 		    m = interface_to_sa(vhost, iface,
 				    (struct sockaddr_in *)v, (unsigned int)n, 0);
 			if (m == LWS_ITOSA_NOT_USABLE) {
-				lwsl_wsi_info(wsi, "netif %s: Not usable",
+				aws_lwsl_wsi_info(wsi, "netif %s: Not usable",
 						   iface);
 				return m;
 			}
 			if (m == LWS_ITOSA_NOT_EXIST) {
-				lwsl_wsi_info(wsi, "netif %s: Does not exist",
+				aws_lwsl_wsi_info(wsi, "netif %s: Does not exist",
 						   iface);
 				return m;
 			}
@@ -318,7 +318,7 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 	n = bind(sockfd, v, (socklen_t)n);
 #ifdef LWS_WITH_UNIX_SOCK
 	if (n < 0 && af == AF_UNIX) {
-		lwsl_wsi_err(wsi, "ERROR on binding fd %d to \"%s\" (%d %d)",
+		aws_lwsl_wsi_err(wsi, "ERROR on binding fd %d to \"%s\" (%d %d)",
 				  sockfd, iface, n, LWS_ERRNO);
 
 		return LWS_ITOSA_NOT_EXIST;
@@ -327,7 +327,7 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 	if (n < 0) {
 		int _lws_errno = LWS_ERRNO;
 
-		lwsl_wsi_err(wsi, "ERROR on binding fd %d to port %d (%d %d)",
+		aws_lwsl_wsi_err(wsi, "ERROR on binding fd %d to port %d (%d %d)",
 				  sockfd, port, n, _lws_errno);
 
 		/* if something already listening, tell caller to fail permanently */
@@ -346,28 +346,28 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 		gid_t gid = vhost->context->gid;
 
 		if (vhost->unix_socket_perms) {
-			if (lws_plat_user_colon_group_to_ids(
+			if (aws_lws_plat_user_colon_group_to_ids(
 				vhost->unix_socket_perms, &uid, &gid)) {
-				lwsl_wsi_err(wsi, "Failed to translate %s",
+				aws_lwsl_wsi_err(wsi, "Failed to translate %s",
 						   vhost->unix_socket_perms);
 				return LWS_ITOSA_NOT_EXIST;
 			}
 		}
 		if (iface && iface[0] != '@' && uid && gid) {
 			if (chown(iface, uid, gid)) {
-				lwsl_wsi_err(wsi, "failed to set %s perms %u:%u",
+				aws_lwsl_wsi_err(wsi, "failed to set %s perms %u:%u",
 						  iface, (unsigned int)uid,
 						  (unsigned int)gid);
 
 				return LWS_ITOSA_NOT_EXIST;
 			}
-			lwsl_wsi_notice(wsi, "vh %s unix skt %s perms %u:%u",
+			aws_lwsl_wsi_notice(wsi, "vh %s unix skt %s perms %u:%u",
 					      vhost->name, iface,
 					      (unsigned int)uid,
 					      (unsigned int)gid);
 
 			if (chmod(iface, 0660)) {
-				lwsl_wsi_err(wsi, "0600 mode on %s fail", iface);
+				aws_lwsl_wsi_err(wsi, "0600 mode on %s fail", iface);
 
 				return LWS_ITOSA_NOT_EXIST;
 			}
@@ -377,7 +377,7 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 
 #ifndef LWS_PLAT_OPTEE
 	if (getsockname(sockfd, (struct sockaddr *)psin, &len) == -1)
-		lwsl_wsi_warn(wsi, "getsockname: %s", strerror(LWS_ERRNO));
+		aws_lwsl_wsi_warn(wsi, "getsockname: %s", strerror(LWS_ERRNO));
 	else
 #endif
 #if defined(LWS_WITH_IPV6)
@@ -394,10 +394,10 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 
 		{
 			char buf[72];
-			lws_sa46_write_numeric_address((lws_sockaddr46 *)psin,
+			aws_lws_sa46_write_numeric_address((aws_lws_sockaddr46 *)psin,
 							buf, sizeof(buf));
 
-			lwsl_vhost_notice(vhost, "source ads %s", buf);
+			aws_lwsl_vhost_notice(vhost, "source ads %s", buf);
 		}
 
 	return port;
@@ -406,8 +406,8 @@ lws_socket_bind(struct lws_vhost *vhost, struct lws *wsi,
 #if defined(LWS_WITH_CLIENT)
 
 unsigned int
-lws_retry_get_delay_ms(struct lws_context *context,
-		       const lws_retry_bo_t *retry, uint16_t *ctry,
+aws_lws_retry_get_delay_ms(struct aws_lws_context *context,
+		       const aws_lws_retry_bo_t *retry, uint16_t *ctry,
 		       char *conceal)
 {
 	uint64_t ms = 3000, pc = 30; /* sane-ish defaults if no retry table */
@@ -430,7 +430,7 @@ lws_retry_get_delay_ms(struct lws_context *context,
 			pc = retry->jitter_percent;
 	}
 
-	if (lws_get_random(context, &ra, sizeof(ra)) == sizeof(ra))
+	if (aws_lws_get_random(context, &ra, sizeof(ra)) == sizeof(ra))
 		ms += ((ms * pc * ra) >> 16) / 100;
 	else
 		assert(0);
@@ -445,29 +445,29 @@ lws_retry_get_delay_ms(struct lws_context *context,
 }
 
 int
-lws_retry_sul_schedule(struct lws_context *context, int tid,
-		       lws_sorted_usec_list_t *sul,
-		       const lws_retry_bo_t *retry, sul_cb_t cb, uint16_t *ctry)
+aws_lws_retry_sul_schedule(struct aws_lws_context *context, int tid,
+		       aws_lws_sorted_usec_list_t *sul,
+		       const aws_lws_retry_bo_t *retry, sul_cb_t cb, uint16_t *ctry)
 {
 	char conceal;
-	uint64_t ms = lws_retry_get_delay_ms(context, retry, ctry, &conceal);
+	uint64_t ms = aws_lws_retry_get_delay_ms(context, retry, ctry, &conceal);
 
 	if (!conceal)
 		return 1;
 
-	lwsl_cx_info(context, "sul %p: scheduling retry in %dms", sul, (int)ms);
+	aws_lwsl_cx_info(context, "sul %p: scheduling retry in %dms", sul, (int)ms);
 
-	lws_sul_schedule(context, tid, sul, cb, (int64_t)(ms * 1000));
+	aws_lws_sul_schedule(context, tid, sul, cb, (int64_t)(ms * 1000));
 
 	return 0;
 }
 
 int
-lws_retry_sul_schedule_retry_wsi(struct lws *wsi, lws_sorted_usec_list_t *sul,
+aws_lws_retry_sul_schedule_retry_wsi(struct lws *wsi, aws_lws_sorted_usec_list_t *sul,
 				 sul_cb_t cb, uint16_t *ctry)
 {
 	char conceal;
-	lws_usec_t us = lws_retry_get_delay_ms(wsi->a.context,
+	aws_lws_usec_t us = aws_lws_retry_get_delay_ms(wsi->a.context,
 					       wsi->retry_policy, ctry,
 					       &conceal) * LWS_US_PER_MS;
 
@@ -491,9 +491,9 @@ lws_retry_sul_schedule_retry_wsi(struct lws *wsi, lws_sorted_usec_list_t *sul,
 		 * Since we're doing it by wsi, we're in a position to check for
 		 * http retry-after, it will increase us accordingly if found
 		 */
-		lws_http_check_retry_after(wsi, &us);
+		aws_lws_http_check_retry_after(wsi, &us);
 #endif
-	lws_sul_schedule(wsi->a.context, wsi->tsi, sul, cb, us);
+	aws_lws_sul_schedule(wsi->a.context, wsi->tsi, sul, cb, us);
 
 	return 0;
 }
@@ -502,7 +502,7 @@ lws_retry_sul_schedule_retry_wsi(struct lws *wsi, lws_sorted_usec_list_t *sul,
 
 #if defined(LWS_WITH_IPV6)
 unsigned long
-lws_get_addr_scope(struct lws *wsi, const char *ifname_or_ipaddr)
+aws_lws_get_addr_scope(struct lws *wsi, const char *ifname_or_ipaddr)
 {
 	unsigned long scope;
 	char ip[NI_MAXHOST];
@@ -572,7 +572,7 @@ lws_get_addr_scope(struct lws *wsi, const char *ifname_or_ipaddr)
 
 		if (ret != ERROR_BUFFER_OVERFLOW) {
 			addrs = NULL;
-			lwsl_wsi_err(wsi, "Get IPv6 ads table fail (%d)", ret);
+			aws_lwsl_wsi_err(wsi, "Get IPv6 ads table fail (%d)", ret);
 			break;
 		}
 
@@ -589,7 +589,7 @@ lws_get_addr_scope(struct lws *wsi, const char *ifname_or_ipaddr)
 					sockaddr = (struct sockaddr_in6 *)
 						(addr->Address.lpSockaddr);
 
-					lws_plat_inet_ntop(sockaddr->sin6_family,
+					aws_lws_plat_inet_ntop(sockaddr->sin6_family,
 							&sockaddr->sin6_addr,
 							ip, sizeof(ip));
 
@@ -654,16 +654,16 @@ lws_get_addr_scope(struct lws *wsi, const char *ifname_or_ipaddr)
  */
 
 int
-lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len)
+aws_lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len)
 {
-	struct lws_tokenize ts;
+	struct aws_lws_tokenize ts;
 	uint8_t *orig = result, temp[16];
 	int sects = 0, ipv6 = !!strchr(ads, ':'), skip_point = -1, dm = 0;
 	char t[5];
 	size_t n;
 	long u;
 
-	lws_tokenize_init(&ts, ads, LWS_TOKENIZE_F_NO_INTEGERS |
+	aws_lws_tokenize_init(&ts, ads, LWS_TOKENIZE_F_NO_INTEGERS |
 				    LWS_TOKENIZE_F_MINUS_NONTERM);
 	ts.len = strlen(ads);
 	if (!ipv6 && ts.len < 7)
@@ -682,7 +682,7 @@ lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len)
 		memset(result, 0, max_len);
 
 	do {
-		ts.e = (int8_t)lws_tokenize(&ts);
+		ts.e = (int8_t)aws_lws_tokenize(&ts);
 		switch (ts.e) {
 		case LWS_TOKZE_TOKEN:
 			dm = 0;
@@ -727,7 +727,7 @@ lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len)
 				/* back to back : */
 				*result++ = 0;
 				*result++ = 0;
-				skip_point = lws_ptr_diff(result, orig);
+				skip_point = aws_lws_ptr_diff(result, orig);
 				break;
 			}
 			if (ipv6 && orig[2] == 0xff && orig[3] == 0xff &&
@@ -750,11 +750,11 @@ lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len)
 
 		case LWS_TOKZE_ENDED:
 			if (!ipv6 && sects == 4)
-				return lws_ptr_diff(result, orig);
+				return aws_lws_ptr_diff(result, orig);
 			if (ipv6 && sects == 8)
-				return lws_ptr_diff(result, orig);
+				return aws_lws_ptr_diff(result, orig);
 			if (skip_point != -1) {
-				int ow = lws_ptr_diff(result, orig);
+				int ow = aws_lws_ptr_diff(result, orig);
 				/*
 				 * contains ...::...
 				 */
@@ -770,25 +770,25 @@ lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len)
 			return -12;
 
 		default: /* includes ENDED */
-			lwsl_err("%s: malformed ip address\n",
+			aws_lwsl_err("%s: malformed ip address\n",
 				 __func__);
 
 			return -13;
 		}
 	} while (ts.e > 0 && result - orig <= (int)max_len);
 
-	lwsl_err("%s: ended on e %d\n", __func__, ts.e);
+	aws_lwsl_err("%s: ended on e %d\n", __func__, ts.e);
 
 	return -14;
 }
 
 int
-lws_sa46_parse_numeric_address(const char *ads, lws_sockaddr46 *sa46)
+aws_lws_sa46_parse_numeric_address(const char *ads, aws_lws_sockaddr46 *sa46)
 {
 	uint8_t a[16];
 	int n;
 
-	n = lws_parse_numeric_address(ads, a, sizeof(a));
+	n = aws_lws_parse_numeric_address(ads, a, sizeof(a));
 	if (n < 0)
 		return -1;
 
@@ -813,7 +813,7 @@ lws_sa46_parse_numeric_address(const char *ads, lws_sockaddr46 *sa46)
 }
 
 int
-lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len)
+aws_lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len)
 {
 	char c, elided = 0, soe = 0, zb = (char)-1, n, ipv4 = 0;
 	const char *e = buf + len;
@@ -821,7 +821,7 @@ lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len)
 	int q = 0;
 
 	if (size == 4)
-		return lws_snprintf(buf, len, "%u.%u.%u.%u",
+		return aws_lws_snprintf(buf, len, "%u.%u.%u.%u",
 				    ads[0], ads[1], ads[2], ads[3]);
 
 	if (size != 16)
@@ -846,7 +846,7 @@ lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len)
 			}
 
 		if (ipv4) {
-			n = (char)lws_snprintf(buf, lws_ptr_diff_size_t(e, buf), "%u.%u",
+			n = (char)aws_lws_snprintf(buf, aws_lws_ptr_diff_size_t(e, buf), "%u.%u",
 					ads[q - 2], ads[q - 1]);
 			buf += n;
 			if (c == 6)
@@ -857,7 +857,7 @@ lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len)
 			if (c)
 				*buf++ = ':';
 
-			buf += lws_snprintf(buf, lws_ptr_diff_size_t(e, buf), "%x", v);
+			buf += aws_lws_snprintf(buf, aws_lws_ptr_diff_size_t(e, buf), "%x", v);
 
 			if (soe && v) {
 				soe = 0;
@@ -877,40 +877,40 @@ lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len)
 		*buf = '\0';
 	}
 
-	return lws_ptr_diff(buf, obuf);
+	return aws_lws_ptr_diff(buf, obuf);
 }
 
 int
-lws_sa46_write_numeric_address(lws_sockaddr46 *sa46, char *buf, size_t len)
+aws_lws_sa46_write_numeric_address(aws_lws_sockaddr46 *sa46, char *buf, size_t len)
 {
 	*buf = '\0';
 #if defined(LWS_WITH_IPV6)
 	if (sa46->sa4.sin_family == AF_INET6)
-		return lws_write_numeric_address(
+		return aws_lws_write_numeric_address(
 				(uint8_t *)&sa46->sa6.sin6_addr, 16, buf, len);
 #endif
 	if (sa46->sa4.sin_family == AF_INET)
-		return lws_write_numeric_address(
+		return aws_lws_write_numeric_address(
 				(uint8_t *)&sa46->sa4.sin_addr, 4, buf, len);
 
 #if defined(LWS_WITH_UNIX_SOCK)
 	if (sa46->sa4.sin_family == AF_UNIX)
-		return lws_snprintf(buf, len, "(unix skt)");
+		return aws_lws_snprintf(buf, len, "(unix skt)");
 #endif
 
 	if (!sa46->sa4.sin_family)
-		return lws_snprintf(buf, len, "(unset)");
+		return aws_lws_snprintf(buf, len, "(unset)");
 
 	if (sa46->sa4.sin_family == AF_INET6)
-		return lws_snprintf(buf, len, "(ipv6 unsupp)");
+		return aws_lws_snprintf(buf, len, "(ipv6 unsupp)");
 
-	lws_snprintf(buf, len, "(AF%d unsupp)", (int)sa46->sa4.sin_family);
+	aws_lws_snprintf(buf, len, "(AF%d unsupp)", (int)sa46->sa4.sin_family);
 
 	return -1;
 }
 
 int
-lws_sa46_compare_ads(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46b)
+aws_lws_sa46_compare_ads(const aws_lws_sockaddr46 *sa46a, const aws_lws_sockaddr46 *sa46b)
 {
 	if (sa46a->sa4.sin_family != sa46b->sa4.sin_family)
 		return 1;
@@ -927,7 +927,7 @@ lws_sa46_compare_ads(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46b)
 }
 
 void
-lws_4to6(uint8_t *v6addr, const uint8_t *v4addr)
+aws_lws_4to6(uint8_t *v6addr, const uint8_t *v4addr)
 {
 	v6addr[12] = v4addr[0];
 	v6addr[13] = v4addr[1];
@@ -941,18 +941,18 @@ lws_4to6(uint8_t *v6addr, const uint8_t *v4addr)
 
 #if defined(LWS_WITH_IPV6)
 void
-lws_sa46_4to6(lws_sockaddr46 *sa46, const uint8_t *v4addr, uint16_t port)
+aws_lws_sa46_4to6(aws_lws_sockaddr46 *sa46, const uint8_t *v4addr, uint16_t port)
 {
 	sa46->sa4.sin_family = AF_INET6;
 
-	lws_4to6((uint8_t *)&sa46->sa6.sin6_addr.s6_addr[0], v4addr);
+	aws_lws_4to6((uint8_t *)&sa46->sa6.sin6_addr.s6_addr[0], v4addr);
 
 	sa46->sa6.sin6_port = htons(port);
 }
 #endif
 
 int
-lws_sa46_on_net(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46_net,
+aws_lws_sa46_on_net(const aws_lws_sockaddr46 *sa46a, const aws_lws_sockaddr46 *sa46_net,
 		int net_len)
 {
 	uint8_t mask = 0xff, norm[16];
@@ -963,7 +963,7 @@ lws_sa46_on_net(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46_net,
 		if (sa46_net->sa4.sin_family == AF_INET6) {
 			/* ip is v4, net is v6, promote ip to v6 */
 
-			lws_4to6(norm, p1);
+			aws_lws_4to6(norm, p1);
 			p1 = norm;
 		}
 #if defined(LWS_WITH_IPV6)
@@ -979,7 +979,7 @@ lws_sa46_on_net(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46_net,
 		if (sa46a->sa4.sin_family == AF_INET6) {
 			/* ip is v6, net is v4, promote net to v6 */
 
-			lws_4to6(norm, p2);
+			aws_lws_4to6(norm, p2);
 			p2 = norm;
 			/* because the mask length is for net v4 address */
 			net_len += 12 * 8;
@@ -1006,7 +1006,7 @@ lws_sa46_on_net(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46_net,
 }
 
 void
-lws_sa46_copy_address(lws_sockaddr46 *sa46a, const void *in, int af)
+aws_lws_sa46_copy_address(aws_lws_sockaddr46 *sa46a, const void *in, int af)
 {
 	sa46a->sa4.sin_family = (sa_family_t)af;
 
@@ -1019,8 +1019,8 @@ lws_sa46_copy_address(lws_sockaddr46 *sa46a, const void *in, int af)
 }
 
 #if defined(LWS_WITH_SYS_STATE)
-lws_state_manager_t *
-lws_system_get_state_manager(struct lws_context *context)
+aws_lws_state_manager_t *
+aws_lws_system_get_state_manager(struct aws_lws_context *context)
 {
 	return &context->mgr_system;
 }

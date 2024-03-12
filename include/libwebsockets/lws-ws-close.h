@@ -35,8 +35,8 @@
  * NOTE: These public enums are part of the abi.  If you want to add one,
  * add it at where specified so existing users are unaffected.
  */
-/** enum lws_close_status - RFC6455 close status codes */
-enum lws_close_status {
+/** enum aws_lws_close_status - RFC6455 close status codes */
+enum aws_lws_close_status {
 	LWS_CLOSE_STATUS_NOSTATUS				=    0,
 	LWS_CLOSE_STATUS_NORMAL					= 1000,
 	/**< 1000 indicates a normal closure, meaning that the purpose for
@@ -107,7 +107,7 @@ enum lws_close_status {
 };
 
 /**
- * lws_close_reason - Set reason and aux data to send with Close packet
+ * aws_lws_close_reason - Set reason and aux data to send with Close packet
  *		If you are going to return nonzero from the callback
  *		requesting the connection to close, you can optionally
  *		call this to set the reason the peer will be told if
@@ -119,7 +119,7 @@ enum lws_close_status {
  * \param len:	Length of data in \p buf to send
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_close_reason(struct lws *wsi, enum lws_close_status status,
+aws_lws_close_reason(struct lws *wsi, enum aws_lws_close_status status,
 		 unsigned char *buf, size_t len);
 
 ///@}

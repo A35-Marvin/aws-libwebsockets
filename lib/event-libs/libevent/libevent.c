@@ -25,20 +25,20 @@
 #include "private-lib-core.h"
 #include "private-lib-event-libs-libevent.h"
 
-#define pt_to_priv_event(_pt) ((struct lws_pt_eventlibs_libevent *)(_pt)->evlib_pt)
-#define wsi_to_priv_event(_w) ((struct lws_wsi_eventlibs_libevent *)(_w)->evlib_wsi)
+#define pt_to_priv_event(_pt) ((struct aws_lws_pt_eventlibs_libevent *)(_pt)->evlib_pt)
+#define wsi_to_priv_event(_w) ((struct aws_lws_wsi_eventlibs_libevent *)(_w)->evlib_wsi)
 
 static void
-lws_event_hrtimer_cb(evutil_socket_t fd, short event, void *p)
+aws_lws_event_hrtimer_cb(evutil_socket_t fd, short event, void *p)
 {
-	struct lws_context_per_thread *pt = (struct lws_context_per_thread *)p;
-	struct lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
+	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)p;
+	struct aws_lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
 	struct timeval tv;
-	lws_usec_t us;
+	aws_lws_usec_t us;
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
-				    lws_now_usecs());
+				    aws_lws_now_usecs());
 	if (us) {
 #if defined(__APPLE__)
 		tv.tv_sec = (int)(us / LWS_US_PER_SEC);
@@ -49,30 +49,30 @@ lws_event_hrtimer_cb(evutil_socket_t fd, short event, void *p)
 #endif
 		evtimer_add(ptpr->hrtimer, &tv);
 	}
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 }
 
 static void
-lws_event_idle_timer_cb(evutil_socket_t fd, short event, void *p)
+aws_lws_event_idle_timer_cb(evutil_socket_t fd, short event, void *p)
 {
-	struct lws_context_per_thread *pt = (struct lws_context_per_thread *)p;
-	struct lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
+	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)p;
+	struct aws_lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
 	struct timeval tv;
-	lws_usec_t us;
+	aws_lws_usec_t us;
 
 	if (pt->is_destroyed)
 		return;
 
-	lws_service_do_ripe_rxflow(pt);
+	aws_lws_service_do_ripe_rxflow(pt);
 
 	/*
 	 * is there anybody with pending stuff that needs service forcing?
 	 */
-	if (!lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
+	if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 		/* -1 timeout means just do forced service */
 		_lws_plat_service_forced_tsi(pt->context, pt->tid);
 		/* still somebody left who wants forced service? */
-		if (!lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
+		if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 			/* yes... come back again later */
 
 			tv.tv_sec = 0;
@@ -85,28 +85,28 @@ lws_event_idle_timer_cb(evutil_socket_t fd, short event, void *p)
 
 	/* account for hrtimer */
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
-				    lws_now_usecs());
+				    aws_lws_now_usecs());
 	if (us) {
 		tv.tv_sec = (suseconds_t)(us / LWS_US_PER_SEC);
 		tv.tv_usec = (suseconds_t)(us - (tv.tv_sec * LWS_US_PER_SEC));
 		evtimer_add(ptpr->hrtimer, &tv);
 	}
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
 	if (pt->destroy_self)
-		lws_context_destroy(pt->context);
+		aws_lws_context_destroy(pt->context);
 }
 
 static void
-lws_event_cb(evutil_socket_t sock_fd, short revents, void *ctx)
+aws_lws_event_cb(evutil_socket_t sock_fd, short revents, void *ctx)
 {
-	struct lws_signal_watcher_libevent *lws_io =
-			(struct lws_signal_watcher_libevent *)ctx;
-	struct lws_context *context = lws_io->context;
-	struct lws_context_per_thread *pt;
-	struct lws_pollfd eventfd;
+	struct aws_lws_signal_watcher_libevent *aws_lws_io =
+			(struct aws_lws_signal_watcher_libevent *)ctx;
+	struct aws_lws_context *context = aws_lws_io->context;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_pollfd eventfd;
 	struct timeval tv;
 	struct lws *wsi;
 
@@ -116,8 +116,8 @@ lws_event_cb(evutil_socket_t sock_fd, short revents, void *ctx)
 	/* !!! EV_CLOSED doesn't exist in libevent2 */
 #if LIBEVENT_VERSION_NUMBER < 0x02000000
 	if (revents & EV_CLOSED) {
-		event_del(lws_io->event.watcher);
-		event_free(lws_io->event.watcher);
+		event_del(aws_lws_io->event.watcher);
+		event_free(aws_lws_io->event.watcher);
 		return;
 	}
 #endif
@@ -142,11 +142,11 @@ lws_event_cb(evutil_socket_t sock_fd, short revents, void *ctx)
 	if (pt->is_destroyed)
 		return;
 
-	lws_service_fd_tsi(context, &eventfd, wsi->tsi);
+	aws_lws_service_fd_tsi(context, &eventfd, wsi->tsi);
 
 	if (pt->destroy_self) {
-		lwsl_cx_notice(context, "pt destroy self coming true");
-		lws_context_destroy(pt->context);
+		aws_lwsl_cx_notice(context, "pt destroy self coming true");
+		aws_lws_context_destroy(pt->context);
 		return;
 	}
 
@@ -158,13 +158,13 @@ lws_event_cb(evutil_socket_t sock_fd, short revents, void *ctx)
 }
 
 void
-lws_event_sigint_cb(evutil_socket_t sock_fd, short revents, void *ctx)
+aws_lws_event_sigint_cb(evutil_socket_t sock_fd, short revents, void *ctx)
 {
-	struct lws_context_per_thread *pt = ctx;
+	struct aws_lws_context_per_thread *pt = ctx;
 	struct event *signal = pt_to_priv_event(pt)->w_sigint.watcher;
 
 	if (pt->context->eventlib_signal_cb) {
-		pt->context->eventlib_signal_cb((void *)(lws_intptr_t)sock_fd,
+		pt->context->eventlib_signal_cb((void *)(aws_lws_intptr_t)sock_fd,
 						event_get_signal(signal));
 
 		return;
@@ -174,18 +174,18 @@ lws_event_sigint_cb(evutil_socket_t sock_fd, short revents, void *ctx)
 }
 
 static int
-elops_listen_init_event(struct lws_dll2 *d, void *user)
+elops_listen_init_event(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = lws_container_of(d, struct lws, listen_list);
-	struct lws_context *context = (struct lws_context *)user;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
-	struct lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
-	struct lws_io_watcher_libevent *w_read =
+	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws_context *context = (struct aws_lws_context *)user;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
+	struct aws_lws_io_watcher_libevent *w_read =
 					&(wsi_to_priv_event(wsi)->w_read);
 
 	w_read->context = context;
 	w_read->watcher = event_new(ptpr->io_loop, wsi->desc.sockfd,
-				(EV_READ | EV_PERSIST), lws_event_cb, w_read);
+				(EV_READ | EV_PERSIST), aws_lws_event_cb, w_read);
 	event_add(w_read->watcher, NULL);
 	w_read->set = 1;
 
@@ -193,13 +193,13 @@ elops_listen_init_event(struct lws_dll2 *d, void *user)
 }
 
 static int
-elops_init_pt_event(struct lws_context *context, void *_loop, int tsi)
+elops_init_pt_event(struct aws_lws_context *context, void *_loop, int tsi)
 {
 	struct event_base *loop = (struct event_base *)_loop;
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
 
-	lwsl_cx_info(context, "loop %p", _loop);
+	aws_lwsl_cx_info(context, "loop %p", _loop);
 
 	if (!loop)
 		loop = event_base_new();
@@ -207,22 +207,22 @@ elops_init_pt_event(struct lws_context *context, void *_loop, int tsi)
 		context->pt[tsi].event_loop_foreign = 1;
 
 	if (!loop) {
-		lwsl_cx_err(context, "creating event base failed");
+		aws_lwsl_cx_err(context, "creating event base failed");
 
 		return -1;
 	}
 
 	ptpr->io_loop = loop;
 
-	lws_vhost_foreach_listen_wsi(context, context, elops_listen_init_event);
+	aws_lws_vhost_foreach_listen_wsi(context, context, elops_listen_init_event);
 
 	/* static event loop objects */
 
 	ptpr->hrtimer = event_new(loop, -1, EV_PERSIST,
-				      lws_event_hrtimer_cb, pt);
+				      aws_lws_event_hrtimer_cb, pt);
 
 	ptpr->idle_timer = event_new(loop, -1, 0,
-					 lws_event_idle_timer_cb, pt);
+					 aws_lws_event_idle_timer_cb, pt);
 	{
 		struct timeval tv;
 		tv.tv_sec = (long)0;
@@ -236,15 +236,15 @@ elops_init_pt_event(struct lws_context *context, void *_loop, int tsi)
 		return 0;
 
 	ptpr->w_sigint.watcher = evsignal_new(loop, SIGINT,
-						  lws_event_sigint_cb, pt);
+						  aws_lws_event_sigint_cb, pt);
 	event_add(ptpr->w_sigint.watcher, NULL);
 
 	return 0;
 }
 
 static int
-elops_init_context_event(struct lws_context *context,
-			 const struct lws_context_creation_info *info)
+elops_init_context_event(struct aws_lws_context *context,
+			 const struct aws_lws_context_creation_info *info)
 {
 	int n;
 
@@ -259,10 +259,10 @@ elops_init_context_event(struct lws_context *context,
 static int
 elops_accept_event(struct lws *wsi)
 {
-	struct lws_context *context = lws_get_context(wsi);
-	struct lws_context_per_thread *pt;
-	struct lws_pt_eventlibs_libevent *ptpr;
-	struct lws_wsi_eventlibs_libevent *wpr = wsi_to_priv_event(wsi);
+	struct aws_lws_context *context = aws_lws_get_context(wsi);
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_pt_eventlibs_libevent *ptpr;
+	struct aws_lws_wsi_eventlibs_libevent *wpr = wsi_to_priv_event(wsi);
        evutil_socket_t fd;
 
 	wpr->w_read.context = context;
@@ -278,9 +278,9 @@ elops_accept_event(struct lws *wsi)
 		fd = wsi->desc.sockfd;
 
 	wpr->w_read.watcher = event_new(ptpr->io_loop, fd,
-			(EV_READ | EV_PERSIST), lws_event_cb, &wpr->w_read);
+			(EV_READ | EV_PERSIST), aws_lws_event_cb, &wpr->w_read);
 	wpr->w_write.watcher = event_new(ptpr->io_loop, fd,
-			(EV_WRITE | EV_PERSIST), lws_event_cb, &wpr->w_write);
+			(EV_WRITE | EV_PERSIST), aws_lws_event_cb, &wpr->w_write);
 
 	return 0;
 }
@@ -288,9 +288,9 @@ elops_accept_event(struct lws *wsi)
 static void
 elops_io_event(struct lws *wsi, unsigned int flags)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
-	struct lws_wsi_eventlibs_libevent *wpr = wsi_to_priv_event(wsi);
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
+	struct aws_lws_wsi_eventlibs_libevent *wpr = wsi_to_priv_event(wsi);
 
 	if (!ptpr->io_loop || wsi->a.context->being_destroyed ||
 	    pt->is_destroyed)
@@ -323,7 +323,7 @@ elops_io_event(struct lws *wsi, unsigned int flags)
 }
 
 static void
-elops_run_pt_event(struct lws_context *context, int tsi)
+elops_run_pt_event(struct aws_lws_context *context, int tsi)
 {
 	/* Run / Dispatch the event_base loop */
 	if (pt_to_priv_event(&context->pt[tsi])->io_loop)
@@ -332,10 +332,10 @@ elops_run_pt_event(struct lws_context *context, int tsi)
 }
 
 static int
-elops_listen_destroy_event(struct lws_dll2 *d, void *user)
+elops_listen_destroy_event(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = lws_container_of(d, struct lws, listen_list);
-	struct lws_wsi_eventlibs_libevent *w = wsi_to_priv_event(wsi);
+	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
+	struct aws_lws_wsi_eventlibs_libevent *w = wsi_to_priv_event(wsi);
 
 	event_free(w->w_read.watcher);
 	w->w_read.watcher = NULL;
@@ -346,15 +346,15 @@ elops_listen_destroy_event(struct lws_dll2 *d, void *user)
 }
 
 static void
-elops_destroy_pt_event(struct lws_context *context, int tsi)
+elops_destroy_pt_event(struct aws_lws_context *context, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_pt_eventlibs_libevent *ptpr = pt_to_priv_event(pt);
 
 	if (!ptpr->io_loop)
 		return;
 
-	lws_vhost_foreach_listen_wsi(context, context, elops_listen_destroy_event);
+	aws_lws_vhost_foreach_listen_wsi(context, context, elops_listen_destroy_event);
 
 	event_free(ptpr->hrtimer);
 	event_free(ptpr->idle_timer);
@@ -365,15 +365,15 @@ elops_destroy_pt_event(struct lws_context *context, int tsi)
 		event_base_loopexit(ptpr->io_loop, NULL);
 	//	event_base_free(pt->event.io_loop);
 	//	pt->event.io_loop = NULL;
-		lwsl_cx_notice(context, "set to exit loop");
+		aws_lwsl_cx_notice(context, "set to exit loop");
 	}
 }
 
 static void
 elops_destroy_wsi_event(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt;
-	struct lws_wsi_eventlibs_libevent *w;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_wsi_eventlibs_libevent *w;
 
 	if (!wsi)
 		return;
@@ -406,9 +406,9 @@ elops_wsi_logical_close_event(struct lws *wsi)
 static int
 elops_init_vhost_listen_wsi_event(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt;
-	struct lws_pt_eventlibs_libevent *ptpr;
-	struct lws_wsi_eventlibs_libevent *w;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_pt_eventlibs_libevent *ptpr;
+	struct aws_lws_wsi_eventlibs_libevent *w;
        evutil_socket_t fd;
 
 	if (!wsi) {
@@ -430,10 +430,10 @@ elops_init_vhost_listen_wsi_event(struct lws *wsi)
 		fd = wsi->desc.sockfd;
 
 	w->w_read.watcher = event_new(ptpr->io_loop, fd, (EV_READ | EV_PERSIST),
-				      lws_event_cb, &w->w_read);
+				      aws_lws_event_cb, &w->w_read);
 	w->w_write.watcher = event_new(ptpr->io_loop, fd,
 				       (EV_WRITE | EV_PERSIST),
-				       lws_event_cb, &w->w_write);
+				       aws_lws_event_cb, &w->w_write);
 
 	elops_io_event(wsi, LWS_EV_START | LWS_EV_READ);
 
@@ -441,10 +441,10 @@ elops_init_vhost_listen_wsi_event(struct lws *wsi)
 }
 
 static int
-elops_destroy_context2_event(struct lws_context *context)
+elops_destroy_context2_event(struct aws_lws_context *context)
 {
-	struct lws_context_per_thread *pt;
-	struct lws_pt_eventlibs_libevent *ptpr;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_pt_eventlibs_libevent *ptpr;
 	int n, m;
 
 	for (n = 0; n < context->count_threads; n++) {
@@ -466,7 +466,7 @@ elops_destroy_context2_event(struct lws_context *context)
 		       (m = event_base_loop(ptpr->io_loop, EVLOOP_NONBLOCK)))
 			;
 
-		lwsl_cx_info(context, "event_base_free");
+		aws_lwsl_cx_info(context, "event_base_free");
 
 		event_base_free(ptpr->io_loop);
 		ptpr->io_loop = NULL;
@@ -475,7 +475,7 @@ elops_destroy_context2_event(struct lws_context *context)
 	return 0;
 }
 
-static const struct lws_event_loop_ops event_loop_ops_event = {
+static const struct aws_lws_event_loop_ops event_loop_ops_event = {
 	/* name */			"libevent",
 	/* init_context */		elops_init_context_event,
 	/* destroy_context1 */		NULL,
@@ -495,18 +495,18 @@ static const struct lws_event_loop_ops event_loop_ops_event = {
 	/* flags */			0,
 
 	/* evlib_size_ctx */	0,
-	/* evlib_size_pt */	sizeof(struct lws_pt_eventlibs_libevent),
+	/* evlib_size_pt */	sizeof(struct aws_lws_pt_eventlibs_libevent),
 	/* evlib_size_vh */	0,
-	/* evlib_size_wsi */	sizeof(struct lws_wsi_eventlibs_libevent),
+	/* evlib_size_wsi */	sizeof(struct aws_lws_wsi_eventlibs_libevent),
 };
 
 #if defined(LWS_WITH_EVLIB_PLUGINS)
 LWS_VISIBLE
 #endif
-const lws_plugin_evlib_t evlib_event = {
+const aws_lws_plugin_evlib_t evlib_event = {
 	.hdr = {
 		"libevent event loop",
-		"lws_evlib_plugin",
+		"aws_lws_evlib_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},

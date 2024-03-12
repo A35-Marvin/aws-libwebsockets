@@ -26,27 +26,27 @@
 #include "private-lib-jose-jwe.h"
 
 int
-lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *cek,
+aws_lws_jwe_encrypt_cbc_hs(struct aws_lws_jwe *jwe, uint8_t *cek,
 		       uint8_t *aad, int aad_len)
 {
-	int n, hlen = (int)lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
+	int n, hlen = (int)aws_lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
 	uint8_t digest[LWS_GENHASH_LARGEST];
-	struct lws_gencrypto_keyelem el;
-	struct lws_genhmac_ctx hmacctx;
-	struct lws_genaes_ctx aesctx;
+	struct aws_lws_gencrypto_keyelem el;
+	struct aws_lws_genhmac_ctx hmacctx;
+	struct aws_lws_genaes_ctx aesctx;
 	size_t paddedlen;
 	uint8_t al[8];
 
 	/* Caller must have prepared space for the results */
 
 	if (jwe->jws.map.len[LJWE_ATAG] != (unsigned int)hlen / 2) {
-		lwsl_notice("%s: expected tag len %d, got %d\n", __func__,
+		aws_lwsl_notice("%s: expected tag len %d, got %d\n", __func__,
 			    hlen / 2, jwe->jws.map.len[LJWE_ATAG]);
 		return -1;
 	}
 
 	if (jwe->jws.map.len[LJWE_IV] != 16) {
-		lwsl_notice("expected iv len %d, got %d\n", 16,
+		aws_lwsl_notice("expected iv len %d, got %d\n", 16,
 				jwe->jws.map.len[LJWE_IV]);
 		return -1;
 	}
@@ -69,7 +69,7 @@ lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *cek,
 	 *    2.  The IV used is a 128-bit value generated randomly or
 	 *        pseudorandomly for use in the cipher.
 	 */
-	lws_get_random(jwe->jws.context, (void *)jwe->jws.map.buf[LJWE_IV], 16);
+	aws_lws_get_random(jwe->jws.context, (void *)jwe->jws.map.buf[LJWE_IV], 16);
 
 	/*
 	 *  3.  The plaintext is CBC encrypted using PKCS #7 padding using
@@ -81,9 +81,9 @@ lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *cek,
 	el.buf = cek + (hlen / 2);
 	el.len = (uint32_t)(hlen / 2);
 
-	if (lws_genaes_create(&aesctx, LWS_GAESO_ENC, LWS_GAESM_CBC, &el,
+	if (aws_lws_genaes_create(&aesctx, LWS_GAESO_ENC, LWS_GAESM_CBC, &el,
 			      LWS_GAESP_WITH_PADDING, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 
 		return -1;
 	}
@@ -93,18 +93,18 @@ lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *cek,
 	 * plaintext there with the ciphertext, which will be larger by some
 	 * padding bytes
 	 */
-	n = lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
+	n = aws_lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     jwe->jws.map.len[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_IV],
 			     NULL, NULL, LWS_AES_CBC_BLOCKLEN);
-	paddedlen = lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
+	paddedlen = aws_lws_gencrypto_padded_length(LWS_AES_CBC_BLOCKLEN,
 						jwe->jws.map.len[LJWE_CTXT]);
 	jwe->jws.map.len[LJWE_CTXT] = (uint32_t)paddedlen;
-	lws_genaes_destroy(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT] +
+	aws_lws_genaes_destroy(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT] +
 			   paddedlen - LWS_AES_CBC_BLOCKLEN, LWS_AES_CBC_BLOCKLEN);
 	if (n) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		return -1;
 	}
 
@@ -113,10 +113,10 @@ lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *cek,
 	 *     Additional Authenticated Data A expressed as a 64-bit unsigned
 	 *     big-endian integer.
 	 */
-	lws_jwe_be64((unsigned int)aad_len * 8, al);
+	aws_lws_jwe_be64((unsigned int)aad_len * 8, al);
 
 	/* first half of the CEK is the MAC key */
-	if (lws_genhmac_init(&hmacctx, jwe->jose.enc_alg->hmac_type,
+	if (aws_lws_genhmac_init(&hmacctx, jwe->jose.enc_alg->hmac_type,
 				cek, (unsigned int)hlen / 2))
 		return -1;
 
@@ -134,21 +134,21 @@ lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *cek,
 	 *    M are used as T.
 	 */
 
-	if (lws_genhmac_update(&hmacctx, aad, (unsigned int)aad_len) ||
-	    lws_genhmac_update(&hmacctx, jwe->jws.map.buf[LJWE_IV],
+	if (aws_lws_genhmac_update(&hmacctx, aad, (unsigned int)aad_len) ||
+	    aws_lws_genhmac_update(&hmacctx, jwe->jws.map.buf[LJWE_IV],
 			       LWS_JWE_AES_IV_BYTES) ||
 	    /* since we encrypted it, this is the ciphertext */
-	    lws_genhmac_update(&hmacctx,
+	    aws_lws_genhmac_update(&hmacctx,
 			       (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 				          jwe->jws.map.len[LJWE_CTXT]) ||
-	    lws_genhmac_update(&hmacctx, al, 8)) {
-		lwsl_err("%s: hmac computation failed\n", __func__);
-		lws_genhmac_destroy(&hmacctx, NULL);
+	    aws_lws_genhmac_update(&hmacctx, al, 8)) {
+		aws_lwsl_err("%s: hmac computation failed\n", __func__);
+		aws_lws_genhmac_destroy(&hmacctx, NULL);
 		return -1;
 	}
 
-	if (lws_genhmac_destroy(&hmacctx, digest)) {
-		lwsl_err("%s: problem destroying hmac\n", __func__);
+	if (aws_lws_genhmac_destroy(&hmacctx, digest)) {
+		aws_lwsl_err("%s: problem destroying hmac\n", __func__);
 		return -1;
 	}
 
@@ -159,26 +159,26 @@ lws_jwe_encrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *cek,
 }
 
 int
-lws_jwe_auth_and_decrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *enc_cek,
+aws_lws_jwe_auth_and_decrypt_cbc_hs(struct aws_lws_jwe *jwe, uint8_t *enc_cek,
 				uint8_t *aad, int aad_len)
 {
-	int n, hlen = (int)lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
+	int n, hlen = (int)aws_lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
 	uint8_t digest[LWS_GENHASH_LARGEST];
-	struct lws_gencrypto_keyelem el;
-	struct lws_genhmac_ctx hmacctx;
-	struct lws_genaes_ctx aesctx;
+	struct aws_lws_gencrypto_keyelem el;
+	struct aws_lws_genhmac_ctx hmacctx;
+	struct aws_lws_genaes_ctx aesctx;
 	uint8_t al[8];
 
 	/* Some sanity checks on what came in */
 
 	if (jwe->jws.map.len[LJWE_ATAG] != (unsigned int)hlen / 2) {
-		lwsl_notice("%s: expected tag len %d, got %d\n", __func__,
+		aws_lwsl_notice("%s: expected tag len %d, got %d\n", __func__,
 				hlen / 2, jwe->jws.map.len[LJWE_ATAG]);
 		return -1;
 	}
 
 	if (jwe->jws.map.len[LJWE_IV] != 16) {
-		lwsl_notice("expected iv len %d, got %d\n", 16,
+		aws_lwsl_notice("expected iv len %d, got %d\n", 16,
 				jwe->jws.map.len[LJWE_IV]);
 		return -1;
 	}
@@ -197,38 +197,38 @@ lws_jwe_auth_and_decrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *enc_cek,
 	 *
 	 */
 
-	lws_jwe_be64((unsigned int)aad_len * 8, al);
+	aws_lws_jwe_be64((unsigned int)aad_len * 8, al);
 
 	/* first half of enc_cek is the MAC key */
-	if (lws_genhmac_init(&hmacctx, jwe->jose.enc_alg->hmac_type, enc_cek,
+	if (aws_lws_genhmac_init(&hmacctx, jwe->jose.enc_alg->hmac_type, enc_cek,
 			     (unsigned int)hlen / 2)) {
-		lwsl_err("%s: lws_genhmac_init fail\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genhmac_init fail\n", __func__);
 		return -1;
 	}
 
-	if (lws_genhmac_update(&hmacctx, aad, (unsigned int)aad_len) ||
-	    lws_genhmac_update(&hmacctx, (uint8_t *)jwe->jws.map.buf[LJWE_IV],
+	if (aws_lws_genhmac_update(&hmacctx, aad, (unsigned int)aad_len) ||
+	    aws_lws_genhmac_update(&hmacctx, (uint8_t *)jwe->jws.map.buf[LJWE_IV],
 					 jwe->jws.map.len[LJWE_IV]) ||
-	    lws_genhmac_update(&hmacctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
+	    aws_lws_genhmac_update(&hmacctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 				         jwe->jws.map.len[LJWE_CTXT]) ||
-	    lws_genhmac_update(&hmacctx, al, 8)) {
-		lwsl_err("%s: hmac computation failed\n", __func__);
-		lws_genhmac_destroy(&hmacctx, NULL);
+	    aws_lws_genhmac_update(&hmacctx, al, 8)) {
+		aws_lwsl_err("%s: hmac computation failed\n", __func__);
+		aws_lws_genhmac_destroy(&hmacctx, NULL);
 		return -1;
 	}
 
-	if (lws_genhmac_destroy(&hmacctx, digest)) {
-		lwsl_err("%s: problem destroying hmac\n", __func__);
+	if (aws_lws_genhmac_destroy(&hmacctx, digest)) {
+		aws_lwsl_err("%s: problem destroying hmac\n", __func__);
 		return -1;
 	}
 
 	/* first half of digest is the auth tag */
 
-	if (lws_timingsafe_bcmp(digest, jwe->jws.map.buf[LJWE_ATAG], (unsigned int)hlen / 2)) {
-		lwsl_err("%s: auth failed: hmac tag (%d) != ATAG (%d)\n",
+	if (aws_lws_timingsafe_bcmp(digest, jwe->jws.map.buf[LJWE_ATAG], (unsigned int)hlen / 2)) {
+		aws_lwsl_err("%s: auth failed: hmac tag (%d) != ATAG (%d)\n",
 			 __func__, hlen / 2, jwe->jws.map.len[LJWE_ATAG]);
-		lwsl_hexdump_notice(jwe->jws.map.buf[LJWE_ATAG], (unsigned int)hlen / 2);
-		lwsl_hexdump_notice(digest, (unsigned int)hlen / 2);
+		aws_lwsl_hexdump_notice(jwe->jws.map.buf[LJWE_ATAG], (unsigned int)hlen / 2);
+		aws_lwsl_hexdump_notice(digest, (unsigned int)hlen / 2);
 		return -1;
 	}
 
@@ -236,14 +236,14 @@ lws_jwe_auth_and_decrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *enc_cek,
 	el.buf = enc_cek + (hlen / 2);
 	el.len = (unsigned int)hlen / 2;
 
-	if (lws_genaes_create(&aesctx, LWS_GAESO_DEC, LWS_GAESM_CBC,
+	if (aws_lws_genaes_create(&aesctx, LWS_GAESO_DEC, LWS_GAESM_CBC,
 			      &el, LWS_GAESP_NO_PADDING, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 
 		return -1;
 	}
 
-	n = lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
+	n = aws_lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     jwe->jws.map.len[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_IV], NULL, NULL, 16);
@@ -253,16 +253,16 @@ lws_jwe_auth_and_decrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *enc_cek,
 	if (jwe->jws.map.len[LJWE_CTXT] < LWS_AES_CBC_BLOCKLEN ||
 	    jwe->jws.map.len[LJWE_CTXT] <= (unsigned char)jwe->jws.map.buf[LJWE_CTXT]
 						[jwe->jws.map.len[LJWE_CTXT] - 1]) {
-		lwsl_err("%s: invalid padded ciphertext length: %d. Corrupt data?\n",
+		aws_lwsl_err("%s: invalid padded ciphertext length: %d. Corrupt data?\n",
 				__func__, jwe->jws.map.len[LJWE_CTXT]);
 		return -1;
 	}
 	jwe->jws.map.len[LJWE_CTXT] = (uint32_t)((int)jwe->jws.map.len[LJWE_CTXT] -
 		jwe->jws.map.buf[LJWE_CTXT][jwe->jws.map.len[LJWE_CTXT] - 1]);
 
-	n |= lws_genaes_destroy(&aesctx, NULL, 0);
+	n |= aws_lws_genaes_destroy(&aesctx, NULL, 0);
 	if (n) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		return -1;
 	}
 

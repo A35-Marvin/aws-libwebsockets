@@ -58,16 +58,16 @@ struct per_session_data__lws_status {
 
 struct per_vhost_data__lws_status {
 	struct per_session_data__lws_status *live_pss_list;
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 	int count_live_pss;
 };
 
 static void
 trigger_resend(struct per_vhost_data__lws_status *vhd)
 {
-	lws_start_foreach_ll(struct per_session_data__lws_status *, pss,
+	aws_lws_start_foreach_ll(struct per_session_data__lws_status *, pss,
 			     vhd->live_pss_list) {
 		if (pss->walk == WALK_NONE) {
 			pss->subsequent = 0;
@@ -75,23 +75,23 @@ trigger_resend(struct per_vhost_data__lws_status *vhd)
 			pss->walk = WALK_INITIAL;
 		} else
 			pss->changed_partway = 1;
-	} lws_end_foreach_ll(pss, next);
+	} aws_lws_end_foreach_ll(pss, next);
 
-	lws_callback_on_writable_all_protocol(vhd->context, vhd->protocol);
+	aws_lws_callback_on_writable_all_protocol(vhd->context, vhd->protocol);
 }
 
 /* lws-status protocol */
 
 int
-callback_lws_status(struct lws *wsi, enum lws_callback_reasons reason,
+callback_lws_status(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		    void *user, void *in, size_t len)
 {
 	struct per_session_data__lws_status *pss =
 			(struct per_session_data__lws_status *)user;
 	struct per_vhost_data__lws_status *vhd =
 			(struct per_vhost_data__lws_status *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					lws_get_protocol(wsi));
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi));
 	char buf[LWS_PRE + 384], ip[24], *start = buf + LWS_PRE - 1, *p = start,
 	     *end = buf + sizeof(buf) - 1;
 	int n, m;
@@ -99,16 +99,16 @@ callback_lws_status(struct lws *wsi, enum lws_callback_reasons reason,
 	switch (reason) {
 
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__lws_status));
 		if (!vhd) {
-			lwsl_notice("%s: PROTOCOL_INIT failed\n", __func__);
+			aws_lwsl_notice("%s: PROTOCOL_INIT failed\n", __func__);
 			return 0;
 		}
-		vhd->context = lws_get_context(wsi);
-		vhd->protocol = lws_get_protocol(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->protocol = aws_lws_get_protocol(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 		break;
 
 	case LWS_CALLBACK_ESTABLISHED:
@@ -129,7 +129,7 @@ callback_lws_status(struct lws *wsi, enum lws_callback_reasons reason,
 		pss->wsi = wsi;
 
 #if defined(LWS_WITH_HTTP_UNCOMMON_HEADERS)
-		if (lws_hdr_copy(wsi, pss->user_agent, sizeof(pss->user_agent),
+		if (aws_lws_hdr_copy(wsi, pss->user_agent, sizeof(pss->user_agent),
 			     WSI_TOKEN_HTTP_USER_AGENT) < 0) /* too big */
 #endif
 			strcpy(pss->user_agent, "unknown");
@@ -140,14 +140,14 @@ callback_lws_status(struct lws *wsi, enum lws_callback_reasons reason,
 		switch (pss->walk) {
 		case WALK_INITIAL:
 			n = LWS_WRITE_TEXT | LWS_WRITE_NO_FIN;
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 				      "{ \"version\":\"%s\","
 				      " \"wss_over_h2\":\"%d\","
 				      " \"hostname\":\"%s\","
 				      " \"wsi\":\"%d\", \"conns\":[",
-				      lws_get_library_version(),
+				      aws_lws_get_library_version(),
 				      pss->wss_over_h2,
-				      lws_canonical_hostname(vhd->context),
+				      aws_lws_canonical_hostname(vhd->context),
 				      vhd->count_live_pss);
 			pss->walk = WALK_LIST;
 			pss->walk_next = vhd->live_pss_list;
@@ -162,13 +162,13 @@ callback_lws_status(struct lws *wsi, enum lws_callback_reasons reason,
 			pss->subsequent = 1;
 
 			m = 0;
-			lws_start_foreach_ll(struct per_session_data__lws_status *,
+			aws_lws_start_foreach_ll(struct per_session_data__lws_status *,
 					     pss2, vhd->live_pss_list) {
 				if (pss2 == pss->walk_next) {
 					m = 1;
 					break;
 				}
-			} lws_end_foreach_ll(pss2, next);
+			} aws_lws_end_foreach_ll(pss2, next);
 
 			if (!m) {
 				/* our next guy went away */
@@ -178,8 +178,8 @@ callback_lws_status(struct lws *wsi, enum lws_callback_reasons reason,
 			}
 
 			strcpy(ip, "unknown");
-			lws_get_peer_simple(pss->walk_next->wsi, ip, sizeof(ip));
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			aws_lws_get_peer_simple(pss->walk_next->wsi, ip, sizeof(ip));
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					"{\"peer\":\"%s\",\"time\":\"%ld\","
 					"\"ua\":\"%s\"}",
 					ip, (unsigned long)pss->walk_next->time_est,
@@ -191,7 +191,7 @@ callback_lws_status(struct lws *wsi, enum lws_callback_reasons reason,
 		case WALK_FINAL:
 walk_final:
 			n = LWS_WRITE_CONTINUATION;
-			p += lws_snprintf(p, 4, "]}");
+			p += aws_lws_snprintf(p, 4, "]}");
 			if (pss->changed_partway) {
 				pss->changed_partway = 0;
 				pss->subsequent = 0;
@@ -204,29 +204,29 @@ walk_final:
 			return 0;
 		}
 
-		m = lws_write(wsi, (unsigned char *)start, lws_ptr_diff_size_t(p, start), (unsigned int)n);
+		m = aws_lws_write(wsi, (unsigned char *)start, aws_lws_ptr_diff_size_t(p, start), (unsigned int)n);
 		if (m < 0) {
-			lwsl_err("ERROR %d writing to di socket\n", m);
+			aws_lwsl_err("ERROR %d writing to di socket\n", m);
 			return -1;
 		}
 
 		if (pss->walk != WALK_NONE)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_RECEIVE:
-		lwsl_notice("pmd test: RX len %d\n", (int)len);
+		aws_lwsl_notice("pmd test: RX len %d\n", (int)len);
 		break;
 
 	case LWS_CALLBACK_CLOSED:
-		// lwsl_debug("****** LWS_CALLBACK_CLOSED\n");
-		lws_start_foreach_llp(struct per_session_data__lws_status **,
+		// aws_lwsl_debug("****** LWS_CALLBACK_CLOSED\n");
+		aws_lws_start_foreach_llp(struct per_session_data__lws_status **,
 			ppss, vhd->live_pss_list) {
 			if (*ppss == pss) {
 				*ppss = pss->next;
 				break;
 			}
-		} lws_end_foreach_llp(ppss, next);
+		} aws_lws_end_foreach_llp(ppss, next);
 
 		trigger_resend(vhd);
 		break;
@@ -249,20 +249,20 @@ walk_final:
 
 #if !defined (LWS_PLUGIN_STATIC)
 
-LWS_VISIBLE const struct lws_protocols lws_status_protocols[] = {
+LWS_VISIBLE const struct aws_lws_protocols aws_lws_status_protocols[] = {
 	LWS_PLUGIN_PROTOCOL_LWS_STATUS
 };
 
-LWS_VISIBLE const lws_plugin_protocol_t lws_status = {
+LWS_VISIBLE const aws_lws_plugin_protocol_t aws_lws_status = {
 	.hdr = {
 		"lws status",
-		"lws_protocol_plugin",
+		"aws_lws_protocol_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},
 
-	.protocols = lws_status_protocols,
-	.count_protocols = LWS_ARRAY_SIZE(lws_status_protocols),
+	.protocols = aws_lws_status_protocols,
+	.count_protocols = LWS_ARRAY_SIZE(aws_lws_status_protocols),
 	.extensions = NULL,
 	.count_extensions = 0,
 };

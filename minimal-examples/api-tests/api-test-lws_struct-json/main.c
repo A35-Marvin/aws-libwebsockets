@@ -1,23 +1,23 @@
 /*
- * lws-api-test-lws_struct-json
+ * lws-api-test-aws_lws_struct-json
  *
  * Written in 2010-2020 by Andy Green <andy@warmcat.com>
  *
  * This file is made available under the Creative Commons CC0 1.0
  * Universal Public Domain Dedication.
  *
- * lws_struct apis are used to serialize and deserialize your C structs and
+ * aws_lws_struct apis are used to serialize and deserialize your C structs and
  * linked-lists in a standardized way that's very modest on memory but
  * convenient and easy to maintain.
  *
  * The API test shows how to serialize and deserialize a struct with a linked-
- * list of child structs in JSON using lws_struct APIs.
+ * list of child structs in JSON using aws_lws_struct APIs.
  */
 
 #include <libwebsockets.h>
 
 typedef struct {
-	lws_dll2_t		list;
+	aws_lws_dll2_t		list;
 
 	struct gpiod_line	*line;
 
@@ -30,24 +30,24 @@ typedef struct {
 } sai_jig_gpio_t;
 
 typedef struct {
-	lws_dll2_t		list;
+	aws_lws_dll2_t		list;
 	sai_jig_gpio_t		*gpio; /* null = wait ms */
 	const char		*gpio_name;
 	int			value;
 } sai_jig_seq_item_t;
 
 typedef struct {
-	lws_dll2_t		list;
-	lws_dll2_owner_t	seq_owner;
+	aws_lws_dll2_t		list;
+	aws_lws_dll2_owner_t	seq_owner;
 	const char		*name;
 } sai_jig_sequence_t;
 
 typedef struct {
-	lws_dll2_t		list;
-	lws_dll2_owner_t	gpio_owner;
-	lws_dll2_owner_t	seq_owner;
+	aws_lws_dll2_t		list;
+	aws_lws_dll2_owner_t	gpio_owner;
+	aws_lws_dll2_owner_t	seq_owner;
 
-	lws_sorted_usec_list_t	sul;		/* next step in ongoing seq */
+	aws_lws_sorted_usec_list_t	sul;		/* next step in ongoing seq */
 	sai_jig_seq_item_t	*current;	/* next seq step */
 
 	const char		*name;
@@ -56,19 +56,19 @@ typedef struct {
 } sai_jig_target_t;
 
 typedef struct {
-	lws_dll2_owner_t	target_owner;
+	aws_lws_dll2_owner_t	target_owner;
 	struct gpiod_chip	*chip[16];
-	struct lwsac		*ac_conf;
+	struct aws_lwsac		*ac_conf;
 	int			port;
 	const char		*iface;
-	struct lws_context	*ctx;
+	struct aws_lws_context	*ctx;
 } sai_jig_t;
 
 /*
- * We read the JSON config using lws_struct... instrument the related structures
+ * We read the JSON config using aws_lws_struct... instrument the related structures
  */
 
-static const lws_struct_map_t lsm_sai_jig_gpio[] = {
+static const aws_lws_struct_map_t lsm_sai_jig_gpio[] = {
 	LSM_UNSIGNED	(sai_jig_gpio_t, chip_idx,		"chip_idx"),
 	LSM_UNSIGNED	(sai_jig_gpio_t, offset,		"offset"),
 	LSM_UNSIGNED	(sai_jig_gpio_t, safe,			"safe"),
@@ -76,19 +76,19 @@ static const lws_struct_map_t lsm_sai_jig_gpio[] = {
 	LSM_STRING_PTR	(sai_jig_gpio_t, wire,			"wire"),
 };
 
-static const lws_struct_map_t lsm_sai_jig_seq_item[] = {
+static const aws_lws_struct_map_t lsm_sai_jig_seq_item[] = {
 	LSM_STRING_PTR	(sai_jig_seq_item_t, gpio_name,		"gpio_name"),
 	LSM_UNSIGNED	(sai_jig_seq_item_t, value,		"value"),
 };
 
-static const lws_struct_map_t lsm_sai_jig_sequence[] = {
+static const aws_lws_struct_map_t lsm_sai_jig_sequence[] = {
 	LSM_STRING_PTR	(sai_jig_sequence_t, name,		"name"),
 	LSM_LIST	(sai_jig_sequence_t, seq_owner,
 			 sai_jig_seq_item_t, list,
 			 NULL, lsm_sai_jig_seq_item,		"seq"),
 };
 
-static const lws_struct_map_t lsm_sai_jig_target[] = {
+static const aws_lws_struct_map_t lsm_sai_jig_target[] = {
 	LSM_STRING_PTR	(sai_jig_target_t, name,		"name"),
 	LSM_LIST	(sai_jig_target_t, gpio_owner, sai_jig_gpio_t, list,
 			 NULL, lsm_sai_jig_gpio,		"gpios"),
@@ -96,14 +96,14 @@ static const lws_struct_map_t lsm_sai_jig_target[] = {
 			 NULL, lsm_sai_jig_sequence,		"sequences"),
 };
 
-static const lws_struct_map_t lsm_sai_jig[] = {
+static const aws_lws_struct_map_t lsm_sai_jig[] = {
 	LSM_STRING_PTR	(sai_jig_t, iface,			"iface"),
 	LSM_UNSIGNED	(sai_jig_t, port,			"port"),
 	LSM_LIST	(sai_jig_t, target_owner, sai_jig_target_t, list,
 			 NULL, lsm_sai_jig_target,		"targets"),
 };
 
-static const lws_struct_map_t lsm_jig_schema[] = {
+static const aws_lws_struct_map_t lsm_jig_schema[] = {
         LSM_SCHEMA      (sai_jig_t, NULL, lsm_sai_jig,		"sai-jig"),
 };
 
@@ -335,21 +335,21 @@ typedef struct sai_child {
 	const char *	somename;
 } sai_child_t;
 
-lws_struct_map_t lsm_child[] = { /* describes serializable members */
+aws_lws_struct_map_t lsm_child[] = { /* describes serializable members */
 	LSM_STRING_PTR	(sai_child_t, somename,			"somename"),
 };
 
 /* target object */
 
 typedef struct sai_target {
-	struct lws_dll2 target_list;
+	struct aws_lws_dll2 target_list;
 	sai_child_t *		child;
 
 	const char *		name;
 	char			someflag;
 } sai_target_t;
 
-static const lws_struct_map_t lsm_target[] = {
+static const aws_lws_struct_map_t lsm_target[] = {
 	LSM_STRING_PTR	(sai_target_t, name,			"name"),
 	LSM_BOOLEAN	(sai_target_t, someflag,		"someflag"),
 	LSM_CHILD_PTR	(sai_target_t, child, sai_child_t,
@@ -361,13 +361,13 @@ static const lws_struct_map_t lsm_target[] = {
 /* builder object */
 
 typedef struct sai_builder {
-	struct lws_dll2_owner	targets;
+	struct aws_lws_dll2_owner	targets;
 
 	char 			hostname[32];
 	unsigned int 		nspawn_timeout;
 } sai_builder_t;
 
-static const lws_struct_map_t lsm_builder[] = {
+static const aws_lws_struct_map_t lsm_builder[] = {
 	LSM_CARRAY	(sai_builder_t, hostname,		"hostname"),
 	LSM_UNSIGNED	(sai_builder_t, nspawn_timeout,		"nspawn_timeout"),
 	LSM_LIST	(sai_builder_t, targets,
@@ -383,7 +383,7 @@ typedef struct sai_other {
 	char 			name[32];
 } sai_other_t;
 
-static const lws_struct_map_t lsm_other[] = {
+static const aws_lws_struct_map_t lsm_other[] = {
 	LSM_CARRAY	(sai_other_t, name,		"name"),
 };
 
@@ -405,12 +405,12 @@ typedef struct meta {
 	sai_builder_t	*b;
 } meta_t;
 
-static const lws_struct_map_t lsm_meta[] = {
+static const aws_lws_struct_map_t lsm_meta[] = {
 	LSM_CHILD_PTR	(meta_t, t, sai_target_t, NULL, lsm_target, "t"),
 	LSM_CHILD_PTR	(meta_t, b, sai_child_t, NULL, lsm_builder, "e"),
 };
 
-static const lws_struct_map_t lsm_schema_meta[] = {
+static const aws_lws_struct_map_t lsm_schema_meta[] = {
 	LSM_SCHEMA	(meta_t, NULL, lsm_meta, "meta.schema"),
 };
 
@@ -430,7 +430,7 @@ static const lws_struct_map_t lsm_schema_meta[] = {
  * deserialization.
  */
 
-static const lws_struct_map_t lsm_schema_map[] = {
+static const aws_lws_struct_map_t lsm_schema_map[] = {
 	LSM_SCHEMA	(sai_builder_t, NULL,
 			 lsm_builder,		"com-warmcat-sai-builder"),
 	LSM_SCHEMA	(sai_other_t, NULL,
@@ -441,11 +441,11 @@ typedef struct sai_cancel {
 	char task_uuid[65];
 } sai_cancel_t;
 
-const lws_struct_map_t lsm_task_cancel[] = {
+const aws_lws_struct_map_t lsm_task_cancel[] = {
 	LSM_CARRAY	(sai_cancel_t, task_uuid,	 "uuid"),
 };
 
-static const lws_struct_map_t t2_map[] = {
+static const aws_lws_struct_map_t t2_map[] = {
 	LSM_SCHEMA	(sai_cancel_t, NULL, lsm_task_cancel,
 					      "com.warmcat.sai.taskinfo"),
 	LSM_SCHEMA	(sai_cancel_t, NULL, lsm_task_cancel,
@@ -465,7 +465,7 @@ static const char *t2 =
 	 "\"uuid\": \"071ab46ab4296e5de674c628fec17c55088254679f7714ad991f8c4873dca\"}\x01\x02\xff\xff\xff\xff";
 
 typedef struct xlws_wifi_creds {
-	lws_dll2_t	list;
+	aws_lws_dll2_t	list;
 	char 		ssid[33];
 	char		passphrase[64];
 	int		alg;
@@ -473,36 +473,36 @@ typedef struct xlws_wifi_creds {
 } xlws_wifi_creds_t;
 
 typedef struct xlws_netdevs {
-	lws_dll2_owner_t	owner_creds;
+	aws_lws_dll2_owner_t	owner_creds;
 } xlws_netdevs_t;
 
-static const lws_struct_map_t lsm_wifi_creds[] = {
+static const aws_lws_struct_map_t lsm_wifi_creds[] = {
 	LSM_CARRAY	(xlws_wifi_creds_t, ssid,		"ssid"),
 	LSM_CARRAY	(xlws_wifi_creds_t, passphrase,		"passphrase"),
 	LSM_UNSIGNED	(xlws_wifi_creds_t, alg,			"alg"),
 	LSM_STRING_PTR	(xlws_wifi_creds_t, bssid,		"bssid"),
 };
 
-static const lws_struct_map_t lsm_netdev_credentials[] = {
+static const aws_lws_struct_map_t lsm_netdev_credentials[] = {
 	LSM_LIST	(xlws_netdevs_t, owner_creds, xlws_wifi_creds_t, list,
 			 NULL, lsm_wifi_creds,			"credentials"),
 };
 
-static const lws_struct_map_t lsm_netdev_schema[] = {
+static const aws_lws_struct_map_t lsm_netdev_schema[] = {
 	LSM_SCHEMA	(xlws_netdevs_t, NULL, lsm_netdev_credentials,
 					      "com.warmcat.sai.taskinfo"),
 };
 
 
 static int
-show_target(struct lws_dll2 *d, void *user)
+show_target(struct aws_lws_dll2 *d, void *user)
 {
-	sai_target_t *t = lws_container_of(d, sai_target_t, target_list);
+	sai_target_t *t = aws_lws_container_of(d, sai_target_t, target_list);
 
-	lwsl_notice("    target.name '%s' (target %p)\n", t->name, t);
+	aws_lwsl_notice("    target.name '%s' (target %p)\n", t->name, t);
 
 	if (t->child)
-		lwsl_notice("      child %p, target.child.somename '%s'\n",
+		aws_lwsl_notice("      child %p, target.child.somename '%s'\n",
 			  t->child, t->child->somename);
 
 	return 0;
@@ -513,105 +513,105 @@ int main(int argc, const char **argv)
 {
 	int n, m, e = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 #if 1
-	lws_struct_serialize_t *ser;
+	aws_lws_struct_serialize_t *ser;
 	uint8_t buf[4096];
 	size_t written;
 #endif
 	struct lejp_ctx ctx;
-	lws_struct_args_t a;
+	aws_lws_struct_args_t a;
 	sai_builder_t *b, mb;
 	sai_target_t mt;
 	sai_other_t *o;
 	const char *p;
 	meta_t meta;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS API selftest: lws_struct JSON\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS API selftest: aws_lws_struct JSON\n");
 
 	for (m = 0; m < (int)LWS_ARRAY_SIZE(json_tests); m++) {
 
 		/* 1. deserialize the canned JSON into structs */
 
-		lwsl_notice("%s: ++++++++++++++++ test %d\n", __func__, m + 1);
+		aws_lwsl_notice("%s: ++++++++++++++++ test %d\n", __func__, m + 1);
 
 		memset(&a, 0, sizeof(a));
 		a.map_st[0] = lsm_schema_map;
 		a.map_entries_st[0] = LWS_ARRAY_SIZE(lsm_schema_map);
 		a.ac_block_size = 512;
 
-		lws_struct_json_init_parse(&ctx, NULL, &a);
+		aws_lws_struct_json_init_parse(&ctx, NULL, &a);
 		n = lejp_parse(&ctx, (uint8_t *)json_tests[m],
 						 (int)strlen(json_tests[m]));
 		if (n < 0) {
-			lwsl_err("%s: notification JSON decode failed '%s'\n",
+			aws_lwsl_err("%s: notification JSON decode failed '%s'\n",
 					__func__, lejp_error_to_string(n));
 			e++;
 			goto done;
 		}
-		lwsac_info(a.ac);
+		aws_lwsac_info(a.ac);
 
 		if (m + 1 != 8) {
 			b = a.dest;
 			if (!b) {
-				lwsl_err("%s: didn't produce any output\n", __func__);
+				aws_lwsl_err("%s: didn't produce any output\n", __func__);
 				e++;
 				goto done;
 			}
 
 			if (a.top_schema_index) {
-				lwsl_err("%s: wrong top_schema_index\n", __func__);
+				aws_lwsl_err("%s: wrong top_schema_index\n", __func__);
 				e++;
 				goto done;
 			}
 
-			lwsl_notice("builder.hostname = '%s', timeout = %d, targets (%d)\n",
+			aws_lwsl_notice("builder.hostname = '%s', timeout = %d, targets (%d)\n",
 				    b->hostname, b->nspawn_timeout,
 				    b->targets.count);
 
-			lws_dll2_foreach_safe(&b->targets, NULL, show_target);
+			aws_lws_dll2_foreach_safe(&b->targets, NULL, show_target);
 		} else {
 			o = a.dest;
 			if (!o) {
-				lwsl_err("%s: didn't produce any output\n", __func__);
+				aws_lwsl_err("%s: didn't produce any output\n", __func__);
 				e++;
 				goto done;
 			}
 
 			if (a.top_schema_index != 1) {
-				lwsl_err("%s: wrong top_schema_index\n", __func__);
+				aws_lwsl_err("%s: wrong top_schema_index\n", __func__);
 				e++;
 				goto done;
 			}
 
-			lwsl_notice("other.name = '%s'\n", o->name);
+			aws_lwsl_notice("other.name = '%s'\n", o->name);
 		}
 
 		/* 2. serialize the structs into JSON and confirm */
 
-		lwsl_notice("%s:    .... strarting serialization of test %d\n",
+		aws_lwsl_notice("%s:    .... strarting serialization of test %d\n",
 				__func__, m + 1);
 
 		if (m + 1 != 8) {
-			ser = lws_struct_json_serialize_create(lsm_schema_map,
+			ser = aws_lws_struct_json_serialize_create(lsm_schema_map,
 						LWS_ARRAY_SIZE(lsm_schema_map),
 						       0//LSSERJ_FLAG_PRETTY
 						       , b);
 		} else {
-			ser = lws_struct_json_serialize_create(&lsm_schema_map[1],
+			ser = aws_lws_struct_json_serialize_create(&lsm_schema_map[1],
 						1,
 						       0//LSSERJ_FLAG_PRETTY
 						       , o);
 		}
 		if (!ser) {
-			lwsl_err("%s: unable to init serialization\n", __func__);
+			aws_lwsl_err("%s: unable to init serialization\n", __func__);
 			goto bail;
 		}
 
 		do {
-			n = (int)lws_struct_json_serialize(ser, buf, sizeof(buf),
+			n = (int)aws_lws_struct_json_serialize(ser, buf, sizeof(buf),
 						      &written);
 			switch (n) {
 			case LSJS_RESULT_FINISH:
@@ -624,16 +624,16 @@ int main(int argc, const char **argv)
 		} while(n == LSJS_RESULT_CONTINUE);
 
 		if (strcmp(json_expected[m], (char *)buf)) {
-			lwsl_err("%s: test %d: expected %s\n", __func__, m + 1,
+			aws_lwsl_err("%s: test %d: expected %s\n", __func__, m + 1,
 					json_expected[m]);
 			e++;
 			goto done;
 		}
 
-		lws_struct_json_serialize_destroy(&ser);
+		aws_lws_struct_json_serialize_destroy(&ser);
 
 done:
-		lwsac_free(&a.ac);
+		aws_lwsac_free(&a.ac);
 	}
 
 	if (e)
@@ -649,16 +649,16 @@ done:
 	meta.b = &mb;
 
 	meta.t->name = "mytargetname";
-	lws_strncpy(meta.b->hostname, "myhostname", sizeof(meta.b->hostname));
-	ser = lws_struct_json_serialize_create(lsm_schema_meta, 1, 0,
+	aws_lws_strncpy(meta.b->hostname, "myhostname", sizeof(meta.b->hostname));
+	ser = aws_lws_struct_json_serialize_create(lsm_schema_meta, 1, 0,
 					       &meta);
 	if (!ser) {
-		lwsl_err("%s: failed to create json\n", __func__);
+		aws_lwsl_err("%s: failed to create json\n", __func__);
 
 
 	}
 	do {
-		n = (int)lws_struct_json_serialize(ser, buf, sizeof(buf), &written);
+		n = (int)aws_lws_struct_json_serialize(ser, buf, sizeof(buf), &written);
 		switch (n) {
 		case LSJS_RESULT_CONTINUE:
 		case LSJS_RESULT_FINISH:
@@ -669,7 +669,7 @@ done:
 					"\"someflag\":false},"
 				"\"e\":{\"hostname\":\"myhostname\","
 					"\"nspawn_timeout\":0}}")) {
-				lwsl_err("%s: meta test fail\n", __func__);
+				aws_lwsl_err("%s: meta test fail\n", __func__);
 				goto bail;
 			}
 			break;
@@ -678,33 +678,33 @@ done:
 		}
 	} while(n == LSJS_RESULT_CONTINUE);
 
-	lws_struct_json_serialize_destroy(&ser);
+	aws_lws_struct_json_serialize_destroy(&ser);
 
-	lwsl_notice("Test set 2\n");
+	aws_lwsl_notice("Test set 2\n");
 
 	memset(&a, 0, sizeof(a));
 	a.map_st[0] = t2_map;
 	a.map_entries_st[0] = LWS_ARRAY_SIZE(t2_map);
 	a.ac_block_size = 128;
 
-	lws_struct_json_init_parse(&ctx, NULL, &a);
+	aws_lws_struct_json_init_parse(&ctx, NULL, &a);
 	m = lejp_parse(&ctx, (uint8_t *)t2, (int)strlen(t2));
 	if (m < 0 || !a.dest) {
-		lwsl_notice("%s: notification JSON decode failed '%s'\n",
+		aws_lwsl_notice("%s: notification JSON decode failed '%s'\n",
 				__func__, lejp_error_to_string(m));
 		goto bail;
 	}
 
-	lwsl_notice("Test set 2: %d: %s\n", m,
+	aws_lwsl_notice("Test set 2: %d: %s\n", m,
 			((sai_cancel_t *)a.dest)->task_uuid);
 
-	lwsac_free(&a.ac);
+	aws_lwsac_free(&a.ac);
 
 	if (test2())
 		goto bail;
 
 	{
-		lws_struct_serialize_t *js;
+		aws_lws_struct_serialize_t *js;
 		xlws_wifi_creds_t creds;
 		xlws_netdevs_t netdevs;
 		unsigned char *buf;
@@ -714,19 +714,19 @@ done:
 		memset(&creds, 0, sizeof(creds));
 		memset(&netdevs, 0, sizeof(netdevs));
 
-		lws_strncpy(creds.ssid, "xxx", sizeof(creds.ssid));
-		lws_strncpy(creds.passphrase, "yyy", sizeof(creds.passphrase));
-		lws_dll2_add_tail(&creds.list, &netdevs.owner_creds);
+		aws_lws_strncpy(creds.ssid, "xxx", sizeof(creds.ssid));
+		aws_lws_strncpy(creds.passphrase, "yyy", sizeof(creds.passphrase));
+		aws_lws_dll2_add_tail(&creds.list, &netdevs.owner_creds);
 
 		buf = malloc(2048); /* length should be computed */
 
-		js = lws_struct_json_serialize_create(lsm_netdev_schema,
+		js = aws_lws_struct_json_serialize_create(lsm_netdev_schema,
 			LWS_ARRAY_SIZE(lsm_netdev_schema), 0, &netdevs);
 		if (!js)
 			goto bail;
 
-		n = (int)lws_struct_json_serialize(js, buf, 2048, &w);
-		lws_struct_json_serialize_destroy(&js);
+		n = (int)aws_lws_struct_json_serialize(js, buf, 2048, &w);
+		aws_lws_struct_json_serialize_destroy(&js);
 		if (n != LSJS_RESULT_FINISH)
 			goto bail;
 		if (strcmp("{\"schema\":\"com.warmcat.sai.taskinfo\",\"credentials\":[{\"ssid\":\"xxx\",\"passphrase\":\"yyy\",\"alg\":0}]}", (const char *)buf)) {
@@ -737,39 +737,39 @@ done:
 	}
 
 	{
-		struct x { lws_dll2_t list; const char *sz; };
+		struct x { aws_lws_dll2_t list; const char *sz; };
 		struct x x1, x2, *xp;
-		lws_dll2_owner_t o;
+		aws_lws_dll2_owner_t o;
 
-		lws_dll2_owner_clear(&o);
+		aws_lws_dll2_owner_clear(&o);
 		memset(&x1, 0, sizeof(x1));
 		memset(&x2, 0, sizeof(x2));
 
 		x1.sz = "nope";
 		x2.sz = "yes";
 
-		lws_dll2_add_tail(&x1.list, &o);
-		lws_dll2_add_tail(&x2.list, &o);
+		aws_lws_dll2_add_tail(&x1.list, &o);
+		aws_lws_dll2_add_tail(&x2.list, &o);
 
-		xp = lws_dll2_search_sz_pl(&o, "yes", 3, struct x, list, sz);
+		xp = aws_lws_dll2_search_sz_pl(&o, "yes", 3, struct x, list, sz);
 		if (xp != &x2) {
-			lwsl_err("%s: 1 xp %p\n", __func__, xp);
+			aws_lwsl_err("%s: 1 xp %p\n", __func__, xp);
 			goto bail;
 		}
-		xp = lws_dll2_search_sz_pl(&o, "nope", 4, struct x, list, sz);
+		xp = aws_lws_dll2_search_sz_pl(&o, "nope", 4, struct x, list, sz);
 		if (xp != &x1) {
-			lwsl_err("%s: 2 xp %p\n", __func__, xp);
+			aws_lwsl_err("%s: 2 xp %p\n", __func__, xp);
 			goto bail;
 		}
-		xp = lws_dll2_search_sz_pl(&o, "wrong", 4, struct x, list, sz);
+		xp = aws_lws_dll2_search_sz_pl(&o, "wrong", 4, struct x, list, sz);
 		if (xp) {
-			lwsl_err("%s: 3 xp %p\n", __func__, xp);
+			aws_lwsl_err("%s: 3 xp %p\n", __func__, xp);
 			goto bail;
 		}
 	}
 
 	{
-		lws_struct_args_t a;
+		aws_lws_struct_args_t a;
 		struct lejp_ctx ctx;
 		int m;
 
@@ -778,24 +778,24 @@ done:
 		a.map_entries_st[0] = LWS_ARRAY_SIZE(lsm_jig_schema);
 		a.ac_block_size = 512;
 
-		lws_struct_json_init_parse(&ctx, NULL, &a);
+		aws_lws_struct_json_init_parse(&ctx, NULL, &a);
 
 		m = lejp_parse(&ctx, (uint8_t *)jig_conf, (int)strlen(jig_conf));
 
 		if (m < 0 || !a.dest) {
-			lwsl_err("%s: line %d: JSON decode failed '%s'\n",
+			aws_lwsl_err("%s: line %d: JSON decode failed '%s'\n",
 				    __func__, ctx.line, lejp_error_to_string(m));
 			goto bail;
 		}
 	}
 
-	lwsl_user("Completed: PASS\n");
+	aws_lwsl_user("Completed: PASS\n");
 
 	return 0;
 
 bail:
 
-	lwsl_user("Completed: FAIL\n");
+	aws_lwsl_user("Completed: FAIL\n");
 
 	return 1;
 }

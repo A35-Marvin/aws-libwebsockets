@@ -25,20 +25,20 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_raw_proxy(struct lws_context_per_thread *pt, struct lws *wsi,
-			     struct lws_pollfd *pollfd)
+rops_handle_POLLIN_raw_proxy(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+			     struct aws_lws_pollfd *pollfd)
 {
-	struct lws_tokens ebuf;
+	struct aws_lws_tokens ebuf;
 	int n, buffered;
 
 	/* pending truncated sends have uber priority */
 
-	if (lws_has_buffered_out(wsi)) {
+	if (aws_lws_has_buffered_out(wsi)) {
 		if (!(pollfd->revents & LWS_POLLOUT))
 			return LWS_HPI_RET_HANDLED;
 
 		/* drain the output buflist */
-		if (lws_issue_raw(wsi, NULL, 0) < 0)
+		if (aws_lws_issue_raw(wsi, NULL, 0) < 0)
 			goto fail;
 		/*
 		 * we can't afford to allow input processing to send
@@ -48,26 +48,26 @@ rops_handle_POLLIN_raw_proxy(struct lws_context_per_thread *pt, struct lws *wsi,
 		return LWS_HPI_RET_HANDLED;
 	}
 
-	if (lwsi_state(wsi) == LRS_WAITING_CONNECT)
+	if (aws_lwsi_state(wsi) == LRS_WAITING_CONNECT)
 		goto try_pollout;
 
 	if ((pollfd->revents & pollfd->events & LWS_POLLIN) &&
 	    /* any tunnel has to have been established... */
-	    lwsi_state(wsi) != LRS_SSL_ACK_PENDING &&
+	    aws_lwsi_state(wsi) != LRS_SSL_ACK_PENDING &&
 	    !(wsi->favoured_pollin &&
 	      (pollfd->revents & pollfd->events & LWS_POLLOUT))) {
 
 		ebuf.token = NULL;
 		ebuf.len = 0;
-		buffered = lws_buflist_aware_read(pt, wsi, &ebuf, 1, __func__);
+		buffered = aws_lws_buflist_aware_read(pt, wsi, &ebuf, 1, __func__);
 		if (buffered < 0)
 			goto fail;
 
 		switch (ebuf.len) {
 		case 0:
-			lwsl_info("%s: read 0 len\n", __func__);
+			aws_lwsl_info("%s: read 0 len\n", __func__);
 			wsi->seen_zero_length_recv = 1;
-			if (lws_change_pollfd(wsi, LWS_POLLIN, 0))
+			if (aws_lws_change_pollfd(wsi, LWS_POLLIN, 0))
 				goto fail;
 
 			/*
@@ -84,17 +84,17 @@ rops_handle_POLLIN_raw_proxy(struct lws_context_per_thread *pt, struct lws *wsi,
 			goto try_pollout;
 		}
 		n = user_callback_handle_rxflow(wsi->a.protocol->callback,
-						wsi, lwsi_role_client(wsi) ?
+						wsi, aws_lwsi_role_client(wsi) ?
 						 LWS_CALLBACK_RAW_PROXY_CLI_RX :
 						 LWS_CALLBACK_RAW_PROXY_SRV_RX,
 						wsi->user_space, ebuf.token,
 						(size_t)ebuf.len);
 		if (n < 0) {
-			lwsl_info("LWS_CALLBACK_RAW_PROXY_*_RX fail\n");
+			aws_lwsl_info("LWS_CALLBACK_RAW_PROXY_*_RX fail\n");
 			goto fail;
 		}
 
-		if (lws_buflist_aware_finished_consuming(wsi, &ebuf, ebuf.len,
+		if (aws_lws_buflist_aware_finished_consuming(wsi, &ebuf, ebuf.len,
 							 buffered, __func__))
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	} else
@@ -108,20 +108,20 @@ try_pollout:
 	if (!(pollfd->revents & LWS_POLLOUT))
 		return LWS_HPI_RET_HANDLED;
 
-	if (lws_handle_POLLOUT_event(wsi, pollfd)) {
-		lwsl_debug("POLLOUT event closed it\n");
+	if (aws_lws_handle_POLLOUT_event(wsi, pollfd)) {
+		aws_lwsl_debug("POLLOUT event closed it\n");
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
 
 #if defined(LWS_WITH_CLIENT)
-	if (lws_http_client_socket_service(wsi, pollfd))
+	if (aws_lws_http_client_socket_service(wsi, pollfd))
 		return LWS_HPI_RET_WSI_ALREADY_DIED;
 #endif
 
 	return LWS_HPI_RET_HANDLED;
 
 fail:
-	lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "raw svc fail");
+	aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "raw svc fail");
 
 	return LWS_HPI_RET_WSI_ALREADY_DIED;
 }
@@ -140,18 +140,18 @@ rops_adoption_bind_raw_proxy(struct lws *wsi, int type,
 		/*
 		 * these can be >128 bytes, so just alloc for UDP
 		 */
-		wsi->udp = lws_malloc(sizeof(*wsi->udp), "udp struct");
+		wsi->udp = aws_lws_malloc(sizeof(*wsi->udp), "udp struct");
 #endif
 
-	lws_role_transition(wsi, LWSIFR_SERVER, (type & LWS_ADOPT_ALLOW_SSL) ?
+	aws_lws_role_transition(wsi, LWSIFR_SERVER, (type & LWS_ADOPT_ALLOW_SSL) ?
 				    LRS_SSL_INIT : LRS_ESTABLISHED,
 			    &role_ops_raw_proxy);
 
 	if (vh_prot_name)
-		lws_bind_protocol(wsi, wsi->a.protocol, __func__);
+		aws_lws_bind_protocol(wsi, wsi->a.protocol, __func__);
 	else
 		/* this is the only time he will transition */
-		lws_bind_protocol(wsi,
+		aws_lws_bind_protocol(wsi,
 			&wsi->a.vhost->protocols[wsi->a.vhost->raw_protocol_index],
 			__func__);
 
@@ -160,14 +160,14 @@ rops_adoption_bind_raw_proxy(struct lws *wsi, int type,
 
 static int
 rops_client_bind_raw_proxy(struct lws *wsi,
-			   const struct lws_client_connect_info *i)
+			   const struct aws_lws_client_connect_info *i)
 {
 	if (!i) {
 
 		/* finalize */
 
 		if (!wsi->user_space && wsi->stash->cis[CIS_METHOD])
-			if (lws_ensure_user_space(wsi))
+			if (aws_lws_ensure_user_space(wsi))
 				return 1;
 
 		return 0;
@@ -176,7 +176,7 @@ rops_client_bind_raw_proxy(struct lws *wsi,
 	/* we are a fallback if nothing else matched */
 
 	if (i->local_protocol_name && !strcmp(i->local_protocol_name, "raw-proxy"))
-		lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED,
+		aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED,
 				    &role_ops_raw_proxy);
 
 	return 0;
@@ -185,16 +185,16 @@ rops_client_bind_raw_proxy(struct lws *wsi,
 static int
 rops_handle_POLLOUT_raw_proxy(struct lws *wsi)
 {
-	if (lwsi_state(wsi) == LRS_ESTABLISHED)
+	if (aws_lwsi_state(wsi) == LRS_ESTABLISHED)
 		return LWS_HP_RET_USER_SERVICE;
 
-	if (lwsi_role_client(wsi))
+	if (aws_lwsi_role_client(wsi))
 		return LWS_HP_RET_USER_SERVICE;
 
 	return LWS_HP_RET_BAIL_OK;
 }
 
-static const lws_rops_t rops_table_raw_proxy[] = {
+static const aws_lws_rops_t rops_table_raw_proxy[] = {
 	/*  1 */ { .handle_POLLIN	= rops_handle_POLLIN_raw_proxy },
 	/*  2 */ { .handle_POLLOUT	= rops_handle_POLLOUT_raw_proxy },
 	/*  3 */ { .adoption_bind	= rops_adoption_bind_raw_proxy },
@@ -202,7 +202,7 @@ static const lws_rops_t rops_table_raw_proxy[] = {
 };
 
 
-const struct lws_role_ops role_ops_raw_proxy = {
+const struct aws_lws_role_ops role_ops_raw_proxy = {
 	/* role name */			"raw-proxy",
 	/* alpn id */			NULL,
 

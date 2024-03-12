@@ -34,37 +34,37 @@ struct raw_vhd {
 };
 
 static int
-set_hw_params(struct lws_vhost *vh, snd_pcm_t **pcm, int type)
+set_hw_params(struct aws_lws_vhost *vh, snd_pcm_t **pcm, int type)
 {
 	unsigned int rate = sample_rate;
 	snd_pcm_hw_params_t *params;
-	lws_sock_file_fd_type u;
+	aws_lws_sock_file_fd_type u;
 	struct pollfd pfd;
 	struct lws *wsi1;
 	int n;
 
 	n = snd_pcm_open(pcm, "default", type, SND_PCM_NONBLOCK);
 	if (n < 0) {
-		lwsl_err("%s: Can't open default for playback: %s\n",
+		aws_lwsl_err("%s: Can't open default for playback: %s\n",
 			 __func__, snd_strerror(n));
 
 		return -1;
 	}
 
 	if (snd_pcm_poll_descriptors(*pcm, &pfd, 1) != 1) {
-		lwsl_err("%s: failed to get playback desc\n", __func__);
+		aws_lwsl_err("%s: failed to get playback desc\n", __func__);
 		return -1;
 	}
 
-	u.filefd = (lws_filefd_type)(long long)pfd.fd;
-	wsi1 = lws_adopt_descriptor_vhost(vh, LWS_ADOPT_RAW_FILE_DESC, u,
+	u.filefd = (aws_lws_filefd_type)(long long)pfd.fd;
+	wsi1 = aws_lws_adopt_descriptor_vhost(vh, LWS_ADOPT_RAW_FILE_DESC, u,
 					  "lws-audio-test", NULL);
 	if (!wsi1) {
-		lwsl_err("%s: Failed to adopt playback desc\n", __func__);
+		aws_lwsl_err("%s: Failed to adopt playback desc\n", __func__);
 		goto bail;
 	}
 	if (type == SND_PCM_STREAM_PLAYBACK)
-		lws_rx_flow_control(wsi1, 0); /* no POLLIN */
+		aws_lws_rx_flow_control(wsi1, 0); /* no POLLIN */
 
 	snd_pcm_hw_params_malloc(&params);
 	snd_pcm_hw_params_any(*pcm, params);
@@ -96,35 +96,35 @@ set_hw_params(struct lws_vhost *vh, snd_pcm_t **pcm, int type)
 bail1:
 	snd_pcm_hw_params_free(params);
 bail:
-	lwsl_err("%s: Set hw params failed: %s\n", __func__, snd_strerror(n));
+	aws_lwsl_err("%s: Set hw params failed: %s\n", __func__, snd_strerror(n));
 
 	return -1;
 }
 
 static int
-callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
+callback_raw_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
-	struct raw_vhd *vhd = (struct raw_vhd *)lws_protocol_vh_priv_get(
-				     lws_get_vhost(wsi), lws_get_protocol(wsi));
+	struct raw_vhd *vhd = (struct raw_vhd *)aws_lws_protocol_vh_priv_get(
+				     aws_lws_get_vhost(wsi), aws_lws_get_protocol(wsi));
 	int n;
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi), sizeof(struct raw_vhd));
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi), sizeof(struct raw_vhd));
 
-		if (set_hw_params(lws_get_vhost(wsi), &vhd->pcm_playback,
+		if (set_hw_params(aws_lws_get_vhost(wsi), &vhd->pcm_playback,
 				  SND_PCM_STREAM_PLAYBACK))  {
-			lwsl_err("%s: Can't open default for playback\n",
+			aws_lwsl_err("%s: Can't open default for playback\n",
 				 __func__);
 
 			return -1;
 		}
 
-		if (set_hw_params(lws_get_vhost(wsi), &vhd->pcm_capture,
+		if (set_hw_params(aws_lws_get_vhost(wsi), &vhd->pcm_capture,
 				  SND_PCM_STREAM_CAPTURE))  {
-			lwsl_err("%s: Can't open default for capture\n",
+			aws_lwsl_err("%s: Can't open default for capture\n",
 				 __func__);
 
 			return -1;
@@ -132,7 +132,7 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_PROTOCOL_DESTROY:
-		lwsl_notice("LWS_CALLBACK_PROTOCOL_DESTROY\n");
+		aws_lwsl_notice("LWS_CALLBACK_PROTOCOL_DESTROY\n");
 		if (vhd && vhd->pcm_playback) {
 			snd_pcm_drain(vhd->pcm_playback);
 			snd_pcm_close(vhd->pcm_playback);
@@ -156,7 +156,7 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 
 		n = snd_pcm_readi(vhd->pcm_capture, &vhd->simplebuf[vhd->wpos],
 				  (sizeof(vhd->simplebuf) - vhd->wpos) / 2);
-		lwsl_notice("LWS_CALLBACK_RAW_RX_FILE: %d samples\n", n);
+		aws_lwsl_notice("LWS_CALLBACK_RAW_RX_FILE: %d samples\n", n);
 		vhd->times++;
 
 		vhd->wpos = (vhd->wpos + (n * 2)) & (sizeof(vhd->simplebuf) - 1);
@@ -169,7 +169,7 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	{ "lws-audio-test", callback_raw_test, 0, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -183,29 +183,29 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS minimal raw audio\n");
+	aws_lwsl_user("LWS minimal raw audio\n");
 
 	info.port = CONTEXT_PORT_NO_LISTEN_SERVER;
 	info.protocols = protocols;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

@@ -25,8 +25,8 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_pipe(struct lws_context_per_thread *pt, struct lws *wsi,
-			struct lws_pollfd *pollfd)
+rops_handle_POLLIN_pipe(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+			struct aws_lws_pollfd *pollfd)
 {
 #if defined(LWS_HAVE_EVENTFD)
 	eventfd_t value;
@@ -34,7 +34,7 @@ rops_handle_POLLIN_pipe(struct lws_context_per_thread *pt, struct lws *wsi,
 
 	n = eventfd_read(wsi->desc.sockfd, &value);
 	if (n < 0) {
-		lwsl_notice("%s: eventfd read %d bailed errno %d\n", __func__,
+		aws_lwsl_notice("%s: eventfd read %d bailed errno %d\n", __func__,
 				wsi->desc.sockfd, LWS_ERRNO);
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
@@ -68,7 +68,7 @@ rops_handle_POLLIN_pipe(struct lws_context_per_thread *pt, struct lws *wsi,
 	 * Each tsi will call this to perform the actual callback_on_writable
 	 * from the correct service thread context
 	 */
-	lws_threadpool_tsi_context(pt->context, pt->tid);
+	aws_lws_threadpool_tsi_context(pt->context, pt->tid);
 #endif
 
 #if LWS_MAX_SMP > 1
@@ -80,25 +80,25 @@ rops_handle_POLLIN_pipe(struct lws_context_per_thread *pt, struct lws *wsi,
 
 	if (pt->context->owner_vh_being_destroyed.head) {
 
-		lws_start_foreach_dll_safe(struct lws_dll2 *, d, d1,
+		aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
 				      pt->context->owner_vh_being_destroyed.head) {
-			struct lws_vhost *v =
-				lws_container_of(d, struct lws_vhost,
+			struct aws_lws_vhost *v =
+				aws_lws_container_of(d, struct aws_lws_vhost,
 						 vh_being_destroyed_list);
 
-			lws_vhost_lock(v); /* -------------- vh { */
+			aws_lws_vhost_lock(v); /* -------------- vh { */
 			__lws_vhost_destroy_pt_wsi_dieback_start(v);
-			lws_vhost_unlock(v); /* } vh -------------- */
+			aws_lws_vhost_unlock(v); /* } vh -------------- */
 
-		} lws_end_foreach_dll_safe(d, d1);
+		} aws_lws_end_foreach_dll_safe(d, d1);
 	}
 
 #endif
 
 #if defined(LWS_WITH_SECURE_STREAMS)
-	lws_dll2_foreach_safe(&pt->ss_owner, NULL, lws_ss_cancel_notify_dll);
+	aws_lws_dll2_foreach_safe(&pt->ss_owner, NULL, aws_lws_ss_cancel_notify_dll);
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API) && defined(LWS_WITH_CLIENT)
-	lws_dll2_foreach_safe(&pt->ss_client_owner, NULL, lws_sspc_cancel_notify_dll);
+	aws_lws_dll2_foreach_safe(&pt->ss_client_owner, NULL, aws_lws_sspc_cancel_notify_dll);
 #endif
 #endif
 
@@ -108,20 +108,20 @@ rops_handle_POLLIN_pipe(struct lws_context_per_thread *pt, struct lws *wsi,
 	 * protocol that may be interested in the pipe event know that
 	 * it happened.
 	 */
-	if (lws_broadcast(pt, LWS_CALLBACK_EVENT_WAIT_CANCELLED, NULL, 0)) {
-		lwsl_info("closed in event cancel\n");
+	if (aws_lws_broadcast(pt, LWS_CALLBACK_EVENT_WAIT_CANCELLED, NULL, 0)) {
+		aws_lwsl_info("closed in event cancel\n");
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
 
 	return LWS_HPI_RET_HANDLED;
 }
 
-static const lws_rops_t rops_table_pipe[] = {
+static const aws_lws_rops_t rops_table_pipe[] = {
 	/*  1 */ { .handle_POLLIN	= rops_handle_POLLIN_pipe },
 };
 
 
-const struct lws_role_ops role_ops_pipe = {
+const struct aws_lws_role_ops role_ops_pipe = {
 	/* role name */			"pipe",
 	/* alpn id */			NULL,
 

@@ -35,7 +35,7 @@ dec(char c)
 #endif
 
 static time_t
-lws_tls_openssl_asn1time_to_unix(ASN1_TIME *as)
+aws_lws_tls_openssl_asn1time_to_unix(ASN1_TIME *as)
 {
 #if !defined(LWS_PLAT_OPTEE)
 
@@ -76,8 +76,8 @@ lws_tls_openssl_asn1time_to_unix(ASN1_TIME *as)
 #endif
 
 int
-lws_tls_openssl_cert_info(X509 *x509, enum lws_tls_cert_info type,
-			  union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_tls_openssl_cert_info(X509 *x509, enum aws_lws_tls_cert_info type,
+			  union aws_lws_tls_cert_info_results *buf, size_t len)
 {
 #ifndef USE_WOLFSSL
 	const unsigned char *dp;
@@ -106,14 +106,14 @@ lws_tls_openssl_cert_info(X509 *x509, enum lws_tls_cert_info type,
 
 	switch (type) {
 	case LWS_TLS_CERT_INFO_VALIDITY_FROM:
-		buf->time = lws_tls_openssl_asn1time_to_unix(
+		buf->time = aws_lws_tls_openssl_asn1time_to_unix(
 					X509_get_notBefore(x509));
 		if (buf->time == (time_t)-1)
 			return -1;
 		break;
 
 	case LWS_TLS_CERT_INFO_VALIDITY_TO:
-		buf->time = lws_tls_openssl_asn1time_to_unix(
+		buf->time = aws_lws_tls_openssl_asn1time_to_unix(
 					X509_get_notAfter(x509));
 		if (buf->time == (time_t)-1)
 			return -1;
@@ -165,8 +165,8 @@ lws_tls_openssl_cert_info(X509 *x509, enum lws_tls_cert_info type,
 		ptmp = tmp;
 		if (i2d_X509_PUBKEY(
 			      X509_get_X509_PUBKEY(x509), &ptmp) != (int)klen ||
-		    !ptmp || lws_ptr_diff(ptmp, tmp) != (int)klen) {
-			lwsl_info("%s: cert public key extraction failed\n",
+		    !ptmp || aws_lws_ptr_diff(ptmp, tmp) != (int)klen) {
+			aws_lwsl_info("%s: cert public key extraction failed\n",
 				  __func__);
 			if (ptmp)
 				OPENSSL_free(tmp);
@@ -299,7 +299,7 @@ bail_ak:
 			uint64_t res;
 			if (ASN1_INTEGER_get_uint64(&res, akid->serial) != 1)
 				break;
-			buf->ns.len = lws_snprintf(buf->ns.name, len, "%llu",
+			buf->ns.len = aws_lws_snprintf(buf->ns.name, len, "%llu",
 					(unsigned long long)res);
 		}
 #endif
@@ -329,7 +329,7 @@ bail_ak:
 			return -1;
 
 		if (tag != V_ASN1_OCTET_STRING) {
-			lwsl_notice("not octet string %d\n", (int)tag);
+			aws_lwsl_notice("not octet string %d\n", (int)tag);
 			return 1;
 		}
 #endif
@@ -349,23 +349,23 @@ bail_ak:
 }
 
 int
-lws_x509_info(struct lws_x509_cert *x509, enum lws_tls_cert_info type,
-	      union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_x509_info(struct aws_lws_x509_cert *x509, enum aws_lws_tls_cert_info type,
+	      union aws_lws_tls_cert_info_results *buf, size_t len)
 {
-	return lws_tls_openssl_cert_info(x509->cert, type, buf, len);
+	return aws_lws_tls_openssl_cert_info(x509->cert, type, buf, len);
 }
 
 #if defined(LWS_WITH_NETWORK)
 int
-lws_tls_vhost_cert_info(struct lws_vhost *vhost, enum lws_tls_cert_info type,
-		        union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_tls_vhost_cert_info(struct aws_lws_vhost *vhost, enum aws_lws_tls_cert_info type,
+		        union aws_lws_tls_cert_info_results *buf, size_t len)
 {
 #if defined(LWS_HAVE_SSL_CTX_get0_certificate)
 	X509 *x509 = SSL_CTX_get0_certificate(vhost->tls.ssl_ctx);
 
-	return lws_tls_openssl_cert_info(x509, type, buf, len);
+	return aws_lws_tls_openssl_cert_info(x509, type, buf, len);
 #else
-	lwsl_notice("openssl is too old to support %s\n", __func__);
+	aws_lwsl_notice("openssl is too old to support %s\n", __func__);
 
 	return -1;
 #endif
@@ -374,18 +374,18 @@ lws_tls_vhost_cert_info(struct lws_vhost *vhost, enum lws_tls_cert_info type,
 
 
 int
-lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
-		       union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_tls_peer_cert_info(struct lws *wsi, enum aws_lws_tls_cert_info type,
+		       union aws_lws_tls_cert_info_results *buf, size_t len)
 {
 	int rc = 0;
 	X509 *x509;
 
-	wsi = lws_get_network_wsi(wsi);
+	wsi = aws_lws_get_network_wsi(wsi);
 
 	x509 = SSL_get_peer_certificate(wsi->tls.ssl);
 
 	if (!x509) {
-		lwsl_debug("no peer cert\n");
+		aws_lwsl_debug("no peer cert\n");
 
 		return -1;
 	}
@@ -396,7 +396,7 @@ lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
 					X509_V_OK;
 		break;
 	default:
-		rc = lws_tls_openssl_cert_info(x509, type, buf, len);
+		rc = aws_lws_tls_openssl_cert_info(x509, type, buf, len);
 	}
 
 	X509_free(x509);
@@ -406,9 +406,9 @@ lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
 #endif
 
 int
-lws_x509_create(struct lws_x509_cert **x509)
+aws_lws_x509_create(struct aws_lws_x509_cert **x509)
 {
-	*x509 = lws_malloc(sizeof(**x509), __func__);
+	*x509 = aws_lws_malloc(sizeof(**x509), __func__);
 	if (*x509)
 		(*x509)->cert = NULL;
 
@@ -416,7 +416,7 @@ lws_x509_create(struct lws_x509_cert **x509)
 }
 
 int
-lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len)
+aws_lws_x509_parse_from_pem(struct aws_lws_x509_cert *x509, const void *pem, size_t len)
 {
 	BIO* bio = BIO_new(BIO_s_mem());
 
@@ -424,8 +424,8 @@ lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len)
 	x509->cert = PEM_read_bio_X509(bio, NULL, NULL, NULL);
 	BIO_free(bio);
 	if (!x509->cert) {
-		lwsl_err("%s: unable to parse PEM cert\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_err("%s: unable to parse PEM cert\n", __func__);
+		aws_lws_tls_err_describe_clear();
 
 		return -1;
 	}
@@ -434,7 +434,7 @@ lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len)
 }
 
 int
-lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
+aws_lws_x509_verify(struct aws_lws_x509_cert *x509, struct aws_lws_x509_cert *trusted,
 		const char *common_name)
 {
 	char c[32], *p;
@@ -452,15 +452,15 @@ lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
 			p = c;
 
 		if (strcmp(p, common_name)) {
-			lwsl_err("%s: common name mismatch\n", __func__);
+			aws_lwsl_err("%s: common name mismatch\n", __func__);
 			return -1;
 		}
 	}
 
 	ret = X509_check_issued(trusted->cert, x509->cert);
 	if (ret != X509_V_OK) {
-		lwsl_err("%s: unable to verify cert relationship\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_err("%s: unable to verify cert relationship\n", __func__);
+		aws_lws_tls_err_describe_clear();
 
 		return -1;
 	}
@@ -470,7 +470,7 @@ lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
 
 #if defined(LWS_WITH_JOSE)
 int
-lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
+aws_lws_x509_public_to_jwk(struct aws_lws_jwk *jwk, struct aws_lws_x509_cert *x509,
 		       const char *curves, int rsa_min_bits)
 {
 	int id, n, ret = -1, count;
@@ -487,66 +487,66 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 
 	pubkey = X509_get_X509_PUBKEY(x509->cert);
 	if (!pubkey) {
-		lwsl_err("%s: missing pubkey alg in cert\n", __func__);
+		aws_lwsl_err("%s: missing pubkey alg in cert\n", __func__);
 
 		goto bail;
 	}
 
 	if (X509_PUBKEY_get0_param(&obj, NULL, NULL, NULL, pubkey) != 1) {
-		lwsl_err("%s: missing pubkey alg in cert\n", __func__);
+		aws_lwsl_err("%s: missing pubkey alg in cert\n", __func__);
 
 		goto bail;
 	}
 
 	id = OBJ_obj2nid(obj);
 	if (id == NID_undef) {
-		lwsl_err("%s: missing pubkey alg in cert\n", __func__);
+		aws_lwsl_err("%s: missing pubkey alg in cert\n", __func__);
 
 		goto bail;
 	}
 
-	lwsl_debug("%s: key type %d \"%s\"\n", __func__, id, OBJ_nid2ln(id));
+	aws_lwsl_debug("%s: key type %d \"%s\"\n", __func__, id, OBJ_nid2ln(id));
 
 	pkey = X509_get_pubkey(x509->cert);
 	if (!pkey) {
-		lwsl_notice("%s: unable to extract pubkey", __func__);
+		aws_lwsl_notice("%s: unable to extract pubkey", __func__);
 
 		goto bail;
 	}
 
 	switch (id) {
 	case NID_X9_62_id_ecPublicKey:
-		lwsl_debug("%s: EC key\n", __func__);
+		aws_lwsl_debug("%s: EC key\n", __func__);
 		jwk->kty = LWS_GENCRYPTO_KTY_EC;
 
 		if (!curves) {
-			lwsl_err("%s: ec curves not allowed\n", __func__);
+			aws_lwsl_err("%s: ec curves not allowed\n", __func__);
 
 			goto bail1;
 		}
 
 		ecpub = EVP_PKEY_get1_EC_KEY(pkey);
 		if (!ecpub) {
-			lwsl_notice("%s: missing EC pubkey\n", __func__);
+			aws_lwsl_notice("%s: missing EC pubkey\n", __func__);
 
 			goto bail1;
 		}
 
 		ecpoint = EC_KEY_get0_public_key(ecpub);
 		if (!ecpoint) {
-			lwsl_err("%s: EC_KEY_get0_public_key failed\n", __func__);
+			aws_lwsl_err("%s: EC_KEY_get0_public_key failed\n", __func__);
 			goto bail2;
 		}
 
 		ecgroup = EC_KEY_get0_group(ecpub);
 		if (!ecgroup) {
-			lwsl_err("%s: EC_KEY_get0_group failed\n", __func__);
+			aws_lwsl_err("%s: EC_KEY_get0_group failed\n", __func__);
 			goto bail2;
 		}
 
 		/* validate the curve against ones we allow */
 
-		if (lws_genec_confirm_curve_allowed_by_tls_id(curves,
+		if (aws_lws_genec_confirm_curve_allowed_by_tls_id(curves,
 				EC_GROUP_get_curve_name(ecgroup), jwk))
 			/* already logged */
 			goto bail2;
@@ -566,7 +566,7 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 							  NULL) != 1) {
 			BN_clear_free(mpi[LWS_GENCRYPTO_EC_KEYEL_X]);
 			BN_clear_free(mpi[LWS_GENCRYPTO_EC_KEYEL_Y]);
-			lwsl_err("%s: EC_POINT_get_aff failed\n", __func__);
+			aws_lwsl_err("%s: EC_POINT_get_aff failed\n", __func__);
 			goto bail2;
 		}
 		count = LWS_GENCRYPTO_EC_KEYEL_COUNT;
@@ -574,18 +574,18 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 		break;
 
 	case NID_rsaEncryption:
-		lwsl_debug("%s: rsa key\n", __func__);
+		aws_lwsl_debug("%s: rsa key\n", __func__);
 		jwk->kty = LWS_GENCRYPTO_KTY_RSA;
 
 		rsapub = EVP_PKEY_get1_RSA(pkey);
 		if (!rsapub) {
-			lwsl_notice("%s: missing RSA pubkey\n", __func__);
+			aws_lwsl_notice("%s: missing RSA pubkey\n", __func__);
 
 			goto bail1;
 		}
 
 		if ((size_t)RSA_size(rsapub) * 8 < (size_t)rsa_min_bits) {
-			lwsl_err("%s: key bits %d less than minimum %d\n",
+			aws_lwsl_err("%s: key bits %d less than minimum %d\n",
 				 __func__, RSA_size(rsapub) * 8, rsa_min_bits);
 
 			goto bail2;
@@ -606,7 +606,7 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 		n = LWS_GENCRYPTO_RSA_KEYEL_E;
 		break;
 	default:
-		lwsl_err("%s: unknown NID\n", __func__);
+		aws_lwsl_err("%s: unknown NID\n", __func__);
 		goto bail2;
 	}
 
@@ -614,7 +614,7 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 		if (!mpi[n])
 			continue;
 		jwk->e[n].len = (unsigned int)BN_num_bytes(mpi[n]);
-		jwk->e[n].buf = lws_malloc(jwk->e[n].len, "certkeyimp");
+		jwk->e[n].buf = aws_lws_malloc(jwk->e[n].len, "certkeyimp");
 		if (!jwk->e[n].buf) {
 			if (id == NID_X9_62_id_ecPublicKey) {
 				BN_clear_free(mpi[LWS_GENCRYPTO_EC_KEYEL_X]);
@@ -643,13 +643,13 @@ bail1:
 bail:
 	/* jwk destroy will clean any partial state */
 	if (ret)
-		lws_jwk_destroy(jwk);
+		aws_lws_jwk_destroy(jwk);
 
 	return ret;
 }
 
 static int
-lws_x509_jwk_privkey_pem_pp_cb(char *buf, int size, int rwflag, void *u)
+aws_lws_x509_jwk_privkey_pem_pp_cb(char *buf, int size, int rwflag, void *u)
 {
 	const char *pp = (const char *)u;
 	size_t n = strlen(pp);
@@ -663,7 +663,7 @@ lws_x509_jwk_privkey_pem_pp_cb(char *buf, int size, int rwflag, void *u)
 }
 
 int
-lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
+aws_lws_x509_jwk_privkey_pem(struct aws_lws_context *cx, struct aws_lws_jwk *jwk,
 			 void *pem, size_t len, const char *passphrase)
 {
 	BIO* bio = BIO_new(BIO_s_mem());
@@ -675,13 +675,13 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 	int n, m, ret = -1;
 
 	BIO_write(bio, pem, (int)len);
-	PEM_read_bio_PrivateKey(bio, &pkey, lws_x509_jwk_privkey_pem_pp_cb,
+	PEM_read_bio_PrivateKey(bio, &pkey, aws_lws_x509_jwk_privkey_pem_pp_cb,
 				(void *)passphrase);
 	BIO_free(bio);
-	lws_explicit_bzero((void *)pem, len);
+	aws_lws_explicit_bzero((void *)pem, len);
 	if (!pkey) {
-		lwsl_err("%s: unable to parse PEM privkey\n", __func__);
-		lws_tls_err_describe_clear();
+		aws_lwsl_err("%s: unable to parse PEM privkey\n", __func__);
+		aws_lws_tls_err_describe_clear();
 
 		return -1;
 	}
@@ -691,13 +691,13 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 	switch (jwk->kty) {
 	case LWS_GENCRYPTO_KTY_EC:
 		if (EVP_PKEY_type(EVP_PKEY_id(pkey)) != EVP_PKEY_EC) {
-			lwsl_err("%s: jwk is EC but privkey isn't\n", __func__);
+			aws_lwsl_err("%s: jwk is EC but privkey isn't\n", __func__);
 
 			goto bail;
 		}
 		ecpriv = EVP_PKEY_get1_EC_KEY(pkey);
 		if (!ecpriv) {
-			lwsl_notice("%s: missing EC key\n", __func__);
+			aws_lwsl_notice("%s: missing EC key\n", __func__);
 
 			goto bail;
 		}
@@ -708,7 +708,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 
 		n = BN_num_bytes(cmpi);
 		if (jwk->e[LWS_GENCRYPTO_EC_KEYEL_Y].len != (uint32_t)n) {
-			lwsl_err("%s: jwk key size doesn't match\n", __func__);
+			aws_lwsl_err("%s: jwk key size doesn't match\n", __func__);
 
 			goto bail1;
 		}
@@ -716,7 +716,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 		/* TODO.. check public curve / group + point */
 
 		jwk->e[LWS_GENCRYPTO_EC_KEYEL_D].len = (unsigned int)n;
-		jwk->e[LWS_GENCRYPTO_EC_KEYEL_D].buf = lws_malloc((unsigned int)n, "ec");
+		jwk->e[LWS_GENCRYPTO_EC_KEYEL_D].buf = aws_lws_malloc((unsigned int)n, "ec");
 		if (!jwk->e[LWS_GENCRYPTO_EC_KEYEL_D].buf)
 			goto bail1;
 
@@ -729,13 +729,13 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 
 	case LWS_GENCRYPTO_KTY_RSA:
 		if (EVP_PKEY_type(EVP_PKEY_id(pkey)) != EVP_PKEY_RSA) {
-			lwsl_err("%s: RSA jwk, non-RSA privkey\n", __func__);
+			aws_lwsl_err("%s: RSA jwk, non-RSA privkey\n", __func__);
 
 			goto bail;
 		}
 		rsapriv = EVP_PKEY_get1_RSA(pkey);
 		if (!rsapriv) {
-			lwsl_notice("%s: missing RSA key\n", __func__);
+			aws_lwsl_notice("%s: missing RSA key\n", __func__);
 
 			goto bail;
 		}
@@ -758,7 +758,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 
 		n = BN_num_bytes(mpi);
 		if (jwk->e[LWS_GENCRYPTO_RSA_KEYEL_N].len != (uint32_t)n) {
-			lwsl_err("%s: jwk key size doesn't match\n", __func__);
+			aws_lwsl_err("%s: jwk key size doesn't match\n", __func__);
 
 			goto bail1;
 		}
@@ -776,7 +776,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 		BN_clear_free(dummy[2]);
 		BN_clear_free(dummy[3]);
 		if (m) {
-			lwsl_err("%s: privkey doesn't match jwk pubkey\n",
+			aws_lwsl_err("%s: privkey doesn't match jwk pubkey\n",
 				 __func__);
 
 			goto bail1;
@@ -785,7 +785,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 		/* accept d from the PEM privkey into the JWK */
 
 		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].len = (unsigned int)n;
-		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf = lws_malloc((unsigned int)n, "privjk");
+		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf = aws_lws_malloc((unsigned int)n, "privjk");
 		if (!jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf)
 			goto bail1;
 
@@ -794,24 +794,24 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 		/* accept p and q from the PEM privkey into the JWK */
 
 		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].len = (unsigned int)BN_num_bytes(dummy[4]);
-		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].buf = lws_malloc((unsigned int)n, "privjk");
+		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].buf = aws_lws_malloc((unsigned int)n, "privjk");
 		if (!jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].buf) {
-			lws_free_set_NULL(jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf);
+			aws_lws_free_set_NULL(jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf);
 			goto bail1;
 		}
 		BN_bn2bin(dummy[4], jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].buf);
 
 		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_Q].len = (unsigned int)BN_num_bytes(dummy[5]);
-		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_Q].buf = lws_malloc((unsigned int)n, "privjk");
+		jwk->e[LWS_GENCRYPTO_RSA_KEYEL_Q].buf = aws_lws_malloc((unsigned int)n, "privjk");
 		if (!jwk->e[LWS_GENCRYPTO_RSA_KEYEL_Q].buf) {
-			lws_free_set_NULL(jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf);
-			lws_free_set_NULL(jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].buf);
+			aws_lws_free_set_NULL(jwk->e[LWS_GENCRYPTO_RSA_KEYEL_D].buf);
+			aws_lws_free_set_NULL(jwk->e[LWS_GENCRYPTO_RSA_KEYEL_P].buf);
 			goto bail1;
 		}
 		BN_bn2bin(dummy[5], jwk->e[LWS_GENCRYPTO_RSA_KEYEL_Q].buf);
 		break;
 	default:
-		lwsl_err("%s: JWK has unknown kty %d\n", __func__, jwk->kty);
+		aws_lwsl_err("%s: JWK has unknown kty %d\n", __func__, jwk->kty);
 		return -1;
 	}
 
@@ -831,7 +831,7 @@ bail:
 #endif
 
 void
-lws_x509_destroy(struct lws_x509_cert **x509)
+aws_lws_x509_destroy(struct aws_lws_x509_cert **x509)
 {
 	if (!*x509)
 		return;
@@ -841,5 +841,5 @@ lws_x509_destroy(struct lws_x509_cert **x509)
 		(*x509)->cert = NULL;
 	}
 
-	lws_free_set_NULL(*x509);
+	aws_lws_free_set_NULL(*x509);
 }

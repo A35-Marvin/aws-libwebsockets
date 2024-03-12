@@ -85,7 +85,7 @@ getifaddrs2(struct ifaddrs **ifap, int af, int siocgifconf, int siocgifflags,
 
 	buf_size = 8192;
 	for (;;) {
-		buf = lws_zalloc(buf_size, "getifaddrs2");
+		buf = aws_lws_zalloc(buf_size, "getifaddrs2");
 		if (buf == NULL) {
 			ret = ENOMEM;
 			goto error_out;
@@ -107,7 +107,7 @@ getifaddrs2(struct ifaddrs **ifap, int af, int siocgifconf, int siocgifflags,
 
 		if (ifconf.ifc_len < (int)buf_size)
 			break;
-		lws_free(buf);
+		aws_lws_free(buf);
 		buf_size *= 2;
 	}
 
@@ -137,12 +137,12 @@ getifaddrs2(struct ifaddrs **ifap, int af, int siocgifconf, int siocgifflags,
 			goto error_out;
 		}
 
-		*end = lws_malloc(sizeof(**end), "getifaddrs");
+		*end = aws_lws_malloc(sizeof(**end), "getifaddrs");
 
 		(*end)->ifa_next = NULL;
 		(*end)->ifa_name = strdup(ifr->ifr_name);
 		(*end)->ifa_flags = (unsigned int)ifreq.ifr_flags;
-		(*end)->ifa_addr = lws_malloc(salen, "getifaddrs");
+		(*end)->ifa_addr = aws_lws_malloc(salen, "getifaddrs");
 		memcpy((*end)->ifa_addr, sa, salen);
 		(*end)->ifa_netmask = NULL;
 
@@ -150,12 +150,12 @@ getifaddrs2(struct ifaddrs **ifap, int af, int siocgifconf, int siocgifflags,
 		/* fix these when we actually need them */
 		if (ifreq.ifr_flags & IFF_BROADCAST) {
 			(*end)->ifa_broadaddr =
-				lws_malloc(sizeof(ifr->ifr_broadaddr), "getifaddrs");
+				aws_lws_malloc(sizeof(ifr->ifr_broadaddr), "getifaddrs");
 			memcpy((*end)->ifa_broadaddr, &ifr->ifr_broadaddr,
 						    sizeof(ifr->ifr_broadaddr));
 		} else if (ifreq.ifr_flags & IFF_POINTOPOINT) {
 			(*end)->ifa_dstaddr =
-				lws_malloc(sizeof(ifr->ifr_dstaddr), "getifaddrs");
+				aws_lws_malloc(sizeof(ifr->ifr_dstaddr), "getifaddrs");
 			memcpy((*end)->ifa_dstaddr, &ifr->ifr_dstaddr,
 						      sizeof(ifr->ifr_dstaddr));
 		} else
@@ -170,12 +170,12 @@ getifaddrs2(struct ifaddrs **ifap, int af, int siocgifconf, int siocgifflags,
 	}
 	*ifap = start;
 	close(fd);
-	lws_free(buf);
+	aws_lws_free(buf);
 	return 0;
 
 error_out:
 	close(fd);
-	lws_free(buf);
+	aws_lws_free(buf);
 	errno = ret;
 
 	return -1;
@@ -210,14 +210,14 @@ freeifaddrs(struct ifaddrs *ifp)
 	struct ifaddrs *p, *q;
 
 	for (p = ifp; p; ) {
-		lws_free(p->ifa_name);
-		lws_free(p->ifa_addr);
-		lws_free(p->ifa_dstaddr);
-		lws_free(p->ifa_netmask);
-		lws_free(p->ifa_data);
+		aws_lws_free(p->ifa_name);
+		aws_lws_free(p->ifa_addr);
+		aws_lws_free(p->ifa_dstaddr);
+		aws_lws_free(p->ifa_netmask);
+		aws_lws_free(p->ifa_data);
 		q = p;
 		p = p->ifa_next;
-		lws_free(q);
+		aws_lws_free(q);
 	}
 }
 
@@ -230,7 +230,7 @@ print_addr(const char *s, struct sockaddr *sa)
 	printf("  %s=%d/", s, sa->sa_family);
 #ifdef LWS_HAVE_STRUCT_SOCKADDR_SA_LEN
 	for (i = 0;
-	       i < sa->sa_len - ((lws_intptr_t)sa->sa_data - (lws_intptr_t)&sa->sa_family); i++)
+	       i < sa->sa_len - ((aws_lws_intptr_t)sa->sa_data - (aws_lws_intptr_t)&sa->sa_family); i++)
 		printf("%02x", ((unsigned char *)sa->sa_data)[i]);
 #else
 	for (i = 0; i < sizeof(sa->sa_data); i++)

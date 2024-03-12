@@ -26,7 +26,7 @@
 
 /* compression methods listed in order of preference */
 
-struct lws_compression_support *lcs_available[] = {
+struct aws_lws_compression_support *lcs_available[] = {
 #if defined(LWS_WITH_HTTP_BROTLI)
 	&lcs_brotli,
 #endif
@@ -36,17 +36,17 @@ struct lws_compression_support *lcs_available[] = {
 /* compute acceptable compression encodings while we still have an ah */
 
 int
-lws_http_compression_validate(struct lws *wsi)
+aws_lws_http_compression_validate(struct lws *wsi)
 {
 	const char *a;
 	size_t n;
 
 	wsi->http.comp_accept_mask = 0;
 
-	if (!wsi->http.ah || !lwsi_role_server(wsi))
+	if (!wsi->http.ah || !aws_lwsi_role_server(wsi))
 		return 0;
 
-	a = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_ACCEPT_ENCODING);
+	a = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_ACCEPT_ENCODING);
 	if (!a)
 		return 0;
 
@@ -58,7 +58,7 @@ lws_http_compression_validate(struct lws *wsi)
 }
 
 int
-lws_http_compression_apply(struct lws *wsi, const char *name,
+aws_lws_http_compression_apply(struct lws *wsi, const char *name,
 			   unsigned char **p, unsigned char *end, char decomp)
 {
 	size_t n;
@@ -83,7 +83,7 @@ lws_http_compression_apply(struct lws *wsi, const char *name,
 
 	lcs_available[n]->init_compression(&wsi->http.comp_ctx, decomp);
 	if (!wsi->http.comp_ctx.u.generic_ctx_ptr) {
-		lwsl_err("%s: init_compression %d failed\n", __func__, (int)n);
+		aws_lwsl_err("%s: init_compression %d failed\n", __func__, (int)n);
 		return 1;
 	}
 
@@ -93,19 +93,19 @@ lws_http_compression_apply(struct lws *wsi, const char *name,
 	wsi->http.comp_ctx.chunking = 0;
 	wsi->http.comp_ctx.is_decompression = !!decomp;
 
-	if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_ENCODING,
+	if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_ENCODING,
 			(unsigned char *)lcs_available[n]->encoding_name,
 			(int)strlen(lcs_available[n]->encoding_name), p, end))
 		return -1;
 
-	lwsl_info("%s: %s: applied %s content-encoding\n", __func__,
-		    lws_wsi_tag(wsi), lcs_available[n]->encoding_name);
+	aws_lwsl_info("%s: %s: applied %s content-encoding\n", __func__,
+		    aws_lws_wsi_tag(wsi), lcs_available[n]->encoding_name);
 
 	return 0;
 }
 
 void
-lws_http_compression_destroy(struct lws *wsi)
+aws_lws_http_compression_destroy(struct lws *wsi)
 {
 	if (!wsi->http.lcs || !wsi->http.comp_ctx.u.generic_ctx_ptr)
 		return;
@@ -122,13 +122,13 @@ lws_http_compression_destroy(struct lws *wsi)
  */
 
 int
-lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
-			       size_t len, enum lws_write_protocol *wp,
+aws_lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
+			       size_t len, enum aws_lws_write_protocol *wp,
 			       unsigned char **outbuf, size_t *olen_oused)
 {
 	size_t ilen_iused = len;
 	int n, use = 0, wp1f = (*wp) & 0x1f;
-	lws_comp_ctx_t *ctx = &wsi->http.comp_ctx;
+	aws_lws_comp_ctx_t *ctx = &wsi->http.comp_ctx;
 
 	ctx->may_have_more = 0;
 
@@ -161,30 +161,30 @@ lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
 		 * and switch to trying to process the head.
 		 */
 		if (buf && len) {
-			if (lws_buflist_append_segment(
+			if (aws_lws_buflist_append_segment(
 					&ctx->buflist_comp, buf, len) < 0)
 				return -1;
-			lwsl_debug("%s: %s: adding %d to comp buflist\n",
-				   __func__, lws_wsi_tag(wsi), (int)len);
+			aws_lwsl_debug("%s: %s: adding %d to comp buflist\n",
+				   __func__, aws_lws_wsi_tag(wsi), (int)len);
 		}
 
-		len = lws_buflist_next_segment_len(&ctx->buflist_comp, &buf);
+		len = aws_lws_buflist_next_segment_len(&ctx->buflist_comp, &buf);
 		ilen_iused = len;
 		use = 1;
-		lwsl_debug("%s: %s: trying comp buflist %d\n", __func__,
-				lws_wsi_tag(wsi), (int)len);
+		aws_lwsl_debug("%s: %s: trying comp buflist %d\n", __func__,
+				aws_lws_wsi_tag(wsi), (int)len);
 	}
 
 	if (!buf && ilen_iused)
 		return 0;
 
-	lwsl_debug("%s: %s: pre-process: ilen_iused %d, olen_oused %d\n",
-		   __func__, lws_wsi_tag(wsi), (int)ilen_iused, (int)*olen_oused);
+	aws_lwsl_debug("%s: %s: pre-process: ilen_iused %d, olen_oused %d\n",
+		   __func__, aws_lws_wsi_tag(wsi), (int)ilen_iused, (int)*olen_oused);
 
 	n = wsi->http.lcs->process(ctx, buf, &ilen_iused, *outbuf, olen_oused);
 
 	if (n && n != 1) {
-		lwsl_err("%s: problem with compression\n", __func__);
+		aws_lwsl_err("%s: problem with compression\n", __func__);
 
 		return -1;
 	}
@@ -193,7 +193,7 @@ lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
 
 		*wp = (unsigned int)(LWS_WRITE_HTTP_FINAL | ((*wp) & ~0x1fu));
 
-	lwsl_debug("%s: %s: more %d, ilen_iused %d\n", __func__, lws_wsi_tag(wsi),
+	aws_lwsl_debug("%s: %s: more %d, ilen_iused %d\n", __func__, aws_lws_wsi_tag(wsi),
 		   ctx->may_have_more, (int)ilen_iused);
 
 	if (use && ilen_iused) {
@@ -202,10 +202,10 @@ lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
 		 * however much actually got processed by the compression
 		 * transform
 		 */
-		lws_buflist_use_segment(&ctx->buflist_comp, ilen_iused);
-		lwsl_debug("%s: %s: marking %d of comp buflist as used "
+		aws_lws_buflist_use_segment(&ctx->buflist_comp, ilen_iused);
+		aws_lwsl_debug("%s: %s: marking %d of comp buflist as used "
 			   "(ctx->buflist_comp %p)\n", __func__,
-			   lws_wsi_tag(wsi), (int)len, ctx->buflist_comp);
+			   aws_lws_wsi_tag(wsi), (int)len, ctx->buflist_comp);
 	}
 
 	if (!use && ilen_iused != len) {
@@ -213,15 +213,15 @@ lws_http_compression_transform(struct lws *wsi, unsigned char *buf,
 		  * ...we were sending stuff from the caller directly and not
 		  * all of it got processed... stash on the buflist tail
 		  */
-		if (lws_buflist_append_segment(&ctx->buflist_comp,
+		if (aws_lws_buflist_append_segment(&ctx->buflist_comp,
 					   buf + ilen_iused, len - ilen_iused) < 0)
 			return -1;
 
-		lwsl_debug("%s: buffering %d unused comp input\n", __func__,
+		aws_lwsl_debug("%s: buffering %d unused comp input\n", __func__,
 			   (int)(len - ilen_iused));
 	}
 	if (ctx->buflist_comp || ctx->may_have_more)
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 
 	return 0;
 }

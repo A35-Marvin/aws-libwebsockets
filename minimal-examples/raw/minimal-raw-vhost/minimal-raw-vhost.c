@@ -44,17 +44,17 @@ struct raw_vhd {
 };
 
 static int
-callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
+callback_raw_test(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct raw_pss *pss = (struct raw_pss *)user;
-	struct raw_vhd *vhd = (struct raw_vhd *)lws_protocol_vh_priv_get(
-				     lws_get_vhost(wsi), lws_get_protocol(wsi));
+	struct raw_vhd *vhd = (struct raw_vhd *)aws_lws_protocol_vh_priv_get(
+				     aws_lws_get_vhost(wsi), aws_lws_get_protocol(wsi));
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi), sizeof(struct raw_vhd));
+		aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi), sizeof(struct raw_vhd));
 		break;
 
 	case LWS_CALLBACK_PROTOCOL_DESTROY:
@@ -63,31 +63,31 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 	/* callbacks related to raw socket descriptor */
 
         case LWS_CALLBACK_RAW_ADOPT:
-		lwsl_user("LWS_CALLBACK_RAW_ADOPT\n");
+		aws_lwsl_user("LWS_CALLBACK_RAW_ADOPT\n");
 		pss->wsi = wsi;
-		lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
+		aws_lws_ll_fwd_insert(pss, pss_list, vhd->pss_list);
                 break;
 
 	case LWS_CALLBACK_RAW_CLOSE:
-		lwsl_user("LWS_CALLBACK_RAW_CLOSE\n");
-		lws_ll_fwd_remove(struct raw_pss, pss_list, pss, vhd->pss_list);
+		aws_lwsl_user("LWS_CALLBACK_RAW_CLOSE\n");
+		aws_lws_ll_fwd_remove(struct raw_pss, pss_list, pss, vhd->pss_list);
 		break;
 
 	case LWS_CALLBACK_RAW_RX:
-		lwsl_user("LWS_CALLBACK_RAW_RX: %d\n", (int)len);
+		aws_lwsl_user("LWS_CALLBACK_RAW_RX: %d\n", (int)len);
 		vhd->len = (int)len;
 		if (vhd->len > (int)sizeof(vhd->buf))
 			vhd->len = sizeof(vhd->buf);
 		memcpy(vhd->buf, in, (unsigned int)vhd->len);
-		lws_start_foreach_llp(struct raw_pss **, ppss, vhd->pss_list) {
-			lws_callback_on_writable((*ppss)->wsi);
-		} lws_end_foreach_llp(ppss, pss_list);
+		aws_lws_start_foreach_llp(struct raw_pss **, ppss, vhd->pss_list) {
+			aws_lws_callback_on_writable((*ppss)->wsi);
+		} aws_lws_end_foreach_llp(ppss, pss_list);
 		break;
 
 	case LWS_CALLBACK_RAW_WRITEABLE:
-		if (lws_write(wsi, vhd->buf, (unsigned int)vhd->len, LWS_WRITE_RAW) !=
+		if (aws_lws_write(wsi, vhd->buf, (unsigned int)vhd->len, LWS_WRITE_RAW) !=
 		    vhd->len) {
-			lwsl_notice("%s: raw write failed\n", __func__);
+			aws_lwsl_notice("%s: raw write failed\n", __func__);
 			return 1;
 		}
 		break;
@@ -96,10 +96,10 @@ callback_raw_test(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	{ "raw-test", callback_raw_test, sizeof(struct raw_pss), 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -113,8 +113,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -126,11 +126,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal raw vhost | nc localhost 7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal raw vhost | nc localhost 7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -138,23 +138,23 @@ int main(int argc, const char **argv)
 	info.options = LWS_SERVER_OPTION_ONLY_RAW; /* vhost accepts RAW */
 
 #if defined(LWS_WITH_TLS)
-	if (lws_cmdline_option(argc, argv, "-s")) {
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 		info.ssl_cert_filepath = "localhost-100y.cert";
 		info.ssl_private_key_filepath = "localhost-100y.key";
 	}
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

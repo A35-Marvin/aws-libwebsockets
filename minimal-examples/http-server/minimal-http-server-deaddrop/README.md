@@ -31,9 +31,9 @@ of the raw-proxy plugin.
 [2018/12/01 10:31:09:8511] NOTICE: Creating Vhost 'default' port 7681, 1 protocols, IPv6 off
 [2018/12/01 10:31:09:8522] NOTICE:  Using SSL mode
 [2018/12/01 10:31:10:0755] NOTICE:  SSL ECDH curve 'prime256v1'
-[2018/12/01 10:31:10:2562] NOTICE: lws_tls_client_create_vhost_context: doing cert filepath localhost-100y.cert
+[2018/12/01 10:31:10:2562] NOTICE: aws_lws_tls_client_create_vhost_context: doing cert filepath localhost-100y.cert
 [2018/12/01 10:31:10:2581] NOTICE: Loaded client cert localhost-100y.cert
-[2018/12/01 10:31:10:2583] NOTICE: lws_tls_client_create_vhost_context: doing private key filepath
+[2018/12/01 10:31:10:2583] NOTICE: aws_lws_tls_client_create_vhost_context: doing private key filepath
 [2018/12/01 10:31:10:2593] NOTICE: Loaded client cert private key localhost-100y.key
 [2018/12/01 10:31:10:2596] NOTICE: created client ssl context for default
 [2018/12/01 10:31:10:5290] NOTICE:   deaddrop: vh default, upload dir ./uploads, max size 10000000

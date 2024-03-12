@@ -31,7 +31,7 @@
 //@{
 
 /**
- * lws_sql_purify() - like strncpy but with escaping for sql quotes
+ * aws_lws_sql_purify() - like strncpy but with escaping for sql quotes
  *
  * \param escaped: output buffer
  * \param string: input buffer ('/0' terminated)
@@ -41,10 +41,10 @@
  * possible to do it in-place, ie, with escaped == string
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_sql_purify(char *escaped, const char *string, size_t len);
+aws_lws_sql_purify(char *escaped, const char *string, size_t len);
 
 /**
- * lws_sql_purify_len() - return length of purified version of input string
+ * aws_lws_sql_purify_len() - return length of purified version of input string
  *
  * \param string: input buffer ('/0' terminated)
  *
@@ -52,10 +52,10 @@ lws_sql_purify(char *escaped, const char *string, size_t len);
  * calculated length of the purified string.
  */
 int
-lws_sql_purify_len(const char *p);
+aws_lws_sql_purify_len(const char *p);
 
 /**
- * lws_json_purify() - like strncpy but with escaping for json chars
+ * aws_lws_json_purify() - like strncpy but with escaping for json chars
  *
  * \param escaped: output buffer
  * \param string: input buffer ('/0' terminated)
@@ -66,10 +66,10 @@ lws_sql_purify_len(const char *p);
  * possible to do it in-place, ie, with escaped == string
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_json_purify(char *escaped, const char *string, int len, int *in_used);
+aws_lws_json_purify(char *escaped, const char *string, int len, int *in_used);
 
 /**
- * lws_json_purify_len() - find out the escaped length of a string
+ * aws_lws_json_purify_len() - find out the escaped length of a string
  *
  * \param string: input buffer ('/0' terminated)
  *
@@ -78,10 +78,10 @@ lws_json_purify(char *escaped, const char *string, int len, int *in_used);
  * and computes the length of the escaped string.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_json_purify_len(const char *string);
+aws_lws_json_purify_len(const char *string);
 
 /**
- * lws_filename_purify_inplace() - replace scary filename chars with underscore
+ * aws_lws_filename_purify_inplace() - replace scary filename chars with underscore
  *
  * \param filename: filename to be purified
  *
@@ -89,17 +89,17 @@ lws_json_purify_len(const char *string);
  * with underscore, so it's safe to use.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_filename_purify_inplace(char *filename);
+aws_lws_filename_purify_inplace(char *filename);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_plat_write_cert(struct lws_vhost *vhost, int is_key, int fd, void *buf,
+aws_lws_plat_write_cert(struct aws_lws_vhost *vhost, int is_key, int fd, void *buf,
 			size_t len);
 LWS_VISIBLE LWS_EXTERN int
-lws_plat_write_file(const char *filename, void *buf, size_t len);
+aws_lws_plat_write_file(const char *filename, void *buf, size_t len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_plat_read_file(const char *filename, void *buf, size_t len);
+aws_lws_plat_read_file(const char *filename, void *buf, size_t len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_plat_recommended_rsa_bits(void);
+aws_lws_plat_recommended_rsa_bits(void);
 ///@}

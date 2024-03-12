@@ -37,7 +37,7 @@ typedef enum {
 	LWSGGPIO_IRQ_CHANGE,
 	LWSGGPIO_IRQ_LOW,
 	LWSGGPIO_IRQ_HIGH
-} lws_gpio_irq_t;
+} aws_lws_gpio_irq_t;
 
 enum {
 	LWSGGPIO_FL_READ			= (1 << 0),
@@ -47,14 +47,14 @@ enum {
 	LWSGGPIO_FL_START_LOW			= (1 << 4),
 };
 
-typedef void (*lws_gpio_irq_cb_t)(void *arg);
+typedef void (*aws_lws_gpio_irq_cb_t)(void *arg);
 
-typedef struct lws_gpio_ops {
+typedef struct aws_lws_gpio_ops {
 	void (*mode)(_lws_plat_gpio_t gpio, int flags);
 	int (*read)(_lws_plat_gpio_t gpio);
 	void (*set)(_lws_plat_gpio_t gpio, int val);
-	int (*irq_mode)(_lws_plat_gpio_t gpio, lws_gpio_irq_t irq,
-			lws_gpio_irq_cb_t cb, void *arg);
-} lws_gpio_ops_t;
+	int (*irq_mode)(_lws_plat_gpio_t gpio, aws_lws_gpio_irq_t irq,
+			aws_lws_gpio_irq_cb_t cb, void *arg);
+} aws_lws_gpio_ops_t;
 
 #endif

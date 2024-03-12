@@ -82,7 +82,7 @@ b16(unsigned char *b)
 }
 
 static int
-lws_fts_filepath(struct lws_fts_file *jtf, int filepath_index, char *result,
+aws_lws_fts_filepath(struct aws_lws_fts_file *jtf, int filepath_index, char *result,
 		 size_t len, uint32_t *ofs_linetable, uint32_t *lines)
 {
 	unsigned char buf[256 + 15];
@@ -96,7 +96,7 @@ lws_fts_filepath(struct lws_fts_file *jtf, int filepath_index, char *result,
 
 	if (lseek(jtf->fd, (off_t)(jtf->filepath_table + (4 * (unsigned int)filepath_index)),
 			SEEK_SET) < 0) {
-		lwsl_err("%s: unable to seek\n", __func__);
+		aws_lwsl_err("%s: unable to seek\n", __func__);
 
 		return 1;
 	}
@@ -107,7 +107,7 @@ lws_fts_filepath(struct lws_fts_file *jtf, int filepath_index, char *result,
 
 	o = (off_t)b32(buf);
 	if (lseek(jtf->fd, o, SEEK_SET) < 0) {
-		lwsl_err("%s: unable to seek\n", __func__);
+		aws_lwsl_err("%s: unable to seek\n", __func__);
 
 		return 1;
 	}
@@ -145,19 +145,19 @@ lws_fts_filepath(struct lws_fts_file *jtf, int filepath_index, char *result,
  */
 
 int
-lws_fts_adopt(struct lws_fts_file *jtf)
+aws_lws_fts_adopt(struct aws_lws_fts_file *jtf)
 {
 	unsigned char buf[256];
 	off_t ot;
 
 	if (read(jtf->fd, buf, TRIE_FILE_HDR_SIZE) != TRIE_FILE_HDR_SIZE) {
-		lwsl_err("%s: unable to read file header\n", __func__);
+		aws_lwsl_err("%s: unable to read file header\n", __func__);
 		goto bail;
 	}
 
 	if (buf[0] != 0xca || buf[1] != 0x7a ||
 	    buf[2] != 0x5f || buf[3] != 0x75) {
-		lwsl_err("%s: bad magic %02X %02X %02X %02X\n", __func__,
+		aws_lwsl_err("%s: bad magic %02X %02X %02X %02X\n", __func__,
 			 buf[0], buf[1], buf[2], buf[3]);
 		goto bail;
 	}
@@ -166,14 +166,14 @@ lws_fts_adopt(struct lws_fts_file *jtf)
 
 	ot = lseek(jtf->fd, 0, SEEK_END);
 	if (ot < 0) {
-		lwsl_err("%s: unable to seek\n", __func__);
+		aws_lwsl_err("%s: unable to seek\n", __func__);
 
 		goto bail;
 	}
 	jtf->flen = (jg2_file_offset)ot;
 
 	if (jtf->flen != b32(&buf[8])) {
-		lwsl_err("%s: file size doesn't match expected\n", __func__);
+		aws_lwsl_err("%s: file size doesn't match expected\n", __func__);
 
 		goto bail;
 	}
@@ -187,22 +187,22 @@ bail:
 	return -1;
 }
 
-struct lws_fts_file *
-lws_fts_open(const char *filepath)
+struct aws_lws_fts_file *
+aws_lws_fts_open(const char *filepath)
 {
-	struct lws_fts_file *jtf;
+	struct aws_lws_fts_file *jtf;
 
-	jtf = lws_malloc(sizeof(*jtf), "fts open");
+	jtf = aws_lws_malloc(sizeof(*jtf), "fts open");
 	if (!jtf)
 		goto bail1;
 
 	jtf->fd = open(filepath, O_RDONLY);
 	if (jtf->fd < 0) {
-		lwsl_err("%s: unable to open %s\n", __func__, filepath);
+		aws_lwsl_err("%s: unable to open %s\n", __func__, filepath);
 		goto bail2;
 	}
 
-	if (lws_fts_adopt(jtf) < 0)
+	if (aws_lws_fts_adopt(jtf) < 0)
 		goto bail3;
 
 	return jtf;
@@ -210,22 +210,22 @@ lws_fts_open(const char *filepath)
 bail3:
 	close(jtf->fd);
 bail2:
-	lws_free(jtf);
+	aws_lws_free(jtf);
 bail1:
 	return NULL;
 }
 
 void
-lws_fts_close(struct lws_fts_file *jtf)
+aws_lws_fts_close(struct aws_lws_fts_file *jtf)
 {
 	close(jtf->fd);
-	lws_free(jtf);
+	aws_lws_free(jtf);
 }
 
 #define grab(_pos, _size) { \
 		bp = 0; \
 		if (lseek(jtf->fd, (off_t)(_pos), SEEK_SET) < 0) { \
-			lwsl_err("%s: unable to seek\n", __func__); \
+			aws_lwsl_err("%s: unable to seek\n", __func__); \
 \
 			goto bail; \
 		} \
@@ -236,8 +236,8 @@ lws_fts_close(struct lws_fts_file *jtf)
 }
 
 static struct linetable *
-lws_fts_cache_chunktable(struct lws_fts_file *jtf, uint32_t ofs_linetable,
-			 struct lwsac **linetable_head)
+aws_lws_fts_cache_chunktable(struct aws_lws_fts_file *jtf, uint32_t ofs_linetable,
+			 struct aws_lwsac **linetable_head)
 {
 	struct linetable *lt, *first = NULL, **prev = NULL;
 	unsigned char buf[8];
@@ -249,7 +249,7 @@ lws_fts_cache_chunktable(struct lws_fts_file *jtf, uint32_t ofs_linetable,
 	do {
 		grab(ofs_linetable, sizeof(buf));
 
-		lt = lwsac_use(linetable_head, sizeof(*lt), 0);
+		lt = aws_lwsac_use(linetable_head, sizeof(*lt), 0);
 		if (!lt)
 			goto bail;
 		if (!first)
@@ -275,13 +275,13 @@ lws_fts_cache_chunktable(struct lws_fts_file *jtf, uint32_t ofs_linetable,
 	return first;
 
 bail:
-	lwsac_free(linetable_head);
+	aws_lwsac_free(linetable_head);
 
 	return NULL;
 }
 
 static int
-lws_fts_getfileoffset(struct lws_fts_file *jtf, struct linetable *ltstart,
+aws_lws_fts_getfileoffset(struct aws_lws_fts_file *jtf, struct linetable *ltstart,
 		      int line, off_t *_ofs)
 {
 	struct linetable *lt = ltstart;
@@ -325,18 +325,18 @@ lws_fts_getfileoffset(struct lws_fts_file *jtf, struct linetable *ltstart,
 	return 0;
 
 bail:
-	lwsl_info("%s: bail %d\n", __func__, line);
+	aws_lwsl_info("%s: bail %d\n", __func__, line);
 
 	return 1;
 }
 
 static int
-ac_record(struct lws_fts_file *jtf, struct lwsac **results_head,
+ac_record(struct aws_lws_fts_file *jtf, struct aws_lwsac **results_head,
 	  const char *needle, int pos, struct wac *s, int sp,
 	  uint32_t instances, uint32_t agg_instances, uint32_t children,
-	  struct lws_fts_result_autocomplete ***ppac)
+	  struct aws_lws_fts_result_autocomplete ***ppac)
 {
-	struct lws_fts_result_autocomplete *ac;
+	struct aws_lws_fts_result_autocomplete *ac;
 	int n, m;
 	char *p;
 
@@ -347,7 +347,7 @@ ac_record(struct lws_fts_file *jtf, struct lwsac **results_head,
 	for (n = 1; n <= sp; n++)
 		m += s[n].ch[s[n].child - 1].name_length;
 
-	ac = lwsac_use(results_head, sizeof(*ac) + (unsigned int)m + 1, 0);
+	ac = aws_lwsac_use(results_head, sizeof(*ac) + (unsigned int)m + 1, 0);
 	if (!ac)
 		return -1;
 
@@ -387,17 +387,17 @@ ac_record(struct lws_fts_file *jtf, struct lwsac **results_head,
 	return 0;
 }
 
-struct lws_fts_result *
-lws_fts_search(struct lws_fts_file *jtf, struct lws_fts_search_params *ftsp)
+struct aws_lws_fts_result *
+aws_lws_fts_search(struct aws_lws_fts_file *jtf, struct aws_lws_fts_search_params *ftsp)
 {
 	uint32_t children, instances, co, sl, agg, slt, chunk,
 		 fileofs_tif_start, desc, agg_instances;
 	int pos = 0, n, m, nl, bp, base = 0, ra, palm, budget, sp, ofd = -1;
-	unsigned long long tf = (unsigned long long)lws_now_usecs();
-	struct lws_fts_result_autocomplete **pac = NULL;
+	unsigned long long tf = (unsigned long long)aws_lws_now_usecs();
+	struct aws_lws_fts_result_autocomplete **pac = NULL;
 	char stasis, nac = 0, credible, needle[32];
-	struct lws_fts_result_filepath *fp;
-	struct lws_fts_result *result;
+	struct aws_lws_fts_result_filepath *fp;
+	struct aws_lws_fts_result *result;
 	unsigned char buf[4096];
 	off_t o, child_ofs;
 	struct wac s[128];
@@ -411,7 +411,7 @@ lws_fts_search(struct lws_fts_file *jtf, struct lws_fts_search_params *ftsp)
 	if ((size_t)nl > sizeof(needle) - 2)
 		return NULL;
 
-	result = lwsac_use(&ftsp->results_head, sizeof(*result), 0);
+	result = aws_lwsac_use(&ftsp->results_head, sizeof(*result), 0);
 	if (!result)
 		return NULL;
 
@@ -598,7 +598,7 @@ ensure:
 		}
 	} while(1);
 
-	result->duration_ms = (int)(((uint64_t)lws_now_usecs() - tf) / 1000);
+	result->duration_ms = (int)(((uint64_t)aws_lws_now_usecs() - tf) / 1000);
 
 	if (!instances && !children)
 		return result;
@@ -617,7 +617,7 @@ ensure:
 	do {
 		uint32_t fi, tot, line, ro, ofs_linetable, lines, fplen,
 			*u, _o;
-		struct lwsac *lt_head = NULL;
+		struct aws_lwsac *lt_head = NULL;
 		struct linetable *ltst;
 		char path[256], *pp;
 		int footprint;
@@ -635,23 +635,23 @@ ensure:
 		bp += rq32(&buf[bp], &fi);
 		bp += rq32(&buf[bp], &tot);
 
-		if (lws_fts_filepath(jtf, (int)fi, path, sizeof(path) - 1,
+		if (aws_lws_fts_filepath(jtf, (int)fi, path, sizeof(path) - 1,
 				     &ofs_linetable, &lines)) {
-			lwsl_err("can't get filepath index %d\n", fi);
+			aws_lwsl_err("can't get filepath index %d\n", fi);
 			goto bail;
 		}
 
 		if (ftsp->only_filepath && strcmp(path, ftsp->only_filepath))
 			continue;
 
-		ltst = lws_fts_cache_chunktable(jtf, ofs_linetable, &lt_head);
+		ltst = aws_lws_fts_cache_chunktable(jtf, ofs_linetable, &lt_head);
 		if (!ltst)
 			goto bail;
 
 		if (ftsp->flags & LWSFTS_F_QUERY_QUOTE_LINE) {
 			ofd = open(path, O_RDONLY);
 			if (ofd < 0) {
-				lwsac_free(&lt_head);
+				aws_lwsac_free(&lt_head);
 				goto bail;
 			}
 		}
@@ -667,9 +667,9 @@ ensure:
 				footprint += (int)(sizeof(void *) * tot);
 		}
 
-		fp = lwsac_use(&ftsp->results_head, (unsigned int)footprint, 0);
+		fp = aws_lwsac_use(&ftsp->results_head, (unsigned int)footprint, 0);
 		if (!fp) {
-			lwsac_free(&lt_head);
+			aws_lwsac_free(&lt_head);
 			goto bail;
 		}
 
@@ -703,7 +703,7 @@ ensure:
 				bp += rq32(&buf[bp], &line);
 				*u++ = line;
 
-				if (lws_fts_getfileoffset(jtf, ltst, (int)line, &fo))
+				if (aws_lws_fts_getfileoffset(jtf, ltst, (int)line, &fo))
 					continue;
 
 				*u++ = (uint32_t)fo;
@@ -721,20 +721,20 @@ ensure:
 
 				p = (unsigned char *)strchr((char *)lbuf, '\n');
 				if (p)
-					m = lws_ptr_diff(p, lbuf);
+					m = aws_lws_ptr_diff(p, lbuf);
 				lbuf[m] = '\0';
 				p = (unsigned char *)strchr((char *)lbuf, '\r');
 				if (p)
-					m = lws_ptr_diff(p, lbuf);
+					m = aws_lws_ptr_diff(p, lbuf);
 				lbuf[m] = '\0';
 
-				lws_json_purify(ebuf, (const char *)lbuf,
+				aws_lws_json_purify(ebuf, (const char *)lbuf,
 						sizeof(ebuf) - 1, NULL);
 				m = (int)strlen(ebuf);
 
-				p = lwsac_use(&ftsp->results_head, (unsigned int)m + 1, 0);
+				p = aws_lwsac_use(&ftsp->results_head, (unsigned int)m + 1, 0);
 				if (!p) {
-					lwsac_free(&lt_head);
+					aws_lwsac_free(&lt_head);
 					goto bail;
 				}
 
@@ -755,7 +755,7 @@ ensure:
 			ofd = -1;
 		}
 
-		lwsac_free(&lt_head);
+		aws_lwsac_free(&lt_head);
 
 		if (ftsp->only_filepath)
 			break;
@@ -765,7 +765,7 @@ ensure:
 	/* sort the instance file list by results density */
 
 	do {
-		struct lws_fts_result_filepath **prf, *rf1, *rf2;
+		struct aws_lws_fts_result_filepath **prf, *rf1, *rf2;
 
 		stasis = 1;
 
@@ -933,8 +933,8 @@ autocomp:
 		nobump = 0;
 		n = sp - 1;
 		while (n >= 0) {
-			struct lws_fts_result_autocomplete *ac =
-				(struct lws_fts_result_autocomplete *)pac;
+			struct aws_lws_fts_result_autocomplete *ac =
+				(struct aws_lws_fts_result_autocomplete *)pac;
 
 			if (s[n].child < s[n].child_count &&
 			    s[n].ch[s[n].child - 1].child_agg <
@@ -967,7 +967,7 @@ autocomp:
 	/* let's do a final sort into agg order */
 
 	do {
-		struct lws_fts_result_autocomplete *ac1, *ac2;
+		struct aws_lws_fts_result_autocomplete *ac1, *ac2;
 
 		stasis = 1;
 
@@ -998,7 +998,7 @@ bail:
 	if (ofd >= 0)
 		close(ofd);
 
-	lwsl_info("%s: search ended up at bail\n", __func__);
+	aws_lwsl_info("%s: search ended up at bail\n", __func__);
 
 	return result;
 }

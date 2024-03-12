@@ -24,39 +24,39 @@
 
 #include "private-lib-core.h"
 
-typedef struct lws_map_hashtable {
-	struct lws_map			*map_owner; /* so items can find map */
-	lws_dll2_owner_t		ho;
-} lws_map_hashtable_t;
+typedef struct aws_lws_map_hashtable {
+	struct aws_lws_map			*map_owner; /* so items can find map */
+	aws_lws_dll2_owner_t		ho;
+} aws_lws_map_hashtable_t;
 
-typedef struct lws_map {
-	lws_map_info_t			info;
+typedef struct aws_lws_map {
+	aws_lws_map_info_t			info;
 
-	/* array of info.modulo x lws_map_hashtable_t overallocated */
-} lws_map_t;
+	/* array of info.modulo x aws_lws_map_hashtable_t overallocated */
+} aws_lws_map_t;
 
-typedef struct lws_map_item {
-	lws_dll2_t			list; /* owned by hashtable */
+typedef struct aws_lws_map_item {
+	aws_lws_dll2_t			list; /* owned by hashtable */
 
 	size_t				keylen;
 	size_t				valuelen;
 
 	/* key then value is overallocated */
-} lws_map_item_t;
+} aws_lws_map_item_t;
 
 /*
- * lwsac-aware allocator
+ * aws_lwsac-aware allocator
  */
 
 void *
-lws_map_alloc_lwsac(struct lws_map *map, size_t x)
+aws_lws_map_alloc_lwsac(struct aws_lws_map *map, size_t x)
 {
-	return lwsac_use((struct lwsac **)map->info.opaque, x,
+	return aws_lwsac_use((struct aws_lwsac **)map->info.opaque, x,
 					(size_t)map->info.aux);
 }
 
 void
-lws_map_free_lwsac(void *v)
+aws_lws_map_free_lwsac(void *v)
 {
 }
 
@@ -65,15 +65,15 @@ lws_map_free_lwsac(void *v)
  */
 
 void *
-lws_map_alloc_lws_malloc(struct lws_map *mo, size_t x)
+aws_lws_map_alloc_lws_malloc(struct aws_lws_map *mo, size_t x)
 {
-	return lws_malloc(x, __func__);
+	return aws_lws_malloc(x, __func__);
 }
 
 void
-lws_map_free_lws_free(void *v)
+aws_lws_map_free_lws_free(void *v)
 {
-	lws_free(v);
+	aws_lws_free(v);
 }
 
 /*
@@ -81,10 +81,10 @@ lws_map_free_lws_free(void *v)
  * security at all.
  */
 
-lws_map_hash_t
-lws_map_hash_from_key_default(const lws_map_key_t key, size_t kl)
+aws_lws_map_hash_t
+aws_lws_map_hash_from_key_default(const aws_lws_map_key_t key, size_t kl)
 {
-	lws_map_hash_t h = 0x12345678;
+	aws_lws_map_hash_t h = 0x12345678;
 	const uint8_t *u = (const uint8_t *)key;
 
 	while (kl--)
@@ -94,8 +94,8 @@ lws_map_hash_from_key_default(const lws_map_key_t key, size_t kl)
 }
 
 int
-lws_map_compare_key_default(const lws_map_key_t key1, size_t kl1,
-			    const lws_map_value_t key2, size_t kl2)
+aws_lws_map_compare_key_default(const aws_lws_map_key_t key1, size_t kl1,
+			    const aws_lws_map_value_t key2, size_t kl2)
 {
 	if (kl1 != kl2)
 		return 1;
@@ -103,23 +103,23 @@ lws_map_compare_key_default(const lws_map_key_t key1, size_t kl1,
 	return memcmp(key1, key2, kl1);
 }
 
-lws_map_t *
-lws_map_create(const lws_map_info_t *info)
+aws_lws_map_t *
+aws_lws_map_create(const aws_lws_map_info_t *info)
 {
-	lws_map_t *map;
-	lws_map_alloc_t a = info->_alloc;
+	aws_lws_map_t *map;
+	aws_lws_map_alloc_t a = info->_alloc;
 	size_t modulo = info->modulo;
-	lws_map_hashtable_t *ht;
+	aws_lws_map_hashtable_t *ht;
 	size_t size;
 
 	if (!a)
-		a = lws_map_alloc_lws_malloc;
+		a = aws_lws_map_alloc_lws_malloc;
 
 	if (!modulo)
 		modulo = 8;
 
-	size = sizeof(*map) + (modulo * sizeof(lws_map_hashtable_t));
-	map = lws_malloc(size, __func__);
+	size = sizeof(*map) + (modulo * sizeof(aws_lws_map_hashtable_t));
+	map = aws_lws_malloc(size, __func__);
 	if (!map)
 		return NULL;
 
@@ -130,13 +130,13 @@ lws_map_create(const lws_map_info_t *info)
 	map->info._alloc = a;
 	map->info.modulo = modulo;
 	if (!info->_free)
-		map->info._free = lws_map_free_lws_free;
+		map->info._free = aws_lws_map_free_lws_free;
 	if (!info->_hash)
-		map->info._hash = lws_map_hash_from_key_default;
+		map->info._hash = aws_lws_map_hash_from_key_default;
 	if (!info->_compare)
-		map->info._compare = lws_map_compare_key_default;
+		map->info._compare = aws_lws_map_compare_key_default;
 
-	ht = (lws_map_hashtable_t *)&map[1];
+	ht = (aws_lws_map_hashtable_t *)&map[1];
 	while (modulo--)
 		ht[modulo].map_owner = map;
 
@@ -144,57 +144,57 @@ lws_map_create(const lws_map_info_t *info)
 }
 
 static int
-ho_free_item(struct lws_dll2 *d, void *user)
+ho_free_item(struct aws_lws_dll2 *d, void *user)
 {
-	lws_map_item_t *i = lws_container_of(d, lws_map_item_t, list);
+	aws_lws_map_item_t *i = aws_lws_container_of(d, aws_lws_map_item_t, list);
 
-	lws_map_item_destroy(i);
+	aws_lws_map_item_destroy(i);
 
 	return 0;
 }
 
 void
-lws_map_destroy(lws_map_t **pmap)
+aws_lws_map_destroy(aws_lws_map_t **pmap)
 {
-	lws_map_hashtable_t *ht;
-	lws_map_t *map = *pmap;
+	aws_lws_map_hashtable_t *ht;
+	aws_lws_map_t *map = *pmap;
 
 	if (!map)
 		return;
 
 	/* empty out all the hashtables */
 
-	ht = (lws_map_hashtable_t *)&(map[1]);
+	ht = (aws_lws_map_hashtable_t *)&(map[1]);
 	while (map->info.modulo--) {
-		lws_dll2_foreach_safe(&ht->ho, ht, ho_free_item);
+		aws_lws_dll2_foreach_safe(&ht->ho, ht, ho_free_item);
 		ht++;
 	}
 
 	/* free the map itself */
 
-	lws_free_set_NULL(*pmap);
+	aws_lws_free_set_NULL(*pmap);
 }
 
-lws_map_item_t *
-lws_map_item_create(lws_map_t *map,
-		    const lws_map_key_t key, size_t keylen,
-		    const lws_map_value_t value, size_t valuelen)
+aws_lws_map_item_t *
+aws_lws_map_item_create(aws_lws_map_t *map,
+		    const aws_lws_map_key_t key, size_t keylen,
+		    const aws_lws_map_value_t value, size_t valuelen)
 {
-	lws_map_hashtable_t *ht;
-	lws_map_item_t *item;
-	lws_map_hash_t h;
+	aws_lws_map_hashtable_t *ht;
+	aws_lws_map_item_t *item;
+	aws_lws_map_hash_t h;
 	size_t hti;
 	uint8_t *u;
 
-	item = lws_map_item_lookup(map, key, keylen);
+	item = aws_lws_map_item_lookup(map, key, keylen);
 	if (item)
-		lws_map_item_destroy(item);
+		aws_lws_map_item_destroy(item);
 
 	item = map->info._alloc(map, sizeof(*item) + keylen + valuelen);
 	if (!item)
 		return NULL;
 
-	lws_dll2_clear(&item->list);
+	aws_lws_dll2_clear(&item->list);
 	item->keylen = keylen;
 	item->valuelen = valuelen;
 
@@ -207,60 +207,60 @@ lws_map_item_create(lws_map_t *map,
 	h = map->info._hash(key, keylen);
 
 	hti = h % map->info.modulo;
-	ht = (lws_map_hashtable_t *)&map[1];
+	ht = (aws_lws_map_hashtable_t *)&map[1];
 
-	lws_dll2_add_head(&item->list, &ht[hti].ho);
+	aws_lws_dll2_add_head(&item->list, &ht[hti].ho);
 
 	return item;
 }
 
 void
-lws_map_item_destroy(lws_map_item_t *item)
+aws_lws_map_item_destroy(aws_lws_map_item_t *item)
 {
-	lws_map_hashtable_t *ht = lws_container_of(item->list.owner,
-						   lws_map_hashtable_t, ho);
+	aws_lws_map_hashtable_t *ht = aws_lws_container_of(item->list.owner,
+						   aws_lws_map_hashtable_t, ho);
 
-	lws_dll2_remove(&item->list);
+	aws_lws_dll2_remove(&item->list);
 	ht->map_owner->info._free(item);
 }
 
-lws_map_item_t *
-lws_map_item_lookup(lws_map_t *map, const lws_map_key_t key, size_t keylen)
+aws_lws_map_item_t *
+aws_lws_map_item_lookup(aws_lws_map_t *map, const aws_lws_map_key_t key, size_t keylen)
 {
-	lws_map_hash_t h = map->info._hash(key, keylen);
-	lws_map_hashtable_t *ht = (lws_map_hashtable_t *)&map[1];
+	aws_lws_map_hash_t h = map->info._hash(key, keylen);
+	aws_lws_map_hashtable_t *ht = (aws_lws_map_hashtable_t *)&map[1];
 
-	lws_start_foreach_dll(struct lws_dll2 *, p,
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p,
 			      ht[h % map->info.modulo].ho.head) {
-		lws_map_item_t *i = lws_container_of(p, lws_map_item_t, list);
+		aws_lws_map_item_t *i = aws_lws_container_of(p, aws_lws_map_item_t, list);
 
 		if (!map->info._compare(key, keylen, &i[1], i->keylen))
 			return i;
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	return NULL;
 }
 
 const void *
-lws_map_item_key(lws_map_item_t *_item)
+aws_lws_map_item_key(aws_lws_map_item_t *_item)
 {
 	return ((void *)&_item[1]);
 }
 
 const void *
-lws_map_item_value(lws_map_item_t *_item)
+aws_lws_map_item_value(aws_lws_map_item_t *_item)
 {
 	return (void *)(((uint8_t *)&_item[1]) + _item->keylen);
 }
 
 size_t
-lws_map_item_key_len(lws_map_item_t *_item)
+aws_lws_map_item_key_len(aws_lws_map_item_t *_item)
 {
 	return _item->keylen;
 }
 
 size_t
-lws_map_item_value_len(lws_map_item_t *_item)
+aws_lws_map_item_value_len(aws_lws_map_item_t *_item)
 {
 	return _item->valuelen;
 }

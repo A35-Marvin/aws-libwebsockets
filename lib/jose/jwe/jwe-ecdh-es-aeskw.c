@@ -196,20 +196,20 @@
  */
 
 static int
-lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
+aws_lws_jwe_encrypt_ecdh(struct aws_lws_jwe *jwe, char *temp, int *temp_len,
 		     uint8_t *cek)
 {
 	uint8_t shared_secret[LWS_JWE_LIMIT_KEY_ELEMENT_BYTES],
 		derived[LWS_JWE_LIMIT_KEY_ELEMENT_BYTES];
 	int m, n, ret = -1, ot = *temp_len, ss_len = sizeof(shared_secret),
-	  //  kw_hlen = lws_genhash_size(jwe->jose.alg->hash_type),
-	    enc_hlen = (int)lws_genhmac_size(jwe->jose.enc_alg->hmac_type),
+	  //  kw_hlen = aws_lws_genhash_size(jwe->jose.alg->hash_type),
+	    enc_hlen = (int)aws_lws_genhmac_size(jwe->jose.enc_alg->hmac_type),
 	    ekbytes = 32; //jwe->jose.alg->keybits_fixed / 8;
-	struct lws_genec_ctx ecctx;
-	struct lws_jwk *ephem = &jwe->jose.recipient[jwe->recip].jwk_ephemeral;
+	struct aws_lws_genec_ctx ecctx;
+	struct aws_lws_jwk *ephem = &jwe->jose.recipient[jwe->recip].jwk_ephemeral;
 
 	if (jwe->jws.jwk->kty != LWS_GENCRYPTO_KTY_EC) {
-		lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
+		aws_lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
 
 		return -1;
 	}
@@ -219,25 +219,25 @@ lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
 
 	/* Generate jose.jwk_ephemeral on the peer public key curve */
 
-	if (lws_genecdh_create(&ecctx, jwe->jws.context, NULL))
+	if (aws_lws_genecdh_create(&ecctx, jwe->jws.context, NULL))
 		goto bail;
 
 	/* ephemeral context gets random key on same curve as recip pubkey */
-	if (lws_genecdh_new_keypair(&ecctx, LDHS_OURS, (const char *)
+	if (aws_lws_genecdh_new_keypair(&ecctx, LDHS_OURS, (const char *)
 				jwe->jws.jwk->e[LWS_GENCRYPTO_EC_KEYEL_CRV].buf,
 				ephem->e))
 		goto bail;
 
 	/* peer context gets js->jwk key */
-	if (lws_genecdh_set_key(&ecctx, jwe->jws.jwk->e, LDHS_THEIRS)) {
-		lwsl_err("%s: setting peer pubkey failed\n", __func__);
+	if (aws_lws_genecdh_set_key(&ecctx, jwe->jws.jwk->e, LDHS_THEIRS)) {
+		aws_lwsl_err("%s: setting peer pubkey failed\n", __func__);
 		goto bail;
 	}
 
 	/* combine our ephemeral key and the peer pubkey to get the secret */
 
-	if (lws_genecdh_compute_shared_secret(&ecctx, shared_secret, &ss_len)) {
-		lwsl_notice("%s: lws_genecdh_compute_shared_secret failed\n",
+	if (aws_lws_genecdh_compute_shared_secret(&ecctx, shared_secret, &ss_len)) {
+		aws_lwsl_notice("%s: aws_lws_genecdh_compute_shared_secret failed\n",
 				__func__);
 
 		goto bail;
@@ -249,9 +249,9 @@ lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
 	 * can publish it with the JWE as "epk".
 	 */
 
-	lws_explicit_bzero(ephem->e[LWS_GENCRYPTO_EC_KEYEL_D].buf,
+	aws_lws_explicit_bzero(ephem->e[LWS_GENCRYPTO_EC_KEYEL_D].buf,
 			   ephem->e[LWS_GENCRYPTO_EC_KEYEL_D].len);
-	lws_free_set_NULL(ephem->e[LWS_GENCRYPTO_EC_KEYEL_D].buf);
+	aws_lws_free_set_NULL(ephem->e[LWS_GENCRYPTO_EC_KEYEL_D].buf);
 	ephem->e[LWS_GENCRYPTO_EC_KEYEL_D].len = 0;
 	ephem->private_key = 0;
 
@@ -263,17 +263,17 @@ lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
 	 * key of the same length as that used by the "enc" algorithm.
 	 */
 
-	if (lws_jwa_concat_kdf(jwe,
+	if (aws_lws_jwa_concat_kdf(jwe,
 			jwe->jose.alg->algtype_crypto == LWS_JOSE_ENCTYPE_NONE,
 			derived, shared_secret, ss_len)) {
-		lwsl_notice("%s: lws_jwa_concat_kdf failed\n", __func__);
+		aws_lwsl_notice("%s: aws_lws_jwa_concat_kdf failed\n", __func__);
 
 		goto bail;
 	}
 
 	/* in P-521 case, we get a 66-byte shared secret for a 64-byte key */
 	if (ss_len < enc_hlen) {
-		lwsl_err("%s: concat KDF bad derived key len %d\n", __func__,
+		aws_lwsl_err("%s: concat KDF bad derived key len %d\n", __func__,
 			 ss_len);
 		goto bail;
 	}
@@ -288,14 +288,14 @@ lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
 	 */
 
 	if (jwe->jose.alg->algtype_crypto != LWS_JOSE_ENCTYPE_NONE) {
-		struct lws_gencrypto_keyelem el;
-		struct lws_genaes_ctx aesctx;
+		struct aws_lws_gencrypto_keyelem el;
+		struct aws_lws_genaes_ctx aesctx;
 
 		/* generate the actual CEK in cek */
 
-		if (lws_get_random(jwe->jws.context, cek, (unsigned int)enc_hlen) !=
+		if (aws_lws_get_random(jwe->jws.context, cek, (unsigned int)enc_hlen) !=
 							(size_t)enc_hlen) {
-			lwsl_err("Problem getting random\n");
+			aws_lwsl_err("Problem getting random\n");
 			goto bail;
 		}
 
@@ -304,25 +304,25 @@ lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
 		el.buf = derived;
 		el.len = (unsigned int)enc_hlen / 2;
 
-		if (lws_genaes_create(&aesctx, LWS_GAESO_ENC, LWS_GAESM_KW, &el,
+		if (aws_lws_genaes_create(&aesctx, LWS_GAESO_ENC, LWS_GAESM_KW, &el,
 					1, NULL)) {
 
-			lwsl_notice("%s: lws_genaes_create\n", __func__);
+			aws_lwsl_notice("%s: lws_genaes_create\n", __func__);
 			goto bail;
 		}
 
 		/* wrap CEK into EKEY */
 
-		n = lws_genaes_crypt(&aesctx, cek, (unsigned int)enc_hlen,
+		n = aws_lws_genaes_crypt(&aesctx, cek, (unsigned int)enc_hlen,
 				     (void *)jwe->jws.map.buf[LJWE_EKEY],
 				     NULL, NULL, NULL, 0);
-		m = lws_genaes_destroy(&aesctx, NULL, 0);
+		m = aws_lws_genaes_destroy(&aesctx, NULL, 0);
 		if (n < 0) {
-			lwsl_err("%s: encrypt cek fail\n", __func__);
+			aws_lwsl_err("%s: encrypt cek fail\n", __func__);
 			goto bail;
 		}
 		if (m < 0) {
-			lwsl_err("%s: lws_genaes_destroy fail\n", __func__);
+			aws_lwsl_err("%s: aws_lws_genaes_destroy fail\n", __func__);
 			goto bail;
 		}
 
@@ -337,26 +337,26 @@ lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
 
 	jwe->jws.map.buf[LJWE_JOSE] = temp;
 
-	m = n = lws_snprintf(temp, (size_t)*temp_len,
+	m = n = aws_lws_snprintf(temp, (size_t)*temp_len,
 			     "{\"alg\":\"%s\", \"enc\":\"%s\", \"epk\":",
 			     jwe->jose.alg->alg, jwe->jose.enc_alg->alg);
 	*temp_len -= n;
 
-	n = lws_jwk_export(ephem, 0, temp + (ot - *temp_len), temp_len);
+	n = aws_lws_jwk_export(ephem, 0, temp + (ot - *temp_len), temp_len);
 	if (n < 0) {
-		lwsl_err("%s: ephemeral export failed\n", __func__);
+		aws_lwsl_err("%s: ephemeral export failed\n", __func__);
 		goto bail;
 	}
 	m += n;
 
-	n = lws_snprintf(temp + (ot - *temp_len), (size_t)*temp_len, "}");
+	n = aws_lws_snprintf(temp + (ot - *temp_len), (size_t)*temp_len, "}");
 	*temp_len -= n + 1;
 	m += n;
 	jwe->jws.map.len[LJWE_JOSE] = (unsigned int)m;
 
 	/* create a b64 version of the JOSE header, needed later for AAD */
 
-	if (lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
+	if (aws_lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
 				       temp + (ot - *temp_len), temp_len,
 				       jwe->jws.map.buf[LJWE_JOSE],
 				       jwe->jws.map.len[LJWE_JOSE]))
@@ -365,20 +365,20 @@ lws_jwe_encrypt_ecdh(struct lws_jwe *jwe, char *temp, int *temp_len,
 	ret = enc_hlen;
 
 bail:
-	lws_genec_destroy(&ecctx);
+	aws_lws_genec_destroy(&ecctx);
 
 	/* cleanse the shared secret (watch out for cek at parent too) */
-	lws_explicit_bzero(shared_secret, (unsigned int)ekbytes);
-	lws_explicit_bzero(derived, (unsigned int)ekbytes);
+	aws_lws_explicit_bzero(shared_secret, (unsigned int)ekbytes);
+	aws_lws_explicit_bzero(derived, (unsigned int)ekbytes);
 
 	return ret;
 }
 
 int
-lws_jwe_encrypt_ecdh_cbc_hs(struct lws_jwe *jwe, char *temp, int *temp_len)
+aws_lws_jwe_encrypt_ecdh_cbc_hs(struct aws_lws_jwe *jwe, char *temp, int *temp_len)
 {
-	int ss_len, // kw_hlen = lws_genhash_size(jwe->jose.alg->hash_type),
-	    enc_hlen = (int)lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
+	int ss_len, // kw_hlen = aws_lws_genhash_size(jwe->jose.alg->hash_type),
+	    enc_hlen = (int)aws_lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
 	uint8_t cek[LWS_JWE_LIMIT_KEY_ELEMENT_BYTES];
 	int ekbytes = jwe->jose.alg->keybits_fixed / 8;
 	int n, ot = *temp_len, ret = -1;
@@ -386,7 +386,7 @@ lws_jwe_encrypt_ecdh_cbc_hs(struct lws_jwe *jwe, char *temp, int *temp_len)
 	/* if we will produce an EKEY, make space for it */
 
 	if (jwe->jose.alg->algtype_crypto != LWS_JOSE_ENCTYPE_NONE) {
-		if (lws_jws_alloc_element(&jwe->jws.map, LJWE_EKEY,
+		if (aws_lws_jws_alloc_element(&jwe->jws.map, LJWE_EKEY,
 					  temp + (ot - *temp_len), temp_len,
 					  (unsigned int)enc_hlen + 8, 0))
 			goto bail;
@@ -394,9 +394,9 @@ lws_jwe_encrypt_ecdh_cbc_hs(struct lws_jwe *jwe, char *temp, int *temp_len)
 
 	/* decrypt the CEK */
 
-	ss_len = lws_jwe_encrypt_ecdh(jwe, temp + (ot - *temp_len), temp_len, cek);
+	ss_len = aws_lws_jwe_encrypt_ecdh(jwe, temp + (ot - *temp_len), temp_len, cek);
 	if (ss_len < 0) {
-		lwsl_err("%s: lws_jwe_encrypt_ecdh failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_encrypt_ecdh failed\n", __func__);
 		return -1;
 	}
 
@@ -404,12 +404,12 @@ lws_jwe_encrypt_ecdh_cbc_hs(struct lws_jwe *jwe, char *temp, int *temp_len)
 
 	/* make space for the payload encryption pieces */
 
-	if (lws_jws_alloc_element(&jwe->jws.map, LJWE_ATAG,
+	if (aws_lws_jws_alloc_element(&jwe->jws.map, LJWE_ATAG,
 				  temp + (ot - *temp_len),
 				  temp_len, (unsigned int)enc_hlen / 2, 0))
 		goto bail;
 
-	if (lws_jws_alloc_element(&jwe->jws.map, LJWE_IV,
+	if (aws_lws_jws_alloc_element(&jwe->jws.map, LJWE_IV,
 				  temp + (ot - *temp_len),
 				  temp_len, LWS_JWE_AES_IV_BYTES, 0))
 		goto bail;
@@ -417,11 +417,11 @@ lws_jwe_encrypt_ecdh_cbc_hs(struct lws_jwe *jwe, char *temp, int *temp_len)
 	/* Perform the authenticated encryption on CTXT...
 	 * ...the AAD is b64u(protected JOSE header) */
 
-	n = lws_jwe_encrypt_cbc_hs(jwe, cek,
+	n = aws_lws_jwe_encrypt_cbc_hs(jwe, cek,
 				   (uint8_t *)jwe->jws.map_b64.buf[LJWE_JOSE],
 				   (int)jwe->jws.map_b64.len[LJWE_JOSE]);
 	if (n < 0) {
-		lwsl_notice("%s: lws_jwe_encrypt_cbc_hs failed\n", __func__);
+		aws_lwsl_notice("%s: aws_lws_jwe_encrypt_cbc_hs failed\n", __func__);
 		goto bail;
 	}
 
@@ -431,12 +431,12 @@ bail:
 	/* if fail or direct CEK, cleanse and remove EKEY */
 	if (ret || jwe->jose.enc_alg->algtype_crypto == LWS_JOSE_ENCTYPE_NONE) {
 		if (jwe->jws.map.len[LJWE_EKEY])
-			lws_explicit_bzero((void *)jwe->jws.map.buf[LJWE_EKEY],
+			aws_lws_explicit_bzero((void *)jwe->jws.map.buf[LJWE_EKEY],
 					   jwe->jws.map.len[LJWE_EKEY]);
 		jwe->jws.map.len[LJWE_EKEY] = 0;
 	}
 
-	lws_explicit_bzero(cek, (unsigned int)ekbytes);
+	aws_lws_explicit_bzero(cek, (unsigned int)ekbytes);
 
 	return ret;
 }
@@ -450,24 +450,24 @@ bail:
  */
 
 static int
-lws_jwe_auth_and_decrypt_ecdh(struct lws_jwe *jwe)
+aws_lws_jwe_auth_and_decrypt_ecdh(struct aws_lws_jwe *jwe)
 {
 	uint8_t shared_secret[LWS_JWE_LIMIT_KEY_ELEMENT_BYTES],
 		derived[LWS_JWE_LIMIT_KEY_ELEMENT_BYTES];
 	int ekbytes = jwe->jose.enc_alg->keybits_fixed / 8,
-		      enc_hlen = (int)lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
-	struct lws_genec_ctx ecctx;
+		      enc_hlen = (int)aws_lws_genhmac_size(jwe->jose.enc_alg->hmac_type);
+	struct aws_lws_genec_ctx ecctx;
 	int n, ret = -1, ss_len = sizeof(shared_secret);
 
 	if (jwe->jws.jwk->kty != LWS_GENCRYPTO_KTY_EC) {
-		lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
+		aws_lwsl_err("%s: unexpected kty %d\n", __func__, jwe->jws.jwk->kty);
 
 		return -1;
 	}
 
 	if (jwe->jose.recipient[jwe->recip].jwk_ephemeral.kty !=
 			LWS_GENCRYPTO_KTY_EC) {
-		lwsl_err("%s: missing epk\n", __func__);
+		aws_lwsl_err("%s: missing epk\n", __func__);
 
 		return -1;
 	}
@@ -482,37 +482,37 @@ lws_jwe_auth_and_decrypt_ecdh(struct lws_jwe *jwe)
 
 	/* Generate jose.jwk_ephemeral on the peer public key curve */
 
-	if (lws_genecdh_create(&ecctx, jwe->jws.context, NULL))
+	if (aws_lws_genecdh_create(&ecctx, jwe->jws.context, NULL))
 		goto bail;
 
 	/* Load our private key into our side of the ecdh context */
 
-	if (lws_genecdh_set_key(&ecctx, jwe->jws.jwk->e, LDHS_OURS)) {
-		lwsl_err("%s: setting our private key failed\n", __func__);
+	if (aws_lws_genecdh_set_key(&ecctx, jwe->jws.jwk->e, LDHS_OURS)) {
+		aws_lwsl_err("%s: setting our private key failed\n", __func__);
 		goto bail;
 	}
 
 	/* Import the ephemeral public key into the peer side */
-	if (lws_genecdh_set_key(&ecctx,
+	if (aws_lws_genecdh_set_key(&ecctx,
 			jwe->jose.recipient[jwe->recip].jwk_ephemeral.e,
 			LDHS_THEIRS)) {
-		lwsl_err("%s: setting epk pubkey failed\n", __func__);
+		aws_lwsl_err("%s: setting epk pubkey failed\n", __func__);
 		goto bail;
 	}
 
 	/* combine their ephemeral key and our private key to get the secret */
 
-	if (lws_genecdh_compute_shared_secret(&ecctx, shared_secret, &ss_len)) {
-		lwsl_notice("%s: lws_genecdh_compute_shared_secret failed\n",
+	if (aws_lws_genecdh_compute_shared_secret(&ecctx, shared_secret, &ss_len)) {
+		aws_lwsl_notice("%s: aws_lws_genecdh_compute_shared_secret failed\n",
 				__func__);
 
 		goto bail;
 	}
 
-	lws_genec_destroy(&ecctx);
+	aws_lws_genec_destroy(&ecctx);
 
 	if (ss_len < enc_hlen) {
-		lwsl_err("%s: ss_len %d ekbytes %d\n", __func__, ss_len, enc_hlen);
+		aws_lwsl_err("%s: ss_len %d ekbytes %d\n", __func__, ss_len, enc_hlen);
 		goto bail;
 	}
 
@@ -521,10 +521,10 @@ lws_jwe_auth_and_decrypt_ecdh(struct lws_jwe *jwe)
 	 * cek[] matches bitcount in jwe->jose.enc_alg->keybits_fixed
 	 */
 
-	if (lws_jwa_concat_kdf(jwe,
+	if (aws_lws_jwa_concat_kdf(jwe,
 			jwe->jose.alg->algtype_crypto == LWS_JOSE_ENCTYPE_NONE,
 			derived, shared_secret, ss_len)) {
-		lwsl_notice("%s: lws_jwa_concat_kdf failed\n", __func__);
+		aws_lwsl_notice("%s: aws_lws_jwa_concat_kdf failed\n", __func__);
 
 		goto bail;
 	}
@@ -536,14 +536,14 @@ lws_jwe_auth_and_decrypt_ecdh(struct lws_jwe *jwe)
 	 */
 
 	if (jwe->jose.alg->algtype_crypto != LWS_JOSE_ENCTYPE_NONE) {
-		struct lws_gencrypto_keyelem el;
-		struct lws_genaes_ctx aesctx;
+		struct aws_lws_gencrypto_keyelem el;
+		struct aws_lws_genaes_ctx aesctx;
 		int m;
 
 		/* Confirm space for EKEY */
 
 		if (jwe->jws.map.len[LJWE_EKEY] < (unsigned int)enc_hlen) {
-			lwsl_err("%s: missing EKEY\n", __func__);
+			aws_lwsl_err("%s: missing EKEY\n", __func__);
 
 			goto bail;
 		}
@@ -553,27 +553,27 @@ lws_jwe_auth_and_decrypt_ecdh(struct lws_jwe *jwe)
 		el.buf = derived;
 		el.len = (unsigned int)enc_hlen / 2;
 
-		if (lws_genaes_create(&aesctx, LWS_GAESO_DEC, LWS_GAESM_KW,
+		if (aws_lws_genaes_create(&aesctx, LWS_GAESO_DEC, LWS_GAESM_KW,
 				      &el, 1, NULL)) {
 
-			lwsl_notice("%s: lws_genaes_create\n", __func__);
+			aws_lwsl_notice("%s: lws_genaes_create\n", __func__);
 			goto bail;
 		}
 
 		/* decrypt the EKEY to end up with CEK in "shared_secret" */
 
-		n = lws_genaes_crypt(&aesctx,
+		n = aws_lws_genaes_crypt(&aesctx,
 				     (const uint8_t *)jwe->jws.map.buf[LJWE_EKEY],
 				     jwe->jws.map.len[LJWE_EKEY],
 				     (uint8_t *)shared_secret,
 				     NULL, NULL, NULL, 0);
-		m = lws_genaes_destroy(&aesctx, NULL, 0);
+		m = aws_lws_genaes_destroy(&aesctx, NULL, 0);
 		if (n < 0) {
-			lwsl_err("%s: decrypt cek fail\n", __func__);
+			aws_lwsl_err("%s: decrypt cek fail\n", __func__);
 			goto bail;
 		}
 		if (m < 0) {
-			lwsl_err("%s: lws_genaes_destroy fail\n", __func__);
+			aws_lwsl_err("%s: aws_lws_genaes_destroy fail\n", __func__);
 			goto bail;
 		}
 	} else
@@ -581,10 +581,10 @@ lws_jwe_auth_and_decrypt_ecdh(struct lws_jwe *jwe)
 
 	/* either way, the recovered CEK is in shared_secret */
 
-	if (lws_jwe_auth_and_decrypt_cbc_hs(jwe, shared_secret,
+	if (aws_lws_jwe_auth_and_decrypt_cbc_hs(jwe, shared_secret,
 			(uint8_t *)jwe->jws.map_b64.buf[LJWE_JOSE],
 			(int)jwe->jws.map_b64.len[LJWE_JOSE]) < 0) {
-		lwsl_err("%s: lws_jwe_auth_and_decrypt_cbc_hs fail\n", __func__);
+		aws_lwsl_err("%s: aws_lws_jwe_auth_and_decrypt_cbc_hs fail\n", __func__);
 		goto bail;
 	}
 
@@ -593,24 +593,24 @@ lws_jwe_auth_and_decrypt_ecdh(struct lws_jwe *jwe)
 
 bail:
 	/* cleanse wrapped on stack that contained the CEK / wrapped key */
-	lws_explicit_bzero(derived, (unsigned int)ekbytes);
+	aws_lws_explicit_bzero(derived, (unsigned int)ekbytes);
 	/* cleanse the shared secret */
-	lws_explicit_bzero(shared_secret, (unsigned int)ekbytes);
+	aws_lws_explicit_bzero(shared_secret, (unsigned int)ekbytes);
 
 	return ret;
 }
 
 int
-lws_jwe_auth_and_decrypt_ecdh_cbc_hs(struct lws_jwe *jwe,
+aws_lws_jwe_auth_and_decrypt_ecdh_cbc_hs(struct aws_lws_jwe *jwe,
 				     char *temp, int *temp_len)
 {
 	/* create a b64 version of the JOSE header, needed later for AAD */
 
-	if (lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
+	if (aws_lws_jws_encode_b64_element(&jwe->jws.map_b64, LJWE_JOSE,
 				       temp, temp_len,
 				       jwe->jws.map.buf[LJWE_JOSE],
 				       jwe->jws.map.len[LJWE_JOSE]))
 		return -1;
 
-	return lws_jwe_auth_and_decrypt_ecdh(jwe);
+	return aws_lws_jwe_auth_and_decrypt_ecdh(jwe);
 }

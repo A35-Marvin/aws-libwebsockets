@@ -27,7 +27,7 @@
 #include "private-lib-core.h"
 
 int
-lws_set_socks(struct lws_vhost *vhost, const char *socks)
+aws_lws_set_socks(struct aws_lws_vhost *vhost, const char *socks)
 {
 	char *p_at, *p_colon;
 	char user[96];
@@ -41,44 +41,44 @@ lws_set_socks(struct lws_vhost *vhost, const char *socks)
 
 	p_at = strrchr(socks, '@');
 	if (p_at) { /* auth is around */
-		if (lws_ptr_diff_size_t(p_at, socks) > (sizeof(user) +
+		if (aws_lws_ptr_diff_size_t(p_at, socks) > (sizeof(user) +
 							sizeof(password) - 2)) {
-			lwsl_vhost_err(vhost, "auth too long");
+			aws_lwsl_vhost_err(vhost, "auth too long");
 			goto bail;
 		}
 
 		p_colon = strchr(socks, ':');
 		if (p_colon) {
-			if (lws_ptr_diff_size_t(p_colon, socks) >
+			if (aws_lws_ptr_diff_size_t(p_colon, socks) >
 							     sizeof(user) - 1) {
-				lwsl_vhost_err(vhost, "user too long");
+				aws_lwsl_vhost_err(vhost, "user too long");
 				goto bail;
 			}
-			if (lws_ptr_diff_size_t(p_at, p_colon) >
+			if (aws_lws_ptr_diff_size_t(p_at, p_colon) >
 						         sizeof(password) - 1) {
-				lwsl_vhost_err(vhost, "pw too long");
+				aws_lwsl_vhost_err(vhost, "pw too long");
 				goto bail;
 			}
 
-			lws_strncpy(vhost->socks_user, socks,
-				    lws_ptr_diff_size_t(p_colon, socks) + 1);
-			lws_strncpy(vhost->socks_password, p_colon + 1,
-				lws_ptr_diff_size_t(p_at, (p_colon + 1)) + 1);
+			aws_lws_strncpy(vhost->socks_user, socks,
+				    aws_lws_ptr_diff_size_t(p_colon, socks) + 1);
+			aws_lws_strncpy(vhost->socks_password, p_colon + 1,
+				aws_lws_ptr_diff_size_t(p_at, (p_colon + 1)) + 1);
 		}
 
-		lwsl_vhost_info(vhost, " Socks auth, user: %s, password: %s",
+		aws_lwsl_vhost_info(vhost, " Socks auth, user: %s, password: %s",
 				       vhost->socks_user,
 				       vhost->socks_password);
 
 		socks = p_at + 1;
 	}
 
-	lws_strncpy(vhost->socks_proxy_address, socks,
+	aws_lws_strncpy(vhost->socks_proxy_address, socks,
 		    sizeof(vhost->socks_proxy_address));
 
 	p_colon = strchr(vhost->socks_proxy_address, ':');
 	if (!p_colon && !vhost->socks_proxy_port) {
-		lwsl_vhost_err(vhost, "socks_proxy needs to be address:port");
+		aws_lwsl_vhost_err(vhost, "socks_proxy needs to be address:port");
 
 		return -1;
 	}
@@ -88,7 +88,7 @@ lws_set_socks(struct lws_vhost *vhost, const char *socks)
 		vhost->socks_proxy_port = (unsigned int)atoi(p_colon + 1);
 	}
 
-	lwsl_vhost_debug(vhost, "Connections via Socks5 %s:%u",
+	aws_lwsl_vhost_debug(vhost, "Connections via Socks5 %s:%u",
 				vhost->socks_proxy_address,
 				vhost->socks_proxy_port);
 
@@ -99,11 +99,11 @@ bail:
 }
 
 int
-lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type,
+aws_lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type,
 			 ssize_t *msg_len)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	uint8_t *p = pt->serv_buf, *end = &p[context->pt_serv_buf_size];
 	ssize_t n, passwd_len;
 	short net_num;
@@ -111,7 +111,7 @@ lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type,
 
 	switch (type) {
 	case SOCKS_MSG_GREETING:
-		if (lws_ptr_diff(end, p) < 4)
+		if (aws_lws_ptr_diff(end, p) < 4)
 			return 1;
 		/* socks version, version 5 only */
 		*p++ = SOCKS_VERSION_5;
@@ -130,7 +130,7 @@ lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type,
 		if (n > 254 || passwd_len > 254)
 			return 1;
 
-		if (lws_ptr_diff(end, p) < 3 + n + passwd_len)
+		if (aws_lws_ptr_diff(end, p) < 3 + n + passwd_len)
 			return 1;
 
 		/* the subnegotiation version */
@@ -153,7 +153,7 @@ lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type,
 	case SOCKS_MSG_CONNECT:
 		n = (ssize_t)strlen(wsi->stash->cis[CIS_ADDRESS]);
 
-		if (n > 254 || lws_ptr_diff(end, p) < 5 + n + 2)
+		if (n > 254 || aws_lws_ptr_diff(end, p) < 5 + n + 2)
 			return 1;
 
 		cp = (char *)&net_num;
@@ -185,21 +185,21 @@ lws_socks5c_generate_msg(struct lws *wsi, enum socks_msg_type type,
 		return 1;
 	}
 
-	*msg_len = lws_ptr_diff(p, pt->serv_buf);
+	*msg_len = aws_lws_ptr_diff(p, pt->serv_buf);
 
 	return 0;
 }
 
 int
-lws_socks5c_ads_server(struct lws_vhost *vh,
-		      const struct lws_context_creation_info *info)
+aws_lws_socks5c_ads_server(struct aws_lws_vhost *vh,
+		      const struct aws_lws_context_creation_info *info)
 {
 	/* socks proxy */
 	if (info->socks_proxy_address) {
 		/* override for backwards compatibility */
 		if (info->socks_proxy_port)
 			vh->socks_proxy_port = info->socks_proxy_port;
-		lws_set_socks(vh, info->socks_proxy_address);
+		aws_lws_set_socks(vh, info->socks_proxy_address);
 
 		return 0;
 	}
@@ -208,7 +208,7 @@ lws_socks5c_ads_server(struct lws_vhost *vh,
 		char *p = getenv("socks_proxy");
 
 		if (p && strlen(p) > 0 && strlen(p) < 95)
-			lws_set_socks(vh, p);
+			aws_lws_set_socks(vh, p);
 	}
 #endif
 
@@ -220,9 +220,9 @@ lws_socks5c_ads_server(struct lws_vhost *vh,
  */
 
 int
-lws_socks5c_greet(struct lws *wsi, const char **pcce)
+aws_lws_socks5c_greet(struct lws *wsi, const char **pcce)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	ssize_t plen;
 	int n;
 
@@ -230,32 +230,32 @@ lws_socks5c_greet(struct lws *wsi, const char **pcce)
 	if (!wsi->a.vhost->socks_proxy_port)
 		return 0;
 
-	if (lws_socks5c_generate_msg(wsi, SOCKS_MSG_GREETING, &plen)) {
+	if (aws_lws_socks5c_generate_msg(wsi, SOCKS_MSG_GREETING, &plen)) {
 		*pcce = "socks msg too large";
 		return -1;
 	}
-	// lwsl_hexdump_notice(pt->serv_buf, plen);
+	// aws_lwsl_hexdump_notice(pt->serv_buf, plen);
 	n = (int)send(wsi->desc.sockfd, (char *)pt->serv_buf, (size_t)plen,
 		      MSG_NOSIGNAL);
 	if (n < 0) {
-		lwsl_wsi_debug(wsi, "ERROR writing socks greeting");
+		aws_lwsl_wsi_debug(wsi, "ERROR writing socks greeting");
 		*pcce = "socks write failed";
 		return -1;
 	}
 
-	lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SOCKS_GREETING_REPLY,
+	aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SOCKS_GREETING_REPLY,
 			(int)wsi->a.context->timeout_secs);
 
-	lwsi_set_state(wsi, LRS_WAITING_SOCKS_GREETING_REPLY);
+	aws_lwsi_set_state(wsi, LRS_WAITING_SOCKS_GREETING_REPLY);
 
 	return 1;
 }
 
 int
-lws_socks5c_handle_state(struct lws *wsi, struct lws_pollfd *pollfd,
+aws_lws_socks5c_handle_state(struct lws *wsi, struct aws_lws_pollfd *pollfd,
 			 const char **pcce)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	int conn_mode = 0, pending_timeout = 0;
 	ssize_t len;
 	int n;
@@ -263,7 +263,7 @@ lws_socks5c_handle_state(struct lws *wsi, struct lws_pollfd *pollfd,
 	/* handle proxy hung up on us */
 
 	if (pollfd->revents & LWS_POLLHUP) {
-		lwsl_wsi_warn(wsi, "SOCKS fd=%d dead", pollfd->fd);
+		aws_lwsl_wsi_warn(wsi, "SOCKS fd=%d dead", pollfd->fd);
 		*pcce = "socks conn dead";
 		return LW5CHS_RET_BAIL3;
 	}
@@ -272,27 +272,27 @@ lws_socks5c_handle_state(struct lws *wsi, struct lws_pollfd *pollfd,
 		 wsi->a.context->pt_serv_buf_size, 0);
 	if (n < 0) {
 		if (LWS_ERRNO == LWS_EAGAIN) {
-			lwsl_wsi_debug(wsi, "SOCKS read EAGAIN, retrying");
+			aws_lwsl_wsi_debug(wsi, "SOCKS read EAGAIN, retrying");
 			return LW5CHS_RET_RET0;
 		}
-		lwsl_wsi_err(wsi, "ERROR reading from SOCKS socket");
+		aws_lwsl_wsi_err(wsi, "ERROR reading from SOCKS socket");
 		*pcce = "socks recv fail";
 		return LW5CHS_RET_BAIL3;
 	}
 
-	// lwsl_hexdump_warn(pt->serv_buf, n);
+	// aws_lwsl_hexdump_warn(pt->serv_buf, n);
 
-	switch (lwsi_state(wsi)) {
+	switch (aws_lwsi_state(wsi)) {
 
 	case LRS_WAITING_SOCKS_GREETING_REPLY:
 		if (pt->serv_buf[0] != SOCKS_VERSION_5)
 			goto socks_reply_fail;
 
 		if (pt->serv_buf[1] == SOCKS_AUTH_NO_AUTH) {
-			lwsl_wsi_client(wsi, "SOCKS GR: No Auth Method");
-			if (lws_socks5c_generate_msg(wsi, SOCKS_MSG_CONNECT,
+			aws_lwsl_wsi_client(wsi, "SOCKS GR: No Auth Method");
+			if (aws_lws_socks5c_generate_msg(wsi, SOCKS_MSG_CONNECT,
 						     &len)) {
-				lwsl_wsi_err(wsi, "generate connect msg fail");
+				aws_lwsl_wsi_err(wsi, "generate connect msg fail");
 				goto socks_send_msg_fail;
 			}
 			conn_mode = LRS_WAITING_SOCKS_CONNECT_REPLY;
@@ -302,8 +302,8 @@ lws_socks5c_handle_state(struct lws *wsi, struct lws_pollfd *pollfd,
 		}
 
 		if (pt->serv_buf[1] == SOCKS_AUTH_USERNAME_PASSWORD) {
-			lwsl_wsi_client(wsi, "SOCKS GR: User/Pw Method");
-			if (lws_socks5c_generate_msg(wsi,
+			aws_lwsl_wsi_client(wsi, "SOCKS GR: User/Pw Method");
+			if (aws_lws_socks5c_generate_msg(wsi,
 					   SOCKS_MSG_USERNAME_PASSWORD,
 					   &len))
 				goto socks_send_msg_fail;
@@ -320,8 +320,8 @@ lws_socks5c_handle_state(struct lws *wsi, struct lws_pollfd *pollfd,
 				    SOCKS_SUBNEGOTIATION_STATUS_SUCCESS)
 			goto socks_reply_fail;
 
-		lwsl_wsi_client(wsi, "SOCKS password OK, sending connect");
-		if (lws_socks5c_generate_msg(wsi, SOCKS_MSG_CONNECT, &len)) {
+		aws_lwsl_wsi_client(wsi, "SOCKS password OK, sending connect");
+		if (aws_lws_socks5c_generate_msg(wsi, SOCKS_MSG_CONNECT, &len)) {
 socks_send_msg_fail:
 			*pcce = "socks gen msg fail";
 			return LW5CHS_RET_BAIL3;
@@ -330,22 +330,22 @@ socks_send_msg_fail:
 		pending_timeout =
 			   PENDING_TIMEOUT_AWAITING_SOCKS_CONNECT_REPLY;
 socks_send:
-		// lwsl_hexdump_notice(pt->serv_buf, len);
+		// aws_lwsl_hexdump_notice(pt->serv_buf, len);
 		n = (int)send(wsi->desc.sockfd, (char *)pt->serv_buf,
 			      (size_t)len, MSG_NOSIGNAL);
 		if (n < 0) {
-			lwsl_wsi_debug(wsi, "ERROR writing to socks proxy");
+			aws_lwsl_wsi_debug(wsi, "ERROR writing to socks proxy");
 			*pcce = "socks write fail";
 			return LW5CHS_RET_BAIL3;
 		}
 
-		lws_set_timeout(wsi, (enum pending_timeout)pending_timeout,
+		aws_lws_set_timeout(wsi, (enum pending_timeout)pending_timeout,
 				(int)wsi->a.context->timeout_secs);
-		lwsi_set_state(wsi, (lws_wsi_state_t)conn_mode);
+		aws_lwsi_set_state(wsi, (aws_lws_wsi_state_t)conn_mode);
 		break;
 
 socks_reply_fail:
-		lwsl_wsi_err(wsi, "socks reply: v%d, err %d",
+		aws_lwsl_wsi_err(wsi, "socks reply: v%d, err %d",
 			     pt->serv_buf[0], pt->serv_buf[1]);
 		*pcce = "socks reply fail";
 		return LW5CHS_RET_BAIL3;
@@ -355,11 +355,11 @@ socks_reply_fail:
 		    pt->serv_buf[1] != SOCKS_REQUEST_REPLY_SUCCESS)
 			goto socks_reply_fail;
 
-		lwsl_wsi_client(wsi, "socks connect OK");
+		aws_lwsl_wsi_client(wsi, "socks connect OK");
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-		if (lwsi_role_http(wsi) &&
-		    lws_hdr_simple_create(wsi, _WSI_TOKEN_CLIENT_PEER_ADDRESS,
+		if (aws_lwsi_role_http(wsi) &&
+		    aws_lws_hdr_simple_create(wsi, _WSI_TOKEN_CLIENT_PEER_ADDRESS,
 					  wsi->a.vhost->socks_proxy_address)) {
 			*pcce = "socks connect fail";
 			return LW5CHS_RET_BAIL3;
@@ -369,7 +369,7 @@ socks_reply_fail:
 		wsi->c_port = (uint16_t)wsi->a.vhost->socks_proxy_port;
 
 		/* clear his proxy connection timeout */
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+		aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
 		return LW5CHS_RET_STARTHS;
 	default:
 		break;

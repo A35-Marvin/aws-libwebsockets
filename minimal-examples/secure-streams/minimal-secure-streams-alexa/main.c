@@ -10,10 +10,10 @@
 #include <signal.h>
 
 extern int
-avs_example_start(struct lws_context *context);
+avs_example_start(struct aws_lws_context *context);
 
 static int interrupted;
-static lws_state_notify_link_t nl;
+static aws_lws_state_notify_link_t nl;
 
 #if !defined(LWS_SS_USE_SSPC)
 
@@ -287,11 +287,11 @@ static const char *canned_root_token_payload =
  */
 
 static int
-app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+app_system_state_nf(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		    int current, int target)
 {
-	struct lws_context *context = lws_system_context_from_system_mgr(mgr);
-	lws_system_blob_t *ab = lws_system_get_blob(context,
+	struct aws_lws_context *context = aws_lws_system_context_from_system_mgr(mgr);
+	aws_lws_system_blob_t *ab = aws_lws_system_get_blob(context,
 				LWS_SYSBLOB_TYPE_AUTH, 1 /* AUTH_IDX_ROOT */);
 	size_t size;
 
@@ -302,12 +302,12 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	 */
 	switch (target) {
 	case LWS_SYSTATE_REGISTERED:
-		size = lws_system_blob_get_size(ab);
+		size = aws_lws_system_blob_get_size(ab);
 		if (size)
 			break;
 
 		/* let's register our canned root token so auth can use it */
-		lws_system_blob_direct_set(ab,
+		aws_lws_system_blob_direct_set(ab,
 				(const uint8_t *)canned_root_token_payload,
 				strlen(canned_root_token_payload));
 		break;
@@ -321,7 +321,7 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 		 * system this could easily change to be done on the heap, then
 		 * this would be important
 		 */
-		lws_system_blob_destroy(lws_system_get_blob(context,
+		aws_lws_system_blob_destroy(aws_lws_system_get_blob(context,
 					LWS_SYSBLOB_TYPE_AUTH,
 					1 /* AUTH_IDX_ROOT */));
 		break;
@@ -336,30 +336,30 @@ sigint_handler(int sig)
 	interrupted = 1;
 }
 
-static lws_state_notify_link_t * const app_notifier_list[] = {
+static aws_lws_state_notify_link_t * const app_notifier_list[] = {
 	&nl, NULL
 };
 
-extern struct lws_protocols protocol_audio_test;
-static const struct lws_protocols *protocols[] = {
+extern struct aws_lws_protocols protocol_audio_test;
+static const struct aws_lws_protocols *protocols[] = {
 	&protocol_audio_test,
 #if defined(LWS_SS_USE_SSPC)
-	lws_sspc_protocols,
+	aws_lws_sspc_protocols,
 #endif
 	NULL
 };
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS secure streams - Alexa voice test [-d<verb>]\n");
+	aws_lwsl_user("LWS secure streams - Alexa voice test [-d<verb>]\n");
 
 	info.fd_limit_per_thread = 1 + 6 + 1;
 #if !defined(LWS_SS_USE_SSPC)
@@ -372,17 +372,17 @@ int main(int argc, const char **argv)
 
 		/* connect to ssproxy via UDS by default, else via
 		 * tcp connection to this port */
-		if ((p = lws_cmdline_option(argc, argv, "-p")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-p")))
 			info.ss_proxy_port = atoi(p);
 
 		/* UDS "proxy.ss.lws" in abstract namespace, else this socket
 		 * path; when -p given this can specify the network interface
 		 * to bind to */
-		if ((p = lws_cmdline_option(argc, argv, "-i")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-i")))
 			info.ss_proxy_bind = p;
 
 		/* if -p given, -a specifies the proxy address to connect to */
-		if ((p = lws_cmdline_option(argc, argv, "-a")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-a")))
 			info.ss_proxy_address = p;
 	}
 #endif
@@ -394,28 +394,28 @@ int main(int argc, const char **argv)
 	nl.notify_cb = app_system_state_nf;
 	info.register_notifier_list = app_notifier_list;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	/* create an explicit vhost so the sound protocol is initialized */
 
 	info.vhost_name = "asound";
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("lws init failed\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("lws init failed\n");
 		goto bail;
 	}
 
 	/* the event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 bail:
-	lws_context_destroy(context);
-	lwsl_user("Completed\n");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed\n");
 
 	return 0;
 }

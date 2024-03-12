@@ -25,9 +25,9 @@
 #include "private-lib-core.h"
 
 void
-lws_client_conn_wait_timeout(lws_sorted_usec_list_t *sul)
+aws_lws_client_conn_wait_timeout(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws *wsi = lws_container_of(sul, struct lws,
+	struct lws *wsi = aws_lws_container_of(sul, struct lws,
 					   sul_connect_timeout);
 
 	/*
@@ -35,14 +35,14 @@ lws_client_conn_wait_timeout(lws_sorted_usec_list_t *sul)
 	 * connection before giving up on it and retrying.
 	 */
 
-	lwsl_wsi_info(wsi, "connect wait timeout has fired");
-	lws_client_connect_3_connect(wsi, NULL, NULL, 0, NULL);
+	aws_lwsl_wsi_info(wsi, "connect wait timeout has fired");
+	aws_lws_client_connect_3_connect(wsi, NULL, NULL, 0, NULL);
 }
 
 void
-lws_client_dns_retry_timeout(lws_sorted_usec_list_t *sul)
+aws_lws_client_dns_retry_timeout(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws *wsi = lws_container_of(sul, struct lws,
+	struct lws *wsi = aws_lws_container_of(sul, struct lws,
 					   sul_connect_timeout);
 
 	/*
@@ -51,9 +51,9 @@ lws_client_dns_retry_timeout(lws_sorted_usec_list_t *sul)
 	 * isn't officially used until we connected somewhere.
 	 */
 
-	lwsl_wsi_info(wsi, "dns retry");
-	if (!lws_client_connect_2_dnsreq(wsi))
-		lwsl_wsi_notice(wsi, "DNS lookup failed");
+	aws_lwsl_wsi_info(wsi, "dns retry");
+	if (!aws_lws_client_connect_2_dnsreq(wsi))
+		aws_lwsl_wsi_notice(wsi, "DNS lookup failed");
 }
 
 /*
@@ -71,7 +71,7 @@ typedef enum {
 } lcccr_t;
 
 static lcccr_t
-lws_client_connect_check(struct lws *wsi)
+aws_lws_client_connect_check(struct lws *wsi)
 {
 	int en = 0;
 #if !defined(WIN32)
@@ -90,12 +90,12 @@ lws_client_connect_check(struct lws *wsi)
 	if (!getsockopt(wsi->desc.sockfd, SOL_SOCKET, SO_ERROR, &e, &sl)) {
 		en = LWS_ERRNO;
 		if (!e) {
-			lwsl_wsi_debug(wsi, "getsockopt: conn OK errno %d", en);
+			aws_lwsl_wsi_debug(wsi, "getsockopt: conn OK errno %d", en);
 
 			return LCCCR_CONNECTED;
 		}
 
-		lwsl_wsi_notice(wsi, "getsockopt fd %d says e %d",
+		aws_lwsl_wsi_notice(wsi, "getsockopt fd %d says e %d",
 							wsi->desc.sockfd, e);
 
 		return LCCCR_FAILED;
@@ -113,19 +113,19 @@ lws_client_connect_check(struct lws *wsi)
 
 	if (en == WSAEALREADY) {
 		/* reset the POLLOUT wait */
-		if (lws_change_pollfd(wsi, 0, LWS_POLLOUT))
-			lwsl_wsi_notice(wsi, "pollfd failed");
+		if (aws_lws_change_pollfd(wsi, 0, LWS_POLLOUT))
+			aws_lwsl_wsi_notice(wsi, "pollfd failed");
 	}
 
 	if (!en || en == WSAEINVAL ||
 		   en == WSAEWOULDBLOCK ||
 		   en == WSAEALREADY) {
-		lwsl_wsi_debug(wsi, "errno %d", en);
+		aws_lwsl_wsi_debug(wsi, "errno %d", en);
 		return LCCCR_CONTINUE;
 	}
 #endif
 
-	lwsl_wsi_notice(wsi, "connect check take as FAILED: errno %d", en);
+	aws_lwsl_wsi_notice(wsi, "connect check take as FAILED: errno %d", en);
 
 	return LCCCR_FAILED;
 }
@@ -138,19 +138,19 @@ lws_client_connect_check(struct lws *wsi)
  */
 
 struct lws *
-lws_client_connect_3_connect(struct lws *wsi, const char *ads,
+aws_lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 			     const struct addrinfo *result, int n, void *opaque)
 {
 #if defined(LWS_WITH_UNIX_SOCK)
 	struct sockaddr_un sau;
 #endif
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	const char *cce = "Unable to connect", *iface;
 	const struct sockaddr *psa = NULL;
 	uint16_t port = wsi->conn_port;
-	lws_dns_sort_t *curr;
+	aws_lws_dns_sort_t *curr;
 	ssize_t plen = 0;
-	lws_dll2_t *d;
+	aws_lws_dll2_t *d;
 	char dcce[48];
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
 	int cfail;
@@ -159,7 +159,7 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 
 	/*
 	 * If we come here with result set, we need to convert getaddrinfo
-	 * results to a lws_dns_sort_t list one time and free the results.
+	 * results to a aws_lws_dns_sort_t list one time and free the results.
 	 *
 	 * We use this pattern because ASYNC_DNS will callback here with the
 	 * results when it gets them (and may come here more than once, eg, for
@@ -167,16 +167,16 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 	 */
 
 	if (result) {
-		lws_sul_cancel(&wsi->sul_connect_timeout);
+		aws_lws_sul_cancel(&wsi->sul_connect_timeout);
 
 #if defined(LWS_WITH_CONMON)
 		/* append a copy from before the sorting */
-		lws_conmon_append_copy_new_dns_results(wsi, result);
+		aws_lws_conmon_append_copy_new_dns_results(wsi, result);
 #endif
 
-		lws_sort_dns(wsi, result);
+		aws_lws_sort_dns(wsi, result);
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
-		lws_async_dns_freeaddrinfo(&result);
+		aws_lws_async_dns_freeaddrinfo(&result);
 #else
 		freeaddrinfo((struct addrinfo *)result);
 #endif
@@ -189,23 +189,23 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 	 * ourselves
 	 */
 
-	if (!lws_dll2_is_detached(&wsi->dll2_cli_txn_queue))
+	if (!aws_lws_dll2_is_detached(&wsi->dll2_cli_txn_queue))
 		return wsi;
 
 	if (n &&  /* calling back with a problem */
 	    !wsi->dns_sorted_list.count && /* there's no results */
-	    !lws_socket_is_valid(wsi->desc.sockfd) && /* no attempt ongoing */
+	    !aws_lws_socket_is_valid(wsi->desc.sockfd) && /* no attempt ongoing */
 	    !wsi->speculative_connect_owner.count /* no spec attempt */ ) {
-		lwsl_wsi_notice(wsi, "dns lookup failed %d", n);
+		aws_lwsl_wsi_notice(wsi, "dns lookup failed %d", n);
 
 		/*
 		 * DNS lookup itself failed... let's try again until we
 		 * timeout
 		 */
 
-		lwsi_set_state(wsi, LRS_UNCONNECTED);
-		lws_sul_schedule(wsi->a.context, 0, &wsi->sul_connect_timeout,
-				 lws_client_dns_retry_timeout,
+		aws_lwsi_set_state(wsi, LRS_UNCONNECTED);
+		aws_lws_sul_schedule(wsi->a.context, 0, &wsi->sul_connect_timeout,
+				 aws_lws_client_dns_retry_timeout,
 						 LWS_USEC_PER_SEC);
 		return wsi;
 
@@ -219,15 +219,15 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 	 * actually connected.
 	 */
 
-	if (lwsi_state(wsi) == LRS_WAITING_CONNECT &&
-	    lws_socket_is_valid(wsi->desc.sockfd)) {
+	if (aws_lwsi_state(wsi) == LRS_WAITING_CONNECT &&
+	    aws_lws_socket_is_valid(wsi->desc.sockfd)) {
 
 		if (!wsi->dns_sorted_list.count &&
 		    !wsi->sul_connect_timeout.list.owner)
 			/* no dns results and no ongoing timeout for one */
 			goto connect_to;
 
-		switch (lws_client_connect_check(wsi)) {
+		switch (aws_lws_client_connect_check(wsi)) {
 		case LCCCR_CONNECTED:
 			/*
 			 * Oh, it has happened...
@@ -236,11 +236,11 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 		case LCCCR_CONTINUE:
 			return NULL;
 		default:
-			lws_snprintf(dcce, sizeof(dcce), "conn fail: errno %d",
+			aws_lws_snprintf(dcce, sizeof(dcce), "conn fail: errno %d",
 								LWS_ERRNO);
 			cce = dcce;
-			lwsl_wsi_debug(wsi, "%s", dcce);
-			lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
+			aws_lwsl_wsi_debug(wsi, "%s", dcce);
+			aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
 			goto try_next_dns_result_fds;
 		}
 	}
@@ -254,7 +254,7 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 		strncpy(sau.sun_path, ads, sizeof(sau.sun_path));
 		sau.sun_path[sizeof(sau.sun_path) - 1] = '\0';
 
-		lwsl_wsi_info(wsi, "Unix skt: %s", ads);
+		aws_lwsl_wsi_info(wsi, "Unix skt: %s", ads);
 
 		if (sau.sun_path[0] == '@')
 			sau.sun_path[0] = '\0';
@@ -265,7 +265,7 @@ lws_client_connect_3_connect(struct lws *wsi, const char *ads,
 
 #if defined(LWS_WITH_SYS_ASYNC_DNS)
 	if (n == LADNS_RET_FAILED) {
-		lwsl_wsi_notice(wsi, "adns failed %s", ads);
+		aws_lwsl_wsi_notice(wsi, "adns failed %s", ads);
 		/*
 		 * Caller that is giving us LADNS_RET_FAILED will deal
 		 * with cleanup
@@ -293,17 +293,17 @@ next_dns_result:
 	 * remove and free the original from the sorted list
 	 */
 
-	d = lws_dll2_get_head(&wsi->dns_sorted_list);
-	curr = lws_container_of(d, lws_dns_sort_t, list);
+	d = aws_lws_dll2_get_head(&wsi->dns_sorted_list);
+	curr = aws_lws_container_of(d, aws_lws_dns_sort_t, list);
 
-	lws_dll2_remove(&curr->list);
+	aws_lws_dll2_remove(&curr->list);
 	wsi->sa46_peer = curr->dest;
 #if defined(LWS_WITH_NETLINK)
 	wsi->peer_route_uidx = curr->uidx;
-	lwsl_wsi_info(wsi, "peer_route_uidx %d", wsi->peer_route_uidx);
+	aws_lwsl_wsi_info(wsi, "peer_route_uidx %d", wsi->peer_route_uidx);
 #endif
 
-	lws_free(curr);
+	aws_lws_free(curr);
 
 	sa46_sockport(&wsi->sa46_peer, htons(port));
 
@@ -319,7 +319,7 @@ ads_known:
 	 * socket and add to the fds
 	 */
 
-	if (!lws_socket_is_valid(wsi->desc.sockfd)) {
+	if (!aws_lws_socket_is_valid(wsi->desc.sockfd)) {
 
 		if (wsi->a.context->event_loop_ops->check_client_connect_ok &&
 		    wsi->a.context->event_loop_ops->check_client_connect_ok(wsi)
@@ -342,55 +342,55 @@ ads_known:
 						  SOCK_STREAM, 0);
 		}
 
-		if (!lws_socket_is_valid(wsi->desc.sockfd)) {
-			lws_snprintf(dcce, sizeof(dcce),
+		if (!aws_lws_socket_is_valid(wsi->desc.sockfd)) {
+			aws_lws_snprintf(dcce, sizeof(dcce),
 				     "conn fail: skt creation: errno %d",
 								LWS_ERRNO);
 			cce = dcce;
-			lwsl_wsi_warn(wsi, "%s", dcce);
+			aws_lwsl_wsi_warn(wsi, "%s", dcce);
 			goto try_next_dns_result;
 		}
 
-		if (lws_plat_set_socket_options(wsi->a.vhost, wsi->desc.sockfd,
+		if (aws_lws_plat_set_socket_options(wsi->a.vhost, wsi->desc.sockfd,
 #if defined(LWS_WITH_UNIX_SOCK)
 						wsi->unix_skt)) {
 #else
 						0)) {
 #endif
-			lws_snprintf(dcce, sizeof(dcce),
+			aws_lws_snprintf(dcce, sizeof(dcce),
 				     "conn fail: skt options: errno %d",
 								LWS_ERRNO);
 			cce = dcce;
-			lwsl_wsi_warn(wsi, "%s", dcce);
+			aws_lwsl_wsi_warn(wsi, "%s", dcce);
 			goto try_next_dns_result_closesock;
 		}
 
 		/* apply requested socket options */
-		if (lws_plat_set_socket_options_ip(wsi->desc.sockfd,
+		if (aws_lws_plat_set_socket_options_ip(wsi->desc.sockfd,
 						   wsi->c_pri, wsi->flags))
-			lwsl_wsi_warn(wsi, "unable to set ip options");
+			aws_lwsl_wsi_warn(wsi, "unable to set ip options");
 
-		lwsl_wsi_debug(wsi, "WAITING_CONNECT");
-		lwsi_set_state(wsi, LRS_WAITING_CONNECT);
+		aws_lwsl_wsi_debug(wsi, "WAITING_CONNECT");
+		aws_lwsi_set_state(wsi, LRS_WAITING_CONNECT);
 
 		if (wsi->a.context->event_loop_ops->sock_accept)
 			if (wsi->a.context->event_loop_ops->sock_accept(wsi)) {
-				lws_snprintf(dcce, sizeof(dcce),
+				aws_lws_snprintf(dcce, sizeof(dcce),
 					     "conn fail: sock accept");
 				cce = dcce;
-				lwsl_wsi_warn(wsi, "%s", dcce);
+				aws_lwsl_wsi_warn(wsi, "%s", dcce);
 				goto try_next_dns_result_closesock;
 			}
 
-		lws_pt_lock(pt, __func__);
+		aws_lws_pt_lock(pt, __func__);
 		if (__insert_wsi_socket_into_fds(wsi->a.context, wsi)) {
-			lws_snprintf(dcce, sizeof(dcce),
+			aws_lws_snprintf(dcce, sizeof(dcce),
 				     "conn fail: insert fd");
 			cce = dcce;
-			lws_pt_unlock(pt);
+			aws_lws_pt_unlock(pt);
 			goto try_next_dns_result_closesock;
 		}
-		lws_pt_unlock(pt);
+		aws_lws_pt_unlock(pt);
 
 		/*
 		 * The fd + wsi combination is entered into the wsi tables
@@ -403,8 +403,8 @@ ads_known:
 		 * and anything else we have done.
 		 */
 
-		if (lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
-			lws_snprintf(dcce, sizeof(dcce),
+		if (aws_lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
+			aws_lws_snprintf(dcce, sizeof(dcce),
 				     "conn fail: change pollfd");
 			cce = dcce;
 			goto try_next_dns_result_fds;
@@ -413,17 +413,17 @@ ads_known:
 		if (!wsi->a.protocol)
 			wsi->a.protocol = &wsi->a.vhost->protocols[0];
 
-		lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_CONNECT_RESPONSE,
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_CONNECT_RESPONSE,
 				wsi->a.vhost->connect_timeout_secs);
 
-		iface = lws_wsi_client_stash_item(wsi, CIS_IFACE,
+		iface = aws_lws_wsi_client_stash_item(wsi, CIS_IFACE,
 						  _WSI_TOKEN_CLIENT_IFACE);
 
 		if (iface && *iface) {
-			m = lws_socket_bind(wsi->a.vhost, wsi, wsi->desc.sockfd,
+			m = aws_lws_socket_bind(wsi->a.vhost, wsi, wsi->desc.sockfd,
 					    0, iface, af);
 			if (m < 0) {
-				lws_snprintf(dcce, sizeof(dcce),
+				aws_lws_snprintf(dcce, sizeof(dcce),
 					     "conn fail: socket bind");
 				cce = dcce;
 				goto try_next_dns_result_fds;
@@ -465,23 +465,23 @@ ads_known:
 
 #if defined(LWS_WITH_SYS_METRICS)
 	if (wsi->cal_conn.mt) {
-		lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
+		aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
 	}
-	lws_metrics_caliper_bind(wsi->cal_conn, wsi->a.context->mt_conn_tcp);
+	aws_lws_metrics_caliper_bind(wsi->cal_conn, wsi->a.context->mt_conn_tcp);
 #endif
 
 	wsi->socket_is_permanently_unusable = 0;
 
-	if (lws_fi(&wsi->fic, "conn_cb_rej") ||
+	if (aws_lws_fi(&wsi->fic, "conn_cb_rej") ||
 	    user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 			LWS_CALLBACK_CONNECTING, wsi->user_space,
 			(void *)(intptr_t)wsi->desc.sockfd, 0)) {
-		lwsl_wsi_info(wsi, "CONNECTION CB closed");
+		aws_lwsl_wsi_info(wsi, "CONNECTION CB closed");
 		goto failed1;
 	}
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	cfail = lws_fi(&wsi->fic, "connfail");
+	cfail = aws_lws_fi(&wsi->fic, "connfail");
 	if (cfail)
 		m = -1;
 	else
@@ -490,7 +490,7 @@ ads_known:
 			    (socklen_t)n);
 
 #if defined(LWS_WITH_CONMON)
-	wsi->conmon_datum = lws_now_usecs();
+	wsi->conmon_datum = aws_lws_now_usecs();
 	wsi->conmon.ciu_sockconn = 0;
 #endif
 
@@ -510,7 +510,7 @@ ads_known:
 			errno_copy = 999;
 #endif
 
-		lwsl_wsi_debug(wsi, "connect: fd %d errno: %d",
+		aws_lwsl_wsi_debug(wsi, "connect: fd %d errno: %d",
 				wsi->desc.sockfd, errno_copy);
 
 		if (errno_copy &&
@@ -527,11 +527,11 @@ ads_known:
 			 */
 
 #if defined(LWS_WITH_CONMON)
-			wsi->conmon.ciu_sockconn = (lws_conmon_interval_us_t)
-					(lws_now_usecs() - wsi->conmon_datum);
+			wsi->conmon.ciu_sockconn = (aws_lws_conmon_interval_us_t)
+					(aws_lws_now_usecs() - wsi->conmon_datum);
 #endif
 
-			lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
+			aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
 
 #if defined(_DEBUG)
 #if defined(LWS_WITH_UNIX_SOCK)
@@ -540,19 +540,19 @@ ads_known:
 
 			char nads[48];
 
-			lws_sa46_write_numeric_address(&wsi->sa46_peer, nads,
+			aws_lws_sa46_write_numeric_address(&wsi->sa46_peer, nads,
 						       sizeof(nads));
 
-			lws_snprintf(dcce, sizeof(dcce),
+			aws_lws_snprintf(dcce, sizeof(dcce),
 				     "conn fail: errno %d: %s:%d",
 						errno_copy, nads, port);
 			cce = dcce;
 
 			wsi->sa46_peer.sa4.sin_family = 0;
-			lwsl_wsi_info(wsi, "%s", cce);
+			aws_lwsl_wsi_info(wsi, "%s", cce);
 #if defined(LWS_WITH_UNIX_SOCK)
 			} else {
-				lws_snprintf(dcce, sizeof(dcce),
+				aws_lws_snprintf(dcce, sizeof(dcce),
 					     "conn fail: errno %d: UDS %s",
 							       errno_copy, ads);
 				cce = dcce;
@@ -564,7 +564,7 @@ ads_known:
 		}
 
 #if defined(WIN32)
-		if (lws_plat_check_connection_error(wsi))
+		if (aws_lws_plat_check_connection_error(wsi))
 			goto try_next_dns_result_fds;
 
 		if (errno_copy == WSAEISCONN)
@@ -577,8 +577,8 @@ ads_known:
 		 * uses wsi->sul_connect_timeout just for this purpose
 		 */
 
-		lws_sul_schedule(wsi->a.context, 0, &wsi->sul_connect_timeout,
-				 lws_client_conn_wait_timeout,
+		aws_lws_sul_schedule(wsi->a.context, 0, &wsi->sul_connect_timeout,
+				 aws_lws_client_conn_wait_timeout,
 				 wsi->a.context->timeout_secs *
 						 LWS_USEC_PER_SEC);
 
@@ -586,7 +586,7 @@ ads_known:
 		 * must do specifically a POLLOUT poll to hear
 		 * about the connect completion
 		 */
-		if (lws_change_pollfd(wsi, 0, LWS_POLLOUT))
+		if (aws_lws_change_pollfd(wsi, 0, LWS_POLLOUT))
 			goto try_next_dns_result_fds;
 
 		return wsi;
@@ -599,8 +599,8 @@ conn_good:
 	 */
 
 #if defined(LWS_WITH_CONMON)
-	wsi->conmon.ciu_sockconn = (lws_conmon_interval_us_t)
-					(lws_now_usecs() - wsi->conmon_datum);
+	wsi->conmon.ciu_sockconn = (aws_lws_conmon_interval_us_t)
+					(aws_lws_now_usecs() - wsi->conmon_datum);
 #endif
 
 #if !defined(LWS_PLAT_OPTEE)
@@ -612,32 +612,32 @@ conn_good:
 		if (getsockname((int)wsi->desc.sockfd,
 				(struct sockaddr *)&wsi->sa46_local,
 				&salen) == -1)
-			lwsl_warn("getsockname: %s\n", strerror(LWS_ERRNO));
+			aws_lwsl_warn("getsockname: %s\n", strerror(LWS_ERRNO));
 #if defined(_DEBUG)
 #if defined(LWS_WITH_UNIX_SOCK)
 		if (wsi->unix_skt)
 			buf[0] = '\0';
 		else
 #endif
-			lws_sa46_write_numeric_address(&wsi->sa46_local, buf, sizeof(buf));
+			aws_lws_sa46_write_numeric_address(&wsi->sa46_local, buf, sizeof(buf));
 
-		lwsl_wsi_info(wsi, "source ads %s", buf);
+		aws_lwsl_wsi_info(wsi, "source ads %s", buf);
 #endif
 	}
 #endif
 
-	lws_sul_cancel(&wsi->sul_connect_timeout);
-	lws_metrics_caliper_report(wsi->cal_conn, METRES_GO);
+	aws_lws_sul_cancel(&wsi->sul_connect_timeout);
+	aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_GO);
 
-	lws_addrinfo_clean(wsi);
+	aws_lws_addrinfo_clean(wsi);
 
 	if (wsi->a.protocol)
 		wsi->a.protocol->callback(wsi, LWS_CALLBACK_WSI_CREATE,
 					  wsi->user_space, NULL, 0);
 
-	lwsl_wsi_debug(wsi, "going into connect_4");
+	aws_lwsl_wsi_debug(wsi, "going into connect_4");
 
-	return lws_client_connect_4_established(wsi, NULL, plen);
+	return aws_lws_client_connect_4_established(wsi, NULL, plen);
 
 oom4:
 	/*
@@ -645,31 +645,31 @@ oom4:
 	 * didn't make it as far as getting inserted into the wsi / fd tables
 	 */
 
-	if (lwsi_role_client(wsi) && wsi->a.protocol
-				/* && lwsi_state_est(wsi) */)
-		lws_inform_client_conn_fail(wsi,(void *)cce, strlen(cce));
+	if (aws_lwsi_role_client(wsi) && wsi->a.protocol
+				/* && aws_lwsi_state_est(wsi) */)
+		aws_lws_inform_client_conn_fail(wsi,(void *)cce, strlen(cce));
 
 	/* take care that we might be inserted in fds already */
 	if (wsi->position_in_fds_table != LWS_NO_FDS_POS)
 		/* do the full wsi close flow */
 		goto failed1;
 
-	lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
+	aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_NOGO);
 
 	/*
 	 * We can't be an active client connection any more, if we thought
 	 * that was what we were going to be doing.  It should be if we are
 	 * failing by oom4 path, we are still called by
-	 * lws_client_connect_via_info() and will be returning NULL to that,
+	 * aws_lws_client_connect_via_info() and will be returning NULL to that,
 	 * so nobody else should have had a chance to queue on us.
 	 */
 	{
-		struct lws_vhost *vhost = wsi->a.vhost;
-		lws_sockfd_type sfd = wsi->desc.sockfd;
+		struct aws_lws_vhost *vhost = wsi->a.vhost;
+		aws_lws_sockfd_type sfd = wsi->desc.sockfd;
 
-		//lws_vhost_lock(vhost);
+		//aws_lws_vhost_lock(vhost);
 		__lws_free_wsi(wsi); /* acquires vhost lock in wsi reset */
-		//lws_vhost_unlock(vhost);
+		//aws_lws_vhost_unlock(vhost);
 
 		sanity_assert_no_wsi_traces(vhost->context, wsi);
 		sanity_assert_no_sockfd_traces(vhost->context, sfd);
@@ -681,12 +681,12 @@ connect_to:
 	/*
 	 * It looks like the sul_connect_timeout fired
 	 */
-	lwsl_wsi_info(wsi, "abandoning connect due to timeout");
+	aws_lwsl_wsi_info(wsi, "abandoning connect due to timeout");
 
 try_next_dns_result_fds:
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 	__remove_wsi_socket_from_fds(wsi);
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
 try_next_dns_result_closesock:
 	/*
@@ -696,15 +696,15 @@ try_next_dns_result_closesock:
 	wsi->desc.sockfd = LWS_SOCK_INVALID;
 
 try_next_dns_result:
-	lws_sul_cancel(&wsi->sul_connect_timeout);
-	if (lws_dll2_get_head(&wsi->dns_sorted_list))
+	aws_lws_sul_cancel(&wsi->sul_connect_timeout);
+	if (aws_lws_dll2_get_head(&wsi->dns_sorted_list))
 		goto next_dns_result;
 
-	lws_addrinfo_clean(wsi);
-	lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
+	aws_lws_addrinfo_clean(wsi);
+	aws_lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
 
 failed1:
-	lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "client_connect3");
+	aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "client_connect3");
 
 	return NULL;
 }

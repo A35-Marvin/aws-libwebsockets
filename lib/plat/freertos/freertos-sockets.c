@@ -33,21 +33,21 @@
 #endif
 
 int
-lws_send_pipe_choked(struct lws *wsi)
+aws_lws_send_pipe_choked(struct lws *wsi)
 {
 	struct lws *wsi_eff = wsi;
 	fd_set writefds;
 	struct timeval tv = { 0, 0 };
 	int n;
 #if defined(LWS_WITH_HTTP2)
-	wsi_eff = lws_get_network_wsi(wsi);
+	wsi_eff = aws_lws_get_network_wsi(wsi);
 #endif
 
 	/* the fact we checked implies we avoided back-to-back writes */
 	wsi_eff->could_have_pending = 0;
 
 	/* treat the fact we got a truncated send pending as if we're choked */
-	if (lws_has_buffered_out(wsi)
+	if (aws_lws_has_buffered_out(wsi)
 #if defined(LWS_WITH_HTTP_STREAM_COMPRESSION)
 	    || wsi->http.comp_ctx.buflist_comp ||
 	       wsi->http.comp_ctx.may_have_more
@@ -66,7 +66,7 @@ lws_send_pipe_choked(struct lws *wsi)
 }
 
 int
-lws_poll_listen_fd(struct lws_pollfd *fd)
+aws_lws_poll_listen_fd(struct aws_lws_pollfd *fd)
 {
 	fd_set readfds;
 	struct timeval tv = { 0, 0 };
@@ -78,13 +78,13 @@ lws_poll_listen_fd(struct lws_pollfd *fd)
 }
 
 int
-lws_plat_set_nonblocking(lws_sockfd_type fd)
+aws_lws_plat_set_nonblocking(aws_lws_sockfd_type fd)
 {
 	return fcntl(fd, F_SETFL, O_NONBLOCK) < 0;
 }
 
 int
-lws_plat_set_socket_options(struct lws_vhost *vhost, int fd, int unix_skt)
+aws_lws_plat_set_socket_options(struct aws_lws_vhost *vhost, int fd, int unix_skt)
 {
 	int optval = 1;
 	socklen_t optlen = sizeof(optval);
@@ -136,7 +136,7 @@ lws_plat_set_socket_options(struct lws_vhost *vhost, int fd, int unix_skt)
 	if (setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &optval, optlen) < 0)
 		return 1;
 
-	return lws_plat_set_nonblocking(fd);
+	return aws_lws_plat_set_nonblocking(fd);
 }
 
 static const int ip_opt_lws_flags[] = {
@@ -152,7 +152,7 @@ static const char *ip_opt_names[] = {
 #endif
 
 int
-lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
+aws_lws_plat_set_socket_options_ip(aws_lws_sockfd_type fd, uint8_t pri, int aws_lws_flags)
 {
 	int optval = (int)pri, ret = 0, n;
 	socklen_t optlen = sizeof(optval);
@@ -166,17 +166,17 @@ lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
 				(const void *)&optval, optlen) < 0) {
 #if !defined(LWS_WITH_NO_LOGS)
 			en = errno;
-			lwsl_warn("%s: unable to set socket pri %d: errno %d\n",
+			aws_lwsl_warn("%s: unable to set socket pri %d: errno %d\n",
 				  __func__, (int)pri, en);
 #endif
 			ret = 1;
 		} else
-			lwsl_notice("%s: set pri %u\n", __func__, pri);
+			aws_lwsl_notice("%s: set pri %u\n", __func__, pri);
 	}
 #endif
 
 	for (n = 0; n < 4; n++) {
-		if (!(lws_flags & ip_opt_lws_flags[n]))
+		if (!(aws_lws_flags & ip_opt_lws_flags[n]))
 			continue;
 
 		optval = (int)ip_opt_val[n];
@@ -184,12 +184,12 @@ lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
 			       optlen) < 0) {
 #if !defined(LWS_WITH_NO_LOGS)
 			en = errno;
-			lwsl_warn("%s: unable to set %s: errno %d\n", __func__,
+			aws_lwsl_warn("%s: unable to set %s: errno %d\n", __func__,
 				  ip_opt_names[n], en);
 #endif
 			ret = 1;
 		} else
-			lwsl_notice("%s: set ip flag %s\n", __func__,
+			aws_lwsl_notice("%s: set ip flag %s\n", __func__,
 				    ip_opt_names[n]);
 	}
 
@@ -199,7 +199,7 @@ lws_plat_set_socket_options_ip(lws_sockfd_type fd, uint8_t pri, int lws_flags)
 /* cast a struct sockaddr_in6 * into addr for ipv6 */
 
 int
-lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
+aws_lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 		    size_t addrlen)
 {
 #if 0
@@ -216,7 +216,7 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 		if (!ifc->ifa_addr)
 			continue;
 
-		lwsl_info(" interface %s vs %s\n", ifc->ifa_name, ifname);
+		aws_lwsl_info(" interface %s vs %s\n", ifc->ifa_name, ifname);
 
 		if (strcmp(ifc->ifa_name, ifname))
 			continue;
@@ -272,67 +272,67 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 }
 
 const char *
-lws_plat_inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
+aws_lws_plat_inet_ntop(int af, const void *src, char *dst, socklen_t cnt)
 {
 	return inet_ntop(af, src, dst, cnt);
 }
 
 int
-lws_plat_inet_pton(int af, const char *src, void *dst)
+aws_lws_plat_inet_pton(int af, const char *src, void *dst)
 {
 	return 1; //  inet_pton(af, src, dst);
 }
 
 int
-lws_plat_ifname_to_hwaddr(int fd, const char *ifname, uint8_t *hwaddr, int len)
+aws_lws_plat_ifname_to_hwaddr(int fd, const char *ifname, uint8_t *hwaddr, int len)
 {
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 }
 
 int
-lws_plat_rawudp_broadcast(uint8_t *p, const uint8_t *canned, size_t canned_len,
+aws_lws_plat_rawudp_broadcast(uint8_t *p, const uint8_t *canned, size_t canned_len,
 			  size_t n, int fd, const char *iface)
 {
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 }
 
 int
-lws_plat_if_up(const char *ifname, int fd, int up)
+aws_lws_plat_if_up(const char *ifname, int fd, int up)
 {
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 }
 
 int
-lws_plat_BINDTODEVICE(lws_sockfd_type fd, const char *ifname)
+aws_lws_plat_BINDTODEVICE(aws_lws_sockfd_type fd, const char *ifname)
 {
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 }
 
 int
-lws_plat_ifconfig(int fd, lws_dhcpc_ifstate_t *is)
+aws_lws_plat_ifconfig(int fd, aws_lws_dhcpc_ifstate_t *is)
 {
-	lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
+	aws_lwsl_err("%s: UNIMPLEMENTED on this platform\n", __func__);
 
 	return -1;
 }
 
 int
-lws_plat_vhost_tls_client_ctx_init(struct lws_vhost *vhost)
+aws_lws_plat_vhost_tls_client_ctx_init(struct aws_lws_vhost *vhost)
 {
 	return 0;
 }
 
 #if defined(LWS_WITH_MBEDTLS)
 int
-lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
+aws_lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
 {
 	int fd = ((mbedtls_net_context *) ctx)->fd;
 	int ret;
@@ -357,7 +357,7 @@ lws_plat_mbedtls_net_send(void *ctx, const uint8_t *buf, size_t len)
 }
 
 int
-lws_plat_mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
+aws_lws_plat_mbedtls_net_recv(void *ctx, unsigned char *buf, size_t len)
 {
 	int fd = ((mbedtls_net_context *) ctx)->fd;
 	int ret;

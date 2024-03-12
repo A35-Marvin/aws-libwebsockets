@@ -23,7 +23,7 @@ static int long_poll;
 static struct lws *client_wsi;
 static const char *ba_user, *ba_password;
 
-static const lws_retry_bo_t retry = {
+static const aws_lws_retry_bo_t retry = {
 	.secs_since_valid_ping = 3,
 	.secs_since_valid_hangup = 10,
 };
@@ -33,13 +33,13 @@ void
 dump_conmon_data(struct lws *wsi)
 {
 	const struct addrinfo *ai;
-	struct lws_conmon cm;
+	struct aws_lws_conmon cm;
 	char ads[48];
 
-	lws_conmon_wsi_take(wsi, &cm);
+	aws_lws_conmon_wsi_take(wsi, &cm);
 
-	lws_sa46_write_numeric_address(&cm.peer46, ads, sizeof(ads));
-	lwsl_notice("%s: peer %s, dns: %uus, sockconn: %uus, tls: %uus, txn_resp: %uus\n",
+	aws_lws_sa46_write_numeric_address(&cm.peer46, ads, sizeof(ads));
+	aws_lwsl_notice("%s: peer %s, dns: %uus, sockconn: %uus, tls: %uus, txn_resp: %uus\n",
 		    __func__, ads,
 		    (unsigned int)cm.ciu_dns,
 		    (unsigned int)cm.ciu_sockconn,
@@ -48,17 +48,17 @@ dump_conmon_data(struct lws *wsi)
 
 	ai = cm.dns_results_copy;
 	while (ai) {
-		lws_sa46_write_numeric_address((lws_sockaddr46 *)ai->ai_addr, ads, sizeof(ads));
-		lwsl_notice("%s: DNS %s\n", __func__, ads);
+		aws_lws_sa46_write_numeric_address((aws_lws_sockaddr46 *)ai->ai_addr, ads, sizeof(ads));
+		aws_lwsl_notice("%s: DNS %s\n", __func__, ads);
 		ai = ai->ai_next;
 	}
 
 	/*
-	 * This destroys the DNS list in the lws_conmon that we took
-	 * responsibility for when we used lws_conmon_wsi_take()
+	 * This destroys the DNS list in the aws_lws_conmon that we took
+	 * responsibility for when we used aws_lws_conmon_wsi_take()
 	 */
 
-	lws_conmon_release(&cm);
+	aws_lws_conmon_release(&cm);
 }
 #endif
 
@@ -68,18 +68,18 @@ static const char *ua = "Mozilla/5.0 (X11; Linux x86_64) "
 		  *acc = "*/*";
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		interrupted = 1;
 		bad = 3; /* connection failed before we could make connection */
-		lws_cancel_service(lws_get_context(wsi));
+		aws_lws_cancel_service(aws_lws_get_context(wsi));
 
 #if defined(LWS_WITH_CONMON)
 	if (conmon)
@@ -91,20 +91,20 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		{
 			char buf[128];
 
-			lws_get_peer_simple(wsi, buf, sizeof(buf));
-			status = (int)lws_http_client_http_response(wsi);
+			aws_lws_get_peer_simple(wsi, buf, sizeof(buf));
+			status = (int)aws_lws_http_client_http_response(wsi);
 
-			lwsl_user("Connected to %s, http response: %d\n",
+			aws_lwsl_user("Connected to %s, http response: %d\n",
 					buf, status);
 		}
 #if defined(LWS_WITH_HTTP2)
 		if (long_poll) {
-			lwsl_user("%s: Client entering long poll mode\n", __func__);
-			lws_h2_client_stream_long_poll_rxonly(wsi);
+			aws_lwsl_user("%s: Client entering long poll mode\n", __func__);
+			aws_lws_h2_client_stream_long_poll_rxonly(wsi);
 		}
 #endif
 
-		if (lws_fi_user_wsi_fi(wsi, "user_reject_at_est"))
+		if (aws_lws_fi_user_wsi_fi(wsi, "user_reject_at_est"))
 			return -1;
 
 		break;
@@ -114,11 +114,11 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 	{
 		unsigned char **p = (unsigned char **)in, *end = (*p) + len;
 
-		if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_USER_AGENT,
+		if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_USER_AGENT,
 				(unsigned char *)ua, (int)strlen(ua), p, end))
 			return -1;
 
-		if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_ACCEPT,
+		if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_ACCEPT,
 				(unsigned char *)acc, (int)strlen(acc), p, end))
 			return -1;
 #if defined(LWS_WITH_HTTP_BASIC_AUTH)
@@ -128,9 +128,9 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		if (!ba_user || !ba_password)
 			break;
 
-		if (lws_http_basic_auth_gen(ba_user, ba_password, b, sizeof(b)))
+		if (aws_lws_http_basic_auth_gen(ba_user, ba_password, b, sizeof(b)))
 			break;
-		if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_AUTHORIZATION,
+		if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_AUTHORIZATION,
 				(unsigned char *)b, (int)strlen(b), p, end))
 			return -1;
 		}
@@ -140,18 +140,18 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
 #if defined(LWS_WITH_HTTP2)
 		if (long_poll) {
 			char dotstar[128];
-			lws_strnncpy(dotstar, (const char *)in, len,
+			aws_lws_strnncpy(dotstar, (const char *)in, len,
 				     sizeof(dotstar));
-			lwsl_notice("long poll rx: %d '%s'\n", (int)len,
+			aws_lwsl_notice("long poll rx: %d '%s'\n", (int)len,
 					dotstar);
 		}
 #endif
 #if 0
-		lwsl_hexdump_notice(in, len);
+		aws_lwsl_hexdump_notice(in, len);
 #endif
 
 		return 0; /* don't passthru */
@@ -163,25 +163,25 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_fi_user_wsi_fi(wsi, "user_reject_at_rx"))
+			if (aws_lws_fi_user_wsi_fi(wsi, "user_reject_at_rx"))
 				return -1;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
+		aws_lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
 		interrupted = 1;
 		bad = status != 200;
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
 		interrupted = 1;
 		bad = status != 200;
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 #if defined(LWS_WITH_CONMON)
 		if (conmon)
 			dump_conmon_data(wsi);
@@ -192,10 +192,10 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"http",
 		callback_http,
@@ -216,33 +216,33 @@ struct args {
 };
 
 static int
-system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+system_notify_cb(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		   int current, int target)
 {
-	struct lws_context *context = mgr->parent;
-	struct lws_client_connect_info i;
-	struct args *a = lws_context_user(context);
+	struct aws_lws_context *context = mgr->parent;
+	struct aws_lws_client_connect_info i;
+	struct args *a = aws_lws_context_user(context);
 	const char *p;
 
 	if (current != LWS_SYSTATE_OPERATIONAL || target != LWS_SYSTATE_OPERATIONAL)
 		return 0;
 
-	lwsl_info("%s: operational\n", __func__);
+	aws_lwsl_info("%s: operational\n", __func__);
 
 	memset(&i, 0, sizeof i); /* otherwise uninitialized garbage */
 	i.context = context;
-	if (!lws_cmdline_option(a->argc, a->argv, "-n")) {
+	if (!aws_lws_cmdline_option(a->argc, a->argv, "-n")) {
 		i.ssl_connection = LCCSCF_USE_SSL;
 #if defined(LWS_WITH_HTTP2)
 		/* requires h2 */
-		if (lws_cmdline_option(a->argc, a->argv, "--long-poll")) {
-			lwsl_user("%s: long poll mode\n", __func__);
+		if (aws_lws_cmdline_option(a->argc, a->argv, "--long-poll")) {
+			aws_lwsl_user("%s: long poll mode\n", __func__);
 			long_poll = 1;
 		}
 #endif
 	}
 
-	if (lws_cmdline_option(a->argc, a->argv, "-l")) {
+	if (aws_lws_cmdline_option(a->argc, a->argv, "-l")) {
 		i.port = 7681;
 		i.address = "localhost";
 		i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
@@ -251,7 +251,7 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 		i.address = "warmcat.com";
 	}
 
-	if (lws_cmdline_option(a->argc, a->argv, "--nossl"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "--nossl"))
 		i.ssl_connection = 0;
 
 	i.ssl_connection |= LCCSCF_H2_QUIRK_OVERFLOWS_TXCR |
@@ -259,44 +259,44 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 			    LCCSCF_H2_QUIRK_NGHTTP2_END_STREAM;
 
 	i.alpn = "h2,http/1.1";
-	if (lws_cmdline_option(a->argc, a->argv, "--h1"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "--h1"))
 		i.alpn = "http/1.1";
 
-	if (lws_cmdline_option(a->argc, a->argv, "--h2-prior-knowledge"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "--h2-prior-knowledge"))
 		i.ssl_connection |= LCCSCF_H2_PRIOR_KNOWLEDGE;
 
-	if ((p = lws_cmdline_option(a->argc, a->argv, "-p")))
+	if ((p = aws_lws_cmdline_option(a->argc, a->argv, "-p")))
 		i.port = atoi(p);
 
-	if ((p = lws_cmdline_option(a->argc, a->argv, "--user")))
+	if ((p = aws_lws_cmdline_option(a->argc, a->argv, "--user")))
 		ba_user = p;
-	if ((p = lws_cmdline_option(a->argc, a->argv, "--password")))
+	if ((p = aws_lws_cmdline_option(a->argc, a->argv, "--password")))
 		ba_password = p;
 
-	if (lws_cmdline_option(a->argc, a->argv, "-j"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "-j"))
 		i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
 
-	if (lws_cmdline_option(a->argc, a->argv, "-k"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "-k"))
 		i.ssl_connection |= LCCSCF_ALLOW_INSECURE;
 
-	if (lws_cmdline_option(a->argc, a->argv, "-b"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "-b"))
 		i.ssl_connection |= LCCSCF_CACHE_COOKIES;
 
-	if (lws_cmdline_option(a->argc, a->argv, "-m"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "-m"))
 		i.ssl_connection |= LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
 
-	if (lws_cmdline_option(a->argc, a->argv, "-e"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "-e"))
 		i.ssl_connection |= LCCSCF_ALLOW_EXPIRED;
 
-	if ((p = lws_cmdline_option(a->argc, a->argv, "-f"))) {
+	if ((p = aws_lws_cmdline_option(a->argc, a->argv, "-f"))) {
 		i.ssl_connection |= LCCSCF_H2_MANUAL_RXFLOW;
 		i.manual_initial_tx_credit = atoi(p);
-		lwsl_notice("%s: manual peer tx credit %d\n", __func__,
+		aws_lwsl_notice("%s: manual peer tx credit %d\n", __func__,
 				i.manual_initial_tx_credit);
 	}
 
 #if defined(LWS_WITH_CONMON)
-	if (lws_cmdline_option(a->argc, a->argv, "--conmon")) {
+	if (aws_lws_cmdline_option(a->argc, a->argv, "--conmon")) {
 		i.ssl_connection |= LCCSCF_CONMON;
 		conmon = 1;
 	}
@@ -304,13 +304,13 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 	/* the default validity check is 5m / 5m10s... -v = 3s / 10s */
 
-	if (lws_cmdline_option(a->argc, a->argv, "-v"))
+	if (aws_lws_cmdline_option(a->argc, a->argv, "-v"))
 		i.retry_and_idle_policy = &retry;
 
-	if ((p = lws_cmdline_option(a->argc, a->argv, "--server")))
+	if ((p = aws_lws_cmdline_option(a->argc, a->argv, "--server")))
 		i.address = p;
 
-	if ((p = lws_cmdline_option(a->argc, a->argv, "--path")))
+	if ((p = aws_lws_cmdline_option(a->argc, a->argv, "--path")))
 		i.path = p;
 	else
 		i.path = "/";
@@ -323,11 +323,11 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	i.pwsi = &client_wsi;
 	i.fi_wsi_name = "user";
 
-	if (!lws_client_connect_via_info(&i)) {
-		lwsl_err("Client creation failed\n");
+	if (!aws_lws_client_connect_via_info(&i)) {
+		aws_lwsl_err("Client creation failed\n");
 		interrupted = 1;
 		bad = 2; /* could not even start client connection */
-		lws_cancel_service(context);
+		aws_lws_cancel_service(context);
 
 		return 1;
 	}
@@ -337,11 +337,11 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 int main(int argc, const char **argv)
 {
-	lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
+	aws_lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
 					     system_notify_cb, "app" };
-	lws_state_notify_link_t *na[] = { &notifier, NULL };
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	aws_lws_state_notify_link_t *na[] = { &notifier, NULL };
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	int n = 0, expected = 0;
 	struct args args;
 	const char *p;
@@ -353,9 +353,9 @@ int main(int argc, const char **argv)
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS minimal http client [-d<verbosity>] [-l] [--h1]\n");
+	aws_lwsl_user("LWS minimal http client [-d<verbosity>] [-l] [--h1]\n");
 
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
 		       LWS_SERVER_OPTION_H2_JUST_FIX_WINDOW_UPDATE_OVERFLOW;
@@ -367,7 +367,7 @@ int main(int argc, const char **argv)
 
 #if defined(LWS_WITH_CACHE_NSCOOKIEJAR)
 	info.http_nsc_filepath = "./cookies.txt";
-	if ((p = lws_cmdline_option(argc, argv, "-c")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-c")))
 		info.http_nsc_filepath = p;
 #endif
 
@@ -385,7 +385,7 @@ int main(int argc, const char **argv)
 	 * OpenSSL uses the system trust store.  mbedTLS has to be told which
 	 * CA to trust explicitly.
 	 */
-	if (lws_cmdline_option(argc, argv, "-w"))
+	if (aws_lws_cmdline_option(argc, argv, "-w"))
 		/* option to confirm we are validating against the right cert */
 		info.client_ssl_ca_filepath = "./wrong.cer";
 	else
@@ -401,27 +401,27 @@ int main(int argc, const char **argv)
 		memcert[info.client_ssl_ca_mem_len++] = '\0';
 	}
 #endif
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		bad = 5;
 		goto bail;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 bail:
-	if ((p = lws_cmdline_option(argc, argv, "--expected-exit")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--expected-exit")))
 		expected = atoi(p);
 
 	if (bad == expected) {
-		lwsl_user("Completed: OK (seen expected %d)\n", expected);
+		aws_lwsl_user("Completed: OK (seen expected %d)\n", expected);
 		return 0;
 	} else
-		lwsl_err("Completed: failed: exit %d, expected %d\n", bad, expected);
+		aws_lwsl_err("Completed: failed: exit %d, expected %d\n", bad, expected);
 
 	return 1;
 }

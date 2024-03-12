@@ -22,24 +22,24 @@ static int interrupted, rx_seen, test;
 static struct lws *client_wsi;
 
 static int
-callback_dumb_increment(struct lws *wsi, enum lws_callback_reasons reason,
+callback_dumb_increment(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		client_wsi = NULL;
 		break;
 
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		lwsl_user("%s: established\n", __func__);
+		aws_lwsl_user("%s: established\n", __func__);
 		break;
 
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-		lwsl_user("RX: %s\n", (const char *)in);
+		aws_lwsl_user("RX: %s\n", (const char *)in);
 		rx_seen++;
 		if (test && rx_seen == 10)
 			interrupted = 1;
@@ -53,10 +53,10 @@ callback_dumb_increment(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"dumb-increment-protocol",
 		callback_dumb_increment,
@@ -73,9 +73,9 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_client_connect_info i;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_client_connect_info i;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 		/* for LLL_ verbosity above NOTICE to be built into lws, lws
@@ -86,13 +86,13 @@ int main(int argc, const char **argv)
 		/* | LLL_DEBUG */;
 
 	signal(SIGINT, sigint_handler);
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	test = !!lws_cmdline_option(argc, argv, "-t");
+	test = !!aws_lws_cmdline_option(argc, argv, "-t");
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws client rx [-d <logs>] [--h2] [-t (test)]\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws client rx [-d <logs>] [--h2] [-t (test)]\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -117,9 +117,9 @@ int main(int argc, const char **argv)
 	 */
 	info.fd_limit_per_thread = 1 + 1 + 1;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -134,17 +134,17 @@ int main(int argc, const char **argv)
 	i.protocol = protocols[0].name; /* "dumb-increment-protocol" */
 	i.pwsi = &client_wsi;
 
-	if (lws_cmdline_option(argc, argv, "--h2"))
+	if (aws_lws_cmdline_option(argc, argv, "--h2"))
 		i.alpn = "h2";
 
-	lws_client_connect_via_info(&i);
+	aws_lws_client_connect_via_info(&i);
 
 	while (n >= 0 && client_wsi && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed %s\n", rx_seen > 10 ? "OK" : "Failed");
+	aws_lwsl_user("Completed %s\n", rx_seen > 10 ? "OK" : "Failed");
 
 	return rx_seen > 10;
 }

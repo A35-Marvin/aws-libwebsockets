@@ -34,7 +34,7 @@ static inline uint64_t rol64(uint64_t x, int k)
 }
 
 uint64_t
-lws_xos(struct lws_xos *xos)
+aws_lws_xos(struct aws_lws_xos *xos)
 {
 	uint64_t *s = &xos->s[0];
 	uint64_t const result = rol64(s[1] * 5, 7) * 9;
@@ -65,7 +65,7 @@ splitmix64(uint64_t *s)
 }
 
 void
-lws_xos_init(struct lws_xos *xos, uint64_t seed)
+aws_lws_xos_init(struct aws_lws_xos *xos, uint64_t seed)
 {
 	int n;
 
@@ -74,7 +74,7 @@ lws_xos_init(struct lws_xos *xos, uint64_t seed)
 }
 
 int
-lws_xos_percent(struct lws_xos *xos, int percent)
+aws_lws_xos_percent(struct aws_lws_xos *xos, int percent)
 {
-	return (int)(lws_xos(xos) % 100) < percent;
+	return (int)(aws_lws_xos(xos) % 100) < percent;
 }

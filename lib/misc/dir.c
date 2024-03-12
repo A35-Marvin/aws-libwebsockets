@@ -75,11 +75,11 @@ static char csep = '\\';
 #endif
 
 static void
-lws_dir_via_stat(char *combo, size_t l, const char *path, struct lws_dir_entry *lde)
+aws_lws_dir_via_stat(char *combo, size_t l, const char *path, struct aws_lws_dir_entry *lde)
 {
         struct stat s;
 
-        lws_strncpy(combo + l, path, COMBO_SIZEOF - l);
+        aws_lws_strncpy(combo + l, path, COMBO_SIZEOF - l);
 
         lde->type = LDOT_UNKNOWN;
 
@@ -112,21 +112,21 @@ lws_dir_via_stat(char *combo, size_t l, const char *path, struct lws_dir_entry *
 }
 
 int
-lws_dir(const char *dirpath, void *user, lws_dir_callback_function cb)
+aws_lws_dir(const char *dirpath, void *user, aws_lws_dir_callback_function cb)
 {
-	struct lws_dir_entry lde;
+	struct aws_lws_dir_entry lde;
 	struct dirent **namelist;
 	int n, i, ret = 1;
 	char combo[COMBO_SIZEOF];
 	size_t l;
 
-	l = (size_t)(ssize_t)lws_snprintf(combo, COMBO_SIZEOF - 2, "%s", dirpath);
+	l = (size_t)(ssize_t)aws_lws_snprintf(combo, COMBO_SIZEOF - 2, "%s", dirpath);
 	combo[l++] = csep;
 	combo[l] = '\0';
 
 	n = scandir((char *)dirpath, &namelist, filter, alphasort);
 	if (n < 0) {
-		lwsl_err("Scandir on '%s' failed, errno %d\n", dirpath, LWS_ERRNO);
+		aws_lwsl_err("Scandir on '%s' failed, errno %d\n", dirpath, LWS_ERRNO);
 		return 1;
 	}
 
@@ -144,7 +144,7 @@ lws_dir(const char *dirpath, void *user, lws_dir_callback_function cb)
 		 */
 
 #if defined(__sun)
-		lws_dir_via_stat(combo, l, namelist[i]->d_name, &lde);
+		aws_lws_dir_via_stat(combo, l, namelist[i]->d_name, &lde);
 #else
 		/*
 		 * XFS on Linux doesn't fill in d_type at all, always zero.
@@ -166,7 +166,7 @@ lws_dir(const char *dirpath, void *user, lws_dir_callback_function cb)
 			lde.type = LDOTT_SOCKET;
 		else {
 			lde.type = LDOT_UNKNOWN;
-			lws_dir_via_stat(combo, l, namelist[i]->d_name, &lde);
+			aws_lws_dir_via_stat(combo, l, namelist[i]->d_name, &lde);
 		}
 #endif
 		if (cb(dirpath, user, &lde)) {
@@ -192,7 +192,7 @@ bail:
  */
 
 static int
-lws_dir_glob_check(const char *nm, const char *filt)
+aws_lws_dir_glob_check(const char *nm, const char *filt)
 {
 	while (*nm) {
 		if (*filt == '*') {
@@ -214,9 +214,9 @@ lws_dir_glob_check(const char *nm, const char *filt)
  */
 
 int
-lws_dir_glob_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
+aws_lws_dir_glob_cb(const char *dirpath, void *user, struct aws_lws_dir_entry *lde)
 {
-	lws_dir_glob_t *filter = (lws_dir_glob_t*)user;
+	aws_lws_dir_glob_t *filter = (aws_lws_dir_glob_t*)user;
 	char path[384];
 
 	if (!strcmp(lde->name, ".") || !strcmp(lde->name, ".."))
@@ -225,8 +225,8 @@ lws_dir_glob_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 	if (lde->type == LDOT_DIR)
 		return 0;
 
-	if (lws_dir_glob_check(lde->name, filter->filter)) {
-		lws_snprintf(path, sizeof(path), "%s%c%s", dirpath, csep,
+	if (aws_lws_dir_glob_check(lde->name, filter->filter)) {
+		aws_lws_snprintf(path, sizeof(path), "%s%c%s", dirpath, csep,
 							   lde->name);
 		filter->cb(filter->user, path);
 	}
@@ -235,14 +235,14 @@ lws_dir_glob_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 }
 
 int
-lws_dir_rm_rf_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
+aws_lws_dir_rm_rf_cb(const char *dirpath, void *user, struct aws_lws_dir_entry *lde)
 {
 	char path[384];
 
 	if (!strcmp(lde->name, ".") || !strcmp(lde->name, ".."))
 		return 0;
 
-	lws_snprintf(path, sizeof(path), "%s%c%s", dirpath, csep, lde->name);
+	aws_lws_snprintf(path, sizeof(path), "%s%c%s", dirpath, csep, lde->name);
 
 	if (lde->type == LDOT_DIR) {
 #if !defined(WIN32) && !defined(_WIN32) && !defined(__COVERITY__)
@@ -261,10 +261,10 @@ lws_dir_rm_rf_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 		 */
 		if (readlink(path, dummy, sizeof(dummy)) < 0)
 #endif
-			lws_dir(path, NULL, lws_dir_rm_rf_cb);
+			aws_lws_dir(path, NULL, aws_lws_dir_rm_rf_cb);
 
 		if (rmdir(path))
-			lwsl_warn("%s: rmdir %s failed %d\n", __func__, path, errno);
+			aws_lwsl_warn("%s: rmdir %s failed %d\n", __func__, path, errno);
 	} else {
 		if (unlink(path)) {
 #if defined(WIN32)
@@ -273,7 +273,7 @@ lws_dir_rm_rf_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 #else
 			if (rmdir(path))
 #endif
-			lwsl_warn("%s: unlink %s failed %d (type %d)\n",
+			aws_lwsl_warn("%s: unlink %s failed %d (type %d)\n",
 					__func__, path, errno, lde->type);
 		}
 	}
@@ -286,8 +286,8 @@ lws_dir_rm_rf_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 
 #if defined(LWS_WITH_PLUGINS_API)
 
-struct lws_plugins_args {
-	struct lws_plugin	**pplugin;
+struct aws_lws_plugins_args {
+	struct aws_lws_plugin	**pplugin;
 	const char		*_class;
 	const char		*filter;
 	each_plugin_cb_t	each;
@@ -295,11 +295,11 @@ struct lws_plugins_args {
 };
 
 static int
-lws_plugins_dir_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
+aws_lws_plugins_dir_cb(const char *dirpath, void *user, struct aws_lws_dir_entry *lde)
 {
-	struct lws_plugins_args *pa = (struct lws_plugins_args *)user;
+	struct aws_lws_plugins_args *pa = (struct aws_lws_plugins_args *)user;
 	char path[256], base[64], *q = base;
-	const lws_plugin_header_t *pl;
+	const aws_lws_plugin_header_t *pl;
 	const char *p;
 
 	if (strlen(lde->name) < 7)
@@ -309,7 +309,7 @@ lws_plugins_dir_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 	 * The actual plugin names for protocol plugins look like
 	 * "libprotocol_lws_ssh_base.so" and for event libs
 	 * "libwebsockets-evlib_ev.so"... to recover the base name of
-	 * "lws_ssh_base" and "evlib_ev" we strip from the left to after the
+	 * "aws_lws_ssh_base" and "evlib_ev" we strip from the left to after the
 	 * first _ or -, and then truncate at the first .
 	 */
 
@@ -319,7 +319,7 @@ lws_plugins_dir_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 	if (!*p)
 		return 0;
 	p++;
-	while (*p && *p != '.' && lws_ptr_diff(q, base) < (int)sizeof(base) - 1)
+	while (*p && *p != '.' && aws_lws_ptr_diff(q, base) < (int)sizeof(base) - 1)
 		*q++ = *p++;
 	*q = '\0';
 
@@ -327,9 +327,9 @@ lws_plugins_dir_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 	if (pa->filter && strcmp(base, pa->filter))
 		return 0; /* keep going */
 
-	lws_snprintf(path, sizeof(path) - 1, "%s/%s", dirpath, lde->name);
+	aws_lws_snprintf(path, sizeof(path) - 1, "%s/%s", dirpath, lde->name);
 
-	pl = lws_plat_dlopen(pa->pplugin, path, base, pa->_class,
+	pl = aws_lws_plat_dlopen(pa->pplugin, path, base, pa->_class,
 			     pa->each, pa->each_user);
 
 	/*
@@ -343,11 +343,11 @@ lws_plugins_dir_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 }
 
 int
-lws_plugins_init(struct lws_plugin **pplugin, const char * const *d,
+aws_lws_plugins_init(struct aws_lws_plugin **pplugin, const char * const *d,
 		 const char *_class, const char *filter,
 		 each_plugin_cb_t each, void *each_user)
 {
-	struct lws_plugins_args pa;
+	struct aws_lws_plugins_args pa;
 	char *ld_env;
 	int ret = 1;
 
@@ -364,7 +364,7 @@ lws_plugins_init(struct lws_plugin **pplugin, const char * const *d,
 	ld_env = getenv("LD_LIBRARY_PATH");
 	if (ld_env) {
 		char temp[128];
-		struct lws_tokenize ts;
+		struct aws_lws_tokenize ts;
 
 		memset(&ts, 0, sizeof(ts));
 		ts.start = ld_env;
@@ -376,24 +376,24 @@ lws_plugins_init(struct lws_plugin **pplugin, const char * const *d,
 			   LWS_TOKENIZE_F_NO_FLOATS;
 
 		do {
-			ts.e = (int8_t)lws_tokenize(&ts);
+			ts.e = (int8_t)aws_lws_tokenize(&ts);
 			if (ts.e != LWS_TOKZE_TOKEN)
 				continue;
 
-			lws_strnncpy(temp, ts.token,
+			aws_lws_strnncpy(temp, ts.token,
 				     ts.token_len,
 				     sizeof(temp));
 
-			lwsl_info("%s: trying %s\n", __func__, temp);
-			if (!lws_dir(temp, &pa, lws_plugins_dir_cb))
+			aws_lwsl_info("%s: trying %s\n", __func__, temp);
+			if (!aws_lws_dir(temp, &pa, aws_lws_plugins_dir_cb))
 				ret = 0;
 
 		} while (ts.e > 0);
 	}
 
 	while (d && *d) {
-		lwsl_info("%s: trying %s\n", __func__, *d);
-		if (!lws_dir(*d, &pa, lws_plugins_dir_cb))
+		aws_lwsl_info("%s: trying %s\n", __func__, *d);
+		if (!aws_lws_dir(*d, &pa, aws_lws_plugins_dir_cb))
 			ret = 0;
 
 		d++;
@@ -403,18 +403,18 @@ lws_plugins_init(struct lws_plugin **pplugin, const char * const *d,
 }
 
 int
-lws_plugins_destroy(struct lws_plugin **pplugin, each_plugin_cb_t each,
+aws_lws_plugins_destroy(struct aws_lws_plugin **pplugin, each_plugin_cb_t each,
 		    void *each_user)
 {
-	struct lws_plugin *p = *pplugin, *p1;
+	struct aws_lws_plugin *p = *pplugin, *p1;
 
 	while (p) {
 		if (each)
 			each(p, each_user);
-		lws_plat_destroy_dl(p);
+		aws_lws_plat_destroy_dl(p);
 		p1 = p->list;
 		p->list = NULL;
-		lws_free(p);
+		aws_lws_free(p);
 		p = p1;
 	}
 

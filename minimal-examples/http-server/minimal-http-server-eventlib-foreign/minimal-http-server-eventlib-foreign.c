@@ -25,9 +25,9 @@
 
 #include "private.h"
 
-static struct lws_context_creation_info info;
+static struct aws_lws_context_creation_info info;
 static const struct ops *ops = NULL;
-struct lws_context *context;
+struct aws_lws_context *context;
 int lifetime = 5, reported;
 
 enum {
@@ -38,7 +38,7 @@ enum {
 
 static int sequence = TEST_STATE_CREATE_LWS_CONTEXT;
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -61,7 +61,7 @@ static const struct lws_http_mount mount = {
 void
 signal_cb(int signum)
 {
-	lwsl_notice("Signal %d caught, exiting...\n", signum);
+	aws_lwsl_notice("Signal %d caught, exiting...\n", signum);
 
 	switch (signum) {
 	case SIGTERM:
@@ -71,30 +71,30 @@ signal_cb(int signum)
 		break;
 	}
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 }
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: resp %u\n",
-				lws_http_client_http_response(wsi));
+		aws_lwsl_user("LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: resp %u\n",
+				aws_lws_http_client_http_response(wsi));
 		break;
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		break;
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
-		lwsl_hexdump_info(in, len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_hexdump_info(in, len);
 		return 0; /* don't passthru */
 
 	/* uninterpreted http content */
@@ -104,28 +104,28 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP %s\n",
-			  lws_wsi_tag(wsi));
+		aws_lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP %s\n",
+			  aws_lws_wsi_tag(wsi));
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
-		lwsl_info("%s: closed: %s\n", __func__, lws_wsi_tag(wsi));
+		aws_lwsl_info("%s: closed: %s\n", __func__, aws_lws_wsi_tag(wsi));
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{ "httptest", callback_http, 0, 0, 0, NULL, 0},
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -133,7 +133,7 @@ static const struct lws_protocols protocols[] = {
 static int
 do_client_conn(void)
 {
-	struct lws_client_connect_info i;
+	struct aws_lws_client_connect_info i;
 
 	memset(&i, 0, sizeof i); /* otherwise uninitialized garbage */
 
@@ -154,8 +154,8 @@ do_client_conn(void)
 	i.fi_wsi_name		= "user";
 #endif
 
-	if (!lws_client_connect_via_info(&i)) {
-		lwsl_err("Client creation failed\n");
+	if (!aws_lws_client_connect_via_info(&i)) {
+		aws_lwsl_err("Client creation failed\n");
 
 		return 1;
 	}
@@ -171,14 +171,14 @@ foreign_timer_service(void *foreign_loop)
 {
 	void *foreign_loops[1];
 
-	lwsl_user("Foreign 1Hz timer\n");
+	aws_lwsl_user("Foreign 1Hz timer\n");
 
 	if (sequence == TEST_STATE_EXIT && !context && !reported) {
 		/*
-		 * at this point the lws_context_destroy() we did earlier
+		 * at this point the aws_lws_context_destroy() we did earlier
 		 * has completed and the entire context is wholly destroyed
 		 */
-		lwsl_user("lws_destroy_context() done, continuing for 5s\n");
+		aws_lwsl_user("aws_lws_destroy_context() done, continuing for 5s\n");
 		reported = 1;
 	}
 
@@ -191,12 +191,12 @@ foreign_timer_service(void *foreign_loop)
 		foreign_loops[0] = foreign_loop;
 		info.foreign_loops = foreign_loops;
 
-		context = lws_create_context(&info);
+		context = aws_lws_create_context(&info);
 		if (!context) {
-			lwsl_err("lws init failed\n");
+			aws_lwsl_err("lws init failed\n");
 			return;
 		}
-		lwsl_user("LWS Context created and will be active for 10s\n");
+		aws_lwsl_user("LWS Context created and will be active for 10s\n");
 
 		do_client_conn();
 
@@ -205,13 +205,13 @@ foreign_timer_service(void *foreign_loop)
 
 	case TEST_STATE_DESTROY_LWS_CONTEXT:
 		/* cleanup the lws part */
-		lwsl_user("Destroying lws context and continuing loop for 5s\n");
-		lws_context_destroy(context);
+		aws_lwsl_user("Destroying lws context and continuing loop for 5s\n");
+		aws_lws_context_destroy(context);
 		lifetime = 6;
 		break;
 
 	case TEST_STATE_EXIT:
-		lwsl_user("Deciding to exit foreign loop too\n");
+		aws_lwsl_user("Deciding to exit foreign loop too\n");
 		ops->stop();
 		break;
 	default:
@@ -230,11 +230,11 @@ int main(int argc, const char **argv)
 			/* | LLL_EXT */ /* | LLL_CLIENT */ /* | LLL_LATENCY */
 			/* | LLL_DEBUG */;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server eventlib + foreign loop |"
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server eventlib + foreign loop |"
 		  " visit http://localhost:7681\n");
 
 	/*
@@ -245,7 +245,7 @@ int main(int argc, const char **argv)
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
-	if ((p = lws_cmdline_option(argc, argv, "-p")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-p")))
 		info.port = atoi(p);
 	info.mounts = &mount;
 	info.error_document_404 = "/404.html";
@@ -254,7 +254,7 @@ int main(int argc, const char **argv)
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	if (lws_cmdline_option(argc, argv, "-s")) {
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
 		info.ssl_cert_filepath = "localhost-100y.cert";
 		info.ssl_private_key_filepath = "localhost-100y.key";
 	}
@@ -265,77 +265,77 @@ int main(int argc, const char **argv)
 	 */
 
 #if defined(LWS_WITH_LIBUV)
-	if (lws_cmdline_option(argc, argv, "--uv")) {
+	if (aws_lws_cmdline_option(argc, argv, "--uv")) {
 		info.options |= LWS_SERVER_OPTION_LIBUV;
 		ops = &ops_libuv;
-		lwsl_notice("%s: using libuv event loop\n", __func__);
+		aws_lwsl_notice("%s: using libuv event loop\n", __func__);
 	} else
 #endif
 #if defined(LWS_WITH_LIBEVENT)
-		if (lws_cmdline_option(argc, argv, "--event")) {
+		if (aws_lws_cmdline_option(argc, argv, "--event")) {
 			info.options |= LWS_SERVER_OPTION_LIBEVENT;
 			ops = &ops_libevent;
-			lwsl_notice("%s: using libevent loop\n", __func__);
+			aws_lwsl_notice("%s: using libevent loop\n", __func__);
 		} else
 #endif
 #if defined(LWS_WITH_LIBEV)
-			if (lws_cmdline_option(argc, argv, "--ev")) {
+			if (aws_lws_cmdline_option(argc, argv, "--ev")) {
 				info.options |= LWS_SERVER_OPTION_LIBEV;
 				ops = &ops_libev;
-				lwsl_notice("%s: using libev loop\n", __func__);
+				aws_lwsl_notice("%s: using libev loop\n", __func__);
 			} else
 #endif
 #if defined(LWS_WITH_GLIB)
-				if (lws_cmdline_option(argc, argv, "--glib")) {
+				if (aws_lws_cmdline_option(argc, argv, "--glib")) {
 					info.options |= LWS_SERVER_OPTION_GLIB;
 					ops = &ops_glib;
-					lwsl_notice("%s: using glib loop\n", __func__);
+					aws_lwsl_notice("%s: using glib loop\n", __func__);
 				} else
 #endif
 #if defined(LWS_WITH_SDEVENT)
-					if (lws_cmdline_option(argc, argv, "--sd")) {
+					if (aws_lws_cmdline_option(argc, argv, "--sd")) {
 						info.options |= LWS_SERVER_OPTION_SDEVENT;
 						ops = &ops_sdevent;
-						lwsl_notice("%s: using sd-event loop\n", __func__);
+						aws_lwsl_notice("%s: using sd-event loop\n", __func__);
 					} else
 #endif
 #if defined(LWS_WITH_ULOOP)
-					if (lws_cmdline_option(argc, argv, "--uloop")) {
+					if (aws_lws_cmdline_option(argc, argv, "--uloop")) {
 						info.options |= LWS_SERVER_OPTION_ULOOP;
 						ops = &ops_uloop;
-						lwsl_notice("%s: using uloop loop\n", __func__);
+						aws_lwsl_notice("%s: using uloop loop\n", __func__);
 					} else
 #endif
 				{
-				lwsl_err("This app only makes sense when used\n");
-				lwsl_err(" with a foreign loop, --uv, --event, --glib, --ev or --sd\n");
+				aws_lwsl_err("This app only makes sense when used\n");
+				aws_lwsl_err(" with a foreign loop, --uv, --event, --glib, --ev or --sd\n");
 
 				return 1;
 				}
 
-	lwsl_user("  This app creates a foreign event loop with a timer +\n");
-	lwsl_user("  signalhandler, and performs a test in three phases:\n");
-	lwsl_user("\n");
-	lwsl_user("  1) 5s: Runs the loop with just the timer\n");
-	lwsl_user("  2) 10s: create an lws context serving on localhost:7681\n");
-	lwsl_user("     using the same foreign loop.  Destroy it after 10s.\n");
-	lwsl_user("  3) 5s: Run the loop again with just the timer\n");
-	lwsl_user("\n");
-	lwsl_user("  Finally close only the timer and signalhandler and\n");
-	lwsl_user("   exit the loop cleanly\n");
-	lwsl_user("\n");
+	aws_lwsl_user("  This app creates a foreign event loop with a timer +\n");
+	aws_lwsl_user("  signalhandler, and performs a test in three phases:\n");
+	aws_lwsl_user("\n");
+	aws_lwsl_user("  1) 5s: Runs the loop with just the timer\n");
+	aws_lwsl_user("  2) 10s: create an lws context serving on localhost:7681\n");
+	aws_lwsl_user("     using the same foreign loop.  Destroy it after 10s.\n");
+	aws_lwsl_user("  3) 5s: Run the loop again with just the timer\n");
+	aws_lwsl_user("\n");
+	aws_lwsl_user("  Finally close only the timer and signalhandler and\n");
+	aws_lwsl_user("   exit the loop cleanly\n");
+	aws_lwsl_user("\n");
 
 	/* foreign loop specific startup and run */
 
 	ops->init_and_run();
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	/* foreign loop specific cleanup and exit */
 
 	ops->cleanup();
 
-	lwsl_user("%s: exiting...\n", __func__);
+	aws_lwsl_user("%s: exiting...\n", __func__);
 
 	return 0;
 }

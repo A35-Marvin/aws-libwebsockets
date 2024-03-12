@@ -56,7 +56,7 @@ child_handler(int signum)
 
 		/* Create the lock file as the current user */
 
-		fd = lws_open(lock_path, O_TRUNC | O_RDWR | O_CREAT, 0640);
+		fd = aws_lws_open(lock_path, O_TRUNC | O_RDWR | O_CREAT, 0640);
 		if (fd < 0) {
 			fprintf(stderr,
 			   "unable to create lock file %s, code=%d (%s)\n",
@@ -81,12 +81,12 @@ child_handler(int signum)
 	}
 }
 
-static void lws_daemon_closing(int sigact)
+static void aws_lws_daemon_closing(int sigact)
 {
 	if (getpid() == pid_daemon)
 		if (lock_path) {
 			unlink(lock_path);
-			lws_free_set_NULL(lock_path);
+			aws_lws_free_set_NULL(lock_path);
 		}
 
 	kill(getpid(), SIGKILL);
@@ -101,7 +101,7 @@ static void lws_daemon_closing(int sigact)
  */
 
 int
-lws_daemonize(const char *_lock_path)
+aws_lws_daemonize(const char *_lock_path)
 {
 	struct sigaction act;
 	pid_t sid, parent;
@@ -113,7 +113,7 @@ lws_daemonize(const char *_lock_path)
 	if (_lock_path) {
 		int n;
 
-		int fd = lws_open(_lock_path, O_RDONLY);
+		int fd = aws_lws_open(_lock_path, O_RDONLY);
 		if (fd >= 0) {
 			char buf[10];
 
@@ -137,7 +137,7 @@ lws_daemonize(const char *_lock_path)
 		}
 
 		n = (int)strlen(_lock_path) + 1;
-		lock_path = lws_malloc((unsigned int)n, "daemonize lock");
+		lock_path = aws_lws_malloc((unsigned int)n, "daemonize lock");
 		if (!lock_path) {
 			fprintf(stderr, "Out of mem in lws_daemonize\n");
 			return 1;
@@ -223,7 +223,7 @@ lws_daemonize(const char *_lock_path)
 	/* Tell the parent process that we are A-okay */
 	kill(parent, SIGUSR1);
 
-	act.sa_handler = lws_daemon_closing;
+	act.sa_handler = aws_lws_daemon_closing;
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = 0;
 

@@ -25,15 +25,15 @@
 #include <private-lib-core.h>
 
 extern int
-secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len);
 
 static int
-secstream_h2(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+secstream_h2(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
-	lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
-	lws_ss_state_return_t r;
+	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
+	aws_lws_ss_state_return_t r;
 	int n;
 
 	switch (reason) {
@@ -50,7 +50,7 @@ secstream_h2(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			 * need to inform the client about the initial tx credit
 			 * to write to it that the remote h2 server set up
 			 */
-			lwsl_info("%s: reporting initial tx cr from server %d\n",
+			aws_lwsl_info("%s: reporting initial tx cr from server %d\n",
 				  __func__, wsi->txc.tx_cr);
 			ss_proxy_onward_txcr((void *)&h[1], wsi->txc.tx_cr);
 		}
@@ -59,9 +59,9 @@ secstream_h2(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		n = secstream_h1(wsi, reason, user, in, len);
 
 		if (!n && (h->policy->flags & LWSSSPOLF_LONG_POLL)) {
-			lwsl_notice("%s: h2 client %s entering LONG_POLL\n",
-					__func__, lws_wsi_tag(wsi));
-			lws_h2_client_stream_long_poll_rxonly(wsi);
+			aws_lwsl_notice("%s: h2 client %s entering LONG_POLL\n",
+					__func__, aws_lws_wsi_tag(wsi));
+			aws_lws_h2_client_stream_long_poll_rxonly(wsi);
 		}
 		return n;
 
@@ -80,13 +80,13 @@ secstream_h2(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		if (!h)
 			return -1;
 
-		// lwsl_err("%s: h2 COMPLETED_CLIENT_HTTP\n", __func__);
+		// aws_lwsl_err("%s: h2 COMPLETED_CLIENT_HTTP\n", __func__);
 		r = 0;
 		if (h->hanging_som)
 			r = h->info.rx(ss_to_userobj(h), NULL, 0, LWSSS_FLAG_EOM);
 
 		h->txn_ok = 1;
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		if (h->hanging_som && r == LWSSSSRET_DESTROY_ME)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		h->hanging_som = 0;
@@ -100,7 +100,7 @@ secstream_h2(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		/*
 		 * The peer has sent us additional tx credit...
 		 */
-		lwsl_info("%s: LWS_CALLBACK_WSI_TX_CREDIT_GET: %d\n",
+		aws_lwsl_info("%s: LWS_CALLBACK_WSI_TX_CREDIT_GET: %d\n",
 			    __func__, (int)len);
 
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
@@ -117,7 +117,7 @@ secstream_h2(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	return secstream_h1(wsi, reason, user, in, len);
 }
 
-const struct lws_protocols protocol_secstream_h2 = {
+const struct aws_lws_protocols protocol_secstream_h2 = {
 	"lws-secstream-h2",
 	secstream_h2,
 	0, 0, 0, NULL, 0
@@ -133,13 +133,13 @@ const struct lws_protocols protocol_secstream_h2 = {
  */
 
 int
-secstream_connect_munge_h2(lws_ss_handle_t *h, char *buf, size_t len,
-			   struct lws_client_connect_info *i,
-			   union lws_ss_contemp *ct)
+secstream_connect_munge_h2(aws_lws_ss_handle_t *h, char *buf, size_t len,
+			   struct aws_lws_client_connect_info *i,
+			   union aws_lws_ss_contemp *ct)
 {
 	const char *pbasis = h->policy->u.http.url;
 	size_t used_in, used_out;
-	lws_strexp_t exp;
+	aws_lws_strexp_t exp;
 
 	/* i.path on entry is used to override the policy urlpath if not "" */
 
@@ -170,7 +170,7 @@ secstream_connect_munge_h2(lws_ss_handle_t *h, char *buf, size_t len,
 	if (h->info.manual_initial_tx_credit) {
 		i->ssl_connection |= LCCSCF_H2_MANUAL_RXFLOW;
 		i->manual_initial_tx_credit = h->info.manual_initial_tx_credit;
-		lwsl_info("%s: initial txcr %d\n", __func__,
+		aws_lwsl_info("%s: initial txcr %d\n", __func__,
 				i->manual_initial_tx_credit);
 	}
 
@@ -182,9 +182,9 @@ secstream_connect_munge_h2(lws_ss_handle_t *h, char *buf, size_t len,
 	i->path = buf;
 	buf[0] = '/';
 
-	lws_strexp_init(&exp, (void *)h, lws_ss_exp_cb_metadata, buf + 1, len - 1);
+	aws_lws_strexp_init(&exp, (void *)h, aws_lws_ss_exp_cb_metadata, buf + 1, len - 1);
 
-	if (lws_strexp_expand(&exp, pbasis, strlen(pbasis),
+	if (aws_lws_strexp_expand(&exp, pbasis, strlen(pbasis),
 			      &used_in, &used_out) != LSTRX_DONE)
 		return 1;
 
@@ -192,26 +192,26 @@ secstream_connect_munge_h2(lws_ss_handle_t *h, char *buf, size_t len,
 }
 
 static int
-secstream_tx_credit_add_h2(lws_ss_handle_t *h, int add)
+secstream_tx_credit_add_h2(aws_lws_ss_handle_t *h, int add)
 {
-	lwsl_info("%s: %s: add %d\n", __func__, lws_ss_tag(h), add);
+	aws_lwsl_info("%s: %s: add %d\n", __func__, aws_lws_ss_tag(h), add);
 	if (h->wsi)
-		return lws_h2_update_peer_txcredit(h->wsi, (unsigned int)LWS_H2_STREAM_SID, add);
+		return aws_lws_h2_update_peer_txcredit(h->wsi, (unsigned int)LWS_H2_STREAM_SID, add);
 
 	return 0;
 }
 
 static int
-secstream_tx_credit_est_h2(lws_ss_handle_t *h)
+secstream_tx_credit_est_h2(aws_lws_ss_handle_t *h)
 {
 	if (h->wsi) {
-		lwsl_info("%s: %s: est %d\n", __func__, lws_ss_tag(h),
-				lws_h2_get_peer_txcredit_estimate(h->wsi));
+		aws_lwsl_info("%s: %s: est %d\n", __func__, aws_lws_ss_tag(h),
+				aws_lws_h2_get_peer_txcredit_estimate(h->wsi));
 
-		return lws_h2_get_peer_txcredit_estimate(h->wsi);
+		return aws_lws_h2_get_peer_txcredit_estimate(h->wsi);
 	}
 
-	lwsl_info("%s: %s: Unknown (0)\n", __func__, lws_ss_tag(h));
+	aws_lwsl_info("%s: %s: Unknown (0)\n", __func__, aws_lws_ss_tag(h));
 
 	return 0;
 }

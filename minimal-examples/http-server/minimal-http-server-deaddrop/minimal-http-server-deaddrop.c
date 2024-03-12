@@ -10,7 +10,7 @@
  * secure, modern html5 file upload and sharing application.
  *
  * Because the guts are in a plugin, you can avoid all this setup by using the
- * plugin from lwsws and do the config in JSON.
+ * plugin from aws_lwsws and do the config in JSON.
  */
 
 #include <libwebsockets.h>
@@ -21,7 +21,7 @@
 #define LWS_PLUGIN_STATIC
 #include "../plugins/deaddrop/protocol_lws_deaddrop.c"
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
        LWS_PLUGIN_PROTOCOL_DEADDROP,
        LWS_PROTOCOL_LIST_TERM
 };
@@ -35,7 +35,7 @@ static int interrupted;
  * measure.
  */
 
-static struct lws_protocol_vhost_options em3 = {
+static struct aws_lws_protocol_vhost_options em3 = {
         NULL, NULL, ".zip", "application/zip"
 }, em2 = {
 	&em3, NULL, ".pdf", "application/pdf"
@@ -45,7 +45,7 @@ static struct lws_protocol_vhost_options em3 = {
 
 /* wire up /upload URLs to the plugin (protected by basic auth) */
 
-static const struct lws_http_mount mount_upload = {
+static const struct aws_lws_http_mount mount_upload = {
 	/* .mount_next */		NULL,
 	/* .mountpoint */		"/upload",	/* mountpoint URL */
 	/* .origin */			"lws-deaddrop",
@@ -67,7 +67,7 @@ static const struct lws_http_mount mount_upload = {
 
 /* wire up /get URLs to the upload directory (protected by basic auth) */
 
-static const struct lws_http_mount mount_get = {
+static const struct aws_lws_http_mount mount_get = {
 	/* .mount_next */		&mount_upload,	/* linked-list "next" */
 	/* .mountpoint */		"/get",	/* mountpoint URL */
 	/* .origin */			"./uploads",
@@ -89,7 +89,7 @@ static const struct lws_http_mount mount_get = {
 
 /* wire up / to serve from ./mount-origin (protected by basic auth) */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		&mount_get,	/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -111,7 +111,7 @@ static const struct lws_http_mount mount = {
 
 /* pass config options to the deaddrop plugin using pvos */
 
-static struct lws_protocol_vhost_options pvo3 = {
+static struct aws_lws_protocol_vhost_options pvo3 = {
 	/* make the wss also require to pass basic auth */
 	NULL, NULL, "basic-auth", "./ba-passwords"
 }, pvo2 = {
@@ -132,18 +132,18 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server deaddrop | visit https://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server deaddrop | visit https://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -158,16 +158,16 @@ int main(int argc, const char **argv)
 	info.ssl_private_key_filepath = "localhost-100y.key";
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

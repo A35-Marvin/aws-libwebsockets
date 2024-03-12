@@ -46,13 +46,13 @@ alpn_cb(SSL *s, const unsigned char **out, unsigned char *outlen,
 #endif
 
 int
-lws_tls_restrict_borrow(struct lws *wsi)
+aws_lws_tls_restrict_borrow(struct lws *wsi)
 {
-	struct lws_context *cx = wsi->a.context;
+	struct aws_lws_context *cx = wsi->a.context;
 
 	if (cx->simultaneous_ssl_restriction &&
 	    cx->simultaneous_ssl >= cx->simultaneous_ssl_restriction) {
-		lwsl_notice("%s: tls connection limit %d\n", __func__,
+		aws_lwsl_notice("%s: tls connection limit %d\n", __func__,
 			    cx->simultaneous_ssl);
 		return 1;
 	}
@@ -60,7 +60,7 @@ lws_tls_restrict_borrow(struct lws *wsi)
 	if (cx->simultaneous_ssl_handshake_restriction &&
 	    cx->simultaneous_ssl_handshake >=
 			    cx->simultaneous_ssl_handshake_restriction) {
-		lwsl_notice("%s: tls handshake limit %d\n", __func__,
+		aws_lwsl_notice("%s: tls handshake limit %d\n", __func__,
 			    cx->simultaneous_ssl);
 		return 1;
 	}
@@ -70,7 +70,7 @@ lws_tls_restrict_borrow(struct lws *wsi)
 	wsi->tls_borrowed_hs = 1;
 	wsi->tls_borrowed = 1;
 
-	lwsl_info("%s: %d -> %d\n", __func__,
+	aws_lwsl_info("%s: %d -> %d\n", __func__,
 		  cx->simultaneous_ssl - 1,
 		  cx->simultaneous_ssl);
 
@@ -82,7 +82,7 @@ lws_tls_restrict_borrow(struct lws *wsi)
 				cx->simultaneous_ssl_handshake_restriction);
 
 #if defined(LWS_WITH_SERVER)
-	lws_gate_accepts(cx,
+	aws_lws_gate_accepts(cx,
 			(cx->simultaneous_ssl_restriction &&
 			 cx->simultaneous_ssl == cx->simultaneous_ssl_restriction) ||
 			(cx->simultaneous_ssl_handshake_restriction &&
@@ -96,12 +96,12 @@ static void
 _lws_tls_restrict_return(struct lws *wsi)
 {
 #if defined(LWS_WITH_SERVER)
-	struct lws_context *cx = wsi->a.context;
+	struct aws_lws_context *cx = wsi->a.context;
 
 	assert(cx->simultaneous_ssl_handshake >= 0);
 	assert(cx->simultaneous_ssl >= 0);
 
-	lws_gate_accepts(cx,
+	aws_lws_gate_accepts(cx,
 			(cx->simultaneous_ssl_restriction &&
 			 cx->simultaneous_ssl == cx->simultaneous_ssl_restriction) ||
 			(cx->simultaneous_ssl_handshake_restriction &&
@@ -110,9 +110,9 @@ _lws_tls_restrict_return(struct lws *wsi)
 }
 
 void
-lws_tls_restrict_return_handshake(struct lws *wsi)
+aws_lws_tls_restrict_return_handshake(struct lws *wsi)
 {
-	struct lws_context *cx = wsi->a.context;
+	struct aws_lws_context *cx = wsi->a.context;
 
 	/* we're just returning the hs part */
 
@@ -122,7 +122,7 @@ lws_tls_restrict_return_handshake(struct lws *wsi)
 	wsi->tls_borrowed_hs = 0; /* return it one time per wsi */
 	cx->simultaneous_ssl_handshake--;
 
-	lwsl_info("%s:  %d -> %d\n", __func__,
+	aws_lwsl_info("%s:  %d -> %d\n", __func__,
 		  cx->simultaneous_ssl_handshake + 1,
 		  cx->simultaneous_ssl_handshake);
 
@@ -130,9 +130,9 @@ lws_tls_restrict_return_handshake(struct lws *wsi)
 }
 
 void
-lws_tls_restrict_return(struct lws *wsi)
+aws_lws_tls_restrict_return(struct lws *wsi)
 {
-	struct lws_context *cx = wsi->a.context;
+	struct aws_lws_context *cx = wsi->a.context;
 
 	if (!wsi->tls_borrowed)
 		return;
@@ -140,20 +140,20 @@ lws_tls_restrict_return(struct lws *wsi)
 	wsi->tls_borrowed = 0;
 	cx->simultaneous_ssl--;
 
-	lwsl_info("%s: %d -> %d\n", __func__,
+	aws_lwsl_info("%s: %d -> %d\n", __func__,
 		  cx->simultaneous_ssl + 1,
 		  cx->simultaneous_ssl);
 
 	/* We're returning everything, even if hs didn't complete */
 
 	if (wsi->tls_borrowed_hs)
-		lws_tls_restrict_return_handshake(wsi);
+		aws_lws_tls_restrict_return_handshake(wsi);
 	else
 		_lws_tls_restrict_return(wsi);
 }
 
 void
-lws_context_init_alpn(struct lws_vhost *vhost)
+aws_lws_context_init_alpn(struct aws_lws_vhost *vhost)
 {
 #if defined(LWS_WITH_MBEDTLS) || (defined(OPENSSL_VERSION_NUMBER) && \
 				  OPENSSL_VERSION_NUMBER >= 0x10002000L)
@@ -162,24 +162,24 @@ lws_context_init_alpn(struct lws_vhost *vhost)
 	if (vhost->tls.alpn)
 		alpn_comma = vhost->tls.alpn;
 
-	lwsl_info(" Server '%s' advertising ALPN: %s\n",
+	aws_lwsl_info(" Server '%s' advertising ALPN: %s\n",
 		    vhost->name, alpn_comma);
 
-	vhost->tls.alpn_ctx.len = (uint8_t)lws_alpn_comma_to_openssl(alpn_comma,
+	vhost->tls.alpn_ctx.len = (uint8_t)aws_lws_alpn_comma_to_openssl(alpn_comma,
 					vhost->tls.alpn_ctx.data,
 					sizeof(vhost->tls.alpn_ctx.data) - 1);
 
 	SSL_CTX_set_alpn_select_cb(vhost->tls.ssl_ctx, alpn_cb,
 				   &vhost->tls.alpn_ctx);
 #else
-	lwsl_err(" HTTP2 / ALPN configured "
+	aws_lwsl_err(" HTTP2 / ALPN configured "
 		 "but not supported by OpenSSL 0x%lx\n",
 		 OPENSSL_VERSION_NUMBER);
 #endif // OPENSSL_VERSION_NUMBER >= 0x10002000L
 }
 
 int
-lws_tls_server_conn_alpn(struct lws *wsi)
+aws_lws_tls_server_conn_alpn(struct lws *wsi)
 {
 #if defined(LWS_WITH_MBEDTLS) || (defined(OPENSSL_VERSION_NUMBER) && \
 				  OPENSSL_VERSION_NUMBER >= 0x10002000L)
@@ -187,16 +187,16 @@ lws_tls_server_conn_alpn(struct lws *wsi)
 	char cstr[10];
 	unsigned len;
 
-	lwsl_info("%s\n", __func__);
+	aws_lwsl_info("%s\n", __func__);
 
 	if (!wsi->tls.ssl) {
-		lwsl_err("%s: non-ssl\n", __func__);
+		aws_lwsl_err("%s: non-ssl\n", __func__);
 		return 0;
 	}
 
 	SSL_get0_alpn_selected(wsi->tls.ssl, &name, &len);
 	if (!len) {
-		lwsl_info("no ALPN upgrade\n");
+		aws_lwsl_info("no ALPN upgrade\n");
 		return 0;
 	}
 
@@ -206,12 +206,12 @@ lws_tls_server_conn_alpn(struct lws *wsi)
 	memcpy(cstr, name, len);
 	cstr[len] = '\0';
 
-	lwsl_info("%s: negotiated '%s' using ALPN\n", __func__, cstr);
+	aws_lwsl_info("%s: negotiated '%s' using ALPN\n", __func__, cstr);
 	wsi->tls.use_ssl |= LCCSCF_USE_SSL;
 
-	return lws_role_call_alpn_negotiated(wsi, (const char *)cstr);
+	return aws_lws_role_call_alpn_negotiated(wsi, (const char *)cstr);
 #else
-	lwsl_err("%s: openssl too old\n", __func__);
+	aws_lwsl_err("%s: openssl too old\n", __func__);
 #endif // OPENSSL_VERSION_NUMBER >= 0x10002000L
 
 	return 0;
@@ -220,8 +220,8 @@ lws_tls_server_conn_alpn(struct lws *wsi)
 
 #if !defined(LWS_PLAT_OPTEE) && !defined(OPTEE_DEV_KIT)
 #if defined(LWS_PLAT_FREERTOS) && !defined(LWS_AMAZON_RTOS)
-int alloc_file(struct lws_context *context, const char *filename, uint8_t **buf,
-	       lws_filepos_t *amount)
+int alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **buf,
+	       aws_lws_filepos_t *amount)
 {
 	nvs_handle nvh;
 	size_t s;
@@ -232,13 +232,13 @@ int alloc_file(struct lws_context *context, const char *filename, uint8_t **buf,
 		n = 1;
 		goto bail;
 	}
-	*buf = lws_malloc(s + 1, "alloc_file");
+	*buf = aws_lws_malloc(s + 1, "alloc_file");
 	if (!*buf) {
 		n = 2;
 		goto bail;
 	}
 	if (nvs_get_blob(nvh, filename, (char *)*buf, &s) != ESP_OK) {
-		lws_free(*buf);
+		aws_lws_free(*buf);
 		n = 1;
 		goto bail;
 	}
@@ -246,7 +246,7 @@ int alloc_file(struct lws_context *context, const char *filename, uint8_t **buf,
 	*amount = s;
 	(*buf)[s] = '\0';
 
-	lwsl_notice("%s: nvs: read %s, %d bytes\n", __func__, filename, (int)s);
+	aws_lwsl_notice("%s: nvs: read %s, %d bytes\n", __func__, filename, (int)s);
 
 bail:
 	nvs_close(nvh);
@@ -254,8 +254,8 @@ bail:
 	return n;
 }
 #else
-int alloc_file(struct lws_context *context, const char *filename, uint8_t **buf,
-		lws_filepos_t *amount)
+int alloc_file(struct aws_lws_context *context, const char *filename, uint8_t **buf,
+		aws_lws_filepos_t *amount)
 {
 	FILE *f;
 	size_t s;
@@ -285,14 +285,14 @@ int alloc_file(struct lws_context *context, const char *filename, uint8_t **buf,
 		goto bail;
 	}
 
-	*buf = lws_malloc(s + 1, "alloc_file");
+	*buf = aws_lws_malloc(s + 1, "alloc_file");
 	if (!*buf) {
 		n = 2;
 		goto bail;
 	}
 
 	if (fread(*buf, s, 1, f) != 1) {
-		lws_free(*buf);
+		aws_lws_free(*buf);
 		n = 1;
 		goto bail;
 	}
@@ -320,12 +320,12 @@ bail:
  */
 
 int
-lws_tls_alloc_pem_to_der_file(struct lws_context *context, const char *filename,
-			      const char *inbuf, lws_filepos_t inlen,
-			      uint8_t **buf, lws_filepos_t *amount)
+aws_lws_tls_alloc_pem_to_der_file(struct aws_lws_context *context, const char *filename,
+			      const char *inbuf, aws_lws_filepos_t inlen,
+			      uint8_t **buf, aws_lws_filepos_t *amount)
 {
 	uint8_t *pem = NULL, *p, *end, *opem;
-	lws_filepos_t len;
+	aws_lws_filepos_t len;
 	uint8_t *q;
 	int n;
 
@@ -345,7 +345,7 @@ lws_tls_alloc_pem_to_der_file(struct lws_context *context, const char *filename,
 
 		/* take it as being already DER */
 
-		pem = lws_malloc((size_t)inlen, "alloc_der");
+		pem = aws_lws_malloc((size_t)inlen, "alloc_der");
 		if (!pem)
 			return 1;
 
@@ -361,9 +361,9 @@ lws_tls_alloc_pem_to_der_file(struct lws_context *context, const char *filename,
 
 	if (!filename) {
 		/* we don't know if it's in const memory... alloc the output */
-		pem = lws_malloc(((size_t)inlen * 3) / 4, "alloc_der");
+		pem = aws_lws_malloc(((size_t)inlen * 3) / 4, "alloc_der");
 		if (!pem) {
-			lwsl_err("a\n");
+			aws_lwsl_err("a\n");
 			return 1;
 		}
 
@@ -377,7 +377,7 @@ lws_tls_alloc_pem_to_der_file(struct lws_context *context, const char *filename,
 		p++;
 
 	if (*p != '-') {
-		lwsl_err("b\n");
+		aws_lwsl_err("b\n");
 		goto bail;
 	}
 
@@ -385,7 +385,7 @@ lws_tls_alloc_pem_to_der_file(struct lws_context *context, const char *filename,
 		p++;
 
 	if (p >= end) {
-		lwsl_err("c\n");
+		aws_lwsl_err("c\n");
 		goto bail;
 	}
 
@@ -399,7 +399,7 @@ lws_tls_alloc_pem_to_der_file(struct lws_context *context, const char *filename,
 		q--;
 
 	if (*q != '\n') {
-		lwsl_err("d\n");
+		aws_lwsl_err("d\n");
 		goto bail;
 	}
 
@@ -409,14 +409,14 @@ lws_tls_alloc_pem_to_der_file(struct lws_context *context, const char *filename,
 	if (filename)
 		*q = '\0';
 
-	*amount = (unsigned int)lws_b64_decode_string_len((char *)p, lws_ptr_diff(q, p),
+	*amount = (unsigned int)aws_lws_b64_decode_string_len((char *)p, aws_lws_ptr_diff(q, p),
 					    (char *)pem, (int)(long long)len);
 	*buf = (uint8_t *)pem;
 
 	return 0;
 
 bail:
-	lws_free((uint8_t *)pem);
+	aws_lws_free((uint8_t *)pem);
 
 	return 4;
 }
@@ -428,7 +428,7 @@ bail:
 
 
 static int
-lws_tls_extant(const char *name)
+aws_lws_tls_extant(const char *name)
 {
 	/* it exists if we can open it... */
 	int fd = open(name, O_RDONLY);
@@ -475,8 +475,8 @@ lws_tls_extant(const char *name)
  *    have the rights to read them.
  */
 
-enum lws_tls_extant
-lws_tls_use_any_upgrade_check_extant(const char *name)
+enum aws_lws_tls_extant
+aws_lws_tls_use_any_upgrade_check_extant(const char *name)
 {
 #if !defined(LWS_PLAT_OPTEE) && !defined(LWS_AMAZON_RTOS)
 
@@ -485,40 +485,40 @@ lws_tls_use_any_upgrade_check_extant(const char *name)
 #if !defined(LWS_PLAT_FREERTOS)
 	char buf[256];
 
-	lws_snprintf(buf, sizeof(buf) - 1, "%s.upd", name);
-	if (!lws_tls_extant(buf)) {
+	aws_lws_snprintf(buf, sizeof(buf) - 1, "%s.upd", name);
+	if (!aws_lws_tls_extant(buf)) {
 		/* ah there is an updated file... how about the desired file? */
-		if (!lws_tls_extant(name)) {
+		if (!aws_lws_tls_extant(name)) {
 			/* rename the desired file */
 			for (n = 0; n < 50; n++) {
-				lws_snprintf(buf, sizeof(buf) - 1,
+				aws_lws_snprintf(buf, sizeof(buf) - 1,
 					     "%s.old.%d", name, n);
 				if (!rename(name, buf))
 					break;
 			}
 			if (n == 50) {
-				lwsl_notice("unable to rename %s\n", name);
+				aws_lwsl_notice("unable to rename %s\n", name);
 
 				return LWS_TLS_EXTANT_ALTERNATIVE;
 			}
-			lws_snprintf(buf, sizeof(buf) - 1, "%s.upd", name);
+			aws_lws_snprintf(buf, sizeof(buf) - 1, "%s.upd", name);
 		}
 		/* desired file is out of the way, rename the updated file */
 		if (rename(buf, name)) {
-			lwsl_notice("unable to rename %s to %s\n", buf, name);
+			aws_lwsl_notice("unable to rename %s to %s\n", buf, name);
 
 			return LWS_TLS_EXTANT_ALTERNATIVE;
 		}
 	}
 
-	if (lws_tls_extant(name))
+	if (aws_lws_tls_extant(name))
 		return LWS_TLS_EXTANT_NO;
 #else
 	nvs_handle nvh;
 	size_t s = 8192;
 
 	if (nvs_open("lws-station", NVS_READWRITE, &nvh)) {
-		lwsl_notice("%s: can't open nvs\n", __func__);
+		aws_lwsl_notice("%s: can't open nvs\n", __func__);
 		return LWS_TLS_EXTANT_NO;
 	}
 

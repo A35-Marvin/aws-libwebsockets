@@ -33,32 +33,32 @@
 #include <lwip/sockets.h>
 #endif
 
-typedef uint8_t lws_route_uidx_t;
+typedef uint8_t aws_lws_route_uidx_t;
 
-typedef struct lws_dns_score {
+typedef struct aws_lws_dns_score {
 	uint8_t precedence;
 	uint8_t label;
-} lws_dns_score_t;
+} aws_lws_dns_score_t;
 
 /*
  * This represents an entry in the system routing table
  */
 
-typedef struct lws_route {
-	lws_dll2_t		list;
+typedef struct aws_lws_route {
+	aws_lws_dll2_t		list;
 
-	lws_sockaddr46		src;
-	lws_sockaddr46		dest;
-	lws_sockaddr46		gateway;
+	aws_lws_sockaddr46		src;
+	aws_lws_sockaddr46		dest;
+	aws_lws_sockaddr46		gateway;
 
-	struct lws_route	*source; /* when used as lws_dns_sort_t */
-	lws_dns_score_t		score; /* when used as lws_dns_sort_t */
+	struct aws_lws_route	*source; /* when used as aws_lws_dns_sort_t */
+	aws_lws_dns_score_t		score; /* when used as aws_lws_dns_sort_t */
 
 	int			if_idx;
 	int			priority;
 	int			ifa_flags; /* if source_ads */
 
-	lws_route_uidx_t	uidx; /* unique index for this route */
+	aws_lws_route_uidx_t	uidx; /* unique index for this route */
 
 	uint8_t			proto;
 	uint8_t			dest_len;
@@ -67,17 +67,17 @@ typedef struct lws_route {
 	uint8_t			af; /* if source_ads */
 
 	uint8_t			source_ads:1;
-} lws_route_t;
+} aws_lws_route_t;
 
 /*
  * We reuse the route object as the dns sort granule, so there's only one
  * struct needs to know all the gnarly ipv6 details
  */
 
-typedef lws_route_t lws_dns_sort_t;
+typedef aws_lws_route_t aws_lws_dns_sort_t;
 
 /**
- * lws_canonical_hostname() - returns this host's hostname
+ * aws_lws_canonical_hostname() - returns this host's hostname
  *
  * This is typically used by client code to fill in the host parameter
  * when making a client connection.  You can only call it after the context
@@ -86,10 +86,10 @@ typedef lws_route_t lws_dns_sort_t;
  * \param context:	Websocket context
  */
 LWS_VISIBLE LWS_EXTERN const char * LWS_WARN_UNUSED_RESULT
-lws_canonical_hostname(struct lws_context *context);
+aws_lws_canonical_hostname(struct aws_lws_context *context);
 
 /**
- * lws_get_peer_addresses() - Get client address information
+ * aws_lws_get_peer_addresses() - Get client address information
  * \param wsi:	Local struct lws associated with
  * \param fd:		Connection socket descriptor
  * \param name:	Buffer to take client address name
@@ -103,11 +103,11 @@ lws_canonical_hostname(struct lws_context *context);
  *	determined, they will be returned as valid zero-length strings.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_get_peer_addresses(struct lws *wsi, lws_sockfd_type fd, char *name,
+aws_lws_get_peer_addresses(struct lws *wsi, aws_lws_sockfd_type fd, char *name,
 		       int name_len, char *rip, int rip_len);
 
 /**
- * lws_get_peer_simple() - Get client address information without RDNS
+ * aws_lws_get_peer_simple() - Get client address information without RDNS
  *
  * \param wsi:	Local struct lws associated with
  * \param name:	Buffer to take client address name
@@ -117,20 +117,20 @@ lws_get_peer_addresses(struct lws *wsi, lws_sockfd_type fd, char *name,
  * peer that has connected to wsi
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_get_peer_simple(struct lws *wsi, char *name, size_t namelen);
+aws_lws_get_peer_simple(struct lws *wsi, char *name, size_t namelen);
 
 LWS_VISIBLE LWS_EXTERN const char *
-lws_get_peer_simple_fd(lws_sockfd_type fd, char *name, size_t namelen);
+aws_lws_get_peer_simple_fd(aws_lws_sockfd_type fd, char *name, size_t namelen);
 
 #define LWS_ITOSA_USABLE	0
 #define LWS_ITOSA_NOT_EXIST	-1
 #define LWS_ITOSA_NOT_USABLE	-2
-#define LWS_ITOSA_BUSY		-3 /* only returned by lws_socket_bind() on
+#define LWS_ITOSA_BUSY		-3 /* only returned by aws_lws_socket_bind() on
 					EADDRINUSE */
 
 #if !defined(LWS_PLAT_FREERTOS) && !defined(LWS_PLAT_OPTEE)
 /**
- * lws_interface_to_sa() - Convert interface name or IP to sockaddr struct
+ * aws_lws_interface_to_sa() - Convert interface name or IP to sockaddr struct
  *
  * \param ipv6:		Allow IPV6 addresses
  * \param ifname:	Interface name or IP
@@ -150,12 +150,12 @@ lws_get_peer_simple_fd(lws_sockfd_type fd, char *name, size_t namelen);
  * LWS_ITOSA_USABLE.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
+aws_lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
 		    size_t addrlen);
 #endif
 
 /**
- * lws_sa46_compare_ads() - checks if two sa46 have the same address
+ * aws_lws_sa46_compare_ads() - checks if two sa46 have the same address
  *
  * \param sa46a: first
  * \param sa46b: second
@@ -164,10 +164,10 @@ lws_interface_to_sa(int ipv6, const char *ifname, struct sockaddr_in *addr,
  * or if the AF is the same but not INET or INET6, otherwise nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_sa46_compare_ads(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46b);
+aws_lws_sa46_compare_ads(const aws_lws_sockaddr46 *sa46a, const aws_lws_sockaddr46 *sa46b);
 
 /**
- * lws_sa46_on_net() - checks if an sa46 is on the subnet represented by another
+ * aws_lws_sa46_on_net() - checks if an sa46 is on the subnet represented by another
  *
  * \param sa46a: first
  * \param sa46_net: network
@@ -179,11 +179,11 @@ lws_sa46_compare_ads(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46b);
  * address is promoted to ::ffff:x.x.x.x before the comparison.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_sa46_on_net(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46_net,
+aws_lws_sa46_on_net(const aws_lws_sockaddr46 *sa46a, const aws_lws_sockaddr46 *sa46_net,
 			int net_len);
 
 /*
- * lws_parse_numeric_address() - converts numeric ipv4 or ipv6 to byte address
+ * aws_lws_parse_numeric_address() - converts numeric ipv4 or ipv6 to byte address
  *
  * \param ads: the numeric ipv4 or ipv6 address string
  * \param result: result array
@@ -196,10 +196,10 @@ lws_sa46_on_net(const lws_sockaddr46 *sa46a, const lws_sockaddr46 *sa46_net,
  * ipv6.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len);
+aws_lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len);
 
 /*
- * lws_sa46_parse_numeric_address() - converts numeric ipv4 or ipv6 to sa46
+ * aws_lws_sa46_parse_numeric_address() - converts numeric ipv4 or ipv6 to sa46
  *
  * \param ads: the numeric ipv4 or ipv6 address string
  * \param sa46: pointer to sa46 to set
@@ -212,10 +212,10 @@ lws_parse_numeric_address(const char *ads, uint8_t *result, size_t max_len);
  * Returns 0 if the sa46 was set, else < 0 on error.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_sa46_parse_numeric_address(const char *ads, lws_sockaddr46 *sa46);
+aws_lws_sa46_parse_numeric_address(const char *ads, aws_lws_sockaddr46 *sa46);
 
 /**
- * lws_write_numeric_address() - convert network byte order ads to text
+ * aws_lws_write_numeric_address() - convert network byte order ads to text
  *
  * \param ads: network byte order address array
  * \param size: number of bytes valid in ads
@@ -228,21 +228,21 @@ lws_sa46_parse_numeric_address(const char *ads, lws_sockaddr46 *sa46);
  * LWS_IPV6=1 at cmake.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len);
+aws_lws_write_numeric_address(const uint8_t *ads, int size, char *buf, size_t len);
 
 /**
- * lws_sa46_write_numeric_address() - convert sa46 ads to textual numeric ads
+ * aws_lws_sa46_write_numeric_address() - convert sa46 ads to textual numeric ads
  *
  * \param sa46: the sa46 whose address to show
  * \param buf: result buffer to take text format
  * \param len: max size of text buffer
  *
- * Converts the ipv4 or ipv6 address in an lws_sockaddr46 to a textual
+ * Converts the ipv4 or ipv6 address in an aws_lws_sockaddr46 to a textual
  * representation of the numeric address, like "1.2.3.4" or "::1".  Returns the
  * number of chars written into buf, else < 0.  ipv6 only supported with
  * LWS_IPV6=1 at cmake.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_sa46_write_numeric_address(lws_sockaddr46 *sa46, char *buf, size_t len);
+aws_lws_sa46_write_numeric_address(aws_lws_sockaddr46 *sa46, char *buf, size_t len);
 
 ///@}

@@ -32,31 +32,31 @@
 #define G_SOURCE_FUNC(f)	  ((GSourceFunc) (void (*)(void)) (f))
 #endif
 
-#define pt_to_priv_glib(_pt) ((struct lws_pt_eventlibs_glib *)(_pt)->evlib_pt)
-#define wsi_to_priv_glib(_w) ((struct lws_wsi_eventlibs_glib *)(_w)->evlib_wsi)
+#define pt_to_priv_glib(_pt) ((struct aws_lws_pt_eventlibs_glib *)(_pt)->evlib_pt)
+#define wsi_to_priv_glib(_w) ((struct aws_lws_wsi_eventlibs_glib *)(_w)->evlib_wsi)
 
 #define wsi_to_subclass(_w)	  (wsi_to_priv_glib(_w)->w_read.source)
 #define wsi_to_gsource(_w)	  ((GSource *)wsi_to_subclass(_w))
 #define pt_to_loop(_pt)		  (pt_to_priv_glib(_pt)->loop)
 #define pt_to_g_main_context(_pt) g_main_loop_get_context(pt_to_loop(_pt))
 
-#define lws_gs_valid(t)		  (t.gs)
-#define lws_gs_destroy(t)	  if (lws_gs_valid(t)) { \
+#define aws_lws_gs_valid(t)		  (t.gs)
+#define aws_lws_gs_destroy(t)	  if (aws_lws_gs_valid(t)) { \
 					g_source_destroy(t.gs); \
 					g_source_unref(t.gs); \
 					t.gs = NULL; t.tag = 0; }
 
 static gboolean
-lws_glib_idle_timer_cb(void *p);
+aws_lws_glib_idle_timer_cb(void *p);
 
 static gboolean
-lws_glib_hrtimer_cb(void *p);
+aws_lws_glib_hrtimer_cb(void *p);
 
 static gboolean
-lws_glib_check(GSource *src)
+aws_lws_glib_check(GSource *src)
 {
-	struct lws_io_watcher_glib_subclass *sub =
-			(struct lws_io_watcher_glib_subclass *)src;
+	struct aws_lws_io_watcher_glib_subclass *sub =
+			(struct aws_lws_io_watcher_glib_subclass *)src;
 
 	return !!g_source_query_unix_fd(src, sub->tag);
 }
@@ -71,9 +71,9 @@ lws_glib_check(GSource *src)
  */
 
 static int
-lws_glib_set_idle(struct lws_context_per_thread *pt)
+aws_lws_glib_set_idle(struct aws_lws_context_per_thread *pt)
 {
-	if (lws_gs_valid(pt_to_priv_glib(pt)->idle))
+	if (aws_lws_gs_valid(pt_to_priv_glib(pt)->idle))
 		return 0;
 
 	pt_to_priv_glib(pt)->idle.gs = g_idle_source_new();
@@ -81,7 +81,7 @@ lws_glib_set_idle(struct lws_context_per_thread *pt)
 		return 1;
 
 	g_source_set_callback(pt_to_priv_glib(pt)->idle.gs,
-			      lws_glib_idle_timer_cb, pt, NULL);
+			      aws_lws_glib_idle_timer_cb, pt, NULL);
 	pt_to_priv_glib(pt)->idle.tag = g_source_attach(
 			pt_to_priv_glib(pt)->idle.gs, pt_to_g_main_context(pt));
 
@@ -89,16 +89,16 @@ lws_glib_set_idle(struct lws_context_per_thread *pt)
 }
 
 static int
-lws_glib_set_timeout(struct lws_context_per_thread *pt, unsigned int ms)
+aws_lws_glib_set_timeout(struct aws_lws_context_per_thread *pt, unsigned int ms)
 {
-	lws_gs_destroy(pt_to_priv_glib(pt)->hrtimer);
+	aws_lws_gs_destroy(pt_to_priv_glib(pt)->hrtimer);
 
 	pt_to_priv_glib(pt)->hrtimer.gs = g_timeout_source_new(ms);
 	if (!pt_to_priv_glib(pt)->hrtimer.gs)
 		return 1;
 
 	g_source_set_callback(pt_to_priv_glib(pt)->hrtimer.gs,
-			      lws_glib_hrtimer_cb, pt, NULL);
+			      aws_lws_glib_hrtimer_cb, pt, NULL);
 	pt_to_priv_glib(pt)->hrtimer.tag = g_source_attach(
 						pt_to_priv_glib(pt)->hrtimer.gs,
 					        pt_to_g_main_context(pt));
@@ -107,12 +107,12 @@ lws_glib_set_timeout(struct lws_context_per_thread *pt, unsigned int ms)
 }
 
 static gboolean
-lws_glib_dispatch(GSource *src, GSourceFunc x, gpointer userData)
+aws_lws_glib_dispatch(GSource *src, GSourceFunc x, gpointer userData)
 {
-	struct lws_io_watcher_glib_subclass *sub =
-			(struct lws_io_watcher_glib_subclass *)src;
-	struct lws_context_per_thread *pt;
-	struct lws_pollfd eventfd;
+	struct aws_lws_io_watcher_glib_subclass *sub =
+			(struct aws_lws_io_watcher_glib_subclass *)src;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_pollfd eventfd;
 	GIOCondition cond;
 
 	cond = g_source_query_unix_fd(src, sub->tag);
@@ -132,28 +132,28 @@ lws_glib_dispatch(GSource *src, GSourceFunc x, gpointer userData)
 	eventfd.events = eventfd.revents;
 	eventfd.fd = sub->wsi->desc.sockfd;
 
-	lwsl_wsi_debug(sub->wsi, "fd %d, events %d",
+	aws_lwsl_wsi_debug(sub->wsi, "fd %d, events %d",
 				 eventfd.fd, eventfd.revents);
 
 	pt = &sub->wsi->a.context->pt[(int)sub->wsi->tsi];
 	if (pt->is_destroyed)
 		return G_SOURCE_CONTINUE;
 
-	lws_service_fd_tsi(sub->wsi->a.context, &eventfd, sub->wsi->tsi);
+	aws_lws_service_fd_tsi(sub->wsi->a.context, &eventfd, sub->wsi->tsi);
 
-	if (!lws_gs_valid(pt_to_priv_glib(pt)->idle))
-		lws_glib_set_idle(pt);
+	if (!aws_lws_gs_valid(pt_to_priv_glib(pt)->idle))
+		aws_lws_glib_set_idle(pt);
 
 	if (pt->destroy_self)
-		lws_context_destroy(pt->context);
+		aws_lws_context_destroy(pt->context);
 
 	return G_SOURCE_CONTINUE;
 }
 
-static const GSourceFuncs lws_glib_source_ops = {
+static const GSourceFuncs aws_lws_glib_source_ops = {
     .prepare	= NULL,
-    .check	= lws_glib_check,
-    .dispatch	= lws_glib_dispatch,
+    .check	= aws_lws_glib_check,
+    .dispatch	= aws_lws_glib_dispatch,
     .finalize	= NULL,
 };
 
@@ -164,57 +164,57 @@ static const GSourceFuncs lws_glib_source_ops = {
  */
 
 static gboolean
-lws_glib_hrtimer_cb(void *p)
+aws_lws_glib_hrtimer_cb(void *p)
 {
-	struct lws_context_per_thread *pt = (struct lws_context_per_thread *)p;
+	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)p;
 	unsigned int ms;
-	lws_usec_t us;
+	aws_lws_usec_t us;
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 
-	lws_gs_destroy(pt_to_priv_glib(pt)->hrtimer);
+	aws_lws_gs_destroy(pt_to_priv_glib(pt)->hrtimer);
 
 	us = __lws_sul_service_ripe(pt->pt_sul_owner, LWS_COUNT_PT_SUL_OWNERS,
-				    lws_now_usecs());
+				    aws_lws_now_usecs());
 	if (us) {
 		ms = (unsigned int)(us / LWS_US_PER_MS);
 		if (!ms)
 			ms = 1;
 
-		lws_glib_set_timeout(pt, ms);
+		aws_lws_glib_set_timeout(pt, ms);
 	}
 
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
-	lws_glib_set_idle(pt);
+	aws_lws_glib_set_idle(pt);
 
 	return FALSE; /* stop it repeating */
 }
 
 static gboolean
-lws_glib_idle_timer_cb(void *p)
+aws_lws_glib_idle_timer_cb(void *p)
 {
-	struct lws_context_per_thread *pt = (struct lws_context_per_thread *)p;
+	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)p;
 
 	if (pt->is_destroyed)
 		return FALSE;
 
-	lws_service_do_ripe_rxflow(pt);
-	lws_glib_hrtimer_cb(pt);
+	aws_lws_service_do_ripe_rxflow(pt);
+	aws_lws_glib_hrtimer_cb(pt);
 
 	/*
 	 * is there anybody with pending stuff that needs service forcing?
 	 */
-	if (!lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
+	if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid)) {
 		/* -1 timeout means just do forced service */
 		_lws_plat_service_forced_tsi(pt->context, pt->tid);
 		/* still somebody left who wants forced service? */
-		if (!lws_service_adjust_timeout(pt->context, 1, pt->tid))
+		if (!aws_lws_service_adjust_timeout(pt->context, 1, pt->tid))
 			return TRUE;
 	}
 
 	if (pt->destroy_self)
-		lws_context_destroy(pt->context);
+		aws_lws_context_destroy(pt->context);
 
 	/*
 	 * For glib, this disables the idle callback.  Otherwise we keep
@@ -223,15 +223,15 @@ lws_glib_idle_timer_cb(void *p)
 	 * We reenable the idle callback on the next network or scheduled event
 	 */
 
-	lws_gs_destroy(pt_to_priv_glib(pt)->idle);
+	aws_lws_gs_destroy(pt_to_priv_glib(pt)->idle);
 
 	return FALSE;
 }
 
 void
-lws_glib_sigint_cb(void *ctx)
+aws_lws_glib_sigint_cb(void *ctx)
 {
-	struct lws_context_per_thread *pt = ctx;
+	struct aws_lws_context_per_thread *pt = ctx;
 
 	pt->inside_service = 1;
 
@@ -245,8 +245,8 @@ lws_glib_sigint_cb(void *ctx)
 }
 
 static int
-elops_init_context_glib(struct lws_context *context,
-			 const struct lws_context_creation_info *info)
+elops_init_context_glib(struct aws_lws_context *context,
+			 const struct aws_lws_context_creation_info *info)
 {
 //	int n;
 
@@ -261,14 +261,14 @@ elops_init_context_glib(struct lws_context *context,
 static int
 elops_accept_glib(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws_wsi_eventlibs_glib *wsipr = wsi_to_priv_glib(wsi);
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_wsi_eventlibs_glib *wsipr = wsi_to_priv_glib(wsi);
 	int fd;
 
 	assert(!wsi_to_subclass(wsi));
 
-	wsi_to_subclass(wsi) = (struct lws_io_watcher_glib_subclass *)
-			g_source_new((GSourceFuncs *)&lws_glib_source_ops,
+	wsi_to_subclass(wsi) = (struct aws_lws_io_watcher_glib_subclass *)
+			g_source_new((GSourceFuncs *)&aws_lws_glib_source_ops,
 						sizeof(*wsi_to_subclass(wsi)));
 	if (!wsi_to_subclass(wsi))
 		return 1;
@@ -286,7 +286,7 @@ elops_accept_glib(struct lws *wsi)
 	wsipr->w_read.actual_events = LWS_POLLIN;
 
 	g_source_set_callback(wsi_to_gsource(wsi),
-			G_SOURCE_FUNC(lws_service_fd), wsi->a.context, NULL);
+			G_SOURCE_FUNC(aws_lws_service_fd), wsi->a.context, NULL);
 
 	g_source_attach(wsi_to_gsource(wsi), pt_to_g_main_context(pt));
 
@@ -294,9 +294,9 @@ elops_accept_glib(struct lws *wsi)
 }
 
 static int
-elops_listen_init_glib(struct lws_dll2 *d, void *user)
+elops_listen_init_glib(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = lws_container_of(d, struct lws, listen_list);
+	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
 
 	elops_accept_glib(wsi);
 
@@ -304,10 +304,10 @@ elops_listen_init_glib(struct lws_dll2 *d, void *user)
 }
 
 static int
-elops_init_pt_glib(struct lws_context *context, void *_loop, int tsi)
+elops_init_pt_glib(struct aws_lws_context *context, void *_loop, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_pt_eventlibs_glib *ptpr = pt_to_priv_glib(pt);
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_pt_eventlibs_glib *ptpr = pt_to_priv_glib(pt);
 	GMainLoop *loop = (GMainLoop *)_loop;
 
 	if (!loop)
@@ -316,16 +316,16 @@ elops_init_pt_glib(struct lws_context *context, void *_loop, int tsi)
 		context->pt[tsi].event_loop_foreign = 1;
 
 	if (!loop) {
-		lwsl_cx_err(context, "creating glib loop failed");
+		aws_lwsl_cx_err(context, "creating glib loop failed");
 
 		return -1;
 	}
 
 	ptpr->loop = loop;
 
-	lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_init_glib);
+	aws_lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_init_glib);
 
-	lws_glib_set_idle(pt);
+	aws_lws_glib_set_idle(pt);
 
 	/* Register the signal watcher unless it's a foreign loop */
 
@@ -333,7 +333,7 @@ elops_init_pt_glib(struct lws_context *context, void *_loop, int tsi)
 		return 0;
 
 	ptpr->sigint.tag = g_unix_signal_add(SIGINT,
-					G_SOURCE_FUNC(lws_glib_sigint_cb), pt);
+					G_SOURCE_FUNC(aws_lws_glib_sigint_cb), pt);
 
 	return 0;
 }
@@ -345,8 +345,8 @@ elops_init_pt_glib(struct lws_context *context, void *_loop, int tsi)
 static void
 elops_io_glib(struct lws *wsi, unsigned int flags)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws_wsi_eventlibs_glib *wsipr = wsi_to_priv_glib(wsi);
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_wsi_eventlibs_glib *wsipr = wsi_to_priv_glib(wsi);
 	GIOCondition cond = wsipr->w_read.actual_events | G_IO_ERR;
 
 	if (!pt_to_loop(pt) || wsi->a.context->being_destroyed ||
@@ -377,7 +377,7 @@ elops_io_glib(struct lws *wsi, unsigned int flags)
 
 	wsipr->w_read.actual_events = (uint8_t)cond;
 
-	lwsl_wsi_debug(wsi, "fd %d, 0x%x/0x%x", wsi->desc.sockfd,
+	aws_lwsl_wsi_debug(wsi, "fd %d, 0x%x/0x%x", wsi->desc.sockfd,
 						flags, (int)cond);
 
 	g_source_modify_unix_fd(wsi_to_gsource(wsi), wsi_to_subclass(wsi)->tag,
@@ -385,9 +385,9 @@ elops_io_glib(struct lws *wsi, unsigned int flags)
 }
 
 static void
-elops_run_pt_glib(struct lws_context *context, int tsi)
+elops_run_pt_glib(struct aws_lws_context *context, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
 
 	if (pt_to_loop(pt))
 		g_main_loop_run(pt_to_loop(pt));
@@ -396,7 +396,7 @@ elops_run_pt_glib(struct lws_context *context, int tsi)
 static void
 elops_destroy_wsi_glib(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt;
+	struct aws_lws_context_per_thread *pt;
 
 	if (!wsi)
 		return;
@@ -420,9 +420,9 @@ elops_destroy_wsi_glib(struct lws *wsi)
 }
 
 static int
-elops_listen_destroy_glib(struct lws_dll2 *d, void *user)
+elops_listen_destroy_glib(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws *wsi = lws_container_of(d, struct lws, listen_list);
+	struct lws *wsi = aws_lws_container_of(d, struct lws, listen_list);
 
 	elops_destroy_wsi_glib(wsi);
 
@@ -430,22 +430,22 @@ elops_listen_destroy_glib(struct lws_dll2 *d, void *user)
 }
 
 static void
-elops_destroy_pt_glib(struct lws_context *context, int tsi)
+elops_destroy_pt_glib(struct aws_lws_context *context, int tsi)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
-	struct lws_pt_eventlibs_glib *ptpr = pt_to_priv_glib(pt);
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_pt_eventlibs_glib *ptpr = pt_to_priv_glib(pt);
 
 	if (!pt_to_loop(pt))
 		return;
 
-	lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_destroy_glib);
+	aws_lws_vhost_foreach_listen_wsi(context, NULL, elops_listen_destroy_glib);
 
-	lws_gs_destroy(ptpr->idle);
-	lws_gs_destroy(ptpr->hrtimer);
+	aws_lws_gs_destroy(ptpr->idle);
+	aws_lws_gs_destroy(ptpr->hrtimer);
 
 	if (!pt->event_loop_foreign) {
 		g_main_loop_quit(pt_to_loop(pt));
-		lws_gs_destroy(ptpr->sigint);
+		aws_lws_gs_destroy(ptpr->sigint);
 		g_main_loop_unref(pt_to_loop(pt));
 	}
 
@@ -453,9 +453,9 @@ elops_destroy_pt_glib(struct lws_context *context, int tsi)
 }
 
 static int
-elops_destroy_context2_glib(struct lws_context *context)
+elops_destroy_context2_glib(struct aws_lws_context *context)
 {
-	struct lws_context_per_thread *pt = &context->pt[0];
+	struct aws_lws_context_per_thread *pt = &context->pt[0];
 	int n;
 
 	for (n = 0; n < (int)context->count_threads; n++) {
@@ -475,7 +475,7 @@ elops_wsi_logical_close_glib(struct lws *wsi)
 	return 0;
 }
 
-static const struct lws_event_loop_ops event_loop_ops_glib = {
+static const struct aws_lws_event_loop_ops event_loop_ops_glib = {
 	/* name */			"glib",
 	/* init_context */		elops_init_context_glib,
 	/* destroy_context1 */		NULL,
@@ -495,18 +495,18 @@ static const struct lws_event_loop_ops event_loop_ops_glib = {
 	/* flags */			LELOF_DESTROY_FINAL,
 
 	/* evlib_size_ctx */	0,
-	/* evlib_size_pt */	sizeof(struct lws_pt_eventlibs_glib),
+	/* evlib_size_pt */	sizeof(struct aws_lws_pt_eventlibs_glib),
 	/* evlib_size_vh */	0,
-	/* evlib_size_wsi */	sizeof(struct lws_io_watcher_glib),
+	/* evlib_size_wsi */	sizeof(struct aws_lws_io_watcher_glib),
 };
 
 #if defined(LWS_WITH_EVLIB_PLUGINS)
 LWS_VISIBLE
 #endif
-const lws_plugin_evlib_t evlib_glib = {
+const aws_lws_plugin_evlib_t evlib_glib = {
 	.hdr = {
 		"glib event loop",
-		"lws_evlib_plugin",
+		"aws_lws_evlib_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},

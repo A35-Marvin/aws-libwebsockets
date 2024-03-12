@@ -6,8 +6,8 @@
  * payload at the end
  */
 
-typedef struct lws_smtp_email {
-	struct lws_dll2	list;
+typedef struct aws_lws_smtp_email {
+	struct aws_lws_dll2	list;
 	void		*data;
 
 	char		from[LWS_SMTP_MAX_EMAIL_LEN];
@@ -16,9 +16,9 @@ typedef struct lws_smtp_email {
 	time_t		added;
 	time_t		last_try;
 
-	lws_smtp_cb_t	done;
+	aws_lws_smtp_cb_t	done;
 
 	int		tries;
 
 	/* email payload follows */
-} lws_smtp_email_t;
+} aws_lws_smtp_email_t;

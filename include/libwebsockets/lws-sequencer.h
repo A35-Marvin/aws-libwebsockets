@@ -21,15 +21,15 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- * lws_sequencer is intended to help implement sequences that:
+ * aws_lws_sequencer is intended to help implement sequences that:
  *
  *  - outlive a single connection lifetime,
  *  - are not associated with a particular protocol,
  *  - are not associated with a particular vhost,
  *  - must receive and issue events inside the event loop
  *
- * lws_sequencer-s are bound to a pt (per-thread) which for the default case of
- * one service thread is the same as binding to an lws_context.
+ * aws_lws_sequencer-s are bound to a pt (per-thread) which for the default case of
+ * one service thread is the same as binding to an aws_lws_context.
  */
 /*
  * retry backoff table... retry n happens after .retry_ms_table[n] ms, with
@@ -55,15 +55,15 @@ typedef enum {
 				 * the sequencer, passing the oridinal in the
 				 * event argument field.  The message index is
 				 * LWSSEQ_SS_STATE_BASE + the enum from
-				 * lws_ss_constate_t */
+				 * aws_lws_ss_constate_t */
 
 	LWSSEQ_USER_BASE = 100	/* define your events from here */
-} lws_seq_events_t;
+} aws_lws_seq_events_t;
 
-typedef enum lws_seq_cb_return {
+typedef enum aws_lws_seq_cb_return {
 	LWSSEQ_RET_CONTINUE,
 	LWSSEQ_RET_DESTROY
-} lws_seq_cb_return_t;
+} aws_lws_seq_cb_return_t;
 
 /*
  * handler for this sequencer.  Return 0 if OK else nonzero to destroy the
@@ -76,28 +76,28 @@ typedef enum lws_seq_cb_return {
  * Event indexes consist of some generic ones but mainly user-defined ones
  * starting from LWSSEQ_USER_BASE.
  */
-typedef lws_seq_cb_return_t (*lws_seq_event_cb)(struct lws_sequencer *seq,
+typedef aws_lws_seq_cb_return_t (*aws_lws_seq_event_cb)(struct aws_lws_sequencer *seq,
 			     void *user, int event, void *data, void *aux);
 
-typedef struct lws_seq_info {
-	struct lws_context		*context;   /* lws_context for seq */
+typedef struct aws_lws_seq_info {
+	struct aws_lws_context		*context;   /* aws_lws_context for seq */
 	int				tsi;	    /* thread service idx */
 	size_t				user_size;  /* size of user alloc */
 	void				**puser;    /* place ptr to user */
-	lws_seq_event_cb		cb;	    /* seq callback */
+	aws_lws_seq_event_cb		cb;	    /* seq callback */
 	const char			*name;	    /* seq name */
-	const lws_retry_bo_t		*retry;	    /* retry policy */
+	const aws_lws_retry_bo_t		*retry;	    /* retry policy */
 	uint8_t				wakesuspend:1; /* important enough to
 						     * wake system */
-} lws_seq_info_t;
+} aws_lws_seq_info_t;
 
 /**
- * lws_seq_create() - create and bind sequencer to a pt
+ * aws_lws_seq_create() - create and bind sequencer to a pt
  *
  * \param info:	information about sequencer to create
  *
  * This binds an abstract sequencer to a per-thread (by default, the single
- * event loop of an lws_context).  After the event loop starts, the sequencer
+ * event loop of an aws_lws_context).  After the event loop starts, the sequencer
  * will receive an LWSSEQ_CREATED event on its callback from the event loop
  * context, where it can begin its sequence flow.
  *
@@ -106,26 +106,26 @@ typedef struct lws_seq_info {
  *
  * pt locking is used to protect the related data structures.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_sequencer *
-lws_seq_create(lws_seq_info_t *info);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_sequencer *
+aws_lws_seq_create(aws_lws_seq_info_t *info);
 
 /**
- * lws_seq_destroy() - destroy the sequencer
+ * aws_lws_seq_destroy() - destroy the sequencer
  *
  * \param seq: pointer to the the opaque sequencer pointer returned by
- *	       lws_seq_create()
+ *	       aws_lws_seq_create()
  *
  * This proceeds to destroy the sequencer, calling LWSSEQ_DESTROYED and then
  * freeing the sequencer object itself.  The pointed-to seq pointer will be
  * set to NULL.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_seq_destroy(struct lws_sequencer **seq);
+aws_lws_seq_destroy(struct aws_lws_sequencer **seq);
 
 /**
- * lws_seq_queue_event() - queue an event on the given sequencer
+ * aws_lws_seq_queue_event() - queue an event on the given sequencer
  *
- * \param seq: the opaque sequencer pointer returned by lws_seq_create()
+ * \param seq: the opaque sequencer pointer returned by aws_lws_seq_create()
  * \param e: the event index to queue
  * \param data: associated opaque (to lws) data to provide the callback
  * \param aux: second opaque data to provide the callback
@@ -140,11 +140,11 @@ lws_seq_destroy(struct lws_sequencer **seq);
  * values here.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_seq_queue_event(struct lws_sequencer *seq, lws_seq_events_t e, void *data,
+aws_lws_seq_queue_event(struct aws_lws_sequencer *seq, aws_lws_seq_events_t e, void *data,
 			  void *aux);
 
 /**
- * lws_seq_check_wsi() - check if wsi still extant
+ * aws_lws_seq_check_wsi() - check if wsi still extant
  *
  * \param seq: the sequencer interested in the wsi
  * \param wsi: the wsi we want to confirm hasn't closed yet
@@ -160,12 +160,12 @@ lws_seq_queue_event(struct lws_sequencer *seq, lws_seq_events_t e, void *data,
  * close message yet.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_seq_check_wsi(struct lws_sequencer *seq, struct lws *wsi);
+aws_lws_seq_check_wsi(struct aws_lws_sequencer *seq, struct lws *wsi);
 
 #define LWSSEQTO_NONE 0
 
 /**
- * lws_seq_timeout_us() - set a timeout by which the sequence must have
+ * aws_lws_seq_timeout_us() - set a timeout by which the sequence must have
  *				completed by a different event or inform the
  *				sequencer
  *
@@ -190,54 +190,54 @@ lws_seq_check_wsi(struct lws_sequencer *seq, struct lws *wsi);
  * react appropriately.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_seq_timeout_us(struct lws_sequencer *seq, lws_usec_t us);
+aws_lws_seq_timeout_us(struct aws_lws_sequencer *seq, aws_lws_usec_t us);
 
 /**
- * lws_seq_from_user(): get the lws_seq_t pointer from the user ptr
+ * aws_lws_seq_from_user(): get the aws_lws_seq_t pointer from the user ptr
  *
- * \param u: the sequencer user allocation returned by lws_seq_create() or
+ * \param u: the sequencer user allocation returned by aws_lws_seq_create() or
  *	     provided in the sequencer callback
  *
- * This gets the lws_seq_t * from the sequencer user allocation pointer.
+ * This gets the aws_lws_seq_t * from the sequencer user allocation pointer.
  * Actually these are allocated at the same time in one step, with the user
- * allocation immediately after the lws_seq_t, so lws can compute where
- * the lws_seq_t is from having the user allocation pointer.  Since the
- * size of the lws_seq_t is unknown to user code, this helper does it for
+ * allocation immediately after the aws_lws_seq_t, so lws can compute where
+ * the aws_lws_seq_t is from having the user allocation pointer.  Since the
+ * size of the aws_lws_seq_t is unknown to user code, this helper does it for
  * you.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_sequencer *
-lws_seq_from_user(void *u);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_sequencer *
+aws_lws_seq_from_user(void *u);
 
 /**
- * lws_seq_us_since_creation(): elapsed seconds since sequencer created
+ * aws_lws_seq_us_since_creation(): elapsed seconds since sequencer created
  *
- * \param seq: pointer to the lws_seq_t
+ * \param seq: pointer to the aws_lws_seq_t
  *
- * Returns the number of us elapsed since the lws_seq_t was
+ * Returns the number of us elapsed since the aws_lws_seq_t was
  * created.  This is useful to calculate sequencer timeouts for the current
  * step considering a global sequencer lifetime limit.
  */
-LWS_VISIBLE LWS_EXTERN lws_usec_t
-lws_seq_us_since_creation(struct lws_sequencer *seq);
+LWS_VISIBLE LWS_EXTERN aws_lws_usec_t
+aws_lws_seq_us_since_creation(struct aws_lws_sequencer *seq);
 
 /**
- * lws_seq_name(): get the name of this sequencer
+ * aws_lws_seq_name(): get the name of this sequencer
  *
- * \param seq: pointer to the lws_seq_t
+ * \param seq: pointer to the aws_lws_seq_t
  *
  * Returns the name given when the sequencer was created.  This is useful to
  * annotate logging when then are multiple sequencers in play.
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_seq_name(struct lws_sequencer *seq);
+aws_lws_seq_name(struct aws_lws_sequencer *seq);
 
 /**
- * lws_seq_get_context(): get the lws_context sequencer was created on
+ * aws_lws_seq_get_context(): get the aws_lws_context sequencer was created on
  *
- * \param seq: pointer to the lws_seq_t
+ * \param seq: pointer to the aws_lws_seq_t
  *
- * Returns the lws_context.  Saves you having to store it if you have a seq
+ * Returns the aws_lws_context.  Saves you having to store it if you have a seq
  * pointer handy.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_context *
-lws_seq_get_context(struct lws_sequencer *seq);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_context *
+aws_lws_seq_get_context(struct aws_lws_sequencer *seq);

@@ -25,8 +25,8 @@
 #include "private-lib-core.h"
 #include <iphlpapi.h>
 
-lws_async_dns_server_check_t
-lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
+aws_lws_async_dns_server_check_t
+aws_lws_plat_asyncdns_init(struct aws_lws_context *context, aws_lws_sockaddr46 *sa46)
 {
 	unsigned long ul;
 	FIXED_INFO *fi;
@@ -36,7 +36,7 @@ lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
 	ul = sizeof(fi);
 
 	do {
-		fi = (FIXED_INFO *)lws_malloc(ul, __func__);
+		fi = (FIXED_INFO *)aws_lws_malloc(ul, __func__);
 		if (!fi)
 			goto oom;
 
@@ -44,13 +44,13 @@ lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
 		if (dw == NO_ERROR)
 			break;
 		if (dw != ERROR_BUFFER_OVERFLOW) {
-			lwsl_err("%s: GetNetworkParams says 0x%x\n", __func__,
+			aws_lwsl_err("%s: GetNetworkParams says 0x%x\n", __func__,
 				 (unsigned int)dw);
 
 			return LADNS_CONF_SERVER_UNKNOWN;
 		}
 
-		lws_free(fi);
+		aws_lws_free(fi);
 		if (n++)
 			/* not twice or more */
 			goto oom;
@@ -59,30 +59,30 @@ lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
 
 	/* if we got here, then we have it */
 
-	lwsl_info("%s: trying %s\n", __func__,
+	aws_lwsl_info("%s: trying %s\n", __func__,
 			fi->DnsServerList.IpAddress.String);
-	n = lws_sa46_parse_numeric_address(
+	n = aws_lws_sa46_parse_numeric_address(
 			fi->DnsServerList.IpAddress.String, sa46);
 
-	lws_free(fi);
+	aws_lws_free(fi);
 
 	return n == 0 ? LADNS_CONF_SERVER_CHANGED :
 			LADNS_CONF_SERVER_UNKNOWN;
 
 oom:
-	lwsl_err("%s: OOM\n", __func__);
+	aws_lwsl_err("%s: OOM\n", __func__);
 
 	return LADNS_CONF_SERVER_UNKNOWN;
 }
 
 int
-lws_plat_ntpclient_config(struct lws_context *context)
+aws_lws_plat_ntpclient_config(struct aws_lws_context *context)
 {
 #if defined(LWS_HAVE_GETENV)
 	char *ntpsrv = getenv("LWS_NTP_SERVER");
 
 	if (ntpsrv && strlen(ntpsrv) < 64) {
-		lws_system_blob_heap_append(lws_system_get_blob(context,
+		aws_lws_system_blob_heap_append(aws_lws_system_get_blob(context,
 					    LWS_SYSBLOB_TYPE_NTP_SERVER, 0),
 					    (const uint8_t *)ntpsrv,
 					    strlen(ntpsrv));

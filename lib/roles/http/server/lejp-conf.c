@@ -210,18 +210,18 @@ enum lejp_vhost_paths {
 #define MAX_PLUGIN_DIRS 10
 
 struct jpargs {
-	struct lws_context_creation_info *info;
-	struct lws_context *context;
-	const struct lws_protocols *protocols;
-	const struct lws_protocols **pprotocols;
-	const struct lws_extension *extensions;
+	struct aws_lws_context_creation_info *info;
+	struct aws_lws_context *context;
+	const struct aws_lws_protocols *protocols;
+	const struct aws_lws_protocols **pprotocols;
+	const struct aws_lws_extension *extensions;
 	char *p, *end, valid;
-	struct lws_http_mount *head, *last;
+	struct aws_lws_http_mount *head, *last;
 
-	struct lws_protocol_vhost_options *pvo;
-	struct lws_protocol_vhost_options *pvo_em;
-	struct lws_protocol_vhost_options *pvo_int;
-	struct lws_http_mount m;
+	struct aws_lws_protocol_vhost_options *pvo;
+	struct aws_lws_protocol_vhost_options *pvo_em;
+	struct aws_lws_protocol_vhost_options *pvo_int;
+	struct aws_lws_http_mount m;
 	const char **plugin_dirs;
 	int count_plugin_dirs;
 
@@ -233,10 +233,10 @@ struct jpargs {
 };
 
 static void *
-lwsws_align(struct jpargs *a)
+aws_lwsws_align(struct jpargs *a)
 {
-	if ((lws_intptr_t)(a->p) & 15)
-		a->p += 16 - ((lws_intptr_t)(a->p) & 15);
+	if ((aws_lws_intptr_t)(a->p) & 15)
+		a->p += 16 - ((aws_lws_intptr_t)(a->p) & 15);
 
 	a->chunk = 0;
 
@@ -272,7 +272,7 @@ static signed char
 lejp_globals_cb(struct lejp_ctx *ctx, char reason)
 {
 	struct jpargs *a = (struct jpargs *)ctx->user;
-	struct lws_protocol_vhost_options *rej;
+	struct aws_lws_protocol_vhost_options *rej;
 	int n;
 
 	/* we only match on the prepared path strings */
@@ -282,14 +282,14 @@ lejp_globals_cb(struct lejp_ctx *ctx, char reason)
 	/* this catches, eg, vhosts[].headers[].xxx */
 	if (reason == LEJPCB_VAL_STR_END &&
 	    ctx->path_match == LWJPGP_REJECT_SERVICE_KEYWORDS_NAME + 1) {
-		rej = lwsws_align(a);
+		rej = aws_lwsws_align(a);
 		a->p += sizeof(*rej);
 
-		n = lejp_get_wildcard(ctx, 0, a->p, lws_ptr_diff(a->end, a->p));
+		n = lejp_get_wildcard(ctx, 0, a->p, aws_lws_ptr_diff(a->end, a->p));
 		rej->next = a->info->reject_service_keywords;
 		a->info->reject_service_keywords = rej;
 		rej->name = a->p;
-		 lwsl_notice("  adding rej %s=%s\n", a->p, ctx->buf);
+		 aws_lwsl_notice("  adding rej %s=%s\n", a->p, ctx->buf);
 		a->p += n - 1;
 		*(a->p++) = '\0';
 		rej->value = a->p;
@@ -324,7 +324,7 @@ lejp_globals_cb(struct lejp_ctx *ctx, char reason)
 		break;
 	case LEJPGP_PLUGIN_DIR:
 		if (a->count_plugin_dirs == MAX_PLUGIN_DIRS - 1) {
-			lwsl_err("Too many plugin dirs\n");
+			aws_lwsl_err("Too many plugin dirs\n");
 			return -1;
 		}
 		a->plugin_dirs[a->count_plugin_dirs++] = a->p;
@@ -362,7 +362,7 @@ lejp_globals_cb(struct lejp_ctx *ctx, char reason)
 	}
 
 dostring:
-	a->p += lws_snprintf(a->p, lws_ptr_diff_size_t(a->end, a->p), "%s", ctx->buf);
+	a->p += aws_lws_snprintf(a->p, aws_lws_ptr_diff_size_t(a->end, a->p), "%s", ctx->buf);
 	*(a->p)++ = '\0';
 
 	return 0;
@@ -372,15 +372,15 @@ static signed char
 lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 {
 	struct jpargs *a = (struct jpargs *)ctx->user;
-	struct lws_protocol_vhost_options *pvo, *mp_cgienv, *headers;
-	struct lws_http_mount *m;
+	struct aws_lws_protocol_vhost_options *pvo, *mp_cgienv, *headers;
+	struct aws_lws_http_mount *m;
 	char *p, *p1;
 	int n;
 
 #if 0
-	lwsl_notice(" %d: %s (%d)\n", reason, ctx->path, ctx->path_match);
+	aws_lwsl_notice(" %d: %s (%d)\n", reason, ctx->path, ctx->path_match);
 	for (n = 0; n < ctx->wildcount; n++)
-		lwsl_notice("    %d\n", ctx->wild[n]);
+		aws_lwsl_notice("    %d\n", ctx->wild[n]);
 #endif
 
 	if (reason == LEJPCB_OBJECT_START && ctx->path_match == LEJPVP + 1) {
@@ -468,15 +468,15 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 	/* this catches, eg, vhosts[].ws-protocols[].xxx-protocol */
 	if (reason == LEJPCB_OBJECT_START &&
 	    ctx->path_match == LEJPVP_PROTOCOL_NAME + 1) {
-		a->pvo = lwsws_align(a);
+		a->pvo = aws_lwsws_align(a);
 		a->p += sizeof(*a->pvo);
 
-		n = lejp_get_wildcard(ctx, 0, a->p, lws_ptr_diff(a->end, a->p));
+		n = lejp_get_wildcard(ctx, 0, a->p, aws_lws_ptr_diff(a->end, a->p));
 		/* ie, enable this protocol, no options yet */
 		a->pvo->next = a->info->pvo;
 		a->info->pvo = a->pvo;
 		a->pvo->name = a->p;
-		lwsl_info("  adding protocol %s\n", a->p);
+		aws_lwsl_info("  adding protocol %s\n", a->p);
 		a->p += n;
 		a->pvo->value = a->p;
 		a->pvo->options = NULL;
@@ -488,17 +488,17 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 	    ctx->path_match == LEJPVP_HEADERS_NAME + 1) {
 
 		if (!a->chunk) {
-			headers = lwsws_align(a);
+			headers = aws_lwsws_align(a);
 			a->p += sizeof(*headers);
 
 			n = lejp_get_wildcard(ctx, 0, a->p,
-					lws_ptr_diff(a->end, a->p));
+					aws_lws_ptr_diff(a->end, a->p));
 			/* ie, add this header */
 			headers->next = a->info->headers;
 			a->info->headers = headers;
 			headers->name = a->p;
 
-			lwsl_notice("  adding header %s=%s\n", a->p, ctx->buf);
+			aws_lwsl_notice("  adding header %s=%s\n", a->p, ctx->buf);
 			a->p += n - 1;
 			*(a->p++) = ':';
 			if (a->p < a->end)
@@ -516,20 +516,20 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 	    (ctx->path_match == LEJPVP + 1 || !ctx->path[0]) &&
 	    a->valid) {
 
-		struct lws_vhost *vhost;
+		struct aws_lws_vhost *vhost;
 
-		//lwsl_notice("%s\n", ctx->path);
+		//aws_lwsl_notice("%s\n", ctx->path);
 		if (!a->info->port &&
 		    !(a->info->options & LWS_SERVER_OPTION_UNIX_SOCK)) {
-			lwsl_err("Port required (eg, 443)\n");
+			aws_lwsl_err("Port required (eg, 443)\n");
 			return 1;
 		}
 		a->valid = 0;
 		a->info->mounts = a->head;
 
-		vhost = lws_create_vhost(a->context, a->info);
+		vhost = aws_lws_create_vhost(a->context, a->info);
 		if (!vhost) {
-			lwsl_err("Failed to create vhost %s\n",
+			aws_lwsl_err("Failed to create vhost %s\n",
 				 a->info->vhost_name);
 			return 1;
 		}
@@ -559,7 +559,7 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 			a->info->client_ssl_ca_filepath = ca_filepath;
 			a->info->client_ssl_cipher_list = cipher_list;
 			a->info->options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-			lws_init_vhost_client_ssl(a->info, vhost);
+			aws_lws_init_vhost_client_ssl(a->info, vhost);
 		}
 #endif
 
@@ -583,11 +583,11 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 			return 0;
 
 		if (!a->m.mountpoint || !a->m.origin) {
-			lwsl_err("mountpoint and origin required\n");
+			aws_lwsl_err("mountpoint and origin required\n");
 			return 1;
 		}
-		lwsl_debug("adding mount %s\n", a->m.mountpoint);
-		m = lwsws_align(a);
+		aws_lwsl_debug("adding mount %s\n", a->m.mountpoint);
+		m = aws_lwsws_align(a);
 		memcpy(m, &a->m, sizeof(*m));
 		if (a->last)
 			a->last->mount_next = m;
@@ -595,7 +595,7 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 		for (n = 0; n < (int)LWS_ARRAY_SIZE(mount_protocols); n++)
 			if (!strncmp(a->m.origin, mount_protocols[n],
 			     strlen(mount_protocols[n]))) {
-				lwsl_info("----%s\n", a->m.origin);
+				aws_lwsl_info("----%s\n", a->m.origin);
 				m->origin_protocol = (uint8_t)(unsigned int)n;
 				m->origin = a->m.origin +
 					    strlen(mount_protocols[n]);
@@ -603,7 +603,7 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 			}
 
 		if (n == (int)LWS_ARRAY_SIZE(mount_protocols)) {
-			lwsl_err("unsupported protocol:// %s\n", a->m.origin);
+			aws_lwsl_err("unsupported protocol:// %s\n", a->m.origin);
 			return 1;
 		}
 
@@ -723,18 +723,18 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 #endif
 	case LEJPVP_PMO:
 	case LEJPVP_CGI_ENV:
-		mp_cgienv = lwsws_align(a);
+		mp_cgienv = aws_lwsws_align(a);
 		a->p += sizeof(*a->m.cgienv);
 
 		mp_cgienv->next = a->m.cgienv;
 		a->m.cgienv = mp_cgienv;
 
-		n = lejp_get_wildcard(ctx, 0, a->p, lws_ptr_diff(a->end, a->p));
+		n = lejp_get_wildcard(ctx, 0, a->p, aws_lws_ptr_diff(a->end, a->p));
 		mp_cgienv->name = a->p;
 		a->p += n;
 		mp_cgienv->value = a->p;
 		mp_cgienv->options = NULL;
-		//lwsl_notice("    adding pmo / cgi-env '%s' = '%s'\n",
+		//aws_lwsl_notice("    adding pmo / cgi-env '%s' = '%s'\n",
 		//		mp_cgienv->name, mp_cgienv->value);
 		goto dostring;
 
@@ -743,10 +743,10 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 		 * vhosts[].ws-protocols[].xxx-protocol.yyy-option
 		 * ie, these are options attached to a protocol with { }
 		 */
-		pvo = lwsws_align(a);
+		pvo = aws_lwsws_align(a);
 		a->p += sizeof(*a->pvo);
 
-		n = lejp_get_wildcard(ctx, 1, a->p, lws_ptr_diff(a->end, a->p));
+		n = lejp_get_wildcard(ctx, 1, a->p, aws_lws_ptr_diff(a->end, a->p));
 		/* ie, enable this protocol, no options yet */
 		pvo->next = a->pvo->options;
 		a->pvo->options = pvo;
@@ -757,30 +757,30 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 		break;
 
 	case LEJPVP_MOUNT_EXTRA_MIMETYPES:
-		a->pvo_em = lwsws_align(a);
+		a->pvo_em = aws_lwsws_align(a);
 		a->p += sizeof(*a->pvo_em);
 
-		n = lejp_get_wildcard(ctx, 0, a->p, lws_ptr_diff(a->end, a->p));
+		n = lejp_get_wildcard(ctx, 0, a->p, aws_lws_ptr_diff(a->end, a->p));
 		/* ie, enable this protocol, no options yet */
 		a->pvo_em->next = a->m.extra_mimetypes;
 		a->m.extra_mimetypes = a->pvo_em;
 		a->pvo_em->name = a->p;
-		lwsl_notice("  + extra-mimetypes %s -> %s\n", a->p, ctx->buf);
+		aws_lwsl_notice("  + extra-mimetypes %s -> %s\n", a->p, ctx->buf);
 		a->p += n;
 		a->pvo_em->value = a->p;
 		a->pvo_em->options = NULL;
 		break;
 
 	case LEJPVP_MOUNT_INTERPRET:
-		a->pvo_int = lwsws_align(a);
+		a->pvo_int = aws_lwsws_align(a);
 		a->p += sizeof(*a->pvo_int);
 
-		n = lejp_get_wildcard(ctx, 0, a->p, lws_ptr_diff(a->end, a->p));
+		n = lejp_get_wildcard(ctx, 0, a->p, aws_lws_ptr_diff(a->end, a->p));
 		/* ie, enable this protocol, no options yet */
 		a->pvo_int->next = a->m.interpret;
 		a->m.interpret = a->pvo_int;
 		a->pvo_int->name = a->p;
-		lwsl_notice("  adding interpret %s -> %s\n", a->p,
+		aws_lwsl_notice("  adding interpret %s -> %s\n", a->p,
 			    ctx->buf);
 		a->p += n;
 		a->pvo_int->value = a->p;
@@ -872,7 +872,7 @@ lejp_vhosts_cb(struct lejp_ctx *ctx, char reason)
 			LWS_SERVER_OPTION_ADOPT_APPLY_LISTEN_ACCEPT_CONFIG);
 		return 0;
 	case LEJPVP_FLAG_FALLBACK_LISTEN_ACCEPT:
-		lwsl_notice("vh %s: LEJPVP_FLAG_FALLBACK_LISTEN_ACCEPT: %s\n",
+		aws_lwsl_notice("vh %s: LEJPVP_FLAG_FALLBACK_LISTEN_ACCEPT: %s\n",
 			    a->info->vhost_name, ctx->buf);
 		set_reset_flag(&a->info->options, ctx->buf,
 		      LWS_SERVER_OPTION_FALLBACK_TO_APPLY_LISTEN_ACCEPT_CONFIG);
@@ -908,17 +908,17 @@ dostring:
 	p[LEJP_STRING_CHUNK] = '\0';
 	p1 = strstr(p, ESC_INSTALL_DATADIR);
 	if (p1) {
-		n = lws_ptr_diff(p1, p);
+		n = aws_lws_ptr_diff(p1, p);
 		if (n > a->end - a->p)
-			n = lws_ptr_diff(a->end, a->p);
-		lws_strncpy(a->p, p, (unsigned int)n + 1u);
+			n = aws_lws_ptr_diff(a->end, a->p);
+		aws_lws_strncpy(a->p, p, (unsigned int)n + 1u);
 		a->p += n;
-		a->p += lws_snprintf(a->p, lws_ptr_diff_size_t(a->end, a->p), "%s",
+		a->p += aws_lws_snprintf(a->p, aws_lws_ptr_diff_size_t(a->end, a->p), "%s",
 				     LWS_INSTALL_DATADIR);
 		p += n + (int)strlen(ESC_INSTALL_DATADIR);
 	}
 
-	a->p += lws_snprintf(a->p, lws_ptr_diff_size_t(a->end, a->p), "%s", p);
+	a->p += aws_lws_snprintf(a->p, aws_lws_ptr_diff_size_t(a->end, a->p), "%s", p);
 	if (reason == LEJPCB_VAL_STR_END)
 		*(a->p)++ = '\0';
 
@@ -930,19 +930,19 @@ dostring:
  */
 
 static int
-lwsws_get_config(void *user, const char *f, const char * const *paths,
+aws_lwsws_get_config(void *user, const char *f, const char * const *paths,
 		 int count_paths, lejp_callback cb)
 {
 	unsigned char buf[128];
 	struct lejp_ctx ctx;
 	int n, m = 0, fd;
 
-	fd = lws_open(f, O_RDONLY);
+	fd = aws_lws_open(f, O_RDONLY);
 	if (fd < 0) {
-		lwsl_err("Cannot open %s\n", f);
+		aws_lwsl_err("Cannot open %s\n", f);
 		return 2;
 	}
-	lwsl_info("%s: %s\n", __func__, f);
+	aws_lwsl_info("%s: %s\n", __func__, f);
 	lejp_construct(&ctx, cb, user, paths, (uint8_t)(unsigned int)count_paths);
 
 	do {
@@ -958,7 +958,7 @@ lwsws_get_config(void *user, const char *f, const char * const *paths,
 	lejp_destruct(&ctx);
 
 	if (m < 0) {
-		lwsl_err("%s(%u): parsing error %d: %s\n", f, n, m,
+		aws_lwsl_err("%s(%u): parsing error %d: %s\n", f, n, m,
 			 lejp_error_to_string(m));
 		return 2;
 	}
@@ -966,7 +966,7 @@ lwsws_get_config(void *user, const char *f, const char * const *paths,
 	return 0;
 }
 
-struct lws_dir_args {
+struct aws_lws_dir_args {
 	void *user;
 	const char * const *paths;
 	int count_paths;
@@ -974,26 +974,26 @@ struct lws_dir_args {
 };
 
 static int
-lwsws_get_config_d_cb(const char *dirpath, void *user,
-		      struct lws_dir_entry *lde)
+aws_lwsws_get_config_d_cb(const char *dirpath, void *user,
+		      struct aws_lws_dir_entry *lde)
 {
-	struct lws_dir_args *da = (struct lws_dir_args *)user;
+	struct aws_lws_dir_args *da = (struct aws_lws_dir_args *)user;
 	char path[256];
 
 	if (lde->type != LDOT_FILE && lde->type != LDOT_UNKNOWN /* ZFS */)
 		return 0;
 
-	lws_snprintf(path, sizeof(path) - 1, "%s/%s", dirpath, lde->name);
+	aws_lws_snprintf(path, sizeof(path) - 1, "%s/%s", dirpath, lde->name);
 
-	return lwsws_get_config(da->user, path, da->paths,
+	return aws_lwsws_get_config(da->user, path, da->paths,
 				da->count_paths, da->cb);
 }
 
 int
-lwsws_get_config_globals(struct lws_context_creation_info *info, const char *d,
+aws_lwsws_get_config_globals(struct aws_lws_context_creation_info *info, const char *d,
 			 char **cs, int *len)
 {
-	struct lws_dir_args da;
+	struct aws_lws_dir_args da;
 	struct jpargs a;
 #if defined(LWS_WITH_PLUGINS)
 	const char * const *old = info->plugin_dirs;
@@ -1007,7 +1007,7 @@ lwsws_get_config_globals(struct lws_context_creation_info *info, const char *d,
 	a.end = (a.p + *len) - 1;
 	a.valid = 0;
 
-	lwsws_align(&a);
+	aws_lwsws_align(&a);
 #if defined(LWS_WITH_PLUGINS)
 	info->plugin_dirs = (void *)a.p;
 #endif
@@ -1023,34 +1023,34 @@ lwsws_get_config_globals(struct lws_context_creation_info *info, const char *d,
 	}
 #endif
 
-	lws_snprintf(dd, sizeof(dd) - 1, "%s/conf", d);
-	if (lwsws_get_config(&a, dd, paths_global,
+	aws_lws_snprintf(dd, sizeof(dd) - 1, "%s/conf", d);
+	if (aws_lwsws_get_config(&a, dd, paths_global,
 			     LWS_ARRAY_SIZE(paths_global), lejp_globals_cb) > 1)
 		return 1;
-	lws_snprintf(dd, sizeof(dd) - 1, "%s/conf.d", d);
+	aws_lws_snprintf(dd, sizeof(dd) - 1, "%s/conf.d", d);
 
 	da.user = &a;
 	da.paths = paths_global;
 	da.count_paths = LWS_ARRAY_SIZE(paths_global),
 	da.cb = lejp_globals_cb;
 
-	if (lws_dir(dd, &da, lwsws_get_config_d_cb) > 1)
+	if (aws_lws_dir(dd, &da, aws_lwsws_get_config_d_cb) > 1)
 		return 1;
 
 	a.plugin_dirs[a.count_plugin_dirs] = NULL;
 
 	*cs = a.p;
-	*len = lws_ptr_diff(a.end, a.p);
+	*len = aws_lws_ptr_diff(a.end, a.p);
 
 	return 0;
 }
 
 int
-lwsws_get_config_vhosts(struct lws_context *context,
-			struct lws_context_creation_info *info, const char *d,
+aws_lwsws_get_config_vhosts(struct aws_lws_context *context,
+			struct aws_lws_context_creation_info *info, const char *d,
 			char **cs, int *len)
 {
-	struct lws_dir_args da;
+	struct aws_lws_dir_args da;
 	struct jpargs a;
 	char dd[128];
 
@@ -1067,29 +1067,29 @@ lwsws_get_config_vhosts(struct lws_context *context,
 	a.extensions = info->extensions;
 #endif
 
-	lws_snprintf(dd, sizeof(dd) - 1, "%s/conf", d);
-	if (lwsws_get_config(&a, dd, paths_vhosts,
+	aws_lws_snprintf(dd, sizeof(dd) - 1, "%s/conf", d);
+	if (aws_lwsws_get_config(&a, dd, paths_vhosts,
 			     LWS_ARRAY_SIZE(paths_vhosts), lejp_vhosts_cb) > 1)
 		return 1;
-	lws_snprintf(dd, sizeof(dd) - 1, "%s/conf.d", d);
+	aws_lws_snprintf(dd, sizeof(dd) - 1, "%s/conf.d", d);
 
 	da.user = &a;
 	da.paths = paths_vhosts;
 	da.count_paths = LWS_ARRAY_SIZE(paths_vhosts),
 	da.cb = lejp_vhosts_cb;
 
-	if (lws_dir(dd, &da, lwsws_get_config_d_cb) > 1)
+	if (aws_lws_dir(dd, &da, aws_lwsws_get_config_d_cb) > 1)
 		return 1;
 
 	*cs = a.p;
-	*len = lws_ptr_diff(a.end, a.p);
+	*len = aws_lws_ptr_diff(a.end, a.p);
 
 	if (!a.any_vhosts) {
-		lwsl_err("Need at least one vhost\n");
+		aws_lwsl_err("Need at least one vhost\n");
 		return 1;
 	}
 
-//	lws_finalize_startup(context);
+//	aws_lws_finalize_startup(context);
 
 	return 0;
 }

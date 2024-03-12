@@ -1,11 +1,11 @@
-project(lws-api-test-lws_sequencer C)
+project(lws-api-test-aws_lws_sequencer C)
 cmake_minimum_required(VERSION 2.8.12)
 find_package(libwebsockets CONFIG REQUIRED)
 list(APPEND CMAKE_MODULE_PATH ${LWS_CMAKE_DIR})
 include(CheckCSourceCompiles)
 include(LwsCheckRequirements)
 
-set(SAMP lws-api-test-lws_sequencer)
+set(SAMP lws-api-test-aws_lws_sequencer)
 set(SRCS main.c)
 
 set(requirements 1)

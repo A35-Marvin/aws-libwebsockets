@@ -26,11 +26,11 @@
 #include "private-lib-event-libs-poll.h"
 
 static int
-elops_foreign_thread_poll(struct lws_context *cx, int tsi)
+elops_foreign_thread_poll(struct aws_lws_context *cx, int tsi)
 {
-	struct lws_context_per_thread *pt = &cx->pt[tsi];
-	volatile struct lws_context_per_thread *vpt =
-				(volatile struct lws_context_per_thread *)pt;
+	struct aws_lws_context_per_thread *pt = &cx->pt[tsi];
+	volatile struct aws_lws_context_per_thread *vpt =
+				(volatile struct aws_lws_context_per_thread *)pt;
 
 	/*
 	 * To avoid mandating a specific threading library, we can check
@@ -42,7 +42,7 @@ elops_foreign_thread_poll(struct lws_context *cx, int tsi)
 	return vpt->inside_poll;
 }
 
-struct lws_event_loop_ops event_loop_ops_poll = {
+struct aws_lws_event_loop_ops event_loop_ops_poll = {
 	.name				= "poll",
 
 	.foreign_thread			= elops_foreign_thread_poll,
@@ -50,10 +50,10 @@ struct lws_event_loop_ops event_loop_ops_poll = {
 	.flags				= LELOF_ISPOLL,
 };
 
-const lws_plugin_evlib_t evlib_poll = {
+const aws_lws_plugin_evlib_t evlib_poll = {
 	.hdr = {
 		"poll",
-		"lws_evlib_plugin",
+		"aws_lws_evlib_plugin",
 		"n/a",
 		LWS_PLUGIN_API_MAGIC
 	},

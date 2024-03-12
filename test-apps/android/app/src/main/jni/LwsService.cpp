@@ -102,8 +102,8 @@ static const int MSG_LWS_CALLBACK_CLIENT_ESTABLISHED = 3;
 
 #define BUFFER_SIZE 4096
 
-static struct lws_context *context = NULL;
-static struct lws_context_creation_info info;
+static struct aws_lws_context *context = NULL;
+static struct aws_lws_context_creation_info info;
 static struct lws *wsi = NULL;
 
 // prevents sending messages after jni_exitLws had been called
@@ -118,9 +118,9 @@ struct per_session_data {
   ;// no data
 };
 
-static int callback( struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len );
+static int callback( struct lws *wsi, enum aws_lws_callback_reasons reason, void *user, void *in, size_t len );
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
   {
     "dumb-increment-protocol",
     callback,
@@ -130,10 +130,10 @@ static struct lws_protocols protocols[] = {
   { NULL, NULL, 0, 0 } // end of list
 };
 
-static const struct lws_extension exts[] = {
+static const struct aws_lws_extension exts[] = {
   {
     "deflate-frame",
-    lws_extension_callback_pm_deflate,
+    aws_lws_extension_callback_pm_deflate,
     "deflate_frame"
   },
   { NULL, NULL, NULL }
@@ -182,9 +182,9 @@ JNIEXPORT jboolean JNICALL jni_initLws(JNIEnv *env, jobject obj)
     info.gid = -1;
     info.uid = -1;
 
-    lws_set_log_level( LLL_NOTICE | LLL_INFO | LLL_ERR | LLL_WARN | LLL_CLIENT, emit_log );
+    aws_lws_set_log_level( LLL_NOTICE | LLL_INFO | LLL_ERR | LLL_WARN | LLL_CLIENT, emit_log );
 
-    context = lws_create_context(&info);
+    context = aws_lws_create_context(&info);
     if( context == NULL ){
         emit_log(LLL_ERR, "Creating libwebsocket context failed");
         return JNI_FALSE;
@@ -206,7 +206,7 @@ JNIEXPORT void JNICALL jni_exitLws(JNIEnv *env, jobject obj)
 {
     if(context){
         isExit = 1;
-        lws_context_destroy(context);
+        aws_lws_context_destroy(context);
         context = NULL;
         env->DeleteGlobalRef(gLwsServiceObj);
         env->DeleteGlobalRef(gLwsServiceCls);
@@ -215,7 +215,7 @@ JNIEXPORT void JNICALL jni_exitLws(JNIEnv *env, jobject obj)
 
 static int callback(
   struct lws *wsi,
-  enum lws_callback_reasons reason,
+  enum aws_lws_callback_reasons reason,
   void *user,
   void *in,
   size_t len
@@ -261,7 +261,7 @@ static int callback(
 JNIEXPORT void JNICALL jni_serviceLws(JNIEnv *env, jobject obj)
 {
   if(context){
-    lws_service( context, 0 );
+    aws_lws_service( context, 0 );
   }
 }
 
@@ -281,7 +281,7 @@ JNIEXPORT void JNICALL jni_setConnectionParameters(
 
 JNIEXPORT jboolean JNICALL jni_connectLws(JNIEnv *env, jobject obj)
 {
-  struct lws_client_connect_info info_ws;
+  struct aws_lws_client_connect_info info_ws;
   memset(&info_ws, 0, sizeof(info_ws));
 
   info_ws.port = port;
@@ -296,7 +296,7 @@ JNIEXPORT jboolean JNICALL jni_connectLws(JNIEnv *env, jobject obj)
   info_ws.protocol = protocols[PROTOCOL_DUMB_INCREMENT].name;
 
   // connect
-  wsi = lws_client_connect_via_info(&info_ws);
+  wsi = aws_lws_client_connect_via_info(&info_ws);
   if(wsi == NULL ){
     // Error
     emit_log(LLL_ERR, "Protocol failed to connect.");

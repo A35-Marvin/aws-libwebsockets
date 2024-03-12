@@ -1,5 +1,5 @@
 /*
- * lws_settings
+ * aws_lws_settings
  *
  * Copyright (C) 2019 - 2020 Andy Green <andy@warmcat.com>
  *
@@ -24,10 +24,10 @@
 
 #include <private-lib-core.h>
 
-lws_settings_instance_t *
-lws_settings_init(const lws_settings_ops_t *so, void *opaque_plat)
+aws_lws_settings_instance_t *
+aws_lws_settings_init(const aws_lws_settings_ops_t *so, void *opaque_plat)
 {
-	lws_settings_instance_t *si = lws_zalloc(sizeof(*si), __func__);
+	aws_lws_settings_instance_t *si = aws_lws_zalloc(sizeof(*si), __func__);
 
 	if (!si)
 		return NULL;
@@ -39,14 +39,14 @@ lws_settings_init(const lws_settings_ops_t *so, void *opaque_plat)
 }
 
 void
-lws_settings_deinit(lws_settings_instance_t **si)
+aws_lws_settings_deinit(aws_lws_settings_instance_t **si)
 {
-	lws_free(*si);
+	aws_lws_free(*si);
 	*si = NULL;
 }
 
 int
-lws_settings_plat_printf(lws_settings_instance_t *si, const char *name,
+aws_lws_settings_plat_printf(aws_lws_settings_instance_t *si, const char *name,
 			 const char *format, ...)
 {
 	va_list ap;
@@ -57,13 +57,13 @@ lws_settings_plat_printf(lws_settings_instance_t *si, const char *name,
 	n = vsnprintf(NULL, 0, format, ap);
 	va_end(ap);
 
-	p = lws_malloc(n + 2, __func__);
+	p = aws_lws_malloc(n + 2, __func__);
 	va_start(ap, format);
 	vsnprintf((char *)p, n + 2, format, ap);
 	va_end(ap);
 
 	n = si->so->set(si, name, p, n);
-	lws_free(p);
+	aws_lws_free(p);
 
 	return n;
 }

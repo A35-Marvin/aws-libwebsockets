@@ -24,7 +24,7 @@
 
 /*! \defgroup context-and-vhost context and vhost related functions
  * ##Context and Vhost releated functions
- * \ingroup lwsapi
+ * \ingroup aws_lwsapi
  *
  *
  *  LWS requires that there is one context, in which you may define multiple
@@ -191,7 +191,7 @@
 	 * according to the strict CSP.  In other cases you have to deviate from
 	 * the complete strictness, in which case don't use this flag: use the
 	 * .headers member in the vhost init described in struct
-	 * lws_context_creation_info instead to send the adapted headers
+	 * aws_lws_context_creation_info instead to send the adapted headers
 	 * yourself.
 	 */
 
@@ -227,7 +227,7 @@
 	 */
 
 #define LWS_SERVER_OPTION_NO_LWS_SYSTEM_STATES			 (1ll << 35)
-	/**< (CTX) Disable lws_system state, eg, because we are a secure streams
+	/**< (CTX) Disable aws_lws_system state, eg, because we are a secure streams
 	 * proxy client that is not trying to track system state by itself. */
 
 #define LWS_SERVER_OPTION_SS_PROXY				 (1ll << 36)
@@ -246,20 +246,20 @@
 	/****** add new things just above ---^ ******/
 
 
-#define lws_check_opt(c, f) ((((uint64_t)c) & ((uint64_t)f)) == ((uint64_t)f))
+#define aws_lws_check_opt(c, f) ((((uint64_t)c) & ((uint64_t)f)) == ((uint64_t)f))
 
-struct lws_plat_file_ops;
-struct lws_ss_policy;
-struct lws_ss_plugin;
-struct lws_metric_policy;
+struct aws_lws_plat_file_ops;
+struct aws_lws_ss_policy;
+struct aws_lws_ss_plugin;
+struct aws_lws_metric_policy;
 
-typedef int (*lws_context_ready_cb_t)(struct lws_context *context);
+typedef int (*aws_lws_context_ready_cb_t)(struct aws_lws_context *context);
 
-typedef int (*lws_peer_limits_notify_t)(struct lws_context *ctx,
-					lws_sockfd_type sockfd,
-					lws_sockaddr46 *sa46);
+typedef int (*aws_lws_peer_limits_notify_t)(struct aws_lws_context *ctx,
+					aws_lws_sockfd_type sockfd,
+					aws_lws_sockaddr46 *sa46);
 
-/** struct lws_context_creation_info - parameters to create context and /or vhost with
+/** struct aws_lws_context_creation_info - parameters to create context and /or vhost with
  *
  * This is also used to create vhosts.... if LWS_SERVER_OPTION_EXPLICIT_VHOSTS
  * is not given, then for backwards compatibility one vhost is created at
@@ -268,7 +268,7 @@ typedef int (*lws_peer_limits_notify_t)(struct lws_context *ctx,
  * If LWS_SERVER_OPTION_EXPLICIT_VHOSTS is given, then no vhosts are created
  * at the same time as the context, they are expected to be created afterwards.
  */
-struct lws_context_creation_info {
+struct aws_lws_context_creation_info {
 #if defined(LWS_WITH_NETWORK)
 	const char *iface;
 	/**< VHOST: NULL to bind the listen socket to all interfaces, or the
@@ -277,43 +277,43 @@ struct lws_context_creation_info {
 	 * the pathname of a UNIX domain socket. you can use the UNIX domain
 	 * sockets in abstract namespace, by prepending an at symbol to the
 	 * socket name. */
-	const struct lws_protocols *protocols;
+	const struct aws_lws_protocols *protocols;
 	/**< VHOST: Array of structures listing supported protocols and a
 	 * protocol-specific callback for each one.  The list is ended with an
 	 * entry that has a NULL callback pointer.  SEE ALSO .pprotocols below,
 	 * which gives an alternative way to provide an array of pointers to
 	 * protocol structs. */
 #if defined(LWS_ROLE_WS)
-	const struct lws_extension *extensions;
-	/**< VHOST: NULL or array of lws_extension structs listing the
+	const struct aws_lws_extension *extensions;
+	/**< VHOST: NULL or array of aws_lws_extension structs listing the
 	 * extensions this context supports. */
 #endif
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
-	const struct lws_token_limits *token_limits;
-	/**< CONTEXT: NULL or struct lws_token_limits pointer which is
+	const struct aws_lws_token_limits *token_limits;
+	/**< CONTEXT: NULL or struct aws_lws_token_limits pointer which is
 	 * initialized with a token length limit for each possible WSI_TOKEN_ */
 	const char *http_proxy_address;
 	/**< VHOST: If non-NULL, attempts to proxy via the given address.
 	 * If proxy auth is required, use format
 	 * "username:password\@server:port" */
-	const struct lws_protocol_vhost_options *headers;
+	const struct aws_lws_protocol_vhost_options *headers;
 		/**< VHOST: pointer to optional linked list of per-vhost
 		 * canned headers that are added to server responses */
 
-	const struct lws_protocol_vhost_options *reject_service_keywords;
+	const struct aws_lws_protocol_vhost_options *reject_service_keywords;
 	/**< CONTEXT: Optional list of keywords and rejection codes + text.
 	 *
 	 * The keywords are checked for existing in the user agent string.
 	 *
 	 * Eg, "badrobot" "404 Not Found"
 	 */
-	const struct lws_protocol_vhost_options *pvo;
+	const struct aws_lws_protocol_vhost_options *pvo;
 	/**< VHOST: pointer to optional linked list of per-vhost
 	 * options made accessible to protocols */
 	const char *log_filepath;
 	/**< VHOST: filepath to append logs to... this is opened before
 	 *		any dropping of initial privileges */
-	const struct lws_http_mount *mounts;
+	const struct aws_lws_http_mount *mounts;
 	/**< VHOST: optional linked list of mounts for this vhost */
 	const char *server_string;
 	/**< CONTEXT: string used in HTTP headers to identify server
@@ -331,7 +331,7 @@ struct lws_context_creation_info {
 	 *
 	 * You can also set port to 0, in which case the kernel will pick
 	 * a random port that is not already in use.  You can find out what
-	 * port the vhost is listening on using lws_get_vhost_listen_port() */
+	 * port the vhost is listening on using aws_lws_get_vhost_listen_port() */
 
 	unsigned int http_proxy_port;
 	/**< VHOST: If http_proxy_address was non-NULL, uses this port */
@@ -607,8 +607,8 @@ struct lws_context_creation_info {
 	void *user;
 	/**< VHOST + CONTEXT: optional user pointer that will be associated
 	 * with the context when creating the context (and can be retrieved by
-	 * lws_context_user(context), or with the vhost when creating the vhost
-	 * (and can be retrieved by lws_vhost_user(vhost)).  You will need to
+	 * aws_lws_context_user(context), or with the vhost when creating the vhost
+	 * (and can be retrieved by aws_lws_vhost_user(vhost)).  You will need to
 	 * use LWS_SERVER_OPTION_EXPLICIT_VHOSTS and create the vhost separately
 	 * if you care about giving the context and vhost different user pointer
 	 * values.
@@ -659,7 +659,7 @@ struct lws_context_creation_info {
 	 * At the risk of lws having to buffer failed large sends, it
 	 * can be increased to, eg, 128KiB to improve throughput. */
 #if defined(LWS_WITH_FILE_OPS)
-	const struct lws_plat_file_ops *fops;
+	const struct aws_lws_plat_file_ops *fops;
 	/**< CONTEXT: NULL, or pointer to an array of fops structs, terminated
 	 * by a sentinel with NULL .open.
 	 *
@@ -711,13 +711,13 @@ struct lws_context_creation_info {
 	 *		native event library signal handle, eg uv_signal_t *
 	 *		for libuv.
 	 */
-	struct lws_context **pcontext;
+	struct aws_lws_context **pcontext;
 	/**< CONTEXT: if non-NULL, at the end of context destroy processing,
 	 * the pointer pointed to by pcontext is written with NULL.  You can
 	 * use this to let foreign event loops know that lws context destruction
 	 * is fully completed.
 	 */
-	void (*finalize)(struct lws_vhost *vh, void *arg);
+	void (*finalize)(struct aws_lws_vhost *vh, void *arg);
 	/**< VHOST: NULL, or pointer to function that will be called back
 	 *	    when the vhost is just about to be freed.  The arg parameter
 	 *	    will be set to whatever finalize_arg is below.
@@ -735,7 +735,7 @@ struct lws_context_creation_info {
 	/**< VHOST: NULL for default, or force accepted incoming connections to
 	 * bind to this vhost protocol name.
 	 */
-	const struct lws_protocols **pprotocols;
+	const struct aws_lws_protocols **pprotocols;
 	/**< VHOST: NULL: use .protocols, otherwise ignore .protocols and use
 	 * this array of pointers to protocols structs.  The end of the array
 	 * is marked by a NULL pointer.
@@ -754,22 +754,22 @@ struct lws_context_creation_info {
 	 * on a unix socket, you can give a "username:groupname" string here
 	 * to control the owner:group it's created with.  It's always created
 	 * with 0660 mode. */
-	const lws_system_ops_t *system_ops;
-	/**< CONTEXT: hook up lws_system_ apis to system-specific
+	const aws_lws_system_ops_t *system_ops;
+	/**< CONTEXT: hook up aws_lws_system_ apis to system-specific
 	 * implementations */
-	const lws_retry_bo_t *retry_and_idle_policy;
+	const aws_lws_retry_bo_t *retry_and_idle_policy;
 	/**< VHOST: optional retry and idle policy to apply to this vhost.
 	 *   Currently only the idle parts are applied to the connections.
 	 */
 #if defined(LWS_WITH_SYS_STATE)
-	lws_state_notify_link_t * const *register_notifier_list;
+	aws_lws_state_notify_link_t * const *register_notifier_list;
 	/**< CONTEXT: NULL, or pointer to an array of notifiers that should
 	 * be registered during context creation, so they can see state change
 	 * events from very early on.  The array should end with a NULL. */
 #endif
 #if defined(LWS_WITH_SECURE_STREAMS)
 #if defined(LWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY)
-	const struct lws_ss_policy *pss_policies; /**< CONTEXT: point to first
+	const struct aws_lws_ss_policy *pss_policies; /**< CONTEXT: point to first
 	 * in a linked-list of streamtype policies prepared by user code */
 #else
 	const char *pss_policies_json; /**< CONTEXT: point to a string
@@ -780,7 +780,7 @@ struct lws_context_creation_info {
 	 * policy.
 	 */
 #endif
-	const struct lws_ss_plugin **pss_plugins; /**< CONTEXT: point to an array
+	const struct aws_lws_ss_plugin **pss_plugins; /**< CONTEXT: point to an array
 	 * of pointers to plugin structs here, terminated with a NULL ptr.
 	 * Set to NULL if not using Secure Streams. */
 	const char *ss_proxy_bind; /**< CONTEXT: NULL, or: ss_proxy_port == 0:
@@ -802,11 +802,11 @@ struct lws_context_creation_info {
 	 * environment.  Nonzero = try to set the limit for this process.
 	 */
 #if defined(LWS_WITH_PEER_LIMITS)
-	lws_peer_limits_notify_t pl_notify_cb;
+	aws_lws_peer_limits_notify_t pl_notify_cb;
 	/**< CONTEXT: NULL, or a callback to receive notifications each time a
 	 * connection is being dropped because of peer limits.
 	 *
-	 * The callback provides the context, and an lws_sockaddr46 with the
+	 * The callback provides the context, and an aws_lws_sockaddr46 with the
 	 * peer address and port.
 	 */
 	unsigned short ip_limit_ah;
@@ -828,9 +828,9 @@ struct lws_context_creation_info {
 #endif /* PEER_LIMITS */
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	lws_fi_ctx_t				fic;
+	aws_lws_fi_ctx_t				fic;
 	/**< CONTEXT | VHOST: attach external Fault Injection context to the
-	 * lws_context or vhost.  If creating the context + default vhost in
+	 * aws_lws_context or vhost.  If creating the context + default vhost in
 	 * one step, only the context binds to \p fi.  When creating a vhost
 	 * otherwise this can bind to the vhost so the faults can be injected
 	 * from the start.
@@ -838,7 +838,7 @@ struct lws_context_creation_info {
 #endif
 
 #if defined(LWS_WITH_SYS_SMD)
-	lws_smd_notification_cb_t		early_smd_cb;
+	aws_lws_smd_notification_cb_t		early_smd_cb;
 	/**< CONTEXT: NULL, or an smd notification callback that will be registered
 	 * immediately after the smd in the context is initialized.  This ensures
 	 * you can get all notifications without having to intercept the event loop
@@ -846,8 +846,8 @@ struct lws_context_creation_info {
 	 * registered later manually without problems.
 	 */
 	void					*early_smd_opaque;
-	lws_smd_class_t				early_smd_class_filter;
-	lws_usec_t				smd_ttl_us;
+	aws_lws_smd_class_t				early_smd_class_filter;
+	aws_lws_usec_t				smd_ttl_us;
 	/**< CONTEXT: SMD messages older than this many us are removed from the
 	 * queue and destroyed even if not fully delivered yet.  If zero,
 	 * defaults to 2 seconds (5 second for FREERTOS).
@@ -858,7 +858,7 @@ struct lws_context_creation_info {
 #endif
 
 #if defined(LWS_WITH_SYS_METRICS)
-	const struct lws_metric_policy		*metrics_policies;
+	const struct aws_lws_metric_policy		*metrics_policies;
 	/**< CONTEXT: non-SS policy metrics policies */
 	const char				*metrics_prefix;
 	/**< CONTEXT: prefix for this context's metrics, used to distinguish
@@ -875,7 +875,7 @@ struct lws_context_creation_info {
 	 * socket.
 	 */
 
-	const struct lws_plugin_evlib		*event_lib_custom;
+	const struct aws_lws_plugin_evlib		*event_lib_custom;
 	/**< CONTEXT: If non-NULL, override event library selection so it uses
 	 * this custom event library implementation, instead of default internal
 	 * loop.  Don't set any other event lib context creation flags in that
@@ -894,7 +894,7 @@ struct lws_context_creation_info {
 	 * are allowed to live without active connections using them. */
 #endif
 
-	lws_log_cx_t				*log_cx;
+	aws_lws_log_cx_t				*log_cx;
 	/**< CONTEXT: NULL to use the default, process-scope logging context,
 	 * else a specific logging context to associate with this context */
 
@@ -925,7 +925,7 @@ struct lws_context_creation_info {
 };
 
 /**
- * lws_create_context() - Create the websocket handler
+ * aws_lws_create_context() - Create the websocket handler
  * \param info:	pointer to struct with parameters
  *
  *	This function creates the listening socket (if serving) and takes care
@@ -933,12 +933,12 @@ struct lws_context_creation_info {
  *
  *	If option LWS_SERVER_OPTION_EXPLICIT_VHOSTS is given, no vhost is
  *	created; you're expected to create your own vhosts afterwards using
- *	lws_create_vhost().  Otherwise a vhost named "default" is also created
+ *	aws_lws_create_vhost().  Otherwise a vhost named "default" is also created
  *	using the information in the vhost-related members, for compatibility.
  *
- *	After initialization, it returns a struct lws_context * that
+ *	After initialization, it returns a struct aws_lws_context * that
  *	represents this server.  After calling, user code needs to take care
- *	of calling lws_service() with the context pointer to get the
+ *	of calling aws_lws_service() with the context pointer to get the
  *	server's sockets serviced.  This must be done in the same process
  *	context as the initialization call.
  *
@@ -958,12 +958,12 @@ struct lws_context_creation_info {
  *	images or whatever over http and dynamic data over websockets all in
  *	one place; they're all handled in the user callback.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_context *
-lws_create_context(const struct lws_context_creation_info *info);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_context *
+aws_lws_create_context(const struct aws_lws_context_creation_info *info);
 
 
 /**
- * lws_context_destroy() - Destroy the websocket context
+ * aws_lws_context_destroy() - Destroy the websocket context
  * \param context:	Websocket context
  *
  *	This function closes any active connections and then frees the
@@ -971,12 +971,12 @@ lws_create_context(const struct lws_context_creation_info *info);
  *	undefined.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_context_destroy(struct lws_context *context);
+aws_lws_context_destroy(struct aws_lws_context *context);
 
-typedef int (*lws_reload_func)(void);
+typedef int (*aws_lws_reload_func)(void);
 
 /**
- * lws_context_deprecate() - Deprecate the websocket context
+ * aws_lws_context_deprecate() - Deprecate the websocket context
  *
  * \param context:	Websocket context
  * \param cb: Callback notified when old context listen sockets are closed
@@ -998,14 +998,14 @@ typedef int (*lws_reload_func)(void);
  *	more loop events).
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_context_deprecate(struct lws_context *context, lws_reload_func cb);
+aws_lws_context_deprecate(struct aws_lws_context *context, aws_lws_reload_func cb);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_context_is_deprecated(struct lws_context *context);
+aws_lws_context_is_deprecated(struct aws_lws_context *context);
 
 /**
- * lws_set_proxy() - Setups proxy to lws_context.
- * \param vhost:	pointer to struct lws_vhost you want set proxy for
+ * aws_lws_set_proxy() - Setups proxy to aws_lws_context.
+ * \param vhost:	pointer to struct aws_lws_vhost you want set proxy for
  * \param proxy: pointer to c string containing proxy in format address:port
  *
  * Returns 0 if proxy string was parsed and proxy was setup.
@@ -1015,17 +1015,17 @@ lws_context_is_deprecated(struct lws_context *context);
  * environment variable (eg, OSX)
  *
  *   IMPORTANT! You should call this function right after creation of the
- *   lws_context and before call to connect. If you call this
+ *   aws_lws_context and before call to connect. If you call this
  *   function after connect behavior is undefined.
- *   This function will override proxy settings made on lws_context
+ *   This function will override proxy settings made on aws_lws_context
  *   creation with genenv() call.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_set_proxy(struct lws_vhost *vhost, const char *proxy);
+aws_lws_set_proxy(struct aws_lws_vhost *vhost, const char *proxy);
 
 /**
- * lws_set_socks() - Setup socks to lws_context.
- * \param vhost:	pointer to struct lws_vhost you want set socks for
+ * aws_lws_set_socks() - Setup socks to aws_lws_context.
+ * \param vhost:	pointer to struct aws_lws_vhost you want set socks for
  * \param socks: pointer to c string containing socks in format address:port
  *
  * Returns 0 if socks string was parsed and socks was setup.
@@ -1035,36 +1035,36 @@ lws_set_proxy(struct lws_vhost *vhost, const char *proxy);
  * environment variable (eg, OSX)
  *
  *   IMPORTANT! You should call this function right after creation of the
- *   lws_context and before call to connect. If you call this
+ *   aws_lws_context and before call to connect. If you call this
  *   function after connect behavior is undefined.
- *   This function will override proxy settings made on lws_context
+ *   This function will override proxy settings made on aws_lws_context
  *   creation with genenv() call.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_set_socks(struct lws_vhost *vhost, const char *socks);
+aws_lws_set_socks(struct aws_lws_vhost *vhost, const char *socks);
 
-struct lws_vhost;
+struct aws_lws_vhost;
 
 /**
- * lws_create_vhost() - Create a vhost (virtual server context)
- * \param context:	pointer to result of lws_create_context()
+ * aws_lws_create_vhost() - Create a vhost (virtual server context)
+ * \param context:	pointer to result of aws_lws_create_context()
  * \param info:		pointer to struct with parameters
  *
  * This function creates a virtual server (vhost) using the vhost-related
  * members of the info struct.  You can create many vhosts inside one context
  * if you created the context with the option LWS_SERVER_OPTION_EXPLICIT_VHOSTS
  */
-LWS_VISIBLE LWS_EXTERN struct lws_vhost *
-lws_create_vhost(struct lws_context *context,
-		 const struct lws_context_creation_info *info);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_vhost *
+aws_lws_create_vhost(struct aws_lws_context *context,
+		 const struct aws_lws_context_creation_info *info);
 
 /**
- * lws_vhost_destroy() - Destroy a vhost (virtual server context)
+ * aws_lws_vhost_destroy() - Destroy a vhost (virtual server context)
  *
- * \param vh:		pointer to result of lws_create_vhost()
+ * \param vh:		pointer to result of aws_lws_create_vhost()
  *
  * This function destroys a vhost.  Normally, if you just want to exit,
- * then lws_destroy_context() will take care of everything.  If you want
+ * then aws_lws_destroy_context() will take care of everything.  If you want
  * to destroy an individual vhost and all connections and allocations, you
  * can do it with this.
  *
@@ -1077,10 +1077,10 @@ lws_create_vhost(struct lws_context *context,
  * vhost creation time, it will be called just before the vhost is freed.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_vhost_destroy(struct lws_vhost *vh);
+aws_lws_vhost_destroy(struct aws_lws_vhost *vh);
 
 /**
- * lwsws_get_config_globals() - Parse a JSON server config file
+ * aws_lwsws_get_config_globals() - Parse a JSON server config file
  * \param info:		pointer to struct with parameters
  * \param d:		filepath of the config file
  * \param config_strings: storage for the config strings extracted from JSON,
@@ -1088,18 +1088,18 @@ lws_vhost_destroy(struct lws_vhost *vh);
  * \param len:		pointer to the remaining length left in config_strings
  *			  the value is decremented as strings are stored
  *
- * This function prepares a n lws_context_creation_info struct with global
+ * This function prepares a n aws_lws_context_creation_info struct with global
  * settings from a file d.
  *
  * Requires CMake option LWS_WITH_LEJP_CONF to have been enabled
  */
 LWS_VISIBLE LWS_EXTERN int
-lwsws_get_config_globals(struct lws_context_creation_info *info, const char *d,
+aws_lwsws_get_config_globals(struct aws_lws_context_creation_info *info, const char *d,
 			 char **config_strings, int *len);
 
 /**
- * lwsws_get_config_vhosts() - Create vhosts from a JSON server config file
- * \param context:	pointer to result of lws_create_context()
+ * aws_lwsws_get_config_vhosts() - Create vhosts from a JSON server config file
+ * \param context:	pointer to result of aws_lws_create_context()
  * \param info:		pointer to struct with parameters
  * \param d:		filepath of the config file
  * \param config_strings: storage for the config strings extracted from JSON,
@@ -1113,73 +1113,73 @@ lwsws_get_config_globals(struct lws_context_creation_info *info, const char *d,
  * Requires CMake option LWS_WITH_LEJP_CONF to have been enabled
  */
 LWS_VISIBLE LWS_EXTERN int
-lwsws_get_config_vhosts(struct lws_context *context,
-			struct lws_context_creation_info *info, const char *d,
+aws_lwsws_get_config_vhosts(struct aws_lws_context *context,
+			struct aws_lws_context_creation_info *info, const char *d,
 			char **config_strings, int *len);
 
 /**
- * lws_get_vhost() - return the vhost a wsi belongs to
+ * aws_lws_get_vhost() - return the vhost a wsi belongs to
  *
  * \param wsi: which connection
  */
-LWS_VISIBLE LWS_EXTERN struct lws_vhost *
-lws_get_vhost(struct lws *wsi);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_vhost *
+aws_lws_get_vhost(struct lws *wsi);
 
 /**
- * lws_get_vhost_name() - returns the name of a vhost
+ * aws_lws_get_vhost_name() - returns the name of a vhost
  *
  * \param vhost: which vhost
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_get_vhost_name(struct lws_vhost *vhost);
+aws_lws_get_vhost_name(struct aws_lws_vhost *vhost);
 
 /**
- * lws_get_vhost_by_name() - returns the vhost with the requested name, or NULL
+ * aws_lws_get_vhost_by_name() - returns the vhost with the requested name, or NULL
  *
- * \param context: the lws_context to look in
+ * \param context: the aws_lws_context to look in
  * \param name: vhost name we are looking for
  *
  * Returns NULL, or the vhost with the name \p name
  */
-LWS_VISIBLE LWS_EXTERN struct lws_vhost *
-lws_get_vhost_by_name(struct lws_context *context, const char *name);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_vhost *
+aws_lws_get_vhost_by_name(struct aws_lws_context *context, const char *name);
 
 /**
- * lws_get_vhost_port() - returns the port a vhost listens on, or -1
+ * aws_lws_get_vhost_port() - returns the port a vhost listens on, or -1
  *
  * \param vhost: which vhost
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_get_vhost_port(struct lws_vhost *vhost);
+aws_lws_get_vhost_port(struct aws_lws_vhost *vhost);
 
 /**
- * lws_get_vhost_user() - returns the user pointer for the vhost
+ * aws_lws_get_vhost_user() - returns the user pointer for the vhost
  *
  * \param vhost: which vhost
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_get_vhost_user(struct lws_vhost *vhost);
+aws_lws_get_vhost_user(struct aws_lws_vhost *vhost);
 
 /**
- * lws_get_vhost_iface() - returns the binding for the vhost listen socket
+ * aws_lws_get_vhost_iface() - returns the binding for the vhost listen socket
  *
  * \param vhost: which vhost
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_get_vhost_iface(struct lws_vhost *vhost);
+aws_lws_get_vhost_iface(struct aws_lws_vhost *vhost);
 
 /**
- * lws_json_dump_vhost() - describe vhost state and stats in JSON
+ * aws_lws_json_dump_vhost() - describe vhost state and stats in JSON
  *
  * \param vh: the vhost
  * \param buf: buffer to fill with JSON
  * \param len: max length of buf
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_json_dump_vhost(const struct lws_vhost *vh, char *buf, int len);
+aws_lws_json_dump_vhost(const struct aws_lws_vhost *vh, char *buf, int len);
 
 /**
- * lws_json_dump_context() - describe context state and stats in JSON
+ * aws_lws_json_dump_context() - describe context state and stats in JSON
  *
  * \param context: the context
  * \param buf: buffer to fill with JSON
@@ -1189,11 +1189,11 @@ lws_json_dump_vhost(const struct lws_vhost *vh, char *buf, int len);
  * Generates a JSON description of vhost state into buf
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_json_dump_context(const struct lws_context *context, char *buf, int len,
+aws_lws_json_dump_context(const struct aws_lws_context *context, char *buf, int len,
 		      int hide_vhosts);
 
 /**
- * lws_vhost_user() - get the user data associated with the vhost
+ * aws_lws_vhost_user() - get the user data associated with the vhost
  * \param vhost: Websocket vhost
  *
  * This returns the optional user pointer that can be attached to
@@ -1201,10 +1201,10 @@ lws_json_dump_context(const struct lws_context *context, char *buf, int len,
  * sets it when the vhost is created, and returns it using this api.
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_vhost_user(struct lws_vhost *vhost);
+aws_lws_vhost_user(struct aws_lws_vhost *vhost);
 
 /**
- * lws_context_user() - get the user data associated with the context
+ * aws_lws_context_user() - get the user data associated with the context
  * \param context: Websocket context
  *
  * This returns the optional user allocation that can be attached to
@@ -1213,17 +1213,17 @@ lws_vhost_user(struct lws_vhost *vhost);
  * using globals statics in the user code.
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_context_user(struct lws_context *context);
+aws_lws_context_user(struct aws_lws_context *context);
 
 LWS_VISIBLE LWS_EXTERN const char *
-lws_vh_tag(struct lws_vhost *vh);
+aws_lws_vh_tag(struct aws_lws_vhost *vh);
 
 /**
- * lws_context_is_being_destroyed() - find out if context is being destroyed
+ * aws_lws_context_is_being_destroyed() - find out if context is being destroyed
  *
- * \param context: the struct lws_context pointer
+ * \param context: the struct aws_lws_context pointer
  *
- * Returns nonzero if the context has had lws_context_destroy() called on it...
+ * Returns nonzero if the context has had aws_lws_context_destroy() called on it...
  * when using event library loops the destroy process can be asynchronous.  In
  * the special case of libuv foreign loops, the failure to create the context
  * may have to do work on the foreign loop to reverse the partial creation,
@@ -1234,7 +1234,7 @@ lws_vh_tag(struct lws_vhost *vh);
  * find out the create is in the middle of failing.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_context_is_being_destroyed(struct lws_context *context);
+aws_lws_context_is_being_destroyed(struct aws_lws_context *context);
 
 /*! \defgroup vhost-mounts Vhost mounts and options
  * \ingroup context-and-vhost-creation
@@ -1242,24 +1242,24 @@ lws_context_is_being_destroyed(struct lws_context *context);
  * ##Vhost mounts and options
  */
 ///@{
-/** struct lws_protocol_vhost_options - linked list of per-vhost protocol
+/** struct aws_lws_protocol_vhost_options - linked list of per-vhost protocol
  * 					name=value options
  *
  * This provides a general way to attach a linked-list of name=value pairs,
  * which can also have an optional child link-list using the options member.
  */
-struct lws_protocol_vhost_options {
-	const struct lws_protocol_vhost_options *next; /**< linked list */
-	const struct lws_protocol_vhost_options *options; /**< child linked-list of more options for this node */
+struct aws_lws_protocol_vhost_options {
+	const struct aws_lws_protocol_vhost_options *next; /**< linked list */
+	const struct aws_lws_protocol_vhost_options *options; /**< child linked-list of more options for this node */
 	const char *name; /**< name of name=value pair */
 	const char *value; /**< value of name=value pair */
 };
 
-/** enum lws_mount_protocols
+/** enum aws_lws_mount_protocols
  * This specifies the mount protocol for a mountpoint, whether it is to be
  * served from a filesystem, or it is a cgi etc.
  */
-enum lws_mount_protocols {
+enum aws_lws_mount_protocols {
 	LWSMPRO_HTTP		= 0, /**< http reverse proxy */
 	LWSMPRO_HTTPS		= 1, /**< https reverse proxy */
 	LWSMPRO_FILE		= 2, /**< serve from filesystem directory */
@@ -1269,25 +1269,25 @@ enum lws_mount_protocols {
 	LWSMPRO_CALLBACK	= 6, /**< hand by named protocol's callback */
 };
 
-/** enum lws_authentication_mode
+/** enum aws_lws_authentication_mode
  * This specifies the authentication mode of the mount. The basic_auth_login_file mount parameter
  * is ignored unless LWSAUTHM_DEFAULT is set.
  */
-enum lws_authentication_mode {
+enum aws_lws_authentication_mode {
 	LWSAUTHM_DEFAULT = 0, /**< default authenticate only if basic_auth_login_file is provided */
 	LWSAUTHM_BASIC_AUTH_CALLBACK = 1 << 28 /**< Basic auth with a custom verifier */
 };
 
-/** The authentication mode is stored in the top 4 bits of lws_http_mount.auth_mask */
+/** The authentication mode is stored in the top 4 bits of aws_lws_http_mount.auth_mask */
 #define AUTH_MODE_MASK 0xF0000000
 
-/** struct lws_http_mount
+/** struct aws_lws_http_mount
  *
  * arguments for mounting something in a vhost's url namespace
  */
-struct lws_http_mount {
-	const struct lws_http_mount *mount_next;
-	/**< pointer to next struct lws_http_mount */
+struct aws_lws_http_mount {
+	const struct aws_lws_http_mount *mount_next;
+	/**< pointer to next struct aws_lws_http_mount */
 	const char *mountpoint;
 	/**< mountpoint in http pathspace, eg, "/" */
 	const char *origin;
@@ -1297,13 +1297,13 @@ struct lws_http_mount {
 	const char *protocol;
 	/**<"protocol-name" to handle mount */
 
-	const struct lws_protocol_vhost_options *cgienv;
+	const struct aws_lws_protocol_vhost_options *cgienv;
 	/**< optional linked-list of cgi options.  These are created
 	 * as environment variables for the cgi process
 	 */
-	const struct lws_protocol_vhost_options *extra_mimetypes;
+	const struct aws_lws_protocol_vhost_options *extra_mimetypes;
 	/**< optional linked-list of mimetype mappings */
-	const struct lws_protocol_vhost_options *interpret;
+	const struct aws_lws_protocol_vhost_options *interpret;
 	/**< optional linked-list of files to be interpreted */
 
 	int cgi_timeout;
@@ -1317,7 +1317,7 @@ struct lws_http_mount {
 	unsigned int cache_revalidate:1; /**< set if client cache should revalidate on use */
 	unsigned int cache_intermediaries:1; /**< set if intermediaries are allowed to cache */
 
-	unsigned char origin_protocol; /**< one of enum lws_mount_protocols */
+	unsigned char origin_protocol; /**< one of enum aws_lws_mount_protocols */
 	unsigned char mountpoint_len; /**< length of mountpoint string */
 
 	const char *basic_auth_login_file;

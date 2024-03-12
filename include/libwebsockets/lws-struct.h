@@ -37,31 +37,31 @@ typedef enum {
 	LSMT_SCHEMA,
 	LSMT_BLOB_PTR,
 
-} lws_struct_map_type_eum;
+} aws_lws_struct_map_type_eum;
 
 typedef struct lejp_collation {
-	struct lws_dll2 chunks;
+	struct aws_lws_dll2 chunks;
 	int len;
 	char buf[LEJP_STRING_CHUNK + 1];
 } lejp_collation_t;
 
-typedef struct lws_struct_map {
+typedef struct aws_lws_struct_map {
 	const char *colname;
-	const struct lws_struct_map *child_map;
+	const struct aws_lws_struct_map *child_map;
 	lejp_callback lejp_cb;
 	size_t ofs;			/* child dll2; points to dll2_owner */
 	size_t aux;
 	size_t ofs_clist;
 	size_t child_map_size;
-	lws_struct_map_type_eum type;
-} lws_struct_map_t;
+	aws_lws_struct_map_type_eum type;
+} aws_lws_struct_map_t;
 
-typedef int (*lws_struct_args_cb)(void *obj, void *cb_arg);
+typedef int (*aws_lws_struct_args_cb)(void *obj, void *cb_arg);
 
-typedef struct lws_struct_args {
-	const lws_struct_map_t *map_st[LEJP_MAX_PARSING_STACK_DEPTH];
-	lws_struct_args_cb cb;
-	struct lwsac *ac;
+typedef struct aws_lws_struct_args {
+	const aws_lws_struct_map_t *map_st[LEJP_MAX_PARSING_STACK_DEPTH];
+	aws_lws_struct_args_cb cb;
+	struct aws_lwsac *ac;
 	void *cb_arg;
 	void *dest;
 
@@ -77,10 +77,10 @@ typedef struct lws_struct_args {
 	 * temp ac used to collate unknown possibly huge strings before final
 	 * allocation and copy
 	 */
-	struct lwsac *ac_chunks;
-	struct lws_dll2_owner chunks_owner;
+	struct aws_lwsac *ac_chunks;
+	struct aws_lws_dll2_owner chunks_owner;
 	size_t chunks_length;
-} lws_struct_args_t;
+} aws_lws_struct_args_t;
 
 #define LSM_SIGNED(type, name, qname) \
 	{ \
@@ -207,78 +207,78 @@ typedef struct lws_struct_args {
 	  LSMT_BLOB_PTR \
 	}
 
-typedef struct lws_struct_serialize_st {
-	const struct lws_dll2 *dllpos;
-	const lws_struct_map_t *map;
+typedef struct aws_lws_struct_serialize_st {
+	const struct aws_lws_dll2 *dllpos;
+	const aws_lws_struct_map_t *map;
 	const char *obj;
 	size_t map_entries;
 	size_t map_entry;
 	size_t size;
 	char subsequent;
 	char idt;
-} lws_struct_serialize_st_t;
+} aws_lws_struct_serialize_st_t;
 
 enum {
 	LSSERJ_FLAG_PRETTY	= (1 << 0),
 	LSSERJ_FLAG_OMIT_SCHEMA = (1 << 1)
 };
 
-typedef struct lws_struct_serialize {
-	lws_struct_serialize_st_t st[LEJP_MAX_PARSING_STACK_DEPTH];
+typedef struct aws_lws_struct_serialize {
+	aws_lws_struct_serialize_st_t st[LEJP_MAX_PARSING_STACK_DEPTH];
 
 	size_t offset;
 	size_t remaining;
 
 	int sp;
 	int flags;
-} lws_struct_serialize_t;
+} aws_lws_struct_serialize_t;
 
 typedef enum {
 	LSJS_RESULT_CONTINUE,
 	LSJS_RESULT_FINISH,
 	LSJS_RESULT_ERROR
-} lws_struct_json_serialize_result_t;
+} aws_lws_struct_json_serialize_result_t;
 
 LWS_VISIBLE LWS_EXTERN int
-lws_struct_json_init_parse(struct lejp_ctx *ctx, lejp_callback cb,
+aws_lws_struct_json_init_parse(struct lejp_ctx *ctx, lejp_callback cb,
 			   void *user);
 
 LWS_VISIBLE LWS_EXTERN signed char
-lws_struct_schema_only_lejp_cb(struct lejp_ctx *ctx, char reason);
+aws_lws_struct_schema_only_lejp_cb(struct lejp_ctx *ctx, char reason);
 
 LWS_VISIBLE LWS_EXTERN signed char
-lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason);
+aws_lws_struct_default_lejp_cb(struct lejp_ctx *ctx, char reason);
 
-LWS_VISIBLE LWS_EXTERN lws_struct_serialize_t *
-lws_struct_json_serialize_create(const lws_struct_map_t *map,
+LWS_VISIBLE LWS_EXTERN aws_lws_struct_serialize_t *
+aws_lws_struct_json_serialize_create(const aws_lws_struct_map_t *map,
 				 size_t map_entries, int flags,
 				 const void *ptoplevel);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_struct_json_serialize_destroy(lws_struct_serialize_t **pjs);
+aws_lws_struct_json_serialize_destroy(aws_lws_struct_serialize_t **pjs);
 
-LWS_VISIBLE LWS_EXTERN lws_struct_json_serialize_result_t
-lws_struct_json_serialize(lws_struct_serialize_t *js, uint8_t *buf,
+LWS_VISIBLE LWS_EXTERN aws_lws_struct_json_serialize_result_t
+aws_lws_struct_json_serialize(aws_lws_struct_serialize_t *js, uint8_t *buf,
 			  size_t len, size_t *written);
 
 typedef struct sqlite3 sqlite3;
 
 LWS_VISIBLE LWS_EXTERN int
-lws_struct_sq3_serialize(sqlite3 *pdb, const lws_struct_map_t *schema,
-			 lws_dll2_owner_t *owner, uint32_t manual_idx);
+aws_lws_struct_sq3_serialize(sqlite3 *pdb, const aws_lws_struct_map_t *schema,
+			 aws_lws_dll2_owner_t *owner, uint32_t manual_idx);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *order,
-			   const lws_struct_map_t *schema, lws_dll2_owner_t *o,
-			   struct lwsac **ac, int start, int limit);
+aws_lws_struct_sq3_deserialize(sqlite3 *pdb, const char *filter, const char *order,
+			   const aws_lws_struct_map_t *schema, aws_lws_dll2_owner_t *o,
+			   struct aws_lwsac **ac, int start, int limit);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_struct_sq3_create_table(sqlite3 *pdb, const lws_struct_map_t *schema);
+aws_lws_struct_sq3_create_table(sqlite3 *pdb, const aws_lws_struct_map_t *schema);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_struct_sq3_open(struct lws_context *context, const char *sqlite3_path,
+aws_lws_struct_sq3_open(struct aws_lws_context *context, const char *sqlite3_path,
 		    char create_if_missing, sqlite3 **pdb);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_struct_sq3_close(sqlite3 **pdb);
+aws_lws_struct_sq3_close(sqlite3 **pdb);
 

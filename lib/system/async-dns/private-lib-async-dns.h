@@ -35,41 +35,41 @@
  * appended to the allocation
  */
 
-typedef struct lws_adns_cache {
-	lws_sorted_usec_list_t	sul;	/* for cache TTL management */
-	lws_dll2_t		list;
+typedef struct aws_lws_adns_cache {
+	aws_lws_sorted_usec_list_t	sul;	/* for cache TTL management */
+	aws_lws_dll2_t		list;
 
-	struct lws_adns_cache	*firstcache;
-	struct lws_adns_cache	*chain;
+	struct aws_lws_adns_cache	*firstcache;
+	struct aws_lws_adns_cache	*chain;
 	struct addrinfo		*results;
 	const char		*name;
 	uint8_t			flags;	/* b0 = has ipv4, b1 = has ipv6 */
 	char			refcount;
 	char			incomplete;
-	/* addrinfo, lws_sa46, then name overallocated here */
-} lws_adns_cache_t;
+	/* addrinfo, aws_lws_sa46, then name overallocated here */
+} aws_lws_adns_cache_t;
 
 /*
  * these objects are used while a query is ongoing...
  */
 
 typedef struct {
-	lws_sorted_usec_list_t	sul;	/* per-query write retry timer */
-	lws_sorted_usec_list_t	write_sul;	/* fail if unable to write by this time */
-	lws_dll2_t		list;
+	aws_lws_sorted_usec_list_t	sul;	/* per-query write retry timer */
+	aws_lws_sorted_usec_list_t	write_sul;	/* fail if unable to write by this time */
+	aws_lws_dll2_t		list;
 
-	lws_metrics_caliper_compose(metcal)
+	aws_lws_metrics_caliper_compose(metcal)
 
-	lws_dll2_owner_t	wsi_adns;
-	lws_async_dns_cb_t	standalone_cb;	/* if not associated to wsi */
-	struct lws_context	*context;
+	aws_lws_dll2_owner_t	wsi_adns;
+	aws_lws_async_dns_cb_t	standalone_cb;	/* if not associated to wsi */
+	struct aws_lws_context	*context;
 	void			*opaque;
 	struct addrinfo		**last;
-	lws_async_dns_t		*dns;
+	aws_lws_async_dns_t		*dns;
 
-	lws_adns_cache_t	*firstcache;
+	aws_lws_adns_cache_t	*firstcache;
 
-	lws_async_dns_retcode_t	ret;
+	aws_lws_async_dns_retcode_t	ret;
 	uint16_t		tid[3]; /* last 3 sent tid */
 	uint16_t		qtype;
 	uint16_t		retry;
@@ -90,7 +90,7 @@ typedef struct {
 	uint8_t			is_retry:1;
 
 	/* name overallocated here */
-} lws_adns_q_t;
+} aws_lws_adns_q_t;
 
 #define LADNS_MOST_RECENT_TID(_q) \
 		q->tid[(int)(_q->tids - 1) % (int)LWS_ARRAY_SIZE(q->tid)]
@@ -107,37 +107,37 @@ enum {
 };
 
 void
-lws_adns_q_destroy(lws_adns_q_t *q);
+aws_lws_adns_q_destroy(aws_lws_adns_q_t *q);
 
 void
-sul_cb_expire(struct lws_sorted_usec_list *sul);
+sul_cb_expire(struct aws_lws_sorted_usec_list *sul);
 
 void
-lws_adns_cache_destroy(lws_adns_cache_t *c);
+aws_lws_adns_cache_destroy(aws_lws_adns_cache_t *c);
 
 int
-lws_async_dns_complete(lws_adns_q_t *q, lws_adns_cache_t *c);
+aws_lws_async_dns_complete(aws_lws_adns_q_t *q, aws_lws_adns_cache_t *c);
 
-lws_adns_cache_t *
-lws_adns_get_cache(lws_async_dns_t *dns, const char *name);
-
-void
-lws_adns_parse_udp(lws_async_dns_t *dns, const uint8_t *pkt, size_t len);
-
-lws_adns_q_t *
-lws_adns_get_query(lws_async_dns_t *dns, adns_query_type_t qtype,
-		   lws_dll2_owner_t *owner, uint16_t tid, const char *name);
+aws_lws_adns_cache_t *
+aws_lws_adns_get_cache(aws_lws_async_dns_t *dns, const char *name);
 
 void
-lws_async_dns_trim_cache(lws_async_dns_t *dns);
+aws_lws_adns_parse_udp(aws_lws_async_dns_t *dns, const uint8_t *pkt, size_t len);
+
+aws_lws_adns_q_t *
+aws_lws_adns_get_query(aws_lws_async_dns_t *dns, adns_query_type_t qtype,
+		   aws_lws_dll2_owner_t *owner, uint16_t tid, const char *name);
+
+void
+aws_lws_async_dns_trim_cache(aws_lws_async_dns_t *dns);
 
 int
-lws_async_dns_get_new_tid(struct lws_context *context, lws_adns_q_t *q);
+aws_lws_async_dns_get_new_tid(struct aws_lws_context *context, aws_lws_adns_q_t *q);
 
 
 #if defined(_DEBUG)
 void
-lws_adns_dump(lws_async_dns_t *dns);
+aws_lws_adns_dump(aws_lws_async_dns_t *dns);
 #else
-#define lws_adns_dump(_d)
+#define aws_lws_adns_dump(_d)
 #endif

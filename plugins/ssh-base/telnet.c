@@ -28,11 +28,11 @@
 #include <string.h>
 
 struct per_vhost_data__telnet {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 	struct per_session_data__telnet *live_pss_list;
-	const struct lws_ssh_ops *ops;
+	const struct aws_lws_ssh_ops *ops;
 };
 
 struct per_session_data__telnet {
@@ -97,7 +97,7 @@ telnet_ld(struct per_session_data__telnet *pss, uint8_t c)
 		return 0; /* ignore unknown */
 
 	case LTST_WAIT_OPT:
-		lwsl_notice(" tld: cmd %d: opt %d\n", pss->cmd, c);
+		aws_lwsl_notice(" tld: cmd %d: opt %d\n", pss->cmd, c);
 		pss->state = LTST_WAIT_IAC;
 		return 0;	
 	}
@@ -113,38 +113,38 @@ static uint8_t init[] = {
 };
 
 static int
-lws_callback_raw_telnet(struct lws *wsi, enum lws_callback_reasons reason,
+aws_lws_callback_raw_telnet(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__telnet *pss =
 			(struct per_session_data__telnet *)user, **p;
 	struct per_vhost_data__telnet *vhd =
 			(struct per_vhost_data__telnet *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					lws_get_protocol(wsi));
-	const struct lws_protocol_vhost_options *pvo =
-			(const struct lws_protocol_vhost_options *)in;
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi));
+	const struct aws_lws_protocol_vhost_options *pvo =
+			(const struct aws_lws_protocol_vhost_options *)in;
 	int n, m;
 	uint8_t buf[LWS_PRE + 800], *pu = in;
 
 	switch ((int)reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__telnet));
-		vhd->context = lws_get_context(wsi);
-		vhd->protocol = lws_get_protocol(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->protocol = aws_lws_get_protocol(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 
 		while (pvo) {
 			if (!strcmp(pvo->name, "ops"))
-				vhd->ops = (const struct lws_ssh_ops *)pvo->value;
+				vhd->ops = (const struct aws_lws_ssh_ops *)pvo->value;
 
 			pvo = pvo->next;
 		}
 
 		if (!vhd->ops) {
-			lwsl_err("telnet pvo \"ops\" is mandatory\n");
+			aws_lwsl_err("telnet pvo \"ops\" is mandatory\n");
 			return -1;
 		}
 		break;
@@ -157,7 +157,7 @@ lws_callback_raw_telnet(struct lws *wsi, enum lws_callback_reasons reason,
 		pss->initial = 0;
 		if (vhd->ops->channel_create)
 			vhd->ops->channel_create(wsi, &pss->priv);
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
                 break;
 
 	case LWS_CALLBACK_RAW_CLOSE:
@@ -219,16 +219,16 @@ lws_callback_raw_telnet(struct lws *wsi, enum lws_callback_reasons reason,
 			}
 		}
 		if (n > 0) {
-			m = lws_write(wsi, (unsigned char *)buf + LWS_PRE, (unsigned int)n,
+			m = aws_lws_write(wsi, (unsigned char *)buf + LWS_PRE, (unsigned int)n,
 				      LWS_WRITE_HTTP);
 	                if (m < 0) {
-	                        lwsl_err("ERROR %d writing to di socket\n", m);
+	                        aws_lwsl_err("ERROR %d writing to di socket\n", m);
 	                        return -1;
 	                }
 		}
 
 		if (vhd->ops->tx_waiting(&pss->priv))
-		       lws_callback_on_writable(wsi);
+		       aws_lws_callback_on_writable(wsi);
 		break;
 
         case LWS_CALLBACK_SSH_UART_SET_RXFLOW:
@@ -240,7 +240,7 @@ lws_callback_raw_telnet(struct lws *wsi, enum lws_callback_reasons reason,
         	 * protocol may select the uart itself, eg, in the URL used
         	 * to set up the connection.
         	 */
-        	lws_rx_flow_control(wsi, len & 1);
+        	aws_lws_rx_flow_control(wsi, len & 1);
         	break;
 
 	default:
@@ -250,10 +250,10 @@ lws_callback_raw_telnet(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-const struct lws_protocols protocols_telnet[] = {
+const struct aws_lws_protocols protocols_telnet[] = {
 	{
 		"lws-telnetd-base",
-		lws_callback_raw_telnet,
+		aws_lws_callback_raw_telnet,
 		sizeof(struct per_session_data__telnet),
 		1024, 0, NULL, 900
 	},

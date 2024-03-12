@@ -31,13 +31,13 @@
 #include <grp.h>
 #include <dlfcn.h>
 
-const lws_plugin_header_t *
-lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
+const aws_lws_plugin_header_t *
+aws_lws_plat_dlopen(struct aws_lws_plugin **pplugin, const char *libpath,
 		const char *sofilename, const char *_class,
 		each_plugin_cb_t each, void *each_user)
 {
-	const lws_plugin_header_t *hdr;
-	struct lws_plugin *pin;
+	const aws_lws_plugin_header_t *hdr;
+	struct aws_lws_plugin *pin;
 	char sym[96];
 	void *l;
 	int m;
@@ -46,37 +46,37 @@ lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
 		/* [lib]...[.so] */
 		return NULL;
 
-	lwsl_info("   trying %s\n", libpath);
+	aws_lwsl_info("   trying %s\n", libpath);
 
 	l = dlopen(libpath, RTLD_NOW);
 	if (!l) {
-		lwsl_info("%s: Error loading DSO: %s\n", __func__, dlerror());
+		aws_lwsl_info("%s: Error loading DSO: %s\n", __func__, dlerror());
 
 		return NULL;
 	}
 
 	/* we could open it... can we get his export struct? */
-	m = lws_snprintf(sym, sizeof(sym) - 1, "%s", sofilename);
+	m = aws_lws_snprintf(sym, sizeof(sym) - 1, "%s", sofilename);
 	if (m < 4)
 		goto bail;
 	if (!strcmp(&sym[m - 3], ".so"))
 		sym[m - 3] = '\0'; /* snip the .so */
 
-	hdr = (const lws_plugin_header_t *)dlsym(l, sym);
+	hdr = (const aws_lws_plugin_header_t *)dlsym(l, sym);
 	if (!hdr) {
-		lwsl_info("%s: Failed to get export '%s' from %s: %s\n",
+		aws_lwsl_info("%s: Failed to get export '%s' from %s: %s\n",
 			 __func__, sym, libpath, dlerror());
 		goto bail;
 	}
 
 	if (hdr->api_magic != LWS_PLUGIN_API_MAGIC) {
-		lwsl_info("%s: plugin %s has outdated api %d (vs %d)\n",
+		aws_lwsl_info("%s: plugin %s has outdated api %d (vs %d)\n",
 			 __func__, libpath, hdr->api_magic,
 			 LWS_PLUGIN_API_MAGIC);
 		goto bail;
 	}
 
-	if (strcmp(hdr->lws_build_hash, LWS_BUILD_HASH))
+	if (strcmp(hdr->aws_lws_build_hash, LWS_BUILD_HASH))
 		goto bail;
 
 	if (strcmp(hdr->_class, _class))
@@ -97,7 +97,7 @@ lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
 	 * OK let's bring it in
 	 */
 
-	pin = lws_malloc(sizeof(*pin), __func__);
+	pin = aws_lws_malloc(sizeof(*pin), __func__);
 	if (!pin)
 		goto bail;
 
@@ -110,7 +110,7 @@ lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
 	if (each)
 		each(pin, each_user);
 
-	lwsl_notice("   %s\n", libpath);
+	aws_lwsl_notice("   %s\n", libpath);
 
 	return hdr;
 
@@ -121,7 +121,7 @@ bail:
 }
 
 int
-lws_plat_destroy_dl(struct lws_plugin *p)
+aws_lws_plat_destroy_dl(struct aws_lws_plugin *p)
 {
 	return dlclose(p->u.l);
 }

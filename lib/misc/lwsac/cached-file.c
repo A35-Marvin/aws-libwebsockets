@@ -39,7 +39,7 @@
  *  - the file is already in memory
  *
  * it just returns with *cache left alone; this costs very little.  You should
- * call `lwsac_use_cached_file_start()` and `lwsac_use_cached_file_end()`
+ * call `aws_lwsac_use_cached_file_start()` and `aws_lwsac_use_cached_file_end()`
  * to lock the cache against deletion while you are using it.
  *
  * If it's
@@ -64,55 +64,55 @@
  *  [struct cached_file_info]
  *  [file contents]  <--- *cache is set to here
  *
- * The api returns a lwsac_cached_file_t type offset to point to the file
+ * The api returns a aws_lwsac_cached_file_t type offset to point to the file
  * contents.  Helpers for reference counting and freeing are also provided
  * that take that type and know how to correct it back to operate on the LAC.
  */
 
-#define cache_file_to_lac(c) ((struct lwsac *)((char *)c - \
+#define cache_file_to_lac(c) ((struct aws_lwsac *)((char *)c - \
 			      sizeof(struct cached_file_info) - \
-			      sizeof(struct lwsac_head) - \
-			      sizeof(struct lwsac)))
+			      sizeof(struct aws_lwsac_head) - \
+			      sizeof(struct aws_lwsac)))
 
 void
-lwsac_use_cached_file_start(lwsac_cached_file_t cache)
+aws_lwsac_use_cached_file_start(aws_lwsac_cached_file_t cache)
 {
-	struct lwsac *lac = cache_file_to_lac(cache);
-	struct lwsac_head *lachead = (struct lwsac_head *)&lac->head[1];
+	struct aws_lwsac *lac = cache_file_to_lac(cache);
+	struct aws_lwsac_head *lachead = (struct aws_lwsac_head *)&lac->head[1];
 
 	lachead->refcount++;
-	// lwsl_debug("%s: html refcount: %d\n", __func__, lachead->refcount);
+	// aws_lwsl_debug("%s: html refcount: %d\n", __func__, lachead->refcount);
 }
 
 void
-lwsac_use_cached_file_end(lwsac_cached_file_t *cache)
+aws_lwsac_use_cached_file_end(aws_lwsac_cached_file_t *cache)
 {
-	struct lwsac *lac;
-	struct lwsac_head *lachead;
+	struct aws_lwsac *lac;
+	struct aws_lwsac_head *lachead;
 
 	if (!cache || !*cache)
 		return;
 
 	lac = cache_file_to_lac(*cache);
-	lachead = (struct lwsac_head *)&lac->head[1];
+	lachead = (struct aws_lwsac_head *)&lac->head[1];
 
 	if (!lachead->refcount)
-		lwsl_err("%s: html refcount zero on entry\n", __func__);
+		aws_lwsl_err("%s: html refcount zero on entry\n", __func__);
 
 	if (lachead->refcount && !--lachead->refcount && lachead->detached) {
 		*cache = NULL; /* not usable any more */
-		lwsac_free(&lac);
+		aws_lwsac_free(&lac);
 	}
 }
 
 void
-lwsac_use_cached_file_detach(lwsac_cached_file_t *cache)
+aws_lwsac_use_cached_file_detach(aws_lwsac_cached_file_t *cache)
 {
-	struct lwsac *lac = cache_file_to_lac(*cache);
-	struct lwsac_head *lachead = NULL;
+	struct aws_lwsac *lac = cache_file_to_lac(*cache);
+	struct aws_lwsac_head *lachead = NULL;
 
 	if (lac) {
-		lachead = (struct lwsac_head *)&lac->head[1];
+		lachead = (struct aws_lwsac_head *)&lac->head[1];
 
 		lachead->detached = 1;
 		if (lachead->refcount)
@@ -120,15 +120,15 @@ lwsac_use_cached_file_detach(lwsac_cached_file_t *cache)
 	}
 
 	*cache = NULL;
-	lwsac_free(&lac);
+	aws_lwsac_free(&lac);
 }
 
 int
-lwsac_cached_file(const char *filepath, lwsac_cached_file_t *cache, size_t *len)
+aws_lwsac_cached_file(const char *filepath, aws_lwsac_cached_file_t *cache, size_t *len)
 {
 	struct cached_file_info *info = NULL;
-	lwsac_cached_file_t old = *cache;
-	struct lwsac *lac = NULL;
+	aws_lwsac_cached_file_t old = *cache;
+	struct aws_lwsac *lac = NULL;
 	time_t t = time(NULL);
 	unsigned char *a;
 	struct stat s;
@@ -152,13 +152,13 @@ lwsac_cached_file(const char *filepath, lwsac_cached_file_t *cache, size_t *len)
 
 	fd = open(filepath, O_RDONLY);
 	if (fd < 0) {
-		lwsl_err("%s: cannot open %s\n", __func__, filepath);
+		aws_lwsl_err("%s: cannot open %s\n", __func__, filepath);
 
 		return 1;
 	}
 
 	if (fstat(fd, &s)) {
-		lwsl_err("%s: cannot stat %s\n", __func__, filepath);
+		aws_lwsl_err("%s: cannot stat %s\n", __func__, filepath);
 
 		goto bail;
 	}
@@ -179,7 +179,7 @@ lwsac_cached_file(const char *filepath, lwsac_cached_file_t *cache, size_t *len)
 
 	all = sizeof(*info) + (unsigned long)s.st_size + 2;
 
-	info = lwsac_use(&lac, all, all);
+	info = aws_lwsac_use(&lac, all, all);
 	if (!info)
 		goto bail;
 
@@ -193,21 +193,21 @@ lwsac_cached_file(const char *filepath, lwsac_cached_file_t *cache, size_t *len)
 
 	rd = read(fd, a, (unsigned long)s.st_size);
 	if (rd != s.st_size) {
-		lwsl_err("%s: cannot read %s (%d)\n", __func__, filepath,
+		aws_lwsl_err("%s: cannot read %s (%d)\n", __func__, filepath,
 			 (int)rd);
 		goto bail1;
 	}
 
 	close(fd);
 
-	*cache = (lwsac_cached_file_t)a;
+	*cache = (aws_lwsac_cached_file_t)a;
 	if (old)
-		lwsac_use_cached_file_detach(&old);
+		aws_lwsac_use_cached_file_detach(&old);
 
 	return 0;
 
 bail1:
-	lwsac_free(&lac);
+	aws_lwsac_free(&lac);
 
 bail:
 	close(fd);

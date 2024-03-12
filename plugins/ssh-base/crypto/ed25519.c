@@ -15,18 +15,18 @@
 int
 crypto_hash_sha512(uint8_t *hash64, const uint8_t *data, size_t len)
 {
-	struct lws_genhash_ctx ctx;
+	struct aws_lws_genhash_ctx ctx;
 	int ret;
 
-	if (lws_genhash_init(&ctx, LWS_GENHASH_TYPE_SHA512)) {
-		lwsl_notice("Failed to init SHA512\n");
+	if (aws_lws_genhash_init(&ctx, LWS_GENHASH_TYPE_SHA512)) {
+		aws_lwsl_notice("Failed to init SHA512\n");
 		return 0;
 	}
 
-	ret = lws_genhash_update(&ctx, data, len);
+	ret = aws_lws_genhash_update(&ctx, data, len);
 
-	if (lws_genhash_destroy(&ctx, hash64))
-		lwsl_notice("genhash destroy failed\n");
+	if (aws_lws_genhash_destroy(&ctx, hash64))
+		aws_lwsl_notice("genhash destroy failed\n");
 
 	return ret ? 0 : 64;
 }
@@ -51,7 +51,7 @@ get_hram(unsigned char *hram, const unsigned char *sm,
 
 
 int crypto_sign_ed25519_keypair(
-    struct lws_context *context,
+    struct aws_lws_context *context,
     unsigned char *pk,
     unsigned char *sk
     )
@@ -61,7 +61,7 @@ int crypto_sign_ed25519_keypair(
   unsigned char extsk[64];
   int i;
 
-  lws_get_random(context, sk, 32);
+  aws_lws_get_random(context, sk, 32);
   crypto_hash_sha512(extsk, sk, 32);
   extsk[0] &= 248;
   extsk[31] &= 127;
@@ -184,13 +184,13 @@ int crypto_sign_ed25519_open(
 
   *mlen = (unsigned long long) -1;
   if (smlen < 64) {
-	  lwsl_notice("a\n");
+	  aws_lwsl_notice("a\n");
 
 	  return -1;
   }
 
   if (ge25519_unpackneg_vartime(&get1, pk)) {
-	  lwsl_notice("b\n");
+	  aws_lwsl_notice("b\n");
 	  return -1;
   }
 
@@ -204,7 +204,7 @@ int crypto_sign_ed25519_open(
   ge25519_pack(t2, &get2);
 
   ret = crypto_verify_32(sm, t2);
-  lwsl_notice("vf says %d\n", ret);
+  aws_lwsl_notice("vf says %d\n", ret);
 
   if (!ret)
   {

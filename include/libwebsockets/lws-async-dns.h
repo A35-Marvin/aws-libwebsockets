@@ -38,17 +38,17 @@ typedef enum {
 	LADNS_RET_FAILED					= -1,
 	LADNS_RET_FOUND,
 	LADNS_RET_CONTINUING
-} lws_async_dns_retcode_t;
+} aws_lws_async_dns_retcode_t;
 
 struct addrinfo;
 
-typedef struct lws * (*lws_async_dns_cb_t)(struct lws *wsi, const char *ads,
+typedef struct lws * (*aws_lws_async_dns_cb_t)(struct lws *wsi, const char *ads,
 		const struct addrinfo *result, int n, void *opaque);
 
 /**
- * lws_async_dns_query() - perform a dns lookup using async dns
+ * aws_lws_async_dns_query() - perform a dns lookup using async dns
  *
- * \param context: the lws_context
+ * \param context: the aws_lws_context
  * \param tsi: thread service index (usually 0)
  * \param name: DNS name to look up
  * \param qtype: type of query (A, AAAA etc)
@@ -62,16 +62,16 @@ typedef struct lws * (*lws_async_dns_cb_t)(struct lws *wsi, const char *ads,
  * that was called with the cached addrinfo results.
  *
  * The cached object can't be evicted until the reference count reaches zero...
- * use lws_async_dns_freeaddrinfo() to indicate you're finsihed with the
+ * use aws_lws_async_dns_freeaddrinfo() to indicate you're finsihed with the
  * results for each callback that happened with them.
  */
-LWS_VISIBLE LWS_EXTERN lws_async_dns_retcode_t
-lws_async_dns_query(struct lws_context *context, int tsi, const char *name,
-		    adns_query_type_t qtype, lws_async_dns_cb_t cb,
+LWS_VISIBLE LWS_EXTERN aws_lws_async_dns_retcode_t
+aws_lws_async_dns_query(struct aws_lws_context *context, int tsi, const char *name,
+		    adns_query_type_t qtype, aws_lws_async_dns_cb_t cb,
 		    struct lws *wsi, void *opaque);
 
 /**
- * lws_async_dns_freeaddrinfo() - decrement refcount on cached addrinfo results
+ * aws_lws_async_dns_freeaddrinfo() - decrement refcount on cached addrinfo results
  *
  * \param pai: a pointert to a pointer to first addrinfo returned as result in the callback
  *
@@ -81,6 +81,6 @@ lws_async_dns_query(struct lws_context *context, int tsi, const char *name,
  * The pointer to the first addrinfo give in the argument is set to NULL.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_async_dns_freeaddrinfo(const struct addrinfo **ai);
+aws_lws_async_dns_freeaddrinfo(const struct addrinfo **ai);
 
 #endif

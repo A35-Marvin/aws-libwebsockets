@@ -23,7 +23,7 @@
 #include "ssl_port.h"
 
 char *
-lws_strncpy(char *dest, const char *src, size_t size);
+aws_lws_strncpy(char *dest, const char *src, size_t size);
 
 #define SSL_SEND_DATA_MAX_LENGTH 1460
 
@@ -232,9 +232,9 @@ SSL_CTX* SSL_CTX_new(const SSL_METHOD *method, void *rngctx)
 	mbedtls_x509_crt_init(*px);
 	n = mbedtls_x509_crt_parse_file(*px, mbedtls_client_preload_filepath);
 	if (n < 0)
-		lwsl_err("%s: unable to load cert bundle 0x%x\n", __func__, -n);
+		aws_lwsl_err("%s: unable to load cert bundle 0x%x\n", __func__, -n);
 	else
-		lwsl_info("%s: loaded cert bundle %d\n", __func__, n);
+		aws_lwsl_info("%s: loaded cert bundle %d\n", __func__, n);
     }
 #endif
 
@@ -1101,7 +1101,7 @@ void SSL_set_verify(SSL *ssl, int mode, int (*verify_callback)(SSL *, mbedtls_x5
 
 void ERR_error_string_n(unsigned long e, char *buf, size_t len)
 {
-	lws_strncpy(buf, "unknown", len);
+	aws_lws_strncpy(buf, "unknown", len);
 }
 
 void ERR_free_strings(void)

@@ -31,7 +31,7 @@ struct msg {
 };
 
 struct per_session_data__minimal_server_echo {
-	struct lws_ring *ring;
+	struct aws_lws_ring *ring;
 	uint32_t msglen;
 	uint32_t tail;
 	uint8_t completed:1;
@@ -40,8 +40,8 @@ struct per_session_data__minimal_server_echo {
 };
 
 struct vhd_minimal_server_echo {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
 
 	int *interrupted;
 	int *options;
@@ -58,14 +58,14 @@ __minimal_destroy_message(void *_msg)
 }
 #include <assert.h>
 static int
-callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal_server_echo(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal_server_echo *pss =
 			(struct per_session_data__minimal_server_echo *)user;
 	struct vhd_minimal_server_echo *vhd = (struct vhd_minimal_server_echo *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-				lws_get_protocol(wsi));
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi));
 	const struct msg *pmsg;
 	struct msg amsg;
 	int m, n, flags;
@@ -73,29 +73,29 @@ callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason,
 	switch (reason) {
 
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct vhd_minimal_server_echo));
 		if (!vhd)
 			return -1;
 
-		vhd->context = lws_get_context(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 
 		/* get the pointers we were passed in pvo */
 
-		vhd->interrupted = (int *)lws_pvo_search(
-			(const struct lws_protocol_vhost_options *)in,
+		vhd->interrupted = (int *)aws_lws_pvo_search(
+			(const struct aws_lws_protocol_vhost_options *)in,
 			"interrupted")->value;
-		vhd->options = (int *)lws_pvo_search(
-			(const struct lws_protocol_vhost_options *)in,
+		vhd->options = (int *)aws_lws_pvo_search(
+			(const struct aws_lws_protocol_vhost_options *)in,
 			"options")->value;
 		break;
 
 	case LWS_CALLBACK_ESTABLISHED:
 		/* generate a block of output before travis times us out */
-		lwsl_warn("LWS_CALLBACK_ESTABLISHED\n");
-		pss->ring = lws_ring_create(sizeof(struct msg), RING_DEPTH,
+		aws_lwsl_warn("LWS_CALLBACK_ESTABLISHED\n");
+		pss->ring = aws_lws_ring_create(sizeof(struct msg), RING_DEPTH,
 					    __minimal_destroy_message);
 		if (!pss->ring)
 			return 1;
@@ -104,33 +104,33 @@ callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
 
-		lwsl_user("LWS_CALLBACK_SERVER_WRITEABLE\n");
+		aws_lwsl_user("LWS_CALLBACK_SERVER_WRITEABLE\n");
 
 		if (pss->write_consume_pending) {
 			/* perform the deferred fifo consume */
-			lws_ring_consume_single_tail(pss->ring, &pss->tail, 1);
+			aws_lws_ring_consume_single_tail(pss->ring, &pss->tail, 1);
 			pss->write_consume_pending = 0;
 		}
 
-		pmsg = lws_ring_get_element(pss->ring, &pss->tail);
+		pmsg = aws_lws_ring_get_element(pss->ring, &pss->tail);
 		if (!pmsg) {
-			lwsl_user(" (nothing in ring)\n");
+			aws_lwsl_user(" (nothing in ring)\n");
 			break;
 		}
 
-		flags = lws_write_ws_flags(
+		flags = aws_lws_write_ws_flags(
 			    pmsg->binary ? LWS_WRITE_BINARY : LWS_WRITE_TEXT,
 			    pmsg->first, pmsg->final);
 
 		/* notice we allowed for LWS_PRE in the payload already */
-		m = lws_write(wsi, ((unsigned char *)pmsg->payload) +
-			      LWS_PRE, pmsg->len, (enum lws_write_protocol)flags);
+		m = aws_lws_write(wsi, ((unsigned char *)pmsg->payload) +
+			      LWS_PRE, pmsg->len, (enum aws_lws_write_protocol)flags);
 		if (m < (int)pmsg->len) {
-			lwsl_err("ERROR %d writing to ws socket\n", m);
+			aws_lwsl_err("ERROR %d writing to ws socket\n", m);
 			return -1;
 		}
 
-		lwsl_user(" wrote %d: flags: 0x%x first: %d final %d\n",
+		aws_lwsl_user(" wrote %d: flags: 0x%x first: %d final %d\n",
 				m, flags, pmsg->first, pmsg->final);
 		/*
 		 * Workaround deferred deflate in pmd extension by only
@@ -139,11 +139,11 @@ callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason,
 		 * this if you're using pmd.
 		 */
 		pss->write_consume_pending = 1;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 
 		if (pss->flow_controlled &&
-		    (int)lws_ring_get_count_free_elements(pss->ring) > RING_DEPTH - 5) {
-			lws_rx_flow_control(wsi, 1);
+		    (int)aws_lws_ring_get_count_free_elements(pss->ring) > RING_DEPTH - 5) {
+			aws_lws_rx_flow_control(wsi, 1);
 			pss->flow_controlled = 0;
 		}
 
@@ -154,26 +154,26 @@ callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_RECEIVE:
 
-		lwsl_user("LWS_CALLBACK_RECEIVE: %4d (rpp %5d, first %d, "
+		aws_lwsl_user("LWS_CALLBACK_RECEIVE: %4d (rpp %5d, first %d, "
 			  "last %d, bin %d, msglen %d (+ %d = %d))\n",
-			  (int)len, (int)lws_remaining_packet_payload(wsi),
-			  lws_is_first_fragment(wsi),
-			  lws_is_final_fragment(wsi),
-			  lws_frame_is_binary(wsi), pss->msglen, (int)len,
+			  (int)len, (int)aws_lws_remaining_packet_payload(wsi),
+			  aws_lws_is_first_fragment(wsi),
+			  aws_lws_is_final_fragment(wsi),
+			  aws_lws_frame_is_binary(wsi), pss->msglen, (int)len,
 			  (int)pss->msglen + (int)len);
 
 		if (len) {
 			;
 			//puts((const char *)in);
-			//lwsl_hexdump_notice(in, len);
+			//aws_lwsl_hexdump_notice(in, len);
 		}
 
-		amsg.first = (char)lws_is_first_fragment(wsi);
-		amsg.final = (char)lws_is_final_fragment(wsi);
-		amsg.binary = (char)lws_frame_is_binary(wsi);
-		n = (int)lws_ring_get_count_free_elements(pss->ring);
+		amsg.first = (char)aws_lws_is_first_fragment(wsi);
+		amsg.final = (char)aws_lws_is_final_fragment(wsi);
+		amsg.binary = (char)aws_lws_frame_is_binary(wsi);
+		n = (int)aws_lws_ring_get_count_free_elements(pss->ring);
 		if (!n) {
-			lwsl_user("dropping!\n");
+			aws_lwsl_user("dropping!\n");
 			break;
 		}
 
@@ -186,32 +186,32 @@ callback_minimal_server_echo(struct lws *wsi, enum lws_callback_reasons reason,
 		/* notice we over-allocate by LWS_PRE */
 		amsg.payload = malloc(LWS_PRE + len);
 		if (!amsg.payload) {
-			lwsl_user("OOM: dropping\n");
+			aws_lwsl_user("OOM: dropping\n");
 			break;
 		}
 
 		memcpy((char *)amsg.payload + LWS_PRE, in, len);
-		if (!lws_ring_insert(pss->ring, &amsg, 1)) {
+		if (!aws_lws_ring_insert(pss->ring, &amsg, 1)) {
 			__minimal_destroy_message(&amsg);
-			lwsl_user("dropping!\n");
+			aws_lwsl_user("dropping!\n");
 			break;
 		}
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 
 		if (n < 3 && !pss->flow_controlled) {
 			pss->flow_controlled = 1;
-			lws_rx_flow_control(wsi, 0);
+			aws_lws_rx_flow_control(wsi, 0);
 		}
 		break;
 
 	case LWS_CALLBACK_CLOSED:
-		lwsl_user("LWS_CALLBACK_CLOSED\n");
-		lws_ring_destroy(pss->ring);
+		aws_lwsl_user("LWS_CALLBACK_CLOSED\n");
+		aws_lws_ring_destroy(pss->ring);
 
 		if (*vhd->options & 1) {
 			if (!*vhd->interrupted)
 				*vhd->interrupted = 1 + pss->completed;
-			lws_cancel_service(lws_get_context(wsi));
+			aws_lws_cancel_service(aws_lws_get_context(wsi));
 		}
 		break;
 

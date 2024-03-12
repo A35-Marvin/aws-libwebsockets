@@ -1,4 +1,4 @@
-# lws_led gpio and pwm class drivers
+# aws_lws_led gpio and pwm class drivers
 
 Lws provides an abstract led controller class that can bind an array of LEDs
 to gpio and pwm controllers, and automatically handled pwm sequencers.
@@ -26,7 +26,7 @@ the LED controller definintion.  Leds are named so code does not introduce
 dependencies on specific implementations.
 
 ```
-static const lws_led_gpio_map_t lgm[] = {
+static const aws_lws_led_gpio_map_t lgm[] = {
 	{
 		.name			= "alert",
 		.gpio			= GPIO_NUM_25,
@@ -35,18 +35,18 @@ static const lws_led_gpio_map_t lgm[] = {
 	},
 };
 
-static const lws_led_gpio_controller_t lgc = {
-	.led_ops			= lws_led_gpio_ops,
-	.gpio_ops			= &lws_gpio_plat,
+static const aws_lws_led_gpio_controller_t lgc = {
+	.led_ops			= aws_lws_led_gpio_ops,
+	.gpio_ops			= &aws_lws_gpio_plat,
 	.led_map			= &lgm[0],
 	.count_leds			= LWS_ARRAY_SIZE(lgm)
 };
 
-	struct lws_led_state *lls;
+	struct aws_lws_led_state *lls;
 
 	lls = lgc.led_ops.create(&lgc.led_ops);
 	if (!lls) {
-		lwsl_err("%s: could not create led\n", __func__);
+		aws_lwsl_err("%s: could not create led\n", __func__);
 		goto spin;
 	}
 
@@ -73,10 +73,10 @@ of 65536 phase steps in its cycle.  For example, this is the linear function
 that is included
 
 ```
-lws_led_intensity_t
-lws_led_func_linear(lws_led_seq_phase_t n)
+aws_lws_led_intensity_t
+aws_lws_led_func_linear(aws_lws_led_seq_phase_t n)
 {
-	return (lws_led_intensity_t)n;
+	return (aws_lws_led_intensity_t)n;
 }
 ```
 
@@ -90,8 +90,8 @@ between 0 - 65535 reflecting one cycle of sine wave for the phase angle of 0 -
 These functions are packaged into sequencer structures like this
 
 ```
-const lws_led_sequence_def_t lws_pwmseq_sine_endless_fast = {
-	.func			= lws_led_func_sine,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_sine_endless_fast = {
+	.func			= aws_lws_led_func_sine,
 	.ledphase_offset	= 0, /* already at 0 amp at 0 phase */
 	.ledphase_total		= LWS_SEQ_LEDPHASE_TOTAL_ENDLESS,
 	.ms			= 750
@@ -102,8 +102,8 @@ This "endless" sequencer cycles through the sine function at 750ms per cycle.
 Non-endless sequencers have a specific start and end in the phase space, eg
 
 ```
-const lws_led_sequence_def_t lws_pwmseq_sine_up = {
-	.func			= lws_led_func_sine,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_sine_up = {
+	.func			= aws_lws_led_func_sine,
 	.ledphase_offset	= 0, /* already at 0 amp at 0 phase */
 	.ledphase_total		= LWS_LED_FUNC_PHASE / 2, /* 180 degree ./^ */
 	.ms			= 300
@@ -116,8 +116,8 @@ at full intensity, over 300ms.
 A commonly-used, provided one is like this, as used in the next section
 
 ```
-const lws_led_sequence_def_t lws_pwmseq_linear_wipe = {
-	.func			= lws_led_func_linear,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_linear_wipe = {
+	.func			= aws_lws_led_func_linear,
 	.ledphase_offset	= 0,
 	.ledphase_total		= LWS_LED_FUNC_PHASE - 1,
 	.ms			= 300
@@ -130,13 +130,13 @@ The main api for high level sequenced control is
 
 ```
 int
-lws_led_transition(struct lws_led_state *lcs, const char *name,
-		   const lws_led_sequence_def_t *next,
-		   const lws_led_sequence_def_t *trans);
+aws_lws_led_transition(struct aws_lws_led_state *lcs, const char *name,
+		   const aws_lws_led_sequence_def_t *next,
+		   const aws_lws_led_sequence_def_t *trans);
 ```
 
 This fades from the current sequence to a new sequence, using `trans` sequencer
-intensity as the mix factor.  `trans` is typically `lws_pwmseq_linear_wipe`,
+intensity as the mix factor.  `trans` is typically `aws_lws_pwmseq_linear_wipe`,
 fading between the current and new linearly over 300ms.  At the end of the
 `trans` sequence, the new sequence simply replaces the current one and the
 transition is completed.
@@ -145,11 +145,11 @@ Sequencers use a single 30Hz OS timer while any sequence is active.
 
 exported sequencer symbol|description
 ---|---
-lws_pwmseq_sine_endless_slow|continuous 100% sine, 1.5s cycle 
-lws_pwmseq_sine_endless_fast|continuous 100% sine, 0.75s cycle 
-lws_pwmseq_linear_wipe|single 0 - 100% ramp over 0.3s
-lws_pwmseq_sine_up|single 0 - 100% using sine curve over 0.3s
-lws_pwmseq_sine_down|single 100% - 0 using sine curve over 0.3s
-lws_pwmseq_static_on|100% static
-lws_pwmseq_static_half|50% static
-lws_pwmseq_static_off|0% static
+aws_lws_pwmseq_sine_endless_slow|continuous 100% sine, 1.5s cycle 
+aws_lws_pwmseq_sine_endless_fast|continuous 100% sine, 0.75s cycle 
+aws_lws_pwmseq_linear_wipe|single 0 - 100% ramp over 0.3s
+aws_lws_pwmseq_sine_up|single 0 - 100% using sine curve over 0.3s
+aws_lws_pwmseq_sine_down|single 100% - 0 using sine curve over 0.3s
+aws_lws_pwmseq_static_on|100% static
+aws_lws_pwmseq_static_half|50% static
+aws_lws_pwmseq_static_off|0% static

@@ -25,23 +25,23 @@
 #include <private-lib-core.h>
 
 static void
-secstream_mqtt_cleanup(lws_ss_handle_t *h)
+secstream_mqtt_cleanup(aws_lws_ss_handle_t *h)
 {
 	uint32_t i;
 
 	if (h->u.mqtt.heap_baggage) {
-		lws_free(h->u.mqtt.heap_baggage);
+		aws_lws_free(h->u.mqtt.heap_baggage);
 		h->u.mqtt.heap_baggage = NULL;
 	}
 
 	if (h->u.mqtt.sub_info.topic) {
 		for (i = 0; i < h->u.mqtt.sub_info.num_topics; i++) {
 			if (h->u.mqtt.sub_info.topic[i].name) {
-				lws_free((void*)h->u.mqtt.sub_info.topic[i].name);
+				aws_lws_free((void*)h->u.mqtt.sub_info.topic[i].name);
 				h->u.mqtt.sub_info.topic[i].name = NULL;
 			}
 		}
-		lws_free(h->u.mqtt.sub_info.topic);
+		aws_lws_free(h->u.mqtt.sub_info.topic);
 		h->u.mqtt.sub_info.topic = NULL;
 	}
 }
@@ -50,9 +50,9 @@ static int
 secstream_mqtt_subscribe(struct lws *wsi)
 {
 	size_t used_in, used_out, topic_limit;
-	lws_strexp_t exp;
+	aws_lws_strexp_t exp;
 	char* expbuf;
-	lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
+	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
 
 	if (!h || !h->policy)
 		return -1;
@@ -65,44 +65,44 @@ secstream_mqtt_subscribe(struct lws *wsi)
 	if (!h->policy->u.mqtt.subscribe || wsi->mqtt->done_subscribe)
 		return 0;
 
-	lws_strexp_init(&exp, (void*)h, lws_ss_exp_cb_metadata, NULL,
+	aws_lws_strexp_init(&exp, (void*)h, aws_lws_ss_exp_cb_metadata, NULL,
 			topic_limit);
 	/*
 	 * Expand with no output first to calculate the size of
 	 * expanded string then, allocate new buffer and expand
 	 * again with the buffer
 	 */
-	if (lws_strexp_expand(&exp, h->policy->u.mqtt.subscribe,
+	if (aws_lws_strexp_expand(&exp, h->policy->u.mqtt.subscribe,
 			      strlen(h->policy->u.mqtt.subscribe), &used_in,
 			      &used_out) != LSTRX_DONE) {
-		lwsl_err(
+		aws_lwsl_err(
 			"%s, failed to expand MQTT subscribe"
 			" topic with no output\n",
 			__func__);
 		return 1;
 	}
 
-	expbuf = lws_malloc(used_out + 1, __func__);
+	expbuf = aws_lws_malloc(used_out + 1, __func__);
 	if (!expbuf) {
-		lwsl_err(
+		aws_lwsl_err(
 			 "%s, failed to allocate MQTT subscribe"
 			 "topic",
 			 __func__);
 		return 1;
 	}
 
-	lws_strexp_init(&exp, (void*)h, lws_ss_exp_cb_metadata, expbuf,
+	aws_lws_strexp_init(&exp, (void*)h, aws_lws_ss_exp_cb_metadata, expbuf,
 			used_out + 1);
 
-	if (lws_strexp_expand(&exp, h->policy->u.mqtt.subscribe,
+	if (aws_lws_strexp_expand(&exp, h->policy->u.mqtt.subscribe,
 			      strlen(h->policy->u.mqtt.subscribe), &used_in,
 			      &used_out) != LSTRX_DONE) {
-		lwsl_err("%s, failed to expand MQTT subscribe topic\n",
+		aws_lwsl_err("%s, failed to expand MQTT subscribe topic\n",
 			 __func__);
-		lws_free(expbuf);
+		aws_lws_free(expbuf);
 		return 1;
 	}
-	lwsl_notice("%s, expbuf - %s\n", __func__, expbuf);
+	aws_lwsl_notice("%s, expbuf - %s\n", __func__, expbuf);
 	h->u.mqtt.sub_top.name = expbuf;
 
 	/*
@@ -111,7 +111,7 @@ secstream_mqtt_subscribe(struct lws *wsi)
 	 * string-substituted version of the policy string.
 	 */
 
-	lwsl_notice("%s: subscribing %s\n", __func__,
+	aws_lwsl_notice("%s: subscribing %s\n", __func__,
 		    h->u.mqtt.sub_top.name);
 
 	h->u.mqtt.sub_top.qos = h->policy->u.mqtt.qos;
@@ -119,22 +119,22 @@ secstream_mqtt_subscribe(struct lws *wsi)
 	h->u.mqtt.sub_info.num_topics = 1;
 	h->u.mqtt.sub_info.topic = &h->u.mqtt.sub_top;
 	h->u.mqtt.sub_info.topic =
-			    lws_malloc(sizeof(lws_mqtt_topic_elem_t), __func__);
-	h->u.mqtt.sub_info.topic[0].name = lws_strdup(expbuf);
+			    aws_lws_malloc(sizeof(aws_lws_mqtt_topic_elem_t), __func__);
+	h->u.mqtt.sub_info.topic[0].name = aws_lws_strdup(expbuf);
 	h->u.mqtt.sub_info.topic[0].qos = h->policy->u.mqtt.qos;
 
-	if (lws_mqtt_client_send_subcribe(wsi, &h->u.mqtt.sub_info)) {
-		lwsl_notice("%s: unable to subscribe", __func__);
-		lws_free(expbuf);
+	if (aws_lws_mqtt_client_send_subcribe(wsi, &h->u.mqtt.sub_info)) {
+		aws_lwsl_notice("%s: unable to subscribe", __func__);
+		aws_lws_free(expbuf);
 		h->u.mqtt.sub_top.name = NULL;
 		return -1;
 	}
-	lws_free(expbuf);
+	aws_lws_free(expbuf);
 	h->u.mqtt.sub_top.name = NULL;
 
 	/* Expect a SUBACK */
-	if (lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
-		lwsl_err("%s: Unable to set LWS_POLLIN\n", __func__);
+	if (aws_lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
+		aws_lwsl_err("%s: Unable to set LWS_POLLIN\n", __func__);
 		return -1;
 	}
 	return 0;
@@ -143,13 +143,13 @@ secstream_mqtt_subscribe(struct lws *wsi)
 static int
 secstream_mqtt_publish(struct lws *wsi, uint8_t *buf, size_t buflen,
 			const char* topic,
-			lws_mqtt_qos_levels_t qos,  int f)
+			aws_lws_mqtt_qos_levels_t qos,  int f)
 {
-	lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
+	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
 	size_t used_in, used_out, topic_limit;
-	lws_strexp_t exp;
+	aws_lws_strexp_t exp;
 	char *expbuf;
-	lws_mqtt_publish_param_t mqpp;
+	aws_lws_mqtt_publish_param_t mqpp;
 
 	if (h->policy->u.mqtt.aws_iot)
 		topic_limit = LWS_MQTT_MAX_AWSIOT_TOPICLEN;
@@ -158,31 +158,31 @@ secstream_mqtt_publish(struct lws *wsi, uint8_t *buf, size_t buflen,
 
 	memset(&mqpp, 0, sizeof(mqpp));
 
-	lws_strexp_init(&exp, h, lws_ss_exp_cb_metadata, NULL,
+	aws_lws_strexp_init(&exp, h, aws_lws_ss_exp_cb_metadata, NULL,
 			topic_limit);
 
-	if (lws_strexp_expand(&exp, topic, strlen(topic), &used_in,
+	if (aws_lws_strexp_expand(&exp, topic, strlen(topic), &used_in,
 			      &used_out) != LSTRX_DONE) {
-		lwsl_err("%s, failed to expand MQTT publish"
+		aws_lwsl_err("%s, failed to expand MQTT publish"
 			 " topic with no output\n", __func__);
 		return 1;
 	}
-	expbuf = lws_malloc(used_out + 1, __func__);
+	expbuf = aws_lws_malloc(used_out + 1, __func__);
 	if (!expbuf) {
-		lwsl_err("%s, failed to allocate MQTT publish topic",
+		aws_lwsl_err("%s, failed to allocate MQTT publish topic",
 			  __func__);
 		return 1;
 	}
 
-	lws_strexp_init(&exp, (void *)h, lws_ss_exp_cb_metadata, expbuf,
+	aws_lws_strexp_init(&exp, (void *)h, aws_lws_ss_exp_cb_metadata, expbuf,
 			used_out + 1);
 
-	if (lws_strexp_expand(&exp, topic, strlen(topic), &used_in,
+	if (aws_lws_strexp_expand(&exp, topic, strlen(topic), &used_in,
 			      &used_out) != LSTRX_DONE) {
-		lws_free(expbuf);
+		aws_lws_free(expbuf);
 		return 1;
 	}
-	lwsl_notice("%s, expbuf - %s\n", __func__, expbuf);
+	aws_lwsl_notice("%s, expbuf - %s\n", __func__, expbuf);
 	mqpp.topic = (char *)expbuf;
 
 	mqpp.topic_len = (uint16_t)strlen(mqpp.topic);
@@ -193,31 +193,31 @@ secstream_mqtt_publish(struct lws *wsi, uint8_t *buf, size_t buflen,
 	else
 		mqpp.payload_len = (uint32_t)buflen;
 
-	lwsl_notice("%s: payload len %d\n", __func__,
+	aws_lwsl_notice("%s: payload len %d\n", __func__,
 		    (int)mqpp.payload_len);
 
 	mqpp.qos = h->policy->u.mqtt.qos;
 
-	if (lws_mqtt_client_send_publish(wsi, &mqpp,
+	if (aws_lws_mqtt_client_send_publish(wsi, &mqpp,
 					 (const char *)buf,
 					 (uint32_t)buflen,
 					 f & LWSSS_FLAG_EOM)) {
-		lwsl_notice("%s: failed to publish\n", __func__);
-		lws_free(expbuf);
+		aws_lwsl_notice("%s: failed to publish\n", __func__);
+		aws_lws_free(expbuf);
 		return -1;
 	}
-	lws_free(expbuf);
+	aws_lws_free(expbuf);
 	return 0;
 }
 
 static int
-secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+secstream_mqtt(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
-	lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
-	lws_mqtt_publish_param_t *pmqpp;
+	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
+	aws_lws_mqtt_publish_param_t *pmqpp;
 	uint8_t buf[LWS_PRE + 1400];
-	lws_ss_state_return_t r;
+	aws_lws_ss_state_return_t r;
 	size_t buflen = sizeof(buf) - LWS_PRE;
 	int f = 0;
 
@@ -225,16 +225,16 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_info("%s: CLIENT_CONNECTION_ERROR: %s\n", __func__,
+		aws_lwsl_info("%s: CLIENT_CONNECTION_ERROR: %s\n", __func__,
 			 in ? (char *)in : "(null)");
 		if (!h)
 			break;
 
 #if defined(LWS_WITH_CONMON)
-		lws_conmon_ss_json(h);
+		aws_lws_conmon_ss_json(h);
 #endif
 
-		r = lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
 		h->wsi = NULL;
 
 		secstream_mqtt_cleanup(h);
@@ -242,7 +242,7 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		if (r == LWSSSSRET_DESTROY_ME)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
-		r = lws_ss_backoff(h);
+		r = aws_lws_ss_backoff(h);
 		if (r != LWSSSSRET_OK)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
@@ -251,16 +251,16 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	case LWS_CALLBACK_MQTT_CLIENT_CLOSED:
 		if (!h)
 			break;
-		lws_sul_cancel(&h->sul_timeout);
+		aws_lws_sul_cancel(&h->sul_timeout);
 #if defined(LWS_WITH_CONMON)
-		lws_conmon_ss_json(h);
+		aws_lws_conmon_ss_json(h);
 #endif
 		if (h->ss_dangling_connected)
-			r = lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
+			r = aws_lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
 		else
-			r = lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
+			r = aws_lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
 		if (h->wsi)
-			lws_set_opaque_user_data(h->wsi, NULL);
+			aws_lws_set_opaque_user_data(h->wsi, NULL);
 		h->wsi = NULL;
 
 		secstream_mqtt_cleanup(h);
@@ -270,7 +270,7 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 		if (h->policy && !(h->policy->flags & LWSSSPOLF_OPPORTUNISTIC) &&
 		    !h->txn_ok && !wsi->a.context->being_destroyed) {
-			r = lws_ss_backoff(h);
+			r = aws_lws_ss_backoff(h);
 			if (r != LWSSSSRET_OK)
 				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
@@ -310,29 +310,29 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			 * sure the SUBSCRIBE is done before signaling the
 			 * user application.
 			 */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 			break;
 		}
-		lws_sul_cancel(&h->sul);
+		aws_lws_sul_cancel(&h->sul);
 #if defined(LWS_WITH_SYS_METRICS)
 		/*
 		 * If any hanging caliper measurement, dump it, and free any tags
 		 */
-		lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
 #endif
-		r = lws_ss_event_helper(h, LWSSSCS_CONNECTED);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 		if (r != LWSSSSRET_OK)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		if (h->policy->u.mqtt.topic)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_MQTT_CLIENT_RX:
-		// lwsl_user("LWS_CALLBACK_CLIENT_RECEIVE: read %d\n", (int)len);
+		// aws_lwsl_user("LWS_CALLBACK_CLIENT_RECEIVE: read %d\n", (int)len);
 		if (!h || !h->info.rx)
 			return 0;
 
-		pmqpp = (lws_mqtt_publish_param_t *)in;
+		pmqpp = (aws_lws_mqtt_publish_param_t *)in;
 
 		f = 0;
 		if (!pmqpp->payload_pos)
@@ -355,17 +355,17 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * done notify CONNECTED event to the application.
 		 */
 		if (wsi->mqtt->done_subscribe == 0) {
-			lws_sul_cancel(&h->sul);
-			r = lws_ss_event_helper(h, LWSSSCS_CONNECTED);
+			aws_lws_sul_cancel(&h->sul);
+			r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 			if (r != LWSSSSRET_OK)
 				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 		wsi->mqtt->done_subscribe = 1;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_MQTT_ACK:
-		lws_sul_cancel(&h->sul_timeout);
+		aws_lws_sul_cancel(&h->sul_timeout);
 		if (wsi->mqtt->inside_birth) {
 			/*
 			 * Skip LWSSSCS_QOS_ACK_REMOTE for birth topic.
@@ -374,7 +374,7 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			wsi->mqtt->done_birth = 1;
 			break;
 		}
-		r = lws_ss_event_helper(h, LWSSSCS_QOS_ACK_REMOTE);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_QOS_ACK_REMOTE);
 		if (r != LWSSSSRET_OK)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		break;
@@ -383,10 +383,10 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 	{
 		if (!h || !h->info.tx)
 			return 0;
-		lwsl_notice("%s: %s: WRITEABLE\n", __func__, lws_ss_tag(h));
+		aws_lwsl_notice("%s: %s: WRITEABLE\n", __func__, aws_lws_ss_tag(h));
 
 		if (h->seqstate != SSSEQ_CONNECTED) {
-			lwsl_warn("%s: seqstate %d\n", __func__, h->seqstate);
+			aws_lwsl_warn("%s: seqstate %d\n", __func__, h->seqstate);
 			break;
 		}
 
@@ -394,12 +394,12 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			return secstream_mqtt_subscribe(wsi);
 
 		if (!wsi->mqtt->done_birth && h->policy->u.mqtt.birth_topic) {
-			lws_strexp_t exp;
+			aws_lws_strexp_t exp;
 			size_t used_in, used_out = 0;
 			if (h->policy->u.mqtt.birth_message) {
-				lws_strexp_init(&exp, h, lws_ss_exp_cb_metadata,
+				aws_lws_strexp_init(&exp, h, aws_lws_ss_exp_cb_metadata,
 						(char *)(buf + LWS_PRE), buflen);
-				if (lws_strexp_expand(&exp, h->policy->u.mqtt.birth_message,
+				if (aws_lws_strexp_expand(&exp, h->policy->u.mqtt.birth_message,
 						      strlen(h->policy->u.mqtt.birth_message),
 						      &used_in, &used_out) != LSTRX_DONE) {
 					return 1;
@@ -416,14 +416,14 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			return 0;
 
 		if (r == LWSSSSRET_DISCONNECT_ME) {
-			lws_mqtt_subscribe_param_t lmsp;
+			aws_lws_mqtt_subscribe_param_t lmsp;
 			if (h->u.mqtt.sub_info.num_topics) {
 				lmsp.num_topics = h->u.mqtt.sub_info.num_topics;
 				lmsp.topic = h->u.mqtt.sub_info.topic;
 				lmsp.packet_id = (uint16_t)(h->txord - 1);
-				if (lws_mqtt_client_send_unsubcribe(wsi,
+				if (aws_lws_mqtt_client_send_unsubcribe(wsi,
 								    &lmsp)) {
-					lwsl_err("%s, failed to send"
+					aws_lwsl_err("%s, failed to send"
 					         " MQTT unsubsribe", __func__);
 					return -1;
 				}
@@ -441,16 +441,16 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 	case LWS_CALLBACK_MQTT_UNSUBSCRIBED:
 	{
-		struct lws *nwsi = lws_get_network_wsi(wsi);
+		struct lws *nwsi = aws_lws_get_network_wsi(wsi);
 		if (nwsi && (nwsi->mux.child_count == 1))
-			lws_mqtt_client_send_disconnect(nwsi);
+			aws_lws_mqtt_client_send_disconnect(nwsi);
 		return -1;
 	}
 
 	case LWS_CALLBACK_MQTT_UNSUBSCRIBE_TIMEOUT:
 		if (wsi->mqtt->inside_unsubscribe) {
-			lwsl_warn("%s: %s: Unsubscribe timout.\n", __func__,
-				  lws_ss_tag(h));
+			aws_lwsl_warn("%s: %s: Unsubscribe timout.\n", __func__,
+				  aws_lws_ss_tag(h));
 			return -1;
 		}
 		break;
@@ -459,10 +459,10 @@ secstream_mqtt(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-const struct lws_protocols protocol_secstream_mqtt = {
+const struct aws_lws_protocols protocol_secstream_mqtt = {
 	"lws-secstream-mqtt",
 	secstream_mqtt,
 	0, 0, 0, NULL, 0
@@ -488,9 +488,9 @@ enum {
 };
 
 static int
-secstream_connect_munge_mqtt(lws_ss_handle_t *h, char *buf, size_t len,
-			     struct lws_client_connect_info *i,
-			     union lws_ss_contemp *ct)
+secstream_connect_munge_mqtt(aws_lws_ss_handle_t *h, char *buf, size_t len,
+			     struct aws_lws_client_connect_info *i,
+			     union aws_lws_ss_contemp *ct)
 {
 	const char *sources[6] = {
 		/* we're going to string-substitute these before use */
@@ -502,33 +502,33 @@ secstream_connect_munge_mqtt(lws_ss_handle_t *h, char *buf, size_t len,
 		h->policy->u.mqtt.birth_message
 	};
 	size_t used_in, olen[6] = { 0, 0, 0, 0, 0, 0 }, tot = 0;
-	lws_strexp_t exp;
+	aws_lws_strexp_t exp;
 	char *ps[6];
 	uint8_t *p = NULL;
 	int n = -1;
 	size_t blen;
-	lws_system_blob_t *b = NULL;
+	aws_lws_system_blob_t *b = NULL;
 
 	memset(&ct->ccp, 0, sizeof(ct->ccp));
-	b = lws_system_get_blob(i->context,
+	b = aws_lws_system_get_blob(i->context,
 				LWS_SYSBLOB_TYPE_MQTT_CLIENT_ID, 0);
 
 	/* If LWS_SYSBLOB_TYPE_MQTT_CLIENT_ID is set */
-	if (b && (blen = lws_system_blob_get_size(b))) {
+	if (b && (blen = aws_lws_system_blob_get_size(b))) {
 		if (blen > LWS_MQTT_MAX_CIDLEN) {
-			lwsl_err("%s - Client ID too long.\n",
+			aws_lwsl_err("%s - Client ID too long.\n",
 				 __func__);
 			return -1;
 		}
-		p = (uint8_t *)lws_zalloc(blen+1, __func__);
+		p = (uint8_t *)aws_lws_zalloc(blen+1, __func__);
 		if (!p)
 			return -1;
-		n = lws_system_blob_get(b, p, &blen, 0);
+		n = aws_lws_system_blob_get(b, p, &blen, 0);
 		if (n) {
 			ct->ccp.client_id = NULL;
 		} else {
 			ct->ccp.client_id = (const char *)p;
-			lwsl_notice("%s - Client ID = %s\n",
+			aws_lwsl_notice("%s - Client ID = %s\n",
 				    __func__, ct->ccp.client_id);
 		}
 	} else {
@@ -536,38 +536,38 @@ secstream_connect_munge_mqtt(lws_ss_handle_t *h, char *buf, size_t len,
 		ct->ccp.client_id = NULL;
 	}
 
-	b = lws_system_get_blob(i->context,
+	b = aws_lws_system_get_blob(i->context,
 				LWS_SYSBLOB_TYPE_MQTT_USERNAME, 0);
 
 	/* If LWS_SYSBLOB_TYPE_MQTT_USERNAME is set */
-	if (b && (blen = lws_system_blob_get_size(b))) {
-		p = (uint8_t *)lws_zalloc(blen+1, __func__);
+	if (b && (blen = aws_lws_system_blob_get_size(b))) {
+		p = (uint8_t *)aws_lws_zalloc(blen+1, __func__);
 		if (!p)
 			return -1;
-		n = lws_system_blob_get(b, p, &blen, 0);
+		n = aws_lws_system_blob_get(b, p, &blen, 0);
 		if (n) {
 			ct->ccp.username = NULL;
 		} else {
 			ct->ccp.username = (const char *)p;
-			lwsl_notice("%s - Username ID = %s\n",
+			aws_lwsl_notice("%s - Username ID = %s\n",
 				    __func__, ct->ccp.username);
 		}
 	}
 
-	b = lws_system_get_blob(i->context,
+	b = aws_lws_system_get_blob(i->context,
 				LWS_SYSBLOB_TYPE_MQTT_PASSWORD, 0);
 
 	/* If LWS_SYSBLOB_TYPE_MQTT_PASSWORD is set */
-	if (b && (blen = lws_system_blob_get_size(b))) {
-		p = (uint8_t *)lws_zalloc(blen+1, __func__);
+	if (b && (blen = aws_lws_system_blob_get_size(b))) {
+		p = (uint8_t *)aws_lws_zalloc(blen+1, __func__);
 		if (!p)
 			return -1;
-		n = lws_system_blob_get(b, p, &blen, 0);
+		n = aws_lws_system_blob_get(b, p, &blen, 0);
 		if (n) {
 			ct->ccp.password = NULL;
 		} else {
 			ct->ccp.password = (const char *)p;
-			lwsl_notice("%s - Password ID = %s\n",
+			aws_lwsl_notice("%s - Password ID = %s\n",
 				    __func__, ct->ccp.password);
 		}
 	}
@@ -601,11 +601,11 @@ secstream_connect_munge_mqtt(lws_ss_handle_t *h, char *buf, size_t len,
 		if (!sources[n])
 			continue;
 
-		lws_strexp_init(&exp, (void *)h, lws_ss_exp_cb_metadata,
+		aws_lws_strexp_init(&exp, (void *)h, aws_lws_ss_exp_cb_metadata,
 				NULL, (size_t)-1);
-		if (lws_strexp_expand(&exp, sources[n], strlen(sources[n]),
+		if (aws_lws_strexp_expand(&exp, sources[n], strlen(sources[n]),
 				      &used_in, &olen[n]) != LSTRX_DONE) {
-			lwsl_err("%s: failed to subsitute %s\n", __func__,
+			aws_lwsl_err("%s: failed to subsitute %s\n", __func__,
 					sources[n]);
 			return 1;
 		}
@@ -617,7 +617,7 @@ secstream_connect_munge_mqtt(lws_ss_handle_t *h, char *buf, size_t len,
 	 * substituted results
 	 */
 
-	h->u.mqtt.heap_baggage = lws_malloc(tot, __func__);
+	h->u.mqtt.heap_baggage = aws_lws_malloc(tot, __func__);
 	if (!h->u.mqtt.heap_baggage)
 		return 1;
 
@@ -628,14 +628,14 @@ secstream_connect_munge_mqtt(lws_ss_handle_t *h, char *buf, size_t len,
 
 	p = h->u.mqtt.heap_baggage;
 	for (n = 0; n < (int)LWS_ARRAY_SIZE(sources); n++) {
-		lws_strexp_init(&exp, (void *)h, lws_ss_exp_cb_metadata,
+		aws_lws_strexp_init(&exp, (void *)h, aws_lws_ss_exp_cb_metadata,
 				(char *)p, (size_t)-1);
 		if (!sources[n]) {
 			ps[n] = NULL;
 			continue;
 		}
 		ps[n] = (char *)p;
-		if (lws_strexp_expand(&exp, sources[n], strlen(sources[n]),
+		if (aws_lws_strexp_expand(&exp, sources[n], strlen(sources[n]),
 				      &used_in, &olen[n]) != LSTRX_DONE)
 			return 1;
 

@@ -25,19 +25,19 @@
 #include "private-lib-core.h"
 
 /*
- * Normally you don't want this, use lws_sul instead inside the event loop.
+ * Normally you don't want this, use aws_lws_sul instead inside the event loop.
  * But sometimes for drivers it makes sense, so there's an internal-only
  * crossplatform api for it.
  */
 
 void
-lws_msleep(unsigned int ms)
+aws_lws_msleep(unsigned int ms)
 {
 	vTaskDelay(portTICK_PERIOD_MS > ms ? 1 : ms / portTICK_PERIOD_MS);
 }
 
-lws_usec_t
-lws_now_usecs(void)
+aws_lws_usec_t
+aws_lws_now_usecs(void)
 {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
@@ -45,7 +45,7 @@ lws_now_usecs(void)
 }
 
 size_t
-lws_get_random(struct lws_context *context, void *buf, size_t len)
+aws_lws_get_random(struct aws_lws_context *context, void *buf, size_t len)
 {
 #if defined(LWS_WITH_ESP32)
 	uint8_t *pb = buf;
@@ -75,26 +75,26 @@ lws_get_random(struct lws_context *context, void *buf, size_t len)
 
 	/* failed */
 
-	lwsl_err("%s: mbedtls_ctr_drbg_random returned 0x%x\n", __func__, n);
+	aws_lwsl_err("%s: mbedtls_ctr_drbg_random returned 0x%x\n", __func__, n);
 #endif
 	return 0;
 #endif
 }
 
 
-void lwsl_emit_syslog(int level, const char *line)
+void aws_lwsl_emit_syslog(int level, const char *line)
 {
-	lwsl_emit_stderr(level, line);
+	aws_lwsl_emit_stderr(level, line);
 }
 
 int
-lws_plat_drop_app_privileges(struct lws_context *context, int actually_init)
+aws_lws_plat_drop_app_privileges(struct aws_lws_context *context, int actually_init)
 {
 	return 0;
 }
 
 int
-lws_plat_recommended_rsa_bits(void)
+aws_lws_plat_recommended_rsa_bits(void)
 {
 	/*
 	 * 2048-bit key generation takes up to a minute on ESP32, 4096

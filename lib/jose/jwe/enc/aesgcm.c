@@ -50,11 +50,11 @@
  */
 
 int
-lws_jwe_encrypt_gcm(struct lws_jwe *jwe,
+aws_lws_jwe_encrypt_gcm(struct aws_lws_jwe *jwe,
 		    uint8_t *enc_cek, uint8_t *aad, int aad_len)
 {
-	struct lws_gencrypto_keyelem el;
-	struct lws_genaes_ctx aesctx;
+	struct aws_lws_gencrypto_keyelem el;
+	struct aws_lws_genaes_ctx aesctx;
 	size_t ivs = LWS_AESGCM_IV;
 	int n;
 
@@ -62,13 +62,13 @@ lws_jwe_encrypt_gcm(struct lws_jwe *jwe,
 
 	/* MUST be 128-bit for all sizes */
 	if (jwe->jws.map.len[LJWE_ATAG] != LWS_AESGCM_TAG) {
-		lwsl_notice("%s: AESGCM tag size must be 128b, got %d\n",
+		aws_lwsl_notice("%s: AESGCM tag size must be 128b, got %d\n",
 				__func__, jwe->jws.map.len[LJWE_ATAG]);
 		return -1;
 	}
 
 	if (jwe->jws.map.len[LJWE_IV] != LWS_AESGCM_IV) { /* MUST be 96-bit */
-		lwsl_notice("%s: AESGCM IV must be 128b, got %d\n", __func__,
+		aws_lwsl_notice("%s: AESGCM IV must be 128b, got %d\n", __func__,
 				jwe->jws.map.len[LJWE_IV]);
 		return -1;
 	}
@@ -77,36 +77,36 @@ lws_jwe_encrypt_gcm(struct lws_jwe *jwe,
 	el.buf = enc_cek;
 	el.len = jwe->jose.enc_alg->keybits_fixed / 8;
 
-	if (lws_genaes_create(&aesctx, LWS_GAESO_ENC, LWS_GAESM_GCM,
+	if (aws_lws_genaes_create(&aesctx, LWS_GAESO_ENC, LWS_GAESM_GCM,
 			      &el, LWS_GAESP_NO_PADDING, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 
 		return -1;
 	}
 
 	/* aad */
 
-	n = lws_genaes_crypt(&aesctx, aad, (unsigned int)aad_len, NULL,
+	n = aws_lws_genaes_crypt(&aesctx, aad, (unsigned int)aad_len, NULL,
 			     (uint8_t *)jwe->jws.map.buf[LJWE_IV],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_ATAG], &ivs,
 			     LWS_AESGCM_TAG);
 	if (n) {
-		lwsl_err("%s: lws_genaes_crypt aad failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt aad failed\n", __func__);
 		return -1;
 	}
 
 	/* payload */
-	n = lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
+	n = aws_lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     jwe->jws.map.len[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_IV],
 			     NULL, &ivs,
 			     LWS_AESGCM_TAG);
 
-	n |= lws_genaes_destroy(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_ATAG],
+	n |= aws_lws_genaes_destroy(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_ATAG],
 				LWS_AESGCM_TAG);
 	if (n) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		return -1;
 	}
 
@@ -114,11 +114,11 @@ lws_jwe_encrypt_gcm(struct lws_jwe *jwe,
 }
 
 int
-lws_jwe_auth_and_decrypt_gcm(struct lws_jwe *jwe,
+aws_lws_jwe_auth_and_decrypt_gcm(struct aws_lws_jwe *jwe,
 			     uint8_t *enc_cek, uint8_t *aad, int aad_len)
 {
-	struct lws_gencrypto_keyelem el;
-	struct lws_genaes_ctx aesctx;
+	struct aws_lws_gencrypto_keyelem el;
+	struct aws_lws_genaes_ctx aesctx;
 	size_t ivs = LWS_AESGCM_IV;
 	uint8_t tag[LWS_AESGCM_TAG];
 	int n;
@@ -127,13 +127,13 @@ lws_jwe_auth_and_decrypt_gcm(struct lws_jwe *jwe,
 
 	/* Tag MUST be 128-bit for all sizes */
 	if (jwe->jws.map.len[LJWE_ATAG] != LWS_AESGCM_TAG) {
-		lwsl_notice("%s: AESGCM tag size must be 128b, got %d\n",
+		aws_lwsl_notice("%s: AESGCM tag size must be 128b, got %d\n",
 				__func__, jwe->jws.map.len[LJWE_ATAG]);
 		return -1;
 	}
 
 	if (jwe->jws.map.len[LJWE_IV] != LWS_AESGCM_IV) { /* MUST be 96-bit */
-		lwsl_notice("%s: AESGCM IV must be 128b, got %d\n", __func__,
+		aws_lwsl_notice("%s: AESGCM IV must be 128b, got %d\n", __func__,
 				jwe->jws.map.len[LJWE_IV]);
 		return -1;
 	}
@@ -142,30 +142,30 @@ lws_jwe_auth_and_decrypt_gcm(struct lws_jwe *jwe,
 	el.buf = enc_cek;
 	el.len = jwe->jose.enc_alg->keybits_fixed / 8;
 
-	if (lws_genaes_create(&aesctx, LWS_GAESO_DEC, LWS_GAESM_GCM,
+	if (aws_lws_genaes_create(&aesctx, LWS_GAESO_DEC, LWS_GAESM_GCM,
 			      &el, LWS_GAESP_NO_PADDING, NULL)) {
-		lwsl_err("%s: lws_genaes_create failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_create failed\n", __func__);
 
 		return -1;
 	}
 
-	n = lws_genaes_crypt(&aesctx, aad, (unsigned int)aad_len,
+	n = aws_lws_genaes_crypt(&aesctx, aad, (unsigned int)aad_len,
 			     NULL,
 			     (uint8_t *)jwe->jws.map.buf[LJWE_IV],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_ATAG], &ivs, 16);
 	if (n) {
-		lwsl_err("%s: lws_genaes_crypt aad failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt aad failed\n", __func__);
 		return -1;
 	}
-	n = lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
+	n = aws_lws_genaes_crypt(&aesctx, (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     jwe->jws.map.len[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_CTXT],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_IV],
 			     (uint8_t *)jwe->jws.map.buf[LJWE_ATAG], &ivs, 16);
 
-	n |= lws_genaes_destroy(&aesctx, tag, sizeof(tag));
+	n |= aws_lws_genaes_destroy(&aesctx, tag, sizeof(tag));
 	if (n) {
-		lwsl_err("%s: lws_genaes_crypt failed\n", __func__);
+		aws_lwsl_err("%s: aws_lws_genaes_crypt failed\n", __func__);
 		return -1;
 	}
 

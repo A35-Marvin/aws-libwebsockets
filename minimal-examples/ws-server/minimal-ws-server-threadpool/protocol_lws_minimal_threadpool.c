@@ -19,7 +19,7 @@
  * that can be freed by the task.
  *
  * In the case the wsi outlives the task, the tasks do not get destroyed until
- * the service thread has called lws_threadpool_task_status() on the completed
+ * the service thread has called aws_lws_threadpool_task_status() on the completed
  * task.  So there is no danger of the shared task private data getting randomly
  * freed.
  */
@@ -33,9 +33,9 @@
 #include <string.h>
 
 struct per_vhost_data__minimal {
-	struct lws_threadpool *tp;
-	struct lws_context *context;
-	lws_sorted_usec_list_t sul;
+	struct aws_lws_threadpool *tp;
+	struct aws_lws_context *context;
+	aws_lws_sorted_usec_list_t sul;
 	const char *config;
 };
 
@@ -96,11 +96,11 @@ cleanup_task_private_data(struct lws *wsi, void *user)
  * 100K and pausing to sync with the service thread to send a ws message every
  * 1M.  It resumes after the service thread determines the wsi is writable and
  * the LWS_CALLBACK_SERVER_WRITEABLE indicates the task thread can continue by
- * calling lws_threadpool_task_sync().
+ * calling aws_lws_threadpool_task_sync().
  */
 
-static enum lws_threadpool_task_return
-task_function(void *user, enum lws_threadpool_task_status s)
+static enum aws_lws_threadpool_task_return
+task_function(void *user, enum aws_lws_threadpool_task_status s)
 {
 	struct task_data *priv = (struct task_data *)user;
 	int budget = 100 * 1000;
@@ -125,7 +125,7 @@ task_function(void *user, enum lws_threadpool_task_status s)
 	usleep(100000);
 
 	if (!(priv->pos % (1000 * 1000))) {
-		lws_snprintf(priv->result + LWS_PRE,
+		aws_lws_snprintf(priv->result + LWS_PRE,
 			     sizeof(priv->result) - LWS_PRE,
 			     "pos %llu", (unsigned long long)priv->pos);
 
@@ -137,32 +137,32 @@ task_function(void *user, enum lws_threadpool_task_status s)
 
 
 static void
-sul_tp_dump(struct lws_sorted_usec_list *sul)
+sul_tp_dump(struct aws_lws_sorted_usec_list *sul)
 {
 	struct per_vhost_data__minimal *vhd =
-		lws_container_of(sul, struct per_vhost_data__minimal, sul);
+		aws_lws_container_of(sul, struct per_vhost_data__minimal, sul);
 	/*
 	 * in debug mode, dump the threadpool stat to the logs once
 	 * a second
 	 */
-	lws_threadpool_dump(vhd->tp);
-	lws_sul_schedule(vhd->context, 0, &vhd->sul,
+	aws_lws_threadpool_dump(vhd->tp);
+	aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 			 sul_tp_dump, LWS_US_PER_SEC);
 }
 
 
 static int
-callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_vhost_data__minimal *vhd =
 			(struct per_vhost_data__minimal *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					lws_get_protocol(wsi));
-	const struct lws_protocol_vhost_options *pvo;
-	struct lws_threadpool_create_args cargs;
-	struct lws_threadpool_task_args args;
-	struct lws_threadpool_task *task;
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi));
+	const struct aws_lws_protocol_vhost_options *pvo;
+	struct aws_lws_threadpool_create_args cargs;
+	struct aws_lws_threadpool_task_args args;
+	struct aws_lws_threadpool_task *task;
 	struct task_data *priv;
 	int n, m, r = 0;
 	char name[32];
@@ -171,20 +171,20 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
 		/* create our per-vhost struct */
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__minimal));
 		if (!vhd)
 			return 1;
 
-		vhd->context = lws_get_context(wsi);
+		vhd->context = aws_lws_get_context(wsi);
 
 		/* recover the pointer to the globals struct */
-		pvo = lws_pvo_search(
-			(const struct lws_protocol_vhost_options *)in,
+		pvo = aws_lws_pvo_search(
+			(const struct aws_lws_protocol_vhost_options *)in,
 			"config");
 		if (!pvo || !pvo->value) {
-			lwsl_err("%s: Can't find \"config\" pvo\n", __func__);
+			aws_lwsl_err("%s: Can't find \"config\" pvo\n", __func__);
 			return 1;
 		}
 		vhd->config = pvo->value;
@@ -193,20 +193,20 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 
 		cargs.max_queue_depth = 8;
 		cargs.threads = 3;
-		vhd->tp = lws_threadpool_create(lws_get_context(wsi),
+		vhd->tp = aws_lws_threadpool_create(aws_lws_get_context(wsi),
 				&cargs, "%s",
-				lws_get_vhost_name(lws_get_vhost(wsi)));
+				aws_lws_get_vhost_name(aws_lws_get_vhost(wsi)));
 		if (!vhd->tp)
 			return 1;
 
-		lws_sul_schedule(vhd->context, 0, &vhd->sul,
+		aws_lws_sul_schedule(vhd->context, 0, &vhd->sul,
 				 sul_tp_dump, LWS_US_PER_SEC);
 		break;
 
 	case LWS_CALLBACK_PROTOCOL_DESTROY:
-		lws_threadpool_finish(vhd->tp);
-		lws_threadpool_destroy(vhd->tp);
-		lws_sul_cancel(&vhd->sul);
+		aws_lws_threadpool_finish(vhd->tp);
+		aws_lws_threadpool_destroy(vhd->tp);
+		aws_lws_sul_cancel(&vhd->sul);
 		break;
 
 	case LWS_CALLBACK_ESTABLISHED:
@@ -226,15 +226,15 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		args.task = task_function;
 		args.cleanup = cleanup_task_private_data;
 
-		lws_get_peer_simple(wsi, name, sizeof(name));
+		aws_lws_get_peer_simple(wsi, name, sizeof(name));
 
-		if (!lws_threadpool_enqueue(vhd->tp, &args, "ws %s", name)) {
-			lwsl_user("%s: Couldn't enqueue task\n", __func__);
+		if (!aws_lws_threadpool_enqueue(vhd->tp, &args, "ws %s", name)) {
+			aws_lwsl_user("%s: Couldn't enqueue task\n", __func__);
 			cleanup_task_private_data(wsi, priv);
 			return 1;
 		}
 
-		lws_set_timeout(wsi, PENDING_TIMEOUT_THREADPOOL, 30);
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_THREADPOOL, 30);
 
 		/*
 		 * so the asynchronous worker will let us know the next step
@@ -247,8 +247,8 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 
 	case LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL:
-		lwsl_debug("LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL: %p\n", wsi);
-		lws_threadpool_dequeue_task(lws_threadpool_get_task_wsi(wsi));
+		aws_lwsl_debug("LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL: %p\n", wsi);
+		aws_lws_threadpool_dequeue_task(aws_lws_threadpool_get_task_wsi(wsi));
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
@@ -260,15 +260,15 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		 *
 		 * If you need to get things from the still-valid private task
 		 * data, copy it here before calling
-		 * lws_threadpool_task_status() that may free the task and the
+		 * aws_lws_threadpool_task_status() that may free the task and the
 		 * private task data.
 		 */
 
-		task = lws_threadpool_get_task_wsi(wsi);
+		task = aws_lws_threadpool_get_task_wsi(wsi);
 		if (!task)
 			break;
-		n = (int)lws_threadpool_task_status(task, &_user);
-		lwsl_debug("%s: LWS_CALLBACK_SERVER_WRITEABLE: status %d\n",
+		n = (int)aws_lws_threadpool_task_status(task, &_user);
+		aws_lwsl_debug("%s: LWS_CALLBACK_SERVER_WRITEABLE: status %d\n",
 			   __func__, n);
 		switch(n) {
 
@@ -288,14 +288,14 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 
 		priv = (struct task_data *)_user;
 
-		lws_set_timeout(wsi, PENDING_TIMEOUT_THREADPOOL_TASK, 5);
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_THREADPOOL_TASK, 5);
 
 		n = (int)strlen(priv->result + LWS_PRE);
-		m = lws_write(wsi, (unsigned char *)priv->result + LWS_PRE,
+		m = aws_lws_write(wsi, (unsigned char *)priv->result + LWS_PRE,
 			      (unsigned int)n, LWS_WRITE_TEXT);
 		if (m < n) {
-			lwsl_err("ERROR %d writing to ws socket\n", m);
-			lws_threadpool_task_sync(task, 1);
+			aws_lwsl_err("ERROR %d writing to ws socket\n", m);
+			aws_lws_threadpool_task_sync(task, 1);
 			return -1;
 		}
 
@@ -304,7 +304,7 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		 * data the task produced: if it's waiting to do more it can
 		 * continue now.
 		 */
-		lws_threadpool_task_sync(task, 0);
+		aws_lws_threadpool_task_sync(task, 0);
 		break;
 
 	default:

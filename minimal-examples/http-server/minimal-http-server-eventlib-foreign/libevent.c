@@ -31,7 +31,7 @@ timer_cb_event(evutil_socket_t fd, short event, void *arg)
 static void
 signal_cb_event(evutil_socket_t fd, short event, void *arg)
 {
-	signal_cb((int)(lws_intptr_t)arg);
+	signal_cb((int)(aws_lws_intptr_t)arg);
 }
 
 static void

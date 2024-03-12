@@ -42,13 +42,13 @@ Commandline option|Meaning
 
 [2021/06/17 14:33:56:0376] N:  ++ [wsicli|1|GET/h1/ebay.com] (2)
 [2021/06/17 14:33:56:0746] N:  -- [wsicli|0|GET/h1/ebay.com] (1) 1.061s
-[2021/06/17 14:33:56:7555] N: lws_client_reset: REDIRECT www.ebay.com:443, path='/', ssl = 1, alpn='http/1.1'
+[2021/06/17 14:33:56:7555] N: aws_lws_client_reset: REDIRECT www.ebay.com:443, path='/', ssl = 1, alpn='http/1.1'
 [2021/06/17 14:33:57:0205] N:  ++ [vh|3|jitt-DFF2B5B4||-1] (4)
 [2021/06/17 14:33:57:0208] E: CLIENT_CONNECTION_ERROR: server's cert didn't look good, invalidca (use_ssl 0x1) X509_V_ERR = 24: CA is not trusted
 
 [2021/06/17 14:33:57:0210] N:  ++ [wsicli|2|GET/h1/ebay.com] (2)
 [2021/06/17 14:33:57:0288] N:  -- [wsicli|1|GET/h1/ebay.com] (1) 991.119ms
-[2021/06/17 14:33:57:7528] N: lws_client_reset: REDIRECT www.ebay.com:443, path='/', ssl = 1, alpn='http/1.1'
+[2021/06/17 14:33:57:7528] N: aws_lws_client_reset: REDIRECT www.ebay.com:443, path='/', ssl = 1, alpn='http/1.1'
 [2021/06/17 14:33:58:1564] U: Connected to 195.95.193.127, http response: 200
 [2021/06/17 14:33:58:1637] U: RECEIVE_CLIENT_HTTP_READ: read 209
 [2021/06/17 14:33:58:1796] U: RECEIVE_CLIENT_HTTP_READ: read 197

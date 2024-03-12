@@ -25,7 +25,7 @@
  * In the case Secure Streams protocol needs to pass through a buffer,
  * or a streamed connection, the protocol metadata must be serialized.  This
  * file provides internal apis to perform the serialization and deserialization
- * in and out of an lws_dsh fifo-type buffer.
+ * in and out of an aws_lws_dsh fifo-type buffer.
  */
 
 #include <private-lib-core.h>
@@ -108,8 +108,8 @@ static const char *sn[] = {
 };
 #endif
 
-struct lws_log_cx *
-lwsl_sspc_get_cx(struct lws_sspc_handle *sspc)
+struct aws_lws_log_cx *
+aws_lwsl_sspc_get_cx(struct aws_lws_sspc_handle *sspc)
 {
 	if (!sspc)
 		return NULL;
@@ -119,22 +119,22 @@ lwsl_sspc_get_cx(struct lws_sspc_handle *sspc)
 
 
 void
-lws_log_prepend_sspc(struct lws_log_cx *cx, void *obj, char **p, char *e)
+aws_lws_log_prepend_sspc(struct aws_lws_log_cx *cx, void *obj, char **p, char *e)
 {
-	struct lws_sspc_handle *h = (struct lws_sspc_handle *)obj;
+	struct aws_lws_sspc_handle *h = (struct aws_lws_sspc_handle *)obj;
 
-	*p += lws_snprintf(*p, lws_ptr_diff_size_t(e, (*p)), "%s: ",
-			lws_sspc_tag(h));
+	*p += aws_lws_snprintf(*p, aws_lws_ptr_diff_size_t(e, (*p)), "%s: ",
+			aws_lws_sspc_tag(h));
 }
 
 static void
-lws_ss_serialize_state_transition(lws_sspc_handle_t *h,
-				  lws_ss_conn_states_t *state, int new_state)
+aws_lws_ss_serialize_state_transition(aws_lws_sspc_handle_t *h,
+				  aws_lws_ss_conn_states_t *state, int new_state)
 {
 #if defined(_DEBUG)
-	lwsl_sspc_info(h, "%s -> %s", sn[*state], sn[new_state]);
+	aws_lwsl_sspc_info(h, "%s -> %s", sn[*state], sn[new_state]);
 #endif
-	*state = (lws_ss_conn_states_t)new_state;
+	*state = (aws_lws_ss_conn_states_t)new_state;
 }
 
 
@@ -144,10 +144,10 @@ lws_ss_serialize_state_transition(lws_sspc_handle_t *h,
  */
 
 int
-lws_ss_serialize_rx_payload(struct lws_dsh *dsh, const uint8_t *buf,
+aws_lws_ss_serialize_rx_payload(struct aws_lws_dsh *dsh, const uint8_t *buf,
 			    size_t len, int flags, const char *rsp)
 {
-	lws_usec_t us = lws_now_usecs();
+	aws_lws_usec_t us = aws_lws_now_usecs();
 	uint8_t pre[128];
 	int est = 19, l = 0;
 
@@ -164,14 +164,14 @@ lws_ss_serialize_rx_payload(struct lws_dsh *dsh, const uint8_t *buf,
 	} else
 		assert(!rsp);
 
-	// lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
-	// lwsl_hexdump_info(buf, len);
+	// aws_lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
+	// aws_lwsl_hexdump_info(buf, len);
 
 	pre[0] = LWSSS_SER_RXPRE_RX_PAYLOAD;
-	lws_ser_wu16be(&pre[1], (uint16_t)(len + (size_t)est - 3));
-	lws_ser_wu32be(&pre[3], (uint32_t)flags);
-	lws_ser_wu32be(&pre[7], 0);	/* write will compute latency here... */
-	lws_ser_wu64be(&pre[11], (uint64_t)us);	/* ... and set this to the write time */
+	aws_lws_ser_wu16be(&pre[1], (uint16_t)(len + (size_t)est - 3));
+	aws_lws_ser_wu32be(&pre[3], (uint32_t)flags);
+	aws_lws_ser_wu32be(&pre[7], 0);	/* write will compute latency here... */
+	aws_lws_ser_wu64be(&pre[11], (uint64_t)us);	/* ... and set this to the write time */
 
 	/*
 	 * If we are on a non-default rideshare, append the non-default name to
@@ -183,8 +183,8 @@ lws_ss_serialize_rx_payload(struct lws_dsh *dsh, const uint8_t *buf,
 		memcpy(&pre[20], rsp, (unsigned int)l);
 	}
 
-	if (lws_dsh_alloc_tail(dsh, KIND_SS_TO_P, pre, (unsigned int)est, buf, len)) {
-		lwsl_err("%s: unable to alloc in dsh 1\n", __func__);
+	if (aws_lws_dsh_alloc_tail(dsh, KIND_SS_TO_P, pre, (unsigned int)est, buf, len)) {
+		aws_lwsl_err("%s: unable to alloc in dsh 1\n", __func__);
 
 		return 1;
 	}
@@ -198,14 +198,14 @@ lws_ss_serialize_rx_payload(struct lws_dsh *dsh, const uint8_t *buf,
  */
 
 int
-lws_ss_deserialize_tx_payload(struct lws_dsh *dsh, struct lws *wsi,
-			      lws_ss_tx_ordinal_t ord, uint8_t *buf,
+aws_lws_ss_deserialize_tx_payload(struct aws_lws_dsh *dsh, struct lws *wsi,
+			      aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 			      size_t *len, int *flags)
 {
 	uint8_t *p;
 	size_t si;
 
-	if (lws_dsh_get_head(dsh, KIND_C_TO_P, (void **)&p, &si)) {
+	if (aws_lws_dsh_get_head(dsh, KIND_C_TO_P, (void **)&p, &si)) {
 		*len = 0;
 		return 0;
 	}
@@ -221,7 +221,7 @@ lws_ss_deserialize_tx_payload(struct lws_dsh *dsh, struct lws *wsi,
 		 * we have arrangements at the proxy rx of the client UDS to
 		 * chop chunks larger than 1380 into seuqential lumps of 1380
 		 */
-		lwsl_err("%s: *len = %d, si = %d\n", __func__, (int)*len, (int)si);
+		aws_lwsl_err("%s: *len = %d, si = %d\n", __func__, (int)*len, (int)si);
 		assert(0);
 		return 1;
 	}
@@ -230,7 +230,7 @@ lws_ss_deserialize_tx_payload(struct lws_dsh *dsh, struct lws *wsi,
 		return 1;
 	}
 
-	*len = (size_t)(lws_ser_ru16be(&p[1]) - (23 - 3));
+	*len = (size_t)(aws_lws_ser_ru16be(&p[1]) - (23 - 3));
 	if (*len != si - 23) {
 		/*
 		 * We cannot accept any length that doesn't reflect the actual
@@ -244,9 +244,9 @@ lws_ss_deserialize_tx_payload(struct lws_dsh *dsh, struct lws *wsi,
 
 	memcpy(buf, p + 23, si - 23);
 
-	*flags = (int)lws_ser_ru32be(&p[3]);
+	*flags = (int)aws_lws_ser_ru32be(&p[3]);
 
-	lws_dsh_free((void **)&p);
+	aws_lws_dsh_free((void **)&p);
 
 	return 0;
 }
@@ -257,8 +257,8 @@ lws_ss_deserialize_tx_payload(struct lws_dsh *dsh, struct lws *wsi,
  */
 
 int
-lws_ss_serialize_state(struct lws *wsi, struct lws_dsh *dsh, lws_ss_constate_t state,
-		       lws_ss_tx_ordinal_t ack)
+aws_lws_ss_serialize_state(struct lws *wsi, struct aws_lws_dsh *dsh, aws_lws_ss_constate_t state,
+		       aws_lws_ss_tx_ordinal_t ack)
 {
 	uint8_t pre[12];
 	int n = 4;
@@ -266,7 +266,7 @@ lws_ss_serialize_state(struct lws *wsi, struct lws_dsh *dsh, lws_ss_constate_t s
 	if (state == LWSSSCS_EVENT_WAIT_CANCELLED)
 		return 0;
 
-	lwsl_info("%s: %s, ord 0x%x\n", __func__, lws_ss_state_name((int)state),
+	aws_lwsl_info("%s: %s, ord 0x%x\n", __func__, aws_lws_ss_state_name((int)state),
 		  (unsigned int)ack);
 
 	pre[0] = LWSSS_SER_RXPRE_CONNSTATE;
@@ -274,18 +274,18 @@ lws_ss_serialize_state(struct lws *wsi, struct lws_dsh *dsh, lws_ss_constate_t s
 
 	if (state > 255) {
 		pre[2] = 8;
-		lws_ser_wu32be(&pre[3], state);
+		aws_lws_ser_wu32be(&pre[3], state);
 		n = 7;
 	} else {
 		pre[2] = 5;
 		pre[3] = (uint8_t)state;
 	}
 
-	lws_ser_wu32be(&pre[n], ack);
+	aws_lws_ser_wu32be(&pre[n], ack);
 
-	if (lws_dsh_alloc_tail(dsh, KIND_SS_TO_P, pre, (unsigned int)n + 4, NULL, 0) ||
-	    (wsi && lws_fi(&wsi->fic, "sspc_dsh_ss2p_oom"))) {
-		lwsl_err("%s: unable to alloc in dsh 2\n", __func__);
+	if (aws_lws_dsh_alloc_tail(dsh, KIND_SS_TO_P, pre, (unsigned int)n + 4, NULL, 0) ||
+	    (wsi && aws_lws_fi(&wsi->fic, "sspc_dsh_ss2p_oom"))) {
+		aws_lwsl_err("%s: unable to alloc in dsh 2\n", __func__);
 
 		return 1;
 	}
@@ -299,19 +299,19 @@ lws_ss_serialize_state(struct lws *wsi, struct lws_dsh *dsh, lws_ss_constate_t s
  */
 
 int
-lws_ss_serialize_txcr(struct lws_dsh *dsh, int txcr)
+aws_lws_ss_serialize_txcr(struct aws_lws_dsh *dsh, int txcr)
 {
 	uint8_t pre[7];
 
-	lwsl_info("%s: %d\n", __func__, txcr);
+	aws_lwsl_info("%s: %d\n", __func__, txcr);
 
 	pre[0] = LWSSS_SER_RXPRE_TXCR_UPDATE;
 	pre[1] = 0;
 	pre[2] = 4;
-	lws_ser_wu32be(&pre[3], (uint32_t)txcr);
+	aws_lws_ser_wu32be(&pre[3], (uint32_t)txcr);
 
-	if (lws_dsh_alloc_tail(dsh, KIND_SS_TO_P, pre, 7, NULL, 0)) {
-		lwsl_err("%s: unable to alloc in dsh 2\n", __func__);
+	if (aws_lws_dsh_alloc_tail(dsh, KIND_SS_TO_P, pre, 7, NULL, 0)) {
+		aws_lwsl_err("%s: unable to alloc in dsh 2\n", __func__);
 
 		return 1;
 	}
@@ -339,7 +339,7 @@ lws_ss_serialize_txcr(struct lws_dsh *dsh, int txcr)
 
 /* convert userdata ptr _pss to handle pointer, allowing for any layout in
  * userdata */
-#define client_pss_to_sspc_h(_pss, _ssi) (*((lws_sspc_handle_t **) \
+#define client_pss_to_sspc_h(_pss, _ssi) (*((aws_lws_sspc_handle_t **) \
 				     ((uint8_t *)_pss) + _ssi->handle_offset))
 /* client pss to sspc userdata */
 #define client_pss_to_userdata(_pss) ((void *)_pss)
@@ -348,7 +348,7 @@ lws_ss_serialize_txcr(struct lws_dsh *dsh, int txcr)
 
 /* convert userdata ptr _pss to handle pointer, allowing for any layout in
  * userdata */
-#define client_pss_to_sspc_h(_pss, _ssi) (*((lws_sspc_handle_t **) \
+#define client_pss_to_sspc_h(_pss, _ssi) (*((aws_lws_sspc_handle_t **) \
 				     ((uint8_t *)_pss) + _ssi->handle_offset))
 /* client pss to sspc userdata */
 #define client_pss_to_userdata(_pss) ((void *)_pss)
@@ -356,18 +356,18 @@ lws_ss_serialize_txcr(struct lws_dsh *dsh, int txcr)
 #define proxy_pss_to_ss_h(_pss) (*_pss)
 
 int
-lws_ss_deserialize_parse(struct lws_ss_serialization_parser *par,
-			 struct lws_context *context,
-			 struct lws_dsh *dsh, const uint8_t *cp, size_t len,
-			 lws_ss_conn_states_t *state, void *parconn,
-			 lws_ss_handle_t **pss, lws_ss_info_t *ssi, char client)
+aws_lws_ss_deserialize_parse(struct aws_lws_ss_serialization_parser *par,
+			 struct aws_lws_context *context,
+			 struct aws_lws_dsh *dsh, const uint8_t *cp, size_t len,
+			 aws_lws_ss_conn_states_t *state, void *parconn,
+			 aws_lws_ss_handle_t **pss, aws_lws_ss_info_t *ssi, char client)
 {
-	lws_ss_state_return_t r;
-	lws_ss_metadata_t *pm;
-	lws_sspc_handle_t *h;
+	aws_lws_ss_state_return_t r;
+	aws_lws_ss_metadata_t *pm;
+	aws_lws_sspc_handle_t *h;
 	uint8_t pre[23];
 	uint32_t flags;
-	lws_usec_t us;
+	aws_lws_usec_t us;
 	uint8_t *p;
 	int n;
 
@@ -403,7 +403,7 @@ lws_ss_deserialize_parse(struct lws_ss_serialization_parser *par,
 				if (client)
 					goto hangup;
 				par->ps = RPAR_TYPE;
-				lwsl_cx_notice(context, "DESTROYING");
+				aws_lwsl_cx_notice(context, "DESTROYING");
 				goto hangup;
 
 			case LWSSS_SER_TXPRE_ONWARD_CONNECT:
@@ -414,7 +414,7 @@ lws_ss_deserialize_parse(struct lws_ss_serialization_parser *par,
 					goto hangup;
 
 				par->ps = RPAR_TYPE;
-				lwsl_cx_notice(context, "ONWARD_CONNECT");
+				aws_lwsl_cx_notice(context, "ONWARD_CONNECT");
 
 				/*
 				 * Shrug it off if we are already connecting or
@@ -430,7 +430,7 @@ lws_ss_deserialize_parse(struct lws_ss_serialization_parser *par,
 				 */
 
 				if ((proxy_pss_to_ss_h(pss) &&
-				     lws_fi(&proxy_pss_to_ss_h(pss)->fic, "ssproxy_onward_conn_fail")) ||
+				     aws_lws_fi(&proxy_pss_to_ss_h(pss)->fic, "ssproxy_onward_conn_fail")) ||
 				    _lws_ss_client_connect(proxy_pss_to_ss_h(pss),
 							   0, parconn) ==
 							   LWSSSSRET_DESTROY_ME)
@@ -540,7 +540,7 @@ lws_ss_deserialize_parse(struct lws_ss_serialization_parser *par,
 				break;
 
 			default:
-				lwsl_cx_notice(context, "bad type 0x%x",
+				aws_lwsl_cx_notice(context, "bad type 0x%x",
 					       par->type);
 				goto hangup;
 			}
@@ -625,7 +625,7 @@ lws_ss_deserialize_parse(struct lws_ss_serialization_parser *par,
 					(int)(LWSSS_FLAG_SOM | LWSSS_FLAG_EOM |
 							LWSSS_FLAG_PERF_JSON));
 
-				if (lws_fi(&client_pss_to_sspc_h(pss, ssi)->fic,
+				if (aws_lws_fi(&client_pss_to_sspc_h(pss, ssi)->fic,
 						    "sspc_perf_rx_fake_destroy_me"))
 					ret = LWSSSSRET_DESTROY_ME;
 
@@ -706,10 +706,10 @@ payload_ff:
 						LWSSS_FLAG_RELATED_END);
 
 			par->frag1 = 0;
-			us = lws_now_usecs();
+			us = aws_lws_now_usecs();
 
 			if (!client) {
-				lws_ss_handle_t *hss;
+				aws_lws_ss_handle_t *hss;
 
 				/*
 				 * Proxy - we received some serialized tx from
@@ -723,24 +723,24 @@ payload_ff:
 
 				hss = proxy_pss_to_ss_h(pss);
 				if (hss)
-					lwsl_ss_info(hss, "C2P RX: len %d", (int)n);
+					aws_lwsl_ss_info(hss, "C2P RX: len %d", (int)n);
 
 				p = pre;
 				pre[0] = LWSSS_SER_TXPRE_TX_PAYLOAD;
-				lws_ser_wu16be(&p[1], (uint16_t)((unsigned int)n + 23 - 3));
-				lws_ser_wu32be(&p[3], flags);
+				aws_lws_ser_wu16be(&p[1], (uint16_t)((unsigned int)n + 23 - 3));
+				aws_lws_ser_wu32be(&p[3], flags);
 				/* us held at client before written */
-				lws_ser_wu32be(&p[7], par->usd_phandling);
+				aws_lws_ser_wu32be(&p[7], par->usd_phandling);
 				/* us taken for transit to proxy */
-				lws_ser_wu32be(&p[11], (uint32_t)(us - (lws_usec_t)par->ust_pwait));
+				aws_lws_ser_wu32be(&p[11], (uint32_t)(us - (aws_lws_usec_t)par->ust_pwait));
 				/* time used later to find proxy hold time */
-				lws_ser_wu64be(&p[15], (uint64_t)us);
+				aws_lws_ser_wu64be(&p[15], (uint64_t)us);
 
 				if ((hss &&
-				    lws_fi(&hss->fic, "ssproxy_dsh_c2p_pay_oom")) ||
-				    lws_dsh_alloc_tail(dsh, KIND_C_TO_P, pre,
+				    aws_lws_fi(&hss->fic, "ssproxy_dsh_c2p_pay_oom")) ||
+				    aws_lws_dsh_alloc_tail(dsh, KIND_C_TO_P, pre,
 						       23, cp, (unsigned int)n)) {
-					lwsl_ss_err(hss, "unable to alloc in dsh 3");
+					aws_lwsl_ss_err(hss, "unable to alloc in dsh 3");
 
 					return LWSSSSRET_DISCONNECT_ME;
 				}
@@ -755,11 +755,11 @@ payload_ff:
 				 * Pass whatever payload we have to ss user
 				 */
 
-				h = lws_container_of(par, lws_sspc_handle_t,
+				h = aws_lws_container_of(par, aws_lws_sspc_handle_t,
 						     parser);
 				h->txc.peer_tx_cr_est -= n;
 
-				lwsl_sspc_info(h, "P2C RX: len %d", (int)n);
+				aws_lwsl_sspc_info(h, "P2C RX: len %d", (int)n);
 
 				if (ssi->rx && client_pss_to_sspc_h(pss, ssi)) {
 					/* we still have an sspc handle */
@@ -769,7 +769,7 @@ payload_ff:
 						(uint8_t *)cp, (unsigned int)n, (int)flags);
 
 					if (client_pss_to_sspc_h(pss, ssi) &&
-					    lws_fi(&client_pss_to_sspc_h(pss, ssi)->fic, "sspc_rx_fake_destroy_me"))
+					    aws_lws_fi(&client_pss_to_sspc_h(pss, ssi)->fic, "sspc_rx_fake_destroy_me"))
 						ret = LWSSSSRET_DESTROY_ME;
 
 					switch (ret) {
@@ -783,19 +783,19 @@ payload_ff:
 				}
 
 #if 0
-				if (lws_det_lat_active(context)) {
-					lws_detlat_t d;
+				if (aws_lws_det_lat_active(context)) {
+					aws_lws_detlat_t d;
 
 					d.type = LDLT_READ;
 					d.acc_size = d.req_size = n;
 					d.latencies[LAT_DUR_USERCB] =
-							lws_now_usecs() - us;
+							aws_lws_now_usecs() - us;
 					d.latencies[LAT_DUR_PROXY_CLIENT_REQ_TO_WRITE] =
 							par->usd_phandling;
 					d.latencies[LAT_DUR_PROXY_CLIENT_WRITE_TO_PROXY_RX] =
 						us - par->ust_pwait;
 
-					lws_det_lat_cb(context, &d);
+					aws_lws_det_lat_cb(context, &d);
 				}
 #endif
 			}
@@ -827,10 +827,10 @@ payload_ff:
 			 * par->temp32 more bytes tx credit to write to it
 			 */
 
-			h = lws_container_of(par, lws_sspc_handle_t, parser);
+			h = aws_lws_container_of(par, aws_lws_sspc_handle_t, parser);
 			h->txc.tx_cr += par->temp32;
-			lwsl_info("%s: RX_PEER_TXCR: %d\n", __func__, par->temp32);
-			lws_sspc_request_tx(h); /* in case something waiting */
+			aws_lwsl_info("%s: RX_PEER_TXCR: %d\n", __func__, par->temp32);
+			aws_lws_sspc_request_tx(h); /* in case something waiting */
 			par->ctr = 0;
 			par->ps = RPAR_TYPE;
 			break;
@@ -847,7 +847,7 @@ payload_ff:
 			 */
 
 			if (par->protocol_version != 1) {
-				lwsl_err("%s: Rejecting client with "
+				aws_lwsl_err("%s: Rejecting client with "
 					 "unsupported SSv%d protocol\n",
 					 __func__, par->protocol_version);
 
@@ -913,18 +913,18 @@ payload_ff:
 #if defined(LWS_ROLE_H2) || defined(LWS_ROLE_MQTT)
 				if (proxy_pss_to_ss_h(pss) &&
 				    proxy_pss_to_ss_h(pss)->wsi) {
-					lws_wsi_tx_credit(
+					aws_lws_wsi_tx_credit(
 						proxy_pss_to_ss_h(pss)->wsi,
 							  LWSTXCR_PEER_TO_US,
 							  par->temp32);
-					lwsl_notice("%s: proxy RX_PEER_TXCR: +%d (est %d)\n",
+					aws_lwsl_notice("%s: proxy RX_PEER_TXCR: +%d (est %d)\n",
 						 __func__, par->temp32,
 						 proxy_pss_to_ss_h(pss)->wsi->
 							 txc.peer_tx_cr_est);
 					_lws_ss_request_tx(proxy_pss_to_ss_h(pss));
 				} else
 #endif
-					lwsl_info("%s: dropping TXCR\n", __func__);
+					aws_lwsl_info("%s: dropping TXCR\n", __func__);
 			} else {
 				/*
 				 * We're the client, being told by the proxy
@@ -932,12 +932,12 @@ payload_ff:
 				 * remote peer, allowing the client to write to
 				 * it.
 				 */
-				h = lws_container_of(par, lws_sspc_handle_t,
+				h = aws_lws_container_of(par, aws_lws_sspc_handle_t,
 						     parser);
 				h->txc.tx_cr += par->temp32;
-				lwsl_info("%s: client RX_PEER_TXCR: %d\n",
+				aws_lwsl_info("%s: client RX_PEER_TXCR: %d\n",
 							__func__, par->temp32);
-				lws_sspc_request_tx(h); /* in case something waiting */
+				aws_lws_sspc_request_tx(h); /* in case something waiting */
 			}
 			par->ps = RPAR_TYPE;
 			break;
@@ -963,9 +963,9 @@ payload_ff:
 			if (proxy_pss_to_ss_h(pss)) {
 
 				if ((unsigned int)par->temp32 == 0xffffffff) {
-					lwsl_notice("%s: cancel ss timeout\n",
+					aws_lwsl_notice("%s: cancel ss timeout\n",
 							__func__);
-					lws_ss_cancel_timeout(
+					aws_lws_ss_cancel_timeout(
 						proxy_pss_to_ss_h(pss));
 				} else {
 
@@ -974,10 +974,10 @@ payload_ff:
 						   proxy_pss_to_ss_h(pss)->
 							   policy->timeout_ms;
 
-					lwsl_notice("%s: set ss timeout for +%ums\n",
+					aws_lwsl_notice("%s: set ss timeout for +%ums\n",
 						__func__, par->temp32);
 
-					lws_ss_start_timeout(
+					aws_lws_ss_start_timeout(
 						proxy_pss_to_ss_h(pss), (unsigned int)
 								par->temp32);
 				}
@@ -988,7 +988,7 @@ payload_ff:
 
 		case RPAR_PAYLEN0:
 			/*
-			 * It's the length from lws_ss_request_tx_len() being
+			 * It's the length from aws_lws_ss_request_tx_len() being
 			 * passed up to the proxy
 			 */
 			par->temp32 = (par->temp32 << 8) | *cp++;
@@ -1001,13 +1001,13 @@ payload_ff:
 			if (--par->rem)
 				goto hangup;
 
-			lwsl_notice("%s: set payload len %u\n", __func__,
+			aws_lwsl_notice("%s: set payload len %u\n", __func__,
 				    par->temp32);
 
 			par->ps = RPAR_TYPE;
 
 			if (proxy_pss_to_ss_h(pss)) {
-				r = lws_ss_request_tx_len(proxy_pss_to_ss_h(pss),
+				r = aws_lws_ss_request_tx_len(proxy_pss_to_ss_h(pss),
 							(unsigned long)par->temp32);
 				if (r == LWSSSSRET_DESTROY_ME)
 					goto hangup;
@@ -1036,8 +1036,8 @@ payload_ff:
 			par->ps = RPAR_METADATA_VALUE;
 
 			if (client) {
-				lws_sspc_metadata_t *md;
-				lws_sspc_handle_t *h =
+				aws_lws_sspc_metadata_t *md;
+				aws_lws_sspc_handle_t *h =
 						client_pss_to_sspc_h(pss, ssi);
 
 				/*
@@ -1047,31 +1047,31 @@ payload_ff:
 				 * the same name first
 				 */
 
-				lws_start_foreach_dll_safe(struct lws_dll2 *, d, d1,
-						lws_dll2_get_head(
+				aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
+						aws_lws_dll2_get_head(
 							&h->metadata_owner_rx)) {
-					md = lws_container_of(d,
-						   lws_sspc_metadata_t, list);
+					md = aws_lws_container_of(d,
+						   aws_lws_sspc_metadata_t, list);
 
 					if (!strcmp(md->name,
 						    par->metadata_name)) {
-						lws_dll2_remove(&md->list);
-						lws_free(md);
+						aws_lws_dll2_remove(&md->list);
+						aws_lws_free(md);
 					}
 
-				} lws_end_foreach_dll_safe(d, d1);
+				} aws_lws_end_foreach_dll_safe(d, d1);
 
 				/*
 				 * Create the client's rx metadata entry
 				 */
 
-				if (h && lws_fi(&h->fic, "sspc_rx_metadata_oom"))
+				if (h && aws_lws_fi(&h->fic, "sspc_rx_metadata_oom"))
 					md = NULL;
 				else
-					md = lws_malloc(sizeof(lws_sspc_metadata_t) +
+					md = aws_lws_malloc(sizeof(aws_lws_sspc_metadata_t) +
 						par->rem + 1, "rxmeta");
 				if (!md) {
-					lwsl_err("%s: OOM\n", __func__);
+					aws_lwsl_err("%s: OOM\n", __func__);
 					goto hangup;
 				}
 
@@ -1079,9 +1079,9 @@ payload_ff:
 					/* coverity */
 					goto hangup;
 
-				memset(md, 0, sizeof(lws_sspc_metadata_t));
+				memset(md, 0, sizeof(aws_lws_sspc_metadata_t));
 
-				lws_strncpy(md->name, par->metadata_name,
+				aws_lws_strncpy(md->name, par->metadata_name,
 						sizeof(md->name));
 				md->len = par->rem;
 				par->rxmetaval = (uint8_t *)&md[1];
@@ -1092,7 +1092,7 @@ payload_ff:
 				 * apis that's the most common usage
 				 */
 				par->rxmetaval[md->len] = '\0';
-				lws_dll2_add_tail(&md->list,
+				aws_lws_dll2_add_tail(&md->list,
 						  &h->metadata_owner_rx);
 				par->ctr = 0;
 				break;
@@ -1104,7 +1104,7 @@ payload_ff:
 				goto hangup;
 
 			if (!proxy_pss_to_ss_h(pss)->policy) {
-				lwsl_err("%s: null policy\n", __func__);
+				aws_lwsl_err("%s: null policy\n", __func__);
 				goto hangup;
 			}
 
@@ -1112,35 +1112,35 @@ payload_ff:
 			 * This is the policy's metadata list for the given
 			 * name
 			 */
-			pm = lws_ss_policy_metadata(
+			pm = aws_lws_ss_policy_metadata(
 					proxy_pss_to_ss_h(pss)->policy,
 					par->metadata_name);
 			if (!pm) {
-				lwsl_err("%s: metadata %s not in proxy policy\n",
+				aws_lwsl_err("%s: metadata %s not in proxy policy\n",
 					 __func__, par->metadata_name);
 
 				goto hangup;
 			}
 
-			par->ssmd = lws_ss_get_handle_metadata(
+			par->ssmd = aws_lws_ss_get_handle_metadata(
 					proxy_pss_to_ss_h(pss),
 					par->metadata_name);
 
 			if (par->ssmd) {
 
 				if (par->ssmd->value_on_lws_heap)
-					lws_free_set_NULL(par->ssmd->value__may_own_heap);
+					aws_lws_free_set_NULL(par->ssmd->value__may_own_heap);
 				par->ssmd->value_on_lws_heap = 0;
 
 				if (proxy_pss_to_ss_h(pss) &&
-				    lws_fi(&proxy_pss_to_ss_h(pss)->fic, "ssproxy_rx_metadata_oom"))
+				    aws_lws_fi(&proxy_pss_to_ss_h(pss)->fic, "ssproxy_rx_metadata_oom"))
 					par->ssmd->value__may_own_heap = NULL;
 				else
 					par->ssmd->value__may_own_heap =
-						lws_malloc((unsigned int)par->rem + 1, "metadata");
+						aws_lws_malloc((unsigned int)par->rem + 1, "metadata");
 
 				if (!par->ssmd->value__may_own_heap) {
-					lwsl_err("%s: OOM mdv\n", __func__);
+					aws_lwsl_err("%s: OOM mdv\n", __func__);
 					goto hangup;
 				}
 				par->ssmd->length = par->rem;
@@ -1178,15 +1178,15 @@ payload_ff:
 
 			/* we think we got all the value */
 			if (client) {
-				h = lws_container_of(par, lws_sspc_handle_t, parser);
-				lwsl_sspc_notice(h, "RX METADATA %s",
+				h = aws_lws_container_of(par, aws_lws_sspc_handle_t, parser);
+				aws_lwsl_sspc_notice(h, "RX METADATA %s",
 							par->metadata_name);
 			} else {
-				lwsl_ss_info(proxy_pss_to_ss_h(pss),
+				aws_lwsl_ss_info(proxy_pss_to_ss_h(pss),
 					     "RPAR_METADATA_VALUE for %s (len %d)",
 					     par->ssmd->name,
 					     (int)par->ssmd->length);
-				lwsl_hexdump_ss_info(proxy_pss_to_ss_h(pss),
+				aws_lwsl_hexdump_ss_info(proxy_pss_to_ss_h(pss),
 						par->ssmd->value__may_own_heap,
 						par->ssmd->length);
 			}
@@ -1222,7 +1222,7 @@ payload_ff:
 
 			par->ps = RPAR_TYPE;
 			par->streamtype[par->ctr] = '\0';
-			lwsl_info("%s: proxy ss '%s', sssv%d, txcr %d\n",
+			aws_lwsl_info("%s: proxy ss '%s', sssv%d, txcr %d\n",
 				    __func__, par->streamtype,
 				    par->protocol_version, par->txcr_out);
 
@@ -1240,19 +1240,19 @@ payload_ff:
 			ssi->sss_protocol_version = par->protocol_version;
 			ssi->client_pid = par->client_pid;
 
-			if (lws_ss_create(context, 0, ssi, parconn, pss,
+			if (aws_lws_ss_create(context, 0, ssi, parconn, pss,
 					  NULL, NULL)) {
 				/*
 				 * We're unable to create the onward secure
 				 * stream he asked for... schedule a chance to
 				 * inform him
 				 */
-				lwsl_err("%s: create '%s' fail\n", __func__,
+				aws_lwsl_err("%s: create '%s' fail\n", __func__,
 					 par->streamtype);
 				*state = LPCSPROX_REPORTING_FAIL;
 				break;
 			} else {
-				lwsl_debug("%s: create '%s' OK\n",
+				aws_lwsl_debug("%s: create '%s' OK\n",
 					__func__, par->streamtype);
 				*state = LPCSPROX_REPORTING_OK;
 			}
@@ -1267,7 +1267,7 @@ payload_ff:
 					 */
 #endif
 				{
-					lwsl_info("%s: Created SS initial credit %d\n",
+					aws_lwsl_info("%s: Created SS initial credit %d\n",
 						__func__, par->txcr_out);
 
 					(*pss)->info.manual_initial_tx_credit = par->txcr_out;
@@ -1281,7 +1281,7 @@ payload_ff:
 
 		case RPAR_RESULT_CREATION:
 			if (*cp++) {
-				lwsl_err("%s: stream creation failed\n",
+				aws_lwsl_err("%s: stream creation failed\n",
 					 __func__);
 				goto hangup;
 			}
@@ -1305,12 +1305,12 @@ payload_ff:
 			 * Client (par->temp32 == dsh alloc)
 			 */
 
-			h = lws_container_of(par, lws_sspc_handle_t, parser);
+			h = aws_lws_container_of(par, aws_lws_sspc_handle_t, parser);
 
-			lws_ss_serialize_state_transition(h, state,
+			aws_lws_ss_serialize_state_transition(h, state,
 							  LPCSCLI_LOCAL_CONNECTED);
 
-			lws_set_timeout(h->cwsi, NO_PENDING_TIMEOUT, 0);
+			aws_lws_set_timeout(h->cwsi, NO_PENDING_TIMEOUT, 0);
 
 			if (h->dsh)
 				goto hangup;
@@ -1339,11 +1339,11 @@ payload_ff:
 			/*
 			 * If any hanging caliper measurement, dump it, and free any tags
 			 */
-			lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+			aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
 #endif
 
 			if (!h->creating_cb_done) {
-				if (lws_ss_check_next_state_sspc(h,
+				if (aws_lws_ss_check_next_state_sspc(h,
 							       &h->prev_ss_state,
 							       LWSSSCS_CREATING))
 					return LWSSSSRET_DESTROY_ME;
@@ -1365,12 +1365,12 @@ payload_ff:
 				}
 			}
 
-			h->dsh = lws_dsh_create(NULL, (size_t)(par->temp32 ?
+			h->dsh = aws_lws_dsh_create(NULL, (size_t)(par->temp32 ?
 						par->temp32 : 32768), 1);
 			if (!h->dsh)
 				goto hangup;
 
-			lws_callback_on_writable(h->cwsi);
+			aws_lws_callback_on_writable(h->cwsi);
 
 			par->rsl_pos = 0;
 			par->rsl_idx = 0;
@@ -1390,7 +1390,7 @@ payload_ff:
 			break;
 
 		case RPAR_RESULT_CREATION_RIDESHARE:
-			h = lws_container_of(par, lws_sspc_handle_t, parser);
+			h = aws_lws_container_of(par, aws_lws_sspc_handle_t, parser);
 			if (*cp == ',') {
 				cp++;
 				h->rideshare_list[par->rsl_pos++] = '\0';
@@ -1446,13 +1446,13 @@ payload_ff:
 			case LWSSSCS_DISCONNECTED:
 			case LWSSSCS_UNREACHABLE:
 			case LWSSSCS_AUTH_FAILED:
-				lws_ss_serialize_state_transition(h, state,
+				aws_lws_ss_serialize_state_transition(h, state,
 						LPCSCLI_LOCAL_CONNECTED);
 				h->conn_req_state = LWSSSPC_ONW_NONE;
 				break;
 
 			case LWSSSCS_CONNECTED:
-				lwsl_sspc_info(h, "CONNECTED %s",
+				aws_lwsl_sspc_info(h, "CONNECTED %s",
 							ssi->streamtype);
 				if (*state == LPCSCLI_OPERATIONAL)
 					/*
@@ -1461,7 +1461,7 @@ payload_ff:
 					 */
 					goto swallow;
 
-				lws_ss_serialize_state_transition(h, state,
+				aws_lws_ss_serialize_state_transition(h, state,
 							LPCSCLI_OPERATIONAL);
 
 				h->conn_req_state = LWSSSPC_ONW_CONN;
@@ -1476,12 +1476,12 @@ payload_ff:
 				goto hangup;
 
 #if defined(_DEBUG)
-			lwsl_sspc_info(h, "forwarding proxied state %s",
-					lws_ss_state_name(par->ctr));
+			aws_lwsl_sspc_info(h, "forwarding proxied state %s",
+					aws_lws_ss_state_name(par->ctr));
 #endif
 
 			if (par->ctr == LWSSSCS_CREATING) {
-				h = lws_container_of(par, lws_sspc_handle_t, parser);
+				h = aws_lws_container_of(par, aws_lws_sspc_handle_t, parser);
 				if (h->creating_cb_done)
 					/*
 					 * We have told him he's CREATING when
@@ -1495,15 +1495,15 @@ payload_ff:
 			}
 
 			if (ssi->state) {
-				h = lws_container_of(par, lws_sspc_handle_t, parser);
-				lws_ss_constate_t cs = (lws_ss_constate_t)par->ctr;
+				h = aws_lws_container_of(par, aws_lws_sspc_handle_t, parser);
+				aws_lws_ss_constate_t cs = (aws_lws_ss_constate_t)par->ctr;
 
 				if (cs == LWSSSCS_CONNECTED)
 					h->ss_dangling_connected = 1;
 				if (cs == LWSSSCS_DISCONNECTED)
 					h->ss_dangling_connected = 0;
 
-				if (lws_ss_check_next_state_sspc(h,
+				if (aws_lws_ss_check_next_state_sspc(h,
 							    &h->prev_ss_state, cs))
 					return LWSSSSRET_DESTROY_ME;
 
@@ -1536,7 +1536,7 @@ swallow:
 
 hangup:
 
-	lwsl_cx_notice(context, "hangup");
+	aws_lwsl_cx_notice(context, "hangup");
 
 	return LWSSSSRET_DISCONNECT_ME;
 }

@@ -25,10 +25,10 @@
 #include "private-lib-core.h"
 
 static int
-sul_compare(const lws_dll2_t *d, const lws_dll2_t *i)
+sul_compare(const aws_lws_dll2_t *d, const aws_lws_dll2_t *i)
 {
-	lws_usec_t a = ((lws_sorted_usec_list_t *)d)->us;
-	lws_usec_t b = ((lws_sorted_usec_list_t *)i)->us;
+	aws_lws_usec_t a = ((aws_lws_sorted_usec_list_t *)d)->us;
+	aws_lws_usec_t b = ((aws_lws_sorted_usec_list_t *)i)->us;
 
 	/*
 	 * Simply returning (a - b) in an int
@@ -48,9 +48,9 @@ sul_compare(const lws_dll2_t *d, const lws_dll2_t *i)
  */
 
 int
-__lws_sul_insert(lws_dll2_owner_t *own, lws_sorted_usec_list_t *sul)
+__lws_sul_insert(aws_lws_dll2_owner_t *own, aws_lws_sorted_usec_list_t *sul)
 {
-	lws_dll2_remove(&sul->list);
+	aws_lws_dll2_remove(&sul->list);
 
 	assert(sul->cb);
 
@@ -59,27 +59,27 @@ __lws_sul_insert(lws_dll2_owner_t *own, lws_sorted_usec_list_t *sul)
 	 * cheap to check it every poll wait
 	 */
 
-	lws_dll2_add_sorted(&sul->list, own, sul_compare);
+	aws_lws_dll2_add_sorted(&sul->list, own, sul_compare);
 
 	return 0;
 }
 
 void
-lws_sul_cancel(lws_sorted_usec_list_t *sul)
+aws_lws_sul_cancel(aws_lws_sorted_usec_list_t *sul)
 {
-	lws_dll2_remove(&sul->list);
+	aws_lws_dll2_remove(&sul->list);
 
 	/* we are clearing the timeout and leaving ourselves detached */
 	sul->us = 0;
 }
 
 void
-lws_sul2_schedule(struct lws_context *context, int tsi, int flags,
-	          lws_sorted_usec_list_t *sul)
+aws_lws_sul2_schedule(struct aws_lws_context *context, int tsi, int flags,
+	          aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
 
-	lws_pt_assert_lock_held(pt);
+	aws_lws_pt_assert_lock_held(pt);
 
 	assert(sul->cb);
 
@@ -96,17 +96,17 @@ lws_sul2_schedule(struct lws_context *context, int tsi, int flags,
  * earliest scheduled event on any list.
  */
 
-lws_usec_t
-__lws_sul_service_ripe(lws_dll2_owner_t *own, int own_len, lws_usec_t usnow)
+aws_lws_usec_t
+__lws_sul_service_ripe(aws_lws_dll2_owner_t *own, int own_len, aws_lws_usec_t usnow)
 {
-	struct lws_context_per_thread *pt = (struct lws_context_per_thread *)
-			lws_container_of(own, struct lws_context_per_thread,
+	struct aws_lws_context_per_thread *pt = (struct aws_lws_context_per_thread *)
+			aws_lws_container_of(own, struct aws_lws_context_per_thread,
 					 pt_sul_owner);
 
 	if (pt->attach_owner.count)
-		lws_system_do_attach(pt);
+		aws_lws_system_do_attach(pt);
 
-	lws_pt_assert_lock_held(pt);
+	aws_lws_pt_assert_lock_held(pt);
 
 	/* must be at least 1 */
 	assert(own_len > 0);
@@ -121,16 +121,16 @@ __lws_sul_service_ripe(lws_dll2_owner_t *own, int own_len, lws_usec_t usnow)
 	 */
 
 	do {
-		lws_sorted_usec_list_t *hit = NULL;
-		lws_usec_t lowest = 0;
+		aws_lws_sorted_usec_list_t *hit = NULL;
+		aws_lws_usec_t lowest = 0;
 		int n = 0;
 
 		for (n = 0; n < own_len; n++) {
-			lws_sorted_usec_list_t *sul;
+			aws_lws_sorted_usec_list_t *sul;
 			if (!own[n].count)
 				continue;
-			 sul = (lws_sorted_usec_list_t *)
-						     lws_dll2_get_head(&own[n]);
+			 sul = (aws_lws_sorted_usec_list_t *)
+						     aws_lws_dll2_get_head(&own[n]);
 
 			if (!hit || sul->us <= lowest) {
 				hit = sul;
@@ -146,10 +146,10 @@ __lws_sul_service_ripe(lws_dll2_owner_t *own, int own_len, lws_usec_t usnow)
 
 		/* his moment has come... remove him from his owning list */
 
-		lws_dll2_remove(&hit->list);
+		aws_lws_dll2_remove(&hit->list);
 		hit->us = 0;
 
-		// lwsl_notice("%s: sul: %p\n", __func__, hit->cb);
+		// aws_lwsl_notice("%s: sul: %p\n", __func__, hit->cb);
 
 		pt->inside_lws_service = 1;
 		hit->cb(hit);
@@ -178,10 +178,10 @@ __lws_sul_service_ripe(lws_dll2_owner_t *own, int own_len, lws_usec_t usnow)
  * requires this adjustment when it is stepped.
  */
 
-lws_usec_t
-lws_sul_nonmonotonic_adjust(struct lws_context *ctx, int64_t step_us)
+aws_lws_usec_t
+aws_lws_sul_nonmonotonic_adjust(struct aws_lws_context *ctx, int64_t step_us)
 {
-	struct lws_context_per_thread *pt = &ctx->pt[0];
+	struct aws_lws_context_per_thread *pt = &ctx->pt[0];
 	int n, m;
 
 	/*
@@ -194,7 +194,7 @@ lws_sul_nonmonotonic_adjust(struct lws_context *ctx, int64_t step_us)
 		 * For each owning list...
 		 */
 
-		lws_pt_lock(pt, __func__);
+		aws_lws_pt_lock(pt, __func__);
 
 		for (n = 0; n < LWS_COUNT_PT_SUL_OWNERS; n++) {
 
@@ -203,11 +203,11 @@ lws_sul_nonmonotonic_adjust(struct lws_context *ctx, int64_t step_us)
 
 			/* ... and for every existing sul on a list... */
 
-			lws_start_foreach_dll(struct lws_dll2 *, p,
-					      lws_dll2_get_head(
+			aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p,
+					      aws_lws_dll2_get_head(
 							&pt->pt_sul_owner[n])) {
-				lws_sorted_usec_list_t *sul = lws_container_of(
-					       p, lws_sorted_usec_list_t, list);
+				aws_lws_sorted_usec_list_t *sul = aws_lws_container_of(
+					       p, aws_lws_sorted_usec_list_t, list);
 
 				/*
 				 * ... retrospectively step its ripe time by the
@@ -217,10 +217,10 @@ lws_sul_nonmonotonic_adjust(struct lws_context *ctx, int64_t step_us)
 
 				sul->us += step_us;
 
-			} lws_end_foreach_dll(p);
+			} aws_lws_end_foreach_dll(p);
 		}
 
-		lws_pt_unlock(pt);
+		aws_lws_pt_unlock(pt);
 
 		pt++;
 	}
@@ -233,20 +233,20 @@ lws_sul_nonmonotonic_adjust(struct lws_context *ctx, int64_t step_us)
  */
 
 int
-lws_sul_earliest_wakeable_event(struct lws_context *ctx, lws_usec_t *pearliest)
+aws_lws_sul_earliest_wakeable_event(struct aws_lws_context *ctx, aws_lws_usec_t *pearliest)
 {
-	struct lws_context_per_thread *pt;
+	struct aws_lws_context_per_thread *pt;
 	int n = 0, hit = -1;
-	lws_usec_t lowest = 0;
+	aws_lws_usec_t lowest = 0;
 
 	for (n = 0; n < ctx->count_threads; n++) {
 		pt = &ctx->pt[n];
 
-		lws_pt_lock(pt, __func__);
+		aws_lws_pt_lock(pt, __func__);
 
 		if (pt->pt_sul_owner[LWSSULLI_WAKE_IF_SUSPENDED].count) {
-			lws_sorted_usec_list_t *sul = (lws_sorted_usec_list_t *)
-					lws_dll2_get_head(&pt->pt_sul_owner[
+			aws_lws_sorted_usec_list_t *sul = (aws_lws_sorted_usec_list_t *)
+					aws_lws_dll2_get_head(&pt->pt_sul_owner[
 					           LWSSULLI_WAKE_IF_SUSPENDED]);
 
 			if (hit == -1 || sul->us < lowest) {
@@ -255,7 +255,7 @@ lws_sul_earliest_wakeable_event(struct lws_context *ctx, lws_usec_t *pearliest)
 			}
 		}
 
-		lws_pt_unlock(pt);
+		aws_lws_pt_unlock(pt);
 	}
 
 
@@ -269,46 +269,46 @@ lws_sul_earliest_wakeable_event(struct lws_context *ctx, lws_usec_t *pearliest)
 }
 
 void
-lws_sul_schedule(struct lws_context *ctx, int tsi, lws_sorted_usec_list_t *sul,
-		 sul_cb_t _cb, lws_usec_t _us)
+aws_lws_sul_schedule(struct aws_lws_context *ctx, int tsi, aws_lws_sorted_usec_list_t *sul,
+		 sul_cb_t _cb, aws_lws_usec_t _us)
 {
-	struct lws_context_per_thread *_pt = &ctx->pt[tsi];
+	struct aws_lws_context_per_thread *_pt = &ctx->pt[tsi];
 
 	assert(_cb);
 
-	lws_pt_lock(_pt, __func__);
+	aws_lws_pt_lock(_pt, __func__);
 
-	if (_us == (lws_usec_t)LWS_SET_TIMER_USEC_CANCEL)
-		lws_sul_cancel(sul);
+	if (_us == (aws_lws_usec_t)LWS_SET_TIMER_USEC_CANCEL)
+		aws_lws_sul_cancel(sul);
 	else {
 		sul->cb = _cb;
-		sul->us = lws_now_usecs() + _us;
-		lws_sul2_schedule(ctx, tsi, LWSSULLI_MISS_IF_SUSPENDED, sul);
+		sul->us = aws_lws_now_usecs() + _us;
+		aws_lws_sul2_schedule(ctx, tsi, LWSSULLI_MISS_IF_SUSPENDED, sul);
 	}
 
-	lws_pt_unlock(_pt);
+	aws_lws_pt_unlock(_pt);
 }
 
 void
-lws_sul_schedule_wakesuspend(struct lws_context *ctx, int tsi,
-			     lws_sorted_usec_list_t *sul, sul_cb_t _cb,
-			     lws_usec_t _us)
+aws_lws_sul_schedule_wakesuspend(struct aws_lws_context *ctx, int tsi,
+			     aws_lws_sorted_usec_list_t *sul, sul_cb_t _cb,
+			     aws_lws_usec_t _us)
 {
-	struct lws_context_per_thread *_pt = &ctx->pt[tsi];
+	struct aws_lws_context_per_thread *_pt = &ctx->pt[tsi];
 
 	assert(_cb);
 
-	lws_pt_lock(_pt, __func__);
+	aws_lws_pt_lock(_pt, __func__);
 
-	if (_us == (lws_usec_t)LWS_SET_TIMER_USEC_CANCEL)
-		lws_sul_cancel(sul);
+	if (_us == (aws_lws_usec_t)LWS_SET_TIMER_USEC_CANCEL)
+		aws_lws_sul_cancel(sul);
 	else {
 		sul->cb = _cb;
-		sul->us = lws_now_usecs() + _us;
-		lws_sul2_schedule(ctx, tsi, LWSSULLI_WAKE_IF_SUSPENDED, sul);
+		sul->us = aws_lws_now_usecs() + _us;
+		aws_lws_sul2_schedule(ctx, tsi, LWSSULLI_WAKE_IF_SUSPENDED, sul);
 	}
 
-	lws_pt_unlock(_pt);
+	aws_lws_pt_unlock(_pt);
 }
 
 #if defined(LWS_WITH_SUL_DEBUGGING)
@@ -321,27 +321,27 @@ lws_sul_schedule_wakesuspend(struct lws_context *ctx, int tsi,
  */
 
 void
-lws_sul_debug_zombies(struct lws_context *ctx, void *po, size_t len,
+aws_lws_sul_debug_zombies(struct aws_lws_context *ctx, void *po, size_t len,
 		      const char *destroy_description)
 {
-	struct lws_context_per_thread *pt;
+	struct aws_lws_context_per_thread *pt;
 	int n, m;
 
 	for (n = 0; n < ctx->count_threads; n++) {
 		pt = &ctx->pt[n];
 
-		lws_pt_lock(pt, __func__);
+		aws_lws_pt_lock(pt, __func__);
 
 		for (m = 0; m < LWS_COUNT_PT_SUL_OWNERS; m++) {
 
-			lws_start_foreach_dll(struct lws_dll2 *, p,
-				      lws_dll2_get_head(&pt->pt_sul_owner[m])) {
-				lws_sorted_usec_list_t *sul =
-					lws_container_of(p,
-						lws_sorted_usec_list_t, list);
+			aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p,
+				      aws_lws_dll2_get_head(&pt->pt_sul_owner[m])) {
+				aws_lws_sorted_usec_list_t *sul =
+					aws_lws_container_of(p,
+						aws_lws_sorted_usec_list_t, list);
 
 				if (!po) {
-					lwsl_cx_err(ctx, "%s",
+					aws_lwsl_cx_err(ctx, "%s",
 							 destroy_description);
 					/* just sanity check the list */
 					assert(sul->cb);
@@ -354,8 +354,8 @@ lws_sul_debug_zombies(struct lws_context *ctx, void *po, size_t len,
 
 				if (po &&
 				    (void *)sul >= po &&
-				    (size_t)lws_ptr_diff(sul, po) < len) {
-					lwsl_cx_err(ctx, "ERROR: Zombie Sul "
+				    (size_t)aws_lws_ptr_diff(sul, po) < len) {
+					aws_lwsl_cx_err(ctx, "ERROR: Zombie Sul "
 						 "(on list %d) %s, cb %p\n", m,
 						 destroy_description, sul->cb);
 					/*
@@ -363,7 +363,7 @@ lws_sul_debug_zombies(struct lws_context *ctx, void *po, size_t len,
 					 * a sul scheduled to fire later, but
 					 * are about to destroy the object the
 					 * sul lives in.  You must take care to
-					 * do lws_sul_cancel(&sul) on any suls
+					 * do aws_lws_sul_cancel(&sul) on any suls
 					 * that may be scheduled before
 					 * destroying the object the sul lives
 					 * inside.
@@ -377,10 +377,10 @@ lws_sul_debug_zombies(struct lws_context *ctx, void *po, size_t len,
 					assert(0);
 				}
 
-			} lws_end_foreach_dll(p);
+			} aws_lws_end_foreach_dll(p);
 		}
 
-		lws_pt_unlock(pt);
+		aws_lws_pt_unlock(pt);
 	}
 }
 

@@ -32,7 +32,7 @@
 extern int openssl_websocket_private_data_index,
 	   openssl_SSL_CTX_private_data_index;
 
-int lws_openssl_describe_cipher(struct lws *wsi);
+int aws_lws_openssl_describe_cipher(struct lws *wsi);
 
 static int
 OpenSSL_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
@@ -40,7 +40,7 @@ OpenSSL_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 	SSL *ssl;
 	int n;
 	struct lws *wsi;
-	union lws_tls_cert_info_results ir;
+	union aws_lws_tls_cert_info_results ir;
 	X509 *topcert = X509_STORE_CTX_get_current_cert(x509_ctx);
 
 	ssl = X509_STORE_CTX_get_ex_data(x509_ctx,
@@ -52,12 +52,12 @@ OpenSSL_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 	 */
 	wsi = SSL_get_ex_data(ssl, openssl_websocket_private_data_index);
 
-	n = lws_tls_openssl_cert_info(topcert, LWS_TLS_CERT_INFO_COMMON_NAME,
+	n = aws_lws_tls_openssl_cert_info(topcert, LWS_TLS_CERT_INFO_COMMON_NAME,
 				      &ir, sizeof(ir.ns.name));
 	if (!n)
-		lwsl_info("%s: client cert CN '%s'\n", __func__, ir.ns.name);
+		aws_lwsl_info("%s: client cert CN '%s'\n", __func__, ir.ns.name);
 	else
-		lwsl_info("%s: couldn't get client cert CN\n", __func__);
+		aws_lwsl_info("%s: couldn't get client cert CN\n", __func__);
 
 	n = wsi->a.vhost->protocols[0].callback(wsi,
 			LWS_CALLBACK_OPENSSL_PERFORM_CLIENT_CERT_VERIFICATION,
@@ -68,17 +68,17 @@ OpenSSL_verify_callback(int preverify_ok, X509_STORE_CTX *x509_ctx)
 }
 
 int
-lws_tls_server_client_cert_verify_config(struct lws_vhost *vh)
+aws_lws_tls_server_client_cert_verify_config(struct aws_lws_vhost *vh)
 {
 	int verify_options = SSL_VERIFY_PEER;
 
 	/* as a server, are we requiring clients to identify themselves? */
 
-	if (!lws_check_opt(vh->options,
+	if (!aws_lws_check_opt(vh->options,
 			  LWS_SERVER_OPTION_REQUIRE_VALID_OPENSSL_CLIENT_CERT))
 		return 0;
 
-	if (!lws_check_opt(vh->options,
+	if (!aws_lws_check_opt(vh->options,
 			   LWS_SERVER_OPTION_PEER_CERT_NOT_REQUIRED))
 		verify_options |= SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
 
@@ -94,10 +94,10 @@ lws_tls_server_client_cert_verify_config(struct lws_vhost *vh)
 
 #if defined(SSL_TLSEXT_ERR_NOACK) && !defined(OPENSSL_NO_TLSEXT)
 static int
-lws_ssl_server_name_cb(SSL *ssl, int *ad, void *arg)
+aws_lws_ssl_server_name_cb(SSL *ssl, int *ad, void *arg)
 {
-	struct lws_context *context = (struct lws_context *)arg;
-	struct lws_vhost *vhost, *vh;
+	struct aws_lws_context *context = (struct aws_lws_context *)arg;
+	struct aws_lws_vhost *vhost, *vh;
 	const char *servername;
 
 	if (!ssl)
@@ -124,19 +124,19 @@ lws_ssl_server_name_cb(SSL *ssl, int *ad, void *arg)
 	servername = SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
 	if (!servername) {
 		/* the client doesn't know what hostname it wants */
-		lwsl_info("SNI: Unknown ServerName\n");
+		aws_lwsl_info("SNI: Unknown ServerName\n");
 
 		return SSL_TLSEXT_ERR_OK;
 	}
 
-	vhost = lws_select_vhost(context, vh->listen_port, servername);
+	vhost = aws_lws_select_vhost(context, vh->listen_port, servername);
 	if (!vhost) {
-		lwsl_info("SNI: none: %s:%d\n", servername, vh->listen_port);
+		aws_lwsl_info("SNI: none: %s:%d\n", servername, vh->listen_port);
 
 		return SSL_TLSEXT_ERR_OK;
 	}
 
-	lwsl_info("SNI: Found: %s:%d\n", servername, vh->listen_port);
+	aws_lwsl_info("SNI: Found: %s:%d\n", servername, vh->listen_port);
 
 	/* select the ssl ctx from the selected vhost for this conn */
 	SSL_set_SSL_CTX(ssl, vhost->tls.ssl_ctx);
@@ -150,7 +150,7 @@ lws_ssl_server_name_cb(SSL *ssl, int *ad, void *arg)
  * available.
  */
 int
-lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
+aws_lws_tls_server_certs_load(struct aws_lws_vhost *vhost, struct lws *wsi,
 			  const char *cert, const char *private_key,
 			  const char *mem_cert, size_t mem_cert_len,
 			  const char *mem_privkey, size_t mem_privkey_len)
@@ -169,12 +169,12 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 	int KeyType;
 #endif
 	unsigned long error;
-	lws_filepos_t flen;
+	aws_lws_filepos_t flen;
 	uint8_t *p;
 #if OPENSSL_VERSION_NUMBER >= 0x10100000L
 	int ret;
 #endif
-	int n = (int)lws_tls_generic_cert_checks(vhost, cert, private_key), m;
+	int n = (int)aws_lws_tls_generic_cert_checks(vhost, cert, private_key), m;
 
 	if (!cert && !private_key)
 		n = LWS_TLS_EXTANT_ALTERNATIVE;
@@ -222,7 +222,7 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 					error,
 				       (char *)vhost->context->pt[0].serv_buf);
 
-			lwsl_err("problem getting cert '%s' %lu: %s\n",
+			aws_lwsl_err("problem getting cert '%s' %lu: %s\n",
 				 cert, error, s);
 
 			return 1;
@@ -240,7 +240,7 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 	#endif
 						error,
 					       (char *)vhost->context->pt[0].serv_buf);
-				lwsl_err("ssl problem getting key '%s' %lu: %s\n",
+				aws_lwsl_err("ssl problem getting key '%s' %lu: %s\n",
 					 private_key, error, s);
 				return 1;
 			}
@@ -248,7 +248,7 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 			if (vhost->protocols[0].callback(wsi,
 				      LWS_CALLBACK_OPENSSL_CONTEXT_REQUIRES_PRIVATE_KEY,
 							 vhost->tls.ssl_ctx, NULL, 0)) {
-				lwsl_err("ssl private key not set\n");
+				aws_lwsl_err("ssl private key not set\n");
 
 				return 1;
 			}
@@ -259,9 +259,9 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 
 	/* otherwise allow for DER or PEM, file or memory image */
 
-	if (lws_tls_alloc_pem_to_der_file(vhost->context, cert, mem_cert,
+	if (aws_lws_tls_alloc_pem_to_der_file(vhost->context, cert, mem_cert,
 					  mem_cert_len, &p, &flen)) {
-		lwsl_err("%s: couldn't read cert file\n", __func__);
+		aws_lwsl_err("%s: couldn't read cert file\n", __func__);
 
 		return 1;
 	}
@@ -279,17 +279,17 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 						 (uint8_t *)p, (int)flen,
 						 WOLFSSL_FILETYPE_ASN1);
 #endif
-	lws_free_set_NULL(p);
+	aws_lws_free_set_NULL(p);
 	if (ret != 1) {
-		lwsl_err("%s: Problem loading cert\n", __func__);
+		aws_lwsl_err("%s: Problem loading cert\n", __func__);
 
 		return 1;
 	}
 
-	if (lws_tls_alloc_pem_to_der_file(vhost->context, private_key,
+	if (aws_lws_tls_alloc_pem_to_der_file(vhost->context, private_key,
 					  mem_privkey, mem_privkey_len,
 					  &p, &flen)) {
-		lwsl_notice("unable to convert memory privkey\n");
+		aws_lwsl_notice("unable to convert memory privkey\n");
 
 		return 1;
 	}
@@ -316,9 +316,9 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 	ret = wolfSSL_CTX_use_PrivateKey_buffer(vhost->tls.ssl_ctx, p, flen,
 						WOLFSSL_FILETYPE_ASN1);
 #endif
-	lws_free_set_NULL(p);
+	aws_lws_free_set_NULL(p);
 	if (ret != 1)  {
-		lwsl_notice("unable to use memory privkey\n");
+		aws_lwsl_notice("unable to use memory privkey\n");
 
 		return 1;
 	}
@@ -335,9 +335,9 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 		 * memory-buffer private key image is PEM.
 		 */
 #ifndef USE_WOLFSSL
-		if (lws_tls_alloc_pem_to_der_file(vhost->context, cert, mem_cert,
+		if (aws_lws_tls_alloc_pem_to_der_file(vhost->context, cert, mem_cert,
 						  mem_cert_len, &p, &flen)) {
-			lwsl_err("%s: couldn't convert pem to der\n", __func__);
+			aws_lwsl_err("%s: couldn't convert pem to der\n", __func__);
 			return 1;
 		}
 		if (SSL_CTX_use_certificate_ASN1(vhost->tls.ssl_ctx,
@@ -350,15 +350,15 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 						 WOLFSSL_FILETYPE_ASN1) != 1) {
 
 #endif
-			lwsl_err("Problem loading update cert\n");
+			aws_lwsl_err("Problem loading update cert\n");
 
 			return 1;
 		}
 
-		if (lws_tls_alloc_pem_to_der_file(vhost->context, NULL,
+		if (aws_lws_tls_alloc_pem_to_der_file(vhost->context, NULL,
 						  mem_privkey, mem_privkey_len,
 						  &p, &flen)) {
-			lwsl_notice("unable to convert memory privkey\n");
+			aws_lwsl_notice("unable to convert memory privkey\n");
 
 			return 1;
 		}
@@ -370,7 +370,7 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 		if (wolfSSL_CTX_use_PrivateKey_buffer(vhost->tls.ssl_ctx, p,
 					    (long)flen, WOLFSSL_FILETYPE_ASN1) != 1) {
 #endif
-			lwsl_notice("unable to use memory privkey\n");
+			aws_lwsl_notice("unable to use memory privkey\n");
 
 			return 1;
 		}
@@ -382,7 +382,7 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 	m = SSL_CTX_use_certificate_chain_file(vhost->tls.ssl_ctx, cert);
 	if (m != 1) {
 		error = ERR_get_error();
-		lwsl_err("problem getting cert '%s' %lu: %s\n",
+		aws_lwsl_err("problem getting cert '%s' %lu: %s\n",
 			 cert, error, ERR_error_string(error,
 			       (char *)vhost->context->pt[0].serv_buf));
 
@@ -394,7 +394,7 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 		if (SSL_CTX_use_PrivateKey_file(vhost->tls.ssl_ctx, private_key,
 					        SSL_FILETYPE_PEM) != 1) {
 			error = ERR_get_error();
-			lwsl_err("ssl problem getting key '%s' %lu: %s\n",
+			aws_lwsl_err("ssl problem getting key '%s' %lu: %s\n",
 				 private_key, error,
 				 ERR_error_string(error,
 				      (char *)vhost->context->pt[0].serv_buf));
@@ -404,7 +404,7 @@ lws_tls_server_certs_load(struct lws_vhost *vhost, struct lws *wsi,
 		if (vhost->protocols[0].callback(wsi,
 			      LWS_CALLBACK_OPENSSL_CONTEXT_REQUIRES_PRIVATE_KEY,
 						 vhost->tls.ssl_ctx, NULL, 0)) {
-			lwsl_err("ssl private key not set\n");
+			aws_lwsl_err("ssl private key not set\n");
 
 			return 1;
 		}
@@ -415,7 +415,7 @@ check_key:
 
 	/* verify private key */
 	if (!SSL_CTX_check_private_key(vhost->tls.ssl_ctx)) {
-		lwsl_err("Private SSL key doesn't match cert\n");
+		aws_lwsl_err("Private SSL key doesn't match cert\n");
 
 		return 1;
 	}
@@ -429,13 +429,13 @@ check_key:
 
 	ecdh_nid = OBJ_sn2nid(ecdh_curve);
 	if (NID_undef == ecdh_nid) {
-		lwsl_err("SSL: Unknown curve name '%s'", ecdh_curve);
+		aws_lwsl_err("SSL: Unknown curve name '%s'", ecdh_curve);
 		return 1;
 	}
 
 	ecdh = EC_KEY_new_by_curve_name(ecdh_nid);
 	if (NULL == ecdh) {
-		lwsl_err("SSL: Unable to create curve '%s'", ecdh_curve);
+		aws_lwsl_err("SSL: Unable to create curve '%s'", ecdh_curve);
 		return 1;
 	}
 	SSL_CTX_set_tmp_ecdh(vhost->tls.ssl_ctx, ecdh);
@@ -443,10 +443,10 @@ check_key:
 
 	SSL_CTX_set_options(vhost->tls.ssl_ctx, SSL_OP_SINGLE_ECDH_USE);
 
-	lwsl_notice(" SSL ECDH curve '%s'\n", ecdh_curve);
+	aws_lwsl_notice(" SSL ECDH curve '%s'\n", ecdh_curve);
 
-	if (lws_check_opt(vhost->context->options, LWS_SERVER_OPTION_SSL_ECDH))
-		lwsl_notice(" Using ECDH certificate support\n");
+	if (aws_lws_check_opt(vhost->context->options, LWS_SERVER_OPTION_SSL_ECDH))
+		aws_lwsl_notice(" Using ECDH certificate support\n");
 
 	/* Get X509 certificate from ssl context */
 #if !defined(LWS_WITH_BORINGSSL)
@@ -457,10 +457,10 @@ check_key:
 	if (extra_certs)
 		x = sk_X509_value(extra_certs, 0);
 	else
-		lwsl_info("%s: no extra certs\n", __func__);
+		aws_lwsl_info("%s: no extra certs\n", __func__);
 #endif
 	if (!x) {
-		//lwsl_err("%s: x is NULL\n", __func__);
+		//aws_lwsl_err("%s: x is NULL\n", __func__);
 		goto post_ecdh;
 	}
 #else
@@ -470,7 +470,7 @@ check_key:
 	/* Get the public key from certificate */
 	pkey = X509_get_pubkey(x);
 	if (!pkey) {
-		lwsl_err("%s: pkey is NULL\n", __func__);
+		aws_lwsl_err("%s: pkey is NULL\n", __func__);
 
 		return 1;
 	}
@@ -478,14 +478,14 @@ check_key:
 	KeyType = EVP_PKEY_type(EVP_PKEY_id(pkey));
 
 	if (EVP_PKEY_EC != KeyType) {
-		lwsl_notice("Key type is not EC\n");
+		aws_lwsl_notice("Key type is not EC\n");
 		return 0;
 	}
 	/* Get the key */
 	EC_key = EVP_PKEY_get1_EC_KEY(pkey);
 	/* Set ECDH parameter */
 	if (!EC_key) {
-		lwsl_err("%s: ECDH key is NULL \n", __func__);
+		aws_lwsl_err("%s: ECDH key is NULL \n", __func__);
 		return 1;
 	}
 	SSL_CTX_set_tmp_ecdh(vhost->tls.ssl_ctx, EC_key);
@@ -497,15 +497,15 @@ post_ecdh:
 #endif
 	vhost->tls.skipped_certs = 0;
 #else
-	lwsl_notice(" OpenSSL doesn't support ECDH\n");
+	aws_lwsl_notice(" OpenSSL doesn't support ECDH\n");
 #endif
 
 	return 0;
 }
 
 int
-lws_tls_server_vhost_backend_init(const struct lws_context_creation_info *info,
-				  struct lws_vhost *vhost, struct lws *wsi)
+aws_lws_tls_server_vhost_backend_init(const struct aws_lws_context_creation_info *info,
+				  struct aws_lws_vhost *vhost, struct lws *wsi)
 {
 	unsigned long error;
 	SSL_METHOD *method = (SSL_METHOD *)SSLv23_server_method();
@@ -520,7 +520,7 @@ lws_tls_server_vhost_backend_init(const struct lws_context_creation_info *info,
 				error,
 			       (char *)vhost->context->pt[0].serv_buf);
 
-		lwsl_err("problem creating ssl method %lu: %s\n",
+		aws_lwsl_err("problem creating ssl method %lu: %s\n",
 				error, s);
 		return 1;
 	}
@@ -535,7 +535,7 @@ lws_tls_server_vhost_backend_init(const struct lws_context_creation_info *info,
 #endif
 				error,
 			       (char *)vhost->context->pt[0].serv_buf);
-		lwsl_err("problem creating ssl context %lu: %s\n",
+		aws_lwsl_err("problem creating ssl context %lu: %s\n",
 				error, s);
 		return 1;
 	}
@@ -563,7 +563,7 @@ lws_tls_server_vhost_backend_init(const struct lws_context_creation_info *info,
 
 #if !defined(OPENSSL_NO_TLSEXT)
 	SSL_CTX_set_tlsext_servername_callback(vhost->tls.ssl_ctx,
-					       lws_ssl_server_name_cb);
+					       aws_lws_ssl_server_name_cb);
 	SSL_CTX_set_tlsext_servername_arg(vhost->tls.ssl_ctx, vhost->context);
 #endif
 
@@ -575,7 +575,7 @@ lws_tls_server_vhost_backend_init(const struct lws_context_creation_info *info,
 	    !SSL_CTX_load_verify_locations(vhost->tls.ssl_ctx,
 					   info->ssl_ca_filepath, NULL)) {
 #endif
-		lwsl_err("%s: SSL_CTX_load_verify_locations unhappy\n",
+		aws_lwsl_err("%s: SSL_CTX_load_verify_locations unhappy\n",
 			 __func__);
 	}
 
@@ -612,15 +612,15 @@ lws_tls_server_vhost_backend_init(const struct lws_context_creation_info *info,
 				      info->ssl_options_clear);
 #endif
 
-	lwsl_info(" SSL options 0x%lX\n",
+	aws_lwsl_info(" SSL options 0x%lX\n",
 			(unsigned long)SSL_CTX_get_options(vhost->tls.ssl_ctx));
 	if (!vhost->tls.use_ssl ||
 	    (!info->ssl_cert_filepath && !info->server_ssl_cert_mem))
 		return 0;
 
-	lws_ssl_bind_passphrase(vhost->tls.ssl_ctx, 0, info);
+	aws_lws_ssl_bind_passphrase(vhost->tls.ssl_ctx, 0, info);
 
-	return lws_tls_server_certs_load(vhost, wsi, info->ssl_cert_filepath,
+	return aws_lws_tls_server_certs_load(vhost, wsi, info->ssl_cert_filepath,
 					 info->ssl_private_key_filepath,
 					 info->server_ssl_cert_mem,
 					 info->server_ssl_cert_mem_len,
@@ -629,7 +629,7 @@ lws_tls_server_vhost_backend_init(const struct lws_context_creation_info *info,
 }
 
 int
-lws_tls_server_new_nonblocking(struct lws *wsi, lws_sockfd_type accept_fd)
+aws_lws_tls_server_new_nonblocking(struct lws *wsi, aws_lws_sockfd_type accept_fd)
 {
 #if !defined(USE_WOLFSSL)
 	BIO *bio;
@@ -639,15 +639,15 @@ lws_tls_server_new_nonblocking(struct lws *wsi, lws_sockfd_type accept_fd)
 	ERR_clear_error();
 	wsi->tls.ssl = SSL_new(wsi->a.vhost->tls.ssl_ctx);
 	if (wsi->tls.ssl == NULL) {
-		lwsl_err("SSL_new failed: %d (errno %d)\n",
-			 lws_ssl_get_error(wsi, 0), errno);
+		aws_lwsl_err("SSL_new failed: %d (errno %d)\n",
+			 aws_lws_ssl_get_error(wsi, 0), errno);
 
-		lws_tls_err_describe_clear();
+		aws_lws_tls_err_describe_clear();
 		return 1;
 	}
 
 	SSL_set_ex_data(wsi->tls.ssl, openssl_websocket_private_data_index, wsi);
-	SSL_set_fd(wsi->tls.ssl, (int)(lws_intptr_t)accept_fd);
+	SSL_set_fd(wsi->tls.ssl, (int)(aws_lws_intptr_t)accept_fd);
 
 #ifdef USE_WOLFSSL
 #ifdef USE_OLD_CYASSL
@@ -663,24 +663,24 @@ lws_tls_server_new_nonblocking(struct lws *wsi, lws_sockfd_type accept_fd)
 	if (bio)
 		BIO_set_nbio(bio, 1); /* nonblocking */
 	else
-		lwsl_notice("NULL rbio\n");
+		aws_lwsl_notice("NULL rbio\n");
 	bio = SSL_get_wbio(wsi->tls.ssl);
 	if (bio)
 		BIO_set_nbio(bio, 1); /* nonblocking */
 	else
-		lwsl_notice("NULL rbio\n");
+		aws_lwsl_notice("NULL rbio\n");
 #endif
 
 #if defined (LWS_HAVE_SSL_SET_INFO_CALLBACK)
 		if (wsi->a.vhost->tls.ssl_info_event_mask)
-			SSL_set_info_callback(wsi->tls.ssl, lws_ssl_info_callback);
+			SSL_set_info_callback(wsi->tls.ssl, aws_lws_ssl_info_callback);
 #endif
 
 	return 0;
 }
 
 int
-lws_tls_server_abort_connection(struct lws *wsi)
+aws_lws_tls_server_abort_connection(struct lws *wsi)
 {
 	if (wsi->tls.use_ssl)
 		SSL_shutdown(wsi->tls.ssl);
@@ -689,11 +689,11 @@ lws_tls_server_abort_connection(struct lws *wsi)
 	return 0;
 }
 
-enum lws_ssl_capable_status
-lws_tls_server_accept(struct lws *wsi)
+enum aws_lws_ssl_capable_status
+aws_lws_tls_server_accept(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	union lws_tls_cert_info_results ir;
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	union aws_lws_tls_cert_info_results ir;
 	int m, n;
 
 	errno = 0;
@@ -703,46 +703,46 @@ lws_tls_server_accept(struct lws *wsi)
 	wsi->skip_fallback = 1;
 
 	if (n == 1) {
-		n = lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME, &ir,
+		n = aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME, &ir,
 					   sizeof(ir.ns.name));
 		if (!n)
-			lwsl_notice("%s: client cert CN '%s'\n", __func__,
+			aws_lwsl_notice("%s: client cert CN '%s'\n", __func__,
 				    ir.ns.name);
 		else
-			lwsl_info("%s: no client cert CN\n", __func__);
+			aws_lwsl_info("%s: no client cert CN\n", __func__);
 
-		lws_openssl_describe_cipher(wsi);
+		aws_lws_openssl_describe_cipher(wsi);
 
 		if (SSL_pending(wsi->tls.ssl) &&
-		    lws_dll2_is_detached(&wsi->tls.dll_pending_tls))
-			lws_dll2_add_head(&wsi->tls.dll_pending_tls,
+		    aws_lws_dll2_is_detached(&wsi->tls.dll_pending_tls))
+			aws_lws_dll2_add_head(&wsi->tls.dll_pending_tls,
 					  &pt->tls.dll_pending_tls_owner);
 
 		return LWS_SSL_CAPABLE_DONE;
 	}
 
-	m = lws_ssl_get_error(wsi, n);
-	lws_tls_err_describe_clear();
+	m = aws_lws_ssl_get_error(wsi, n);
+	aws_lws_tls_err_describe_clear();
 
 	if (m == SSL_ERROR_SYSCALL || m == SSL_ERROR_SSL)
 		return LWS_SSL_CAPABLE_ERROR;
 
 	if (m == SSL_ERROR_WANT_READ ||
 	    (m != SSL_ERROR_ZERO_RETURN && SSL_want_read(wsi->tls.ssl))) {
-		if (lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
-			lwsl_info("%s: WANT_READ change_pollfd failed\n",
+		if (aws_lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
+			aws_lwsl_info("%s: WANT_READ change_pollfd failed\n",
 				  __func__);
 			return LWS_SSL_CAPABLE_ERROR;
 		}
 
-		lwsl_info("SSL_ERROR_WANT_READ: m %d\n", m);
+		aws_lwsl_info("SSL_ERROR_WANT_READ: m %d\n", m);
 		return LWS_SSL_CAPABLE_MORE_SERVICE_READ;
 	}
 	if (m == SSL_ERROR_WANT_WRITE || SSL_want_write(wsi->tls.ssl)) {
-		lwsl_debug("%s: WANT_WRITE\n", __func__);
+		aws_lwsl_debug("%s: WANT_WRITE\n", __func__);
 
-		if (lws_change_pollfd(wsi, 0, LWS_POLLOUT)) {
-			lwsl_info("%s: WANT_WRITE change_pollfd failed\n",
+		if (aws_lws_change_pollfd(wsi, 0, LWS_POLLOUT)) {
+			aws_lwsl_info("%s: WANT_WRITE change_pollfd failed\n",
 				  __func__);
 			return LWS_SSL_CAPABLE_ERROR;
 		}
@@ -754,7 +754,7 @@ lws_tls_server_accept(struct lws *wsi)
 
 #if defined(LWS_WITH_ACME)
 static int
-lws_tls_openssl_rsa_new_key(RSA **rsa, int bits)
+aws_lws_tls_openssl_rsa_new_key(RSA **rsa, int bits)
 {
 	BIGNUM *bn = BN_new();
 	int n;
@@ -784,14 +784,14 @@ lws_tls_openssl_rsa_new_key(RSA **rsa, int bits)
 	return 1;
 }
 
-struct lws_tls_ss_pieces {
+struct aws_lws_tls_ss_pieces {
 	X509 *x509;
 	EVP_PKEY *pkey;
 	RSA *rsa;
 };
 
 int
-lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
+aws_lws_tls_acme_sni_cert_create(struct aws_lws_vhost *vhost, const char *san_a,
 			     const char *san_b)
 {
 	GENERAL_NAMES *gens = sk_GENERAL_NAME_new_null();
@@ -802,7 +802,7 @@ lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
 	if (!gens)
 		return 1;
 
-	vhost->tls.ss = lws_zalloc(sizeof(*vhost->tls.ss), "sni cert");
+	vhost->tls.ss = aws_lws_zalloc(sizeof(*vhost->tls.ss), "sni cert");
 	if (!vhost->tls.ss) {
 		GENERAL_NAMES_free(gens);
 		return 1;
@@ -820,7 +820,7 @@ lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
 	if (!vhost->tls.ss->pkey)
 		goto bail0;
 
-	if (lws_tls_openssl_rsa_new_key(&vhost->tls.ss->rsa, 4096))
+	if (aws_lws_tls_openssl_rsa_new_key(&vhost->tls.ss->rsa, 4096))
 		goto bail1;
 
 	if (!EVP_PKEY_assign_RSA(vhost->tls.ss->pkey, vhost->tls.ss->rsa))
@@ -836,7 +836,7 @@ lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
 	if (X509_NAME_add_entry_by_txt(name, "CN", MBSTRING_UTF8,
 				   (unsigned char *)"temp.acme.invalid",
 				   	   	   -1, -1, 0) != 1) {
-		lwsl_notice("failed to add CN\n");
+		aws_lwsl_notice("failed to add CN\n");
 		goto bail2;
 	}
 	X509_set_issuer_name(vhost->tls.ss->x509, name);
@@ -846,7 +846,7 @@ lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
 	gen = GENERAL_NAME_new();
 	ia5 = ASN1_IA5STRING_new();
 	if (!ASN1_STRING_set(ia5, san_a, -1)) {
-		lwsl_notice("failed to set ia5\n");
+		aws_lwsl_notice("failed to set ia5\n");
 		GENERAL_NAME_free(gen);
 		goto bail2;
 	}
@@ -864,7 +864,7 @@ lws_tls_acme_sni_cert_create(struct lws_vhost *vhost, const char *san_a,
 		gen = GENERAL_NAME_new();
 		ia5 = ASN1_IA5STRING_new();
 		if (!ASN1_STRING_set(ia5, san_a, -1)) {
-			lwsl_notice("failed to set ia5\n");
+			aws_lwsl_notice("failed to set ia5\n");
 			GENERAL_NAME_free(gen);
 			goto bail2;
 		}
@@ -905,25 +905,25 @@ bail1:
 bail0:
 	X509_free(vhost->tls.ss->x509);
 bail:
-	lws_free(vhost->tls.ss);
+	aws_lws_free(vhost->tls.ss);
 	GENERAL_NAMES_free(gens);
 
 	return 1;
 }
 
 void
-lws_tls_acme_sni_cert_destroy(struct lws_vhost *vhost)
+aws_lws_tls_acme_sni_cert_destroy(struct aws_lws_vhost *vhost)
 {
 	if (!vhost->tls.ss)
 		return;
 
 	EVP_PKEY_free(vhost->tls.ss->pkey);
 	X509_free(vhost->tls.ss->x509);
-	lws_free_set_NULL(vhost->tls.ss);
+	aws_lws_free_set_NULL(vhost->tls.ss);
 }
 
 static int
-lws_tls_openssl_add_nid(X509_NAME *name, int nid, const char *value)
+aws_lws_tls_openssl_add_nid(X509_NAME *name, int nid, const char *value)
 {
 	X509_NAME_ENTRY *e;
 	int n;
@@ -952,7 +952,7 @@ static int nid_list[] = {
 };
 
 int
-lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
+aws_lws_tls_acme_sni_csr_create(struct aws_lws_context *context, const char *elements[],
 			    uint8_t *csr, size_t csr_len, char **privkey_pem,
 			    size_t *privkey_len)
 {
@@ -966,7 +966,7 @@ lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
 	long bio_len;
 	int n, ret = -1;
 
-	if (lws_tls_openssl_rsa_new_key(&rsakey, 4096))
+	if (aws_lws_tls_openssl_rsa_new_key(&rsakey, 4096))
 		return -1;
 
 	pkey = EVP_PKEY_new();
@@ -987,9 +987,9 @@ lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
 
 	for (n = 0; n < LWS_TLS_REQ_ELEMENT_COUNT; n++)
 		if (elements[n] &&
-			lws_tls_openssl_add_nid(subj, nid_list[n],
+			aws_lws_tls_openssl_add_nid(subj, nid_list[n],
 				elements[n])) {
-				lwsl_notice("%s: failed to add element %d\n",
+				aws_lwsl_notice("%s: failed to add element %d\n",
 						__func__, n);
 			goto bail3;
 		}
@@ -1006,7 +1006,7 @@ lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
 		if (!exts)
 			goto bail3;
 
-		lws_snprintf(san, sizeof(san), "DNS:%s,DNS:%s",
+		aws_lws_snprintf(san, sizeof(san), "DNS:%s,DNS:%s",
 				elements[LWS_TLS_REQ_ELEMENT_COMMON_NAME],
 				elements[LWS_TLS_REQ_ELEMENT_SUBJECT_ALT_NAME]);
 
@@ -1070,7 +1070,7 @@ lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
 	}
 	BIO_free(bio);
 	if (!csr_len) {
-		lwsl_notice("%s: need %ld for CSR\n", __func__, bio_len);
+		aws_lwsl_notice("%s: need %ld for CSR\n", __func__, bio_len);
 		goto bail3;
 	}
 
@@ -1090,7 +1090,7 @@ lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
 	*privkey_pem = malloc((unsigned long)bio_len); /* malloc so user code can own / free */
 	*privkey_len = (size_t)bio_len;
 	if (!*privkey_pem) {
-		lwsl_notice("%s: need %ld for private key\n", __func__,
+		aws_lwsl_notice("%s: need %ld for private key\n", __func__,
 			    bio_len);
 		BIO_free(bio);
 		goto bail3;
@@ -1098,7 +1098,7 @@ lws_tls_acme_sni_csr_create(struct lws_context *context, const char *elements[],
 	memcpy(*privkey_pem, p, (unsigned int)(int)(long long)bio_len);
 	BIO_free(bio);
 
-	ret = lws_ptr_diff(csr, csr_in);
+	ret = aws_lws_ptr_diff(csr, csr_in);
 
 bail3:
 	X509_NAME_free(subj);

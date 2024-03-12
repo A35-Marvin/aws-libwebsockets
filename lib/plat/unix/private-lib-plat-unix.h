@@ -77,11 +77,11 @@
 
 #if defined(LWS_HAVE_PTHREAD_H)
 #include <pthread.h>
-typedef pthread_mutex_t lws_mutex_t;
-#define lws_mutex_init(x)	pthread_mutex_init(&(x), NULL)
-#define lws_mutex_destroy(x)	pthread_mutex_destroy(&(x))
-#define lws_mutex_lock(x)	pthread_mutex_lock(&(x))
-#define lws_mutex_unlock(x)	pthread_mutex_unlock(&(x))
+typedef pthread_mutex_t aws_lws_mutex_t;
+#define aws_lws_mutex_init(x)	pthread_mutex_init(&(x), NULL)
+#define aws_lws_mutex_destroy(x)	pthread_mutex_destroy(&(x))
+#define aws_lws_mutex_lock(x)	pthread_mutex_lock(&(x))
+#define aws_lws_mutex_unlock(x)	pthread_mutex_unlock(&(x))
 #endif
 
 #if defined(__sun) && defined(__GNUC__)
@@ -150,23 +150,23 @@ typedef pthread_mutex_t lws_mutex_t;
 #define LWS_ENOTCONN ENOTCONN
 #define LWS_EWOULDBLOCK EWOULDBLOCK
 #define LWS_EADDRINUSE EADDRINUSE
-#define lws_set_blocking_send(wsi)
+#define aws_lws_set_blocking_send(wsi)
 #define LWS_SOCK_INVALID (-1)
 
-struct lws_context;
+struct aws_lws_context;
 
 struct lws *
-wsi_from_fd(const struct lws_context *context, int fd);
+wsi_from_fd(const struct aws_lws_context *context, int fd);
 
 int
-insert_wsi(const struct lws_context *context, struct lws *wsi);
+insert_wsi(const struct aws_lws_context *context, struct lws *wsi);
 
-struct lws_dhcpc_ifstate;
+struct aws_lws_dhcpc_ifstate;
 int
-lws_plat_ifconfig(int fd, struct lws_dhcpc_ifstate *is);
+aws_lws_plat_ifconfig(int fd, struct aws_lws_dhcpc_ifstate *is);
 
 void
-delete_from_fd(const struct lws_context *context, int fd);
+delete_from_fd(const struct aws_lws_context *context, int fd);
 
 #ifndef LWS_NO_FORK
 #ifdef LWS_HAVE_SYS_PRCTL_H
@@ -176,7 +176,7 @@ delete_from_fd(const struct lws_context *context, int fd);
 
 #define compatible_close(x) close(x)
 #define compatible_file_close(fd) close(fd)
-#define lws_plat_socket_offset() (0)
+#define aws_lws_plat_socket_offset() (0)
 
 /*
  * Mac OSX as well as iOS do not define the MSG_NOSIGNAL flag,
@@ -197,8 +197,8 @@ delete_from_fd(const struct lws_context *context, int fd);
 #endif
 
 int
-lws_plat_rawudp_broadcast(uint8_t *p, const uint8_t *canned, size_t canned_len,
+aws_lws_plat_rawudp_broadcast(uint8_t *p, const uint8_t *canned, size_t canned_len,
 			  size_t n, int fd, const char *iface);
 
 int
-lws_plat_if_up(const char *ifname, int fd, int up);
+aws_lws_plat_if_up(const char *ifname, int fd, int up);

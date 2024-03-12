@@ -25,9 +25,9 @@
 #include <libwebsockets.h>
 
 static void
-sul_autodim_cb(lws_sorted_usec_list_t *sul)
+sul_autodim_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	lws_display_state_t *lds = lws_container_of(sul, lws_display_state_t,
+	aws_lws_display_state_t *lds = aws_lws_container_of(sul, aws_lws_display_state_t,
 						    sul_autodim);
 	int next_ms = -1;
 
@@ -35,7 +35,7 @@ sul_autodim_cb(lws_sorted_usec_list_t *sul)
 
 	switch (lds->state) {
 	case LWSDISPS_BECOMING_ACTIVE:
-		lws_display_state_set_brightness(lds, lds->disp->bl_active);
+		aws_lws_display_state_set_brightness(lds, lds->disp->bl_active);
 		lds->state = LWSDISPS_ACTIVE;
 		next_ms = lds->autodim_ms;
 		break;
@@ -44,19 +44,19 @@ sul_autodim_cb(lws_sorted_usec_list_t *sul)
 		/* active -> autodimmed */
 		lds->state = LWSDISPS_AUTODIMMED;
 		next_ms = lds->off_ms;
-		lws_display_state_set_brightness(lds, lds->disp->bl_dim);
+		aws_lws_display_state_set_brightness(lds, lds->disp->bl_dim);
 		break;
 
 	case LWSDISPS_AUTODIMMED:
 		/* dimmed -> OFF */
-		lws_display_state_set_brightness(lds, &lws_pwmseq_static_off);
+		aws_lws_display_state_set_brightness(lds, &aws_lws_pwmseq_static_off);
 		lds->state = LWSDISPS_GOING_OFF;
 		next_ms = 600;
 		break;
 
 	case LWSDISPS_GOING_OFF:
 		/* off dimming completed, actual display OFF */
-		lws_display_state_off(lds);
+		aws_lws_display_state_off(lds);
 		return;
 
 	default:
@@ -64,14 +64,14 @@ sul_autodim_cb(lws_sorted_usec_list_t *sul)
 	}
 
 	if (next_ms >= 0)
-		lws_sul_schedule(lds->ctx, 0, &lds->sul_autodim, sul_autodim_cb,
+		aws_lws_sul_schedule(lds->ctx, 0, &lds->sul_autodim, sul_autodim_cb,
 				 next_ms * LWS_US_PER_MS);
 }
 
 void
-lws_display_state_init(lws_display_state_t *lds, struct lws_context *ctx,
-		       int dim_ms, int off_ms, struct lws_led_state *bl_lcs,
-		       const lws_display_t *disp)
+aws_lws_display_state_init(aws_lws_display_state_t *lds, struct aws_lws_context *ctx,
+		       int dim_ms, int off_ms, struct aws_lws_led_state *bl_lcs,
+		       const aws_lws_display_t *disp)
 {
 	memset(lds, 0, sizeof(*lds));
 
@@ -82,22 +82,22 @@ lws_display_state_init(lws_display_state_t *lds, struct lws_context *ctx,
 	lds->bl_lcs = bl_lcs;
 	lds->state = LWSDISPS_OFF;
 
-	lws_led_transition(lds->bl_lcs, "backlight", &lws_pwmseq_static_off,
-						     &lws_pwmseq_static_on);
+	aws_lws_led_transition(lds->bl_lcs, "backlight", &aws_lws_pwmseq_static_off,
+						     &aws_lws_pwmseq_static_on);
 
 	disp->init(disp);
 }
 
 void
-lws_display_state_set_brightness(lws_display_state_t *lds,
-				 const lws_led_sequence_def_t *pwmseq)
+aws_lws_display_state_set_brightness(aws_lws_display_state_t *lds,
+				 const aws_lws_led_sequence_def_t *pwmseq)
 {
-	lws_led_transition(lds->bl_lcs, "backlight", pwmseq,
+	aws_lws_led_transition(lds->bl_lcs, "backlight", pwmseq,
 			   lds->disp->bl_transition);
 }
 
 void
-lws_display_state_active(lws_display_state_t *lds)
+aws_lws_display_state_active(aws_lws_display_state_t *lds)
 {
 	int waiting_ms;
 
@@ -109,7 +109,7 @@ lws_display_state_active(lws_display_state_t *lds)
 	} else {
 
 		if (lds->state != LWSDISPS_ACTIVE)
-			lws_display_state_set_brightness(lds,
+			aws_lws_display_state_set_brightness(lds,
 						lds->disp->bl_active);
 
 		lds->state = LWSDISPS_ACTIVE;
@@ -118,15 +118,15 @@ lws_display_state_active(lws_display_state_t *lds)
 
 	/* reset the autodim timer */
 	if (waiting_ms >= 0)
-		lws_sul_schedule(lds->ctx, 0, &lds->sul_autodim, sul_autodim_cb,
+		aws_lws_sul_schedule(lds->ctx, 0, &lds->sul_autodim, sul_autodim_cb,
 				 waiting_ms * LWS_US_PER_MS);
 
 }
 
 void
-lws_display_state_off(lws_display_state_t *lds)
+aws_lws_display_state_off(aws_lws_display_state_t *lds)
 {
 	lds->disp->power(lds->disp, 0);
-	lws_sul_cancel(&lds->sul_autodim);
+	aws_lws_sul_cancel(&lds->sul_autodim);
 	lds->state = LWSDISPS_OFF;
 }

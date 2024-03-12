@@ -35,42 +35,42 @@
 
 
 void
-_lws_routing_entry_dump(struct lws_context *cx, lws_route_t *rou)
+_lws_routing_entry_dump(struct aws_lws_context *cx, aws_lws_route_t *rou)
 {
 	char sa[48], fin[192], *end = &fin[sizeof(fin)];
 
 	if (rou->dest.sa4.sin_family) {
-		lws_sa46_write_numeric_address(&rou->dest, sa, sizeof(sa));
-		lws_snprintf(fin, lws_ptr_diff_size_t(end, fin),
+		aws_lws_sa46_write_numeric_address(&rou->dest, sa, sizeof(sa));
+		aws_lws_snprintf(fin, aws_lws_ptr_diff_size_t(end, fin),
 				  "dst: %s/%d, ", sa, rou->dest_len);
 	}
 
 	if (rou->src.sa4.sin_family) {
-		lws_sa46_write_numeric_address(&rou->src, sa, sizeof(sa));
-		lws_snprintf(fin, lws_ptr_diff_size_t(end, fin),
+		aws_lws_sa46_write_numeric_address(&rou->src, sa, sizeof(sa));
+		aws_lws_snprintf(fin, aws_lws_ptr_diff_size_t(end, fin),
 				  "src: %s/%d, ", sa, rou->src_len);
 	}
 
 	if (rou->gateway.sa4.sin_family) {
-		lws_sa46_write_numeric_address(&rou->gateway, sa, sizeof(sa));
-		lws_snprintf(fin, lws_ptr_diff_size_t(end, fin),
+		aws_lws_sa46_write_numeric_address(&rou->gateway, sa, sizeof(sa));
+		aws_lws_snprintf(fin, aws_lws_ptr_diff_size_t(end, fin),
 				  "gw: %s, ", sa);
 	}
 
-	lwsl_cx_info(cx, " %s ifidx: %d, pri: %d, proto: %d\n", fin,
+	aws_lwsl_cx_info(cx, " %s ifidx: %d, pri: %d, proto: %d\n", fin,
 		  rou->if_idx, rou->priority, rou->proto);
 }
 
 void
-_lws_routing_table_dump(struct lws_context *cx)
+_lws_routing_table_dump(struct aws_lws_context *cx)
 {
-	lwsl_cx_info(cx, "\n");
-	lws_start_foreach_dll(struct lws_dll2 *, d,
-			      lws_dll2_get_head(&cx->routing_table)) {
-		lws_route_t *rou = lws_container_of(d, lws_route_t, list);
+	aws_lwsl_cx_info(cx, "\n");
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+			      aws_lws_dll2_get_head(&cx->routing_table)) {
+		aws_lws_route_t *rou = aws_lws_container_of(d, aws_lws_route_t, list);
 
 		_lws_routing_entry_dump(cx, rou);
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 }
 #endif
 
@@ -93,8 +93,8 @@ _lws_routing_table_dump(struct lws_context *cx)
  * We won't use uidx 0, so it can be understood to mean the uidx was never set.
  */
 
-lws_route_uidx_t
-_lws_route_get_uidx(struct lws_context *cx)
+aws_lws_route_uidx_t
+_lws_route_get_uidx(struct aws_lws_context *cx)
 {
 	uint8_t ou;
 
@@ -108,9 +108,9 @@ _lws_route_get_uidx(struct lws_context *cx)
 
 		/* Anybody in the table already uses the pt's next uidx? */
 
-		lws_start_foreach_dll(struct lws_dll2 *, d,
-				      lws_dll2_get_head(&cx->routing_table)) {
-			lws_route_t *rou = lws_container_of(d, lws_route_t, list);
+		aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+				      aws_lws_dll2_get_head(&cx->routing_table)) {
+			aws_lws_route_t *rou = aws_lws_container_of(d, aws_lws_route_t, list);
 
 			if (rou->uidx == cx->route_uidx) {
 				/* if so, bump and restart the check */
@@ -124,24 +124,24 @@ _lws_route_get_uidx(struct lws_context *cx)
 				again = 1;
 				break;
 			}
-		} lws_end_foreach_dll(d);
+		} aws_lws_end_foreach_dll(d);
 
 		if (!again)
 			return cx->route_uidx++;
 	} while (1);
 }
 
-lws_route_t *
-_lws_route_remove(struct lws_context_per_thread *pt, lws_route_t *robj, int flags)
+aws_lws_route_t *
+_lws_route_remove(struct aws_lws_context_per_thread *pt, aws_lws_route_t *robj, int flags)
 {
-	lws_start_foreach_dll_safe(struct lws_dll2 *, d, d1,
-			      lws_dll2_get_head(&pt->context->routing_table)) {
-		lws_route_t *rou = lws_container_of(d, lws_route_t, list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
+			      aws_lws_dll2_get_head(&pt->context->routing_table)) {
+		aws_lws_route_t *rou = aws_lws_container_of(d, aws_lws_route_t, list);
 
-		if ((!(flags & LRR_MATCH_SRC) || !lws_sa46_compare_ads(&robj->src, &rou->src)) &&
-		    ((flags & LRR_MATCH_SRC) || !lws_sa46_compare_ads(&robj->dest, &rou->dest)) &&
+		if ((!(flags & LRR_MATCH_SRC) || !aws_lws_sa46_compare_ads(&robj->src, &rou->src)) &&
+		    ((flags & LRR_MATCH_SRC) || !aws_lws_sa46_compare_ads(&robj->dest, &rou->dest)) &&
 		    (!robj->gateway.sa4.sin_family ||
-		     !lws_sa46_compare_ads(&robj->gateway, &rou->gateway)) &&
+		     !aws_lws_sa46_compare_ads(&robj->gateway, &rou->gateway)) &&
 		    robj->dest_len <= rou->dest_len &&
 		    robj->if_idx == rou->if_idx &&
 		    ((flags & LRR_IGNORE_PRI) ||
@@ -149,58 +149,58 @@ _lws_route_remove(struct lws_context_per_thread *pt, lws_route_t *robj, int flag
 		    ) {
 			if (flags & LRR_JUST_CHECK)
 				return rou;
-			lwsl_cx_info(pt->context, "deleting route");
+			aws_lwsl_cx_info(pt->context, "deleting route");
 			_lws_route_pt_close_route_users(pt, robj->uidx);
-			lws_dll2_remove(&rou->list);
-			lws_free(rou);
+			aws_lws_dll2_remove(&rou->list);
+			aws_lws_free(rou);
 		}
 
-	} lws_end_foreach_dll_safe(d, d1);
+	} aws_lws_end_foreach_dll_safe(d, d1);
 
 	return NULL;
 }
 
 void
-_lws_route_table_empty(struct lws_context_per_thread *pt)
+_lws_route_table_empty(struct aws_lws_context_per_thread *pt)
 {
 
 	if (!pt->context)
 		return;
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, d, d1,
-				   lws_dll2_get_head(&pt->context->routing_table)) {
-		lws_route_t *rou = lws_container_of(d, lws_route_t, list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
+				   aws_lws_dll2_get_head(&pt->context->routing_table)) {
+		aws_lws_route_t *rou = aws_lws_container_of(d, aws_lws_route_t, list);
 
-		lws_dll2_remove(&rou->list);
-		lws_free(rou);
+		aws_lws_dll2_remove(&rou->list);
+		aws_lws_free(rou);
 
-	} lws_end_foreach_dll_safe(d, d1);
+	} aws_lws_end_foreach_dll_safe(d, d1);
 }
 
 void
-_lws_route_table_ifdown(struct lws_context_per_thread *pt, int idx)
+_lws_route_table_ifdown(struct aws_lws_context_per_thread *pt, int idx)
 {
-	lws_start_foreach_dll_safe(struct lws_dll2 *, d, d1,
-				   lws_dll2_get_head(&pt->context->routing_table)) {
-		lws_route_t *rou = lws_container_of(d, lws_route_t, list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, d, d1,
+				   aws_lws_dll2_get_head(&pt->context->routing_table)) {
+		aws_lws_route_t *rou = aws_lws_container_of(d, aws_lws_route_t, list);
 
 		if (rou->if_idx == idx) {
-			lws_dll2_remove(&rou->list);
-			lws_free(rou);
+			aws_lws_dll2_remove(&rou->list);
+			aws_lws_free(rou);
 		}
 
-	} lws_end_foreach_dll_safe(d, d1);
+	} aws_lws_end_foreach_dll_safe(d, d1);
 }
 
-lws_route_t *
-_lws_route_est_outgoing(struct lws_context_per_thread *pt,
-		        const lws_sockaddr46 *dest)
+aws_lws_route_t *
+_lws_route_est_outgoing(struct aws_lws_context_per_thread *pt,
+		        const aws_lws_sockaddr46 *dest)
 {
-	lws_route_t *best_gw = NULL;
+	aws_lws_route_t *best_gw = NULL;
 	int best_gw_priority = INT_MAX;
 
 	if (!dest->sa4.sin_family) {
-		lwsl_cx_notice(pt->context, "dest has 0 AF");
+		aws_lwsl_cx_notice(pt->context, "dest has 0 AF");
 		/* leave it alone */
 		return NULL;
 	}
@@ -212,14 +212,14 @@ _lws_route_est_outgoing(struct lws_context_per_thread *pt,
 	 * looking at the priority of them.
 	 */
 
-	lws_start_foreach_dll(struct lws_dll2 *, d,
-			      lws_dll2_get_head(&pt->context->routing_table)) {
-		lws_route_t *rou = lws_container_of(d, lws_route_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+			      aws_lws_dll2_get_head(&pt->context->routing_table)) {
+		aws_lws_route_t *rou = aws_lws_container_of(d, aws_lws_route_t, list);
 
 		// _lws_routing_entry_dump(rou);
 
 		if (rou->dest.sa4.sin_family &&
-		    !lws_sa46_on_net(dest, &rou->dest, rou->dest_len))
+		    !aws_lws_sa46_on_net(dest, &rou->dest, rou->dest_len))
 			/*
 			 * Yes, he has a matching network route, it beats out
 			 * any gateway route.  This is like finding a route for
@@ -227,7 +227,7 @@ _lws_route_est_outgoing(struct lws_context_per_thread *pt,
 			 */
 			return rou;
 
-		lwsl_cx_debug(pt->context, "dest af %d, rou gw af %d, pri %d",
+		aws_lwsl_cx_debug(pt->context, "dest af %d, rou gw af %d, pri %d",
 			      dest->sa4.sin_family, rou->gateway.sa4.sin_family,
 			      rou->priority);
 
@@ -245,12 +245,12 @@ _lws_route_est_outgoing(struct lws_context_per_thread *pt,
 			(dest->sa4.sin_family == AF_INET &&
 			 rou->gateway.sa4.sin_family == AF_INET6)) &&
 		    rou->priority < best_gw_priority) {
-			lwsl_cx_info(pt->context, "gw hit");
+			aws_lwsl_cx_info(pt->context, "gw hit");
 			best_gw_priority = rou->priority;
 			best_gw = rou;
 		}
 
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 
 	/*
 	 * Either best_gw is the best gw route and we set *best_gw_priority to
@@ -258,7 +258,7 @@ _lws_route_est_outgoing(struct lws_context_per_thread *pt,
 	 * gw route for dest.
 	 */
 
-	lwsl_cx_info(pt->context, "returning %p", best_gw);
+	aws_lwsl_cx_info(pt->context, "returning %p", best_gw);
 
 	return best_gw;
 }
@@ -267,24 +267,24 @@ _lws_route_est_outgoing(struct lws_context_per_thread *pt,
  * Determine if the source still exists
  */
 
-lws_route_t *
-_lws_route_find_source(struct lws_context_per_thread *pt,
-		       const lws_sockaddr46 *src)
+aws_lws_route_t *
+_lws_route_find_source(struct aws_lws_context_per_thread *pt,
+		       const aws_lws_sockaddr46 *src)
 {
-	lws_start_foreach_dll(struct lws_dll2 *, d,
-			      lws_dll2_get_head(&pt->context->routing_table)) {
-		lws_route_t *rou = lws_container_of(d, lws_route_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+			      aws_lws_dll2_get_head(&pt->context->routing_table)) {
+		aws_lws_route_t *rou = aws_lws_container_of(d, aws_lws_route_t, list);
 
 		// _lws_routing_entry_dump(rou);
 
 		if (rou->src.sa4.sin_family &&
-		    !lws_sa46_compare_ads(src, &rou->src))
+		    !aws_lws_sa46_compare_ads(src, &rou->src))
 			/*
 			 * Source route still exists
 			 */
 			return rou;
 
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 
 	return NULL;
 }
@@ -292,7 +292,7 @@ _lws_route_find_source(struct lws_context_per_thread *pt,
 int
 _lws_route_check_wsi(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	char buf[72];
 
 	if (!wsi->sa46_peer.sa4.sin_family ||
@@ -309,34 +309,34 @@ _lws_route_check_wsi(struct lws *wsi)
 
 	if (!_lws_route_est_outgoing(pt, &wsi->sa46_peer)) {
 		/* no way to talk to the peer */
-		lwsl_wsi_notice(wsi, "dest route gone");
+		aws_lwsl_wsi_notice(wsi, "dest route gone");
 		return 1;
 	}
 
 	/* the source address is still workable? */
 
-	lws_sa46_write_numeric_address(&wsi->sa46_local,
+	aws_lws_sa46_write_numeric_address(&wsi->sa46_local,
 				       buf, sizeof(buf));
-	//lwsl_notice("%s: %s sa46_local %s fam %d\n", __func__, wsi->lc.gutag,
+	//aws_lwsl_notice("%s: %s sa46_local %s fam %d\n", __func__, wsi->lc.gutag,
 	//		buf, wsi->sa46_local.sa4.sin_family);
 
 	if (wsi->sa46_local.sa4.sin_family &&
 	    !_lws_route_find_source(pt, &wsi->sa46_local)) {
 
-		lws_sa46_write_numeric_address(&wsi->sa46_local,
+		aws_lws_sa46_write_numeric_address(&wsi->sa46_local,
 					       buf, sizeof(buf));
-		lwsl_wsi_notice(wsi, "source %s gone", buf);
+		aws_lwsl_wsi_notice(wsi, "source %s gone", buf);
 
 		return 1;
 	}
 
-	lwsl_wsi_debug(wsi, "source + dest OK");
+	aws_lwsl_wsi_debug(wsi, "source + dest OK");
 
 	return 0;
 }
 
 int
-_lws_route_pt_close_unroutable(struct lws_context_per_thread *pt)
+_lws_route_pt_close_unroutable(struct aws_lws_context_per_thread *pt)
 {
 	struct lws *wsi;
 	unsigned int n;
@@ -349,7 +349,7 @@ _lws_route_pt_close_unroutable(struct lws_context_per_thread *pt)
 	)
 		return 0;
 
-	lwsl_cx_debug(pt->context, "in");
+	aws_lwsl_cx_debug(pt->context, "in");
 #if defined(_DEBUG)
 	_lws_routing_table_dump(pt->context);
 #endif
@@ -360,8 +360,8 @@ _lws_route_pt_close_unroutable(struct lws_context_per_thread *pt)
 			continue;
 
 		if (_lws_route_check_wsi(wsi)) {
-			lwsl_wsi_info(wsi, "culling wsi");
-			lws_wsi_close(wsi, LWS_TO_KILL_ASYNC);
+			aws_lwsl_wsi_info(wsi, "culling wsi");
+			aws_lws_wsi_close(wsi, LWS_TO_KILL_ASYNC);
 		}
 	}
 
@@ -369,8 +369,8 @@ _lws_route_pt_close_unroutable(struct lws_context_per_thread *pt)
 }
 
 int
-_lws_route_pt_close_route_users(struct lws_context_per_thread *pt,
-				lws_route_uidx_t uidx)
+_lws_route_pt_close_route_users(struct aws_lws_context_per_thread *pt,
+				aws_lws_route_uidx_t uidx)
 {
 	struct lws *wsi;
 	unsigned int n;
@@ -378,7 +378,7 @@ _lws_route_pt_close_route_users(struct lws_context_per_thread *pt,
 	if (!uidx)
 		return 0;
 
-	lwsl_cx_info(pt->context, "closing users of route %d", uidx);
+	aws_lwsl_cx_info(pt->context, "closing users of route %d", uidx);
 
 	for (n = 0; n < pt->fds_count; n++) {
 		wsi = wsi_from_fd(pt->context, pt->fds[n].fd);
@@ -392,8 +392,8 @@ _lws_route_pt_close_route_users(struct lws_context_per_thread *pt,
 #endif
 		    wsi->sa46_peer.sa4.sin_family &&
 		    wsi->peer_route_uidx == uidx) {
-			lwsl_wsi_notice(wsi, "culling wsi");
-			lws_wsi_close(wsi, LWS_TO_KILL_ASYNC);
+			aws_lwsl_wsi_notice(wsi, "culling wsi");
+			aws_lws_wsi_close(wsi, LWS_TO_KILL_ASYNC);
 		}
 	}
 

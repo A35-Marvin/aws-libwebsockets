@@ -32,17 +32,17 @@ activate(GtkApplication *app, gpointer user_data)
 }
 
 static int
-system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+system_notify_cb(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		   int current, int target)
 {
-	struct lws_context *context = mgr->parent;
-	struct lws_client_connect_info i;
+	struct aws_lws_context *context = mgr->parent;
+	struct aws_lws_client_connect_info i;
 
 	if (current != LWS_SYSTATE_OPERATIONAL ||
 	    target != LWS_SYSTATE_OPERATIONAL)
 		return 0;
 
-	lwsl_notice("%s: operational\n", __func__);
+	aws_lwsl_notice("%s: operational\n", __func__);
 
 	memset(&i, 0, sizeof i); /* otherwise uninitialized garbage */
 	i.context = context;
@@ -57,18 +57,18 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 	i.protocol = "http";
 
-	return !lws_client_connect_via_info(&i);
+	return !aws_lws_client_connect_via_info(&i);
 }
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	switch (reason) {
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		break;
 
@@ -76,17 +76,17 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		{
 			char buf[128];
 
-			lws_get_peer_simple(wsi, buf, sizeof(buf));
-			status = lws_http_client_http_response(wsi);
+			aws_lws_get_peer_simple(wsi, buf, sizeof(buf));
+			status = aws_lws_http_client_http_response(wsi);
 
-			lwsl_user("Connected to %s, http response: %d\n",
+			aws_lwsl_user("Connected to %s, http response: %d\n",
 					buf, status);
 		}
 		break;
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
 		return 0; /* don't passthru */
 
 	/* uninterpreted http content */
@@ -96,28 +96,28 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"http",
 		callback_http,
@@ -130,12 +130,12 @@ static const struct lws_protocols protocols[] = {
 static gpointer
 t1_main (gpointer user_data)
 {
-	lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
+	aws_lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
 						system_notify_cb, "app" };
-	lws_state_notify_link_t *na[] = { &notifier, NULL };
+	aws_lws_state_notify_link_t *na[] = { &notifier, NULL };
 	GMainContext *t1_mc = (GMainContext *)user_data;
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	void *foreign_loops[1];
 	GMainLoop *ml;
 
@@ -147,7 +147,7 @@ t1_main (gpointer user_data)
 
 	/* attach our lws activities to the main loop of this thread */
 
-	lws_set_log_level(LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE, NULL);
+	aws_lws_set_log_level(LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE, NULL);
 	memset(&info, 0, sizeof info);
 	info.port = CONTEXT_PORT_NO_LISTEN;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
@@ -165,14 +165,14 @@ t1_main (gpointer user_data)
 	info.client_ssl_ca_filepath = "./warmcat.com.cer";
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return NULL;
 	}
 
 	/*
-	 * We created the lws_context and bound it to this thread's main loop,
+	 * We created the aws_lws_context and bound it to this thread's main loop,
 	 * let's run the thread's main loop now...
 	 */
 
@@ -184,7 +184,7 @@ t1_main (gpointer user_data)
 
 	g_print("%s: ending\n", __func__);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return NULL;
 }

@@ -16,9 +16,9 @@
 #include <fcntl.h>
 
 static int
-key_import_cb(struct lws_cose_key *s, void *user)
+key_import_cb(struct aws_lws_cose_key *s, void *user)
 {
-	lwsl_notice("%s: key type %lld\n", __func__, (long long)s->kty);
+	aws_lwsl_notice("%s: key type %lld\n", __func__, (long long)s->kty);
 
 	return 0;
 }
@@ -657,11 +657,11 @@ static const uint8_t
 ;
 
 int
-test_cose_keys(struct lws_context *context)
+test_cose_keys(struct aws_lws_context *context)
 {
-	struct lws_cose_key *ck;
-	lws_dll2_owner_t set;
-	lws_lec_pctx_t wc;
+	struct aws_lws_cose_key *ck;
+	aws_lws_dll2_owner_t set;
+	aws_lws_lec_pctx_t wc;
 	uint8_t buf[4096];
 	int n;
 
@@ -678,12 +678,12 @@ test_cose_keys(struct lws_context *context)
 #endif
 
 #if 0
-	lws_lec_pctx_t wx;
+	aws_lws_lec_pctx_t wx;
 	uint8_t dump[8192];
 
-	lws_lec_init(&wx, buf, sizeof(buf));
+	aws_lws_lec_init(&wx, buf, sizeof(buf));
 
-	if (lws_lec_printf(&wx,
+	if (aws_lws_lec_printf(&wx,
 		"{%d:%d, %d:%.*b, %d:%d, %d:%.*b, %d:%.*b}",
 		LWSCOSE_WKK_KTY, LWSCOSE_WKKTV_OKP,
 		LWSCOSE_WKK_KID, 2, "11",
@@ -694,16 +694,16 @@ test_cose_keys(struct lws_context *context)
 			LWS_LECPCTX_RET_FINISHED)
 		return 1;
 
-	lws_hex_from_byte_array(buf, wx.used, (char *)dump, sizeof(dump));
+	aws_lws_hex_from_byte_array(buf, wx.used, (char *)dump, sizeof(dump));
 	puts((const char *)dump);
 #endif
 #if 0
-	lws_lec_pctx_t wx;
+	aws_lws_lec_pctx_t wx;
 	uint8_t dump[8192];
 
-	lws_lec_init(&wx, buf, sizeof(buf));
+	aws_lws_lec_init(&wx, buf, sizeof(buf));
 
-	if (lws_lec_printf(&wx,
+	if (aws_lws_lec_printf(&wx,
 		"{%d:%d, %d:%.*b, %d:%.*b}",
 		LWSCOSE_WKK_KTY, LWSCOSE_WKKTV_SYMMETRIC,
 		LWSCOSE_WKK_KID, 6, "sec-64",
@@ -711,15 +711,15 @@ test_cose_keys(struct lws_context *context)
 			LWS_LECPCTX_RET_FINISHED)
 		return 1;
 
-	lws_hex_from_byte_array(buf, wx.used, (char *)dump, sizeof(dump));
+	aws_lws_hex_from_byte_array(buf, wx.used, (char *)dump, sizeof(dump));
 	puts((const char *)dump);
 #endif
 
 	/* key1 import */
 
-	lwsl_user("%s: key 1 import\n", __func__);
+	aws_lwsl_user("%s: key 1 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, key_import_cb, NULL, cose_key1, sizeof(cose_key1));
+	ck = aws_lws_cose_key_import(NULL, key_import_cb, NULL, cose_key1, sizeof(cose_key1));
 	if (!ck)
 		return 1;
 
@@ -733,25 +733,25 @@ test_cose_keys(struct lws_context *context)
 	    memcmp(ck->e[LWS_GENCRYPTO_EC_KEYEL_D].buf, key1_d, sizeof(key1_d)))
 		goto bail;
 
-	// lws_cose_key_dump(ck);
+	// aws_lws_cose_key_dump(ck);
 
 	/* key 1 export */
 
-	lwsl_user("%s: key 1 export\n", __func__);
+	aws_lwsl_user("%s: key 1 export\n", __func__);
 
-	lws_lec_init(&wc, buf, sizeof(buf));
-	n = (int)lws_cose_key_export(ck, &wc, LWSJWKF_EXPORT_PRIVATE);
-	lws_cose_key_destroy(&ck);
+	aws_lws_lec_init(&wc, buf, sizeof(buf));
+	n = (int)aws_lws_cose_key_export(ck, &wc, LWSJWKF_EXPORT_PRIVATE);
+	aws_lws_cose_key_destroy(&ck);
 	if (n != LWS_LECPCTX_RET_FINISHED)
 		goto bail;
 
-	// lwsl_hexdump_notice(buf, wc.used);
+	// aws_lwsl_hexdump_notice(buf, wc.used);
 
 	/* key2 import */
 
-	lwsl_user("%s: key 2 import\n", __func__);
+	aws_lwsl_user("%s: key 2 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key2, sizeof(cose_key2));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key2, sizeof(cose_key2));
 	if (!ck)
 		return 1;
 
@@ -765,15 +765,15 @@ test_cose_keys(struct lws_context *context)
 	    memcmp(ck->e[LWS_GENCRYPTO_EC_KEYEL_D].buf, key2_d, sizeof(key2_d)))
 		goto bail;
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key3 import */
 
-	lwsl_user("%s: key 3 import\n", __func__);
+	aws_lwsl_user("%s: key 3 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key3, sizeof(cose_key3));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key3, sizeof(cose_key3));
 	if (!ck) {
-		lwsl_err("%s: key 3 import failed\n", __func__);
+		aws_lwsl_err("%s: key 3 import failed\n", __func__);
 		goto bail;
 	}
 
@@ -781,19 +781,19 @@ test_cose_keys(struct lws_context *context)
 	    ck->gencrypto_kty != LWS_GENCRYPTO_KTY_OCT ||
 	    ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].len != sizeof(key3_k) ||
 	    memcmp(ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf, key3_k, sizeof(key3_k))) {
-		lwsl_err("%s: key 3 checks failed %d %d %d\n", __func__,
+		aws_lwsl_err("%s: key 3 checks failed %d %d %d\n", __func__,
 				(int)ck->kty, (int)ck->gencrypto_kty,
 				(int)ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].len);
 		goto bail;
 	}
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key4 import */
 
-	lwsl_user("%s: key 4 import\n", __func__);
+	aws_lwsl_user("%s: key 4 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key4, sizeof(cose_key4));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key4, sizeof(cose_key4));
 	if (!ck)
 		return 1;
 
@@ -807,13 +807,13 @@ test_cose_keys(struct lws_context *context)
 	    memcmp(ck->e[LWS_GENCRYPTO_EC_KEYEL_D].buf, key4_d, sizeof(key4_d)))
 		goto bail;
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key5 import */
 
-	lwsl_user("%s: key 5 import\n", __func__);
+	aws_lwsl_user("%s: key 5 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key5, sizeof(cose_key5));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key5, sizeof(cose_key5));
 	if (!ck)
 		return 1;
 
@@ -823,13 +823,13 @@ test_cose_keys(struct lws_context *context)
 	    memcmp(ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf, key5_k, sizeof(key5_k)))
 		goto bail;
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key6 import */
 
-	lwsl_user("%s: key 6 import\n", __func__);
+	aws_lwsl_user("%s: key 6 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key6, sizeof(cose_key6));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key6, sizeof(cose_key6));
 	if (!ck)
 		return 1;
 
@@ -843,13 +843,13 @@ test_cose_keys(struct lws_context *context)
 	    memcmp(ck->e[LWS_GENCRYPTO_EC_KEYEL_D].buf, key6_d, sizeof(key6_d)))
 		goto bail;
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key7 import */
 
-	lwsl_user("%s: key 7 import\n", __func__);
+	aws_lwsl_user("%s: key 7 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key7, sizeof(cose_key7));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key7, sizeof(cose_key7));
 	if (!ck)
 		return 1;
 
@@ -859,13 +859,13 @@ test_cose_keys(struct lws_context *context)
 	    memcmp(ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf, key7_k, sizeof(key7_k)))
 		goto bail;
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key8 import */
 
-	lwsl_user("%s: key 8 import\n", __func__);
+	aws_lwsl_user("%s: key 8 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key8, sizeof(cose_key8));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key8, sizeof(cose_key8));
 	if (!ck)
 		return 1;
 
@@ -875,15 +875,15 @@ test_cose_keys(struct lws_context *context)
 	    memcmp(ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf, key8_k, sizeof(key8_k)))
 		goto bail;
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key9 import */
 
-	lwsl_user("%s: key 9 import\n", __func__);
+	aws_lwsl_user("%s: key 9 import\n", __func__);
 
-	ck = lws_cose_key_import(NULL, NULL, NULL, cose_key9, sizeof(cose_key9));
+	ck = aws_lws_cose_key_import(NULL, NULL, NULL, cose_key9, sizeof(cose_key9));
 	if (!ck) {
-		lwsl_err("%s: cose9 import fail\n", __func__);
+		aws_lwsl_err("%s: cose9 import fail\n", __func__);
 		goto bail;
 	}
 
@@ -891,25 +891,25 @@ test_cose_keys(struct lws_context *context)
 	    ck->gencrypto_kty != LWS_GENCRYPTO_KTY_OCT ||
 	    ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].len != sizeof(key9_k) ||
 	    memcmp(ck->e[LWS_GENCRYPTO_OCT_KEYEL_K].buf, key9_k, sizeof(key9_k))) {
-		lwsl_notice("%s: key9 check fails\n", __func__);
+		aws_lwsl_notice("%s: key9 check fails\n", __func__);
 		goto bail;
 	}
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	/* key set 1 */
 
-	lwsl_user("%s: key_set1\n", __func__);
-	lws_dll2_owner_clear(&set);
-	ck = lws_cose_key_import(&set, NULL, NULL, cose_key_set1, sizeof(cose_key_set1));
+	aws_lwsl_user("%s: key_set1\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	ck = aws_lws_cose_key_import(&set, NULL, NULL, cose_key_set1, sizeof(cose_key_set1));
 	if (!ck)
 		return 1;
 
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/* generate */
 
-	ck = lws_cose_key_generate(context, LWSCOSE_WKKTV_EC2,
+	ck = aws_lws_cose_key_generate(context, LWSCOSE_WKKTV_EC2,
 				   (1 << LWSCOSE_WKKO_SIGN) |
 				   (1 << LWSCOSE_WKKO_VERIFY) |
 				   (1 << LWSCOSE_WKKO_ENCRYPT) |
@@ -918,14 +918,14 @@ test_cose_keys(struct lws_context *context)
 	if (!ck)
 		return 1;
 
-	// lws_cose_key_dump(ck);
+	// aws_lws_cose_key_dump(ck);
 
-	lws_cose_key_destroy(&ck);
+	aws_lws_cose_key_destroy(&ck);
 
 	return 0;
 
 bail:
-	lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
+	aws_lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
 
 	return 1;
 }

@@ -14,8 +14,8 @@
 #include <signal.h>
 
 static int interrupted, bad = 1;
-static lws_state_notify_link_t nl;
-static struct lws_context *context;
+static aws_lws_state_notify_link_t nl;
+static struct aws_lws_context *context;
 
 static const char * const default_ss_policy =
 	"{"
@@ -121,7 +121,7 @@ static const char * const default_ss_policy =
 ;
 
 typedef struct atss {
-	const lws_ss_info_t		*ssi;
+	const aws_lws_ss_info_t		*ssi;
 	size_t				send;
 	char				expect_nack;
 } atss_t;
@@ -129,10 +129,10 @@ typedef struct atss {
 static const atss_t *next_test;
 
 typedef struct myss {
-	struct lws_ss_handle 		*ss;
+	struct aws_lws_ss_handle 		*ss;
 	void				*opaque_data;
 	/* ... application specific state ... */
-	lws_sorted_usec_list_t		sul;
+	aws_lws_sorted_usec_list_t		sul;
 	size_t				payload;
 	size_t				sent;
 	char				seen_eom;
@@ -141,12 +141,12 @@ typedef struct myss {
 
 /* secure streams payload interface */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	myss_t *m = (myss_t *)userobj;
 
-	lwsl_hexdump_info(buf, len);
+	aws_lwsl_hexdump_info(buf, len);
 
 	m->payload += len;
 
@@ -156,15 +156,15 @@ myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_tx_get(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+myss_tx_get(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	    int *flags)
 {
 	return 1; /* nothing to send */
 }
 
-static lws_ss_state_return_t
-myss_tx_post(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+myss_tx_post(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	     int *flags)
 {
 	myss_t *m = (myss_t *)userobj;
@@ -183,39 +183,39 @@ myss_tx_post(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	*len = budget;
 	m->sent += budget;
 	if (m->sent != next_test->send)
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	*flags |= LWSSS_FLAG_EOM;
 
 	return LWSSSSRET_OK;
 }
 
-static lws_ss_state_return_t
-myss_state(void *userobj, void *sh, lws_ss_constate_t state,
-	   lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+myss_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+	   aws_lws_ss_tx_ordinal_t ack)
 {
 	myss_t *m = (myss_t *)userobj;
-	lws_ss_state_return_t r;
+	aws_lws_ss_state_return_t r;
 
-	lwsl_notice("%s: %s, ord 0x%x\n", __func__, lws_ss_state_name((int)state),
+	aws_lwsl_notice("%s: %s, ord 0x%x\n", __func__, aws_lws_ss_state_name((int)state),
 		  (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_CREATING:
-		r = lws_ss_client_connect(m->ss);
+		r = aws_lws_ss_client_connect(m->ss);
 		if (r)
 			return r;
 		if (next_test->send)
-			return lws_ss_request_tx_len(m->ss, (unsigned long)next_test->send);
+			return aws_lws_ss_request_tx_len(m->ss, (unsigned long)next_test->send);
 		break;
 	case LWSSSCS_ALL_RETRIES_FAILED:
-		lwsl_notice("%s: Connection failed\n", __func__);
+		aws_lwsl_notice("%s: Connection failed\n", __func__);
 		interrupted = 1;
 		break;
 	case LWSSSCS_QOS_NACK_REMOTE:
 		if (next_test->expect_nack)
 			goto happy;
-		lwsl_notice("%s: remote NACK\n", __func__);
+		aws_lwsl_notice("%s: remote NACK\n", __func__);
 		interrupted = 1;
 		break;
 	case LWSSSCS_QOS_ACK_REMOTE:
@@ -226,7 +226,7 @@ myss_state(void *userobj, void *sh, lws_ss_constate_t state,
 		 */
 
 		if (!m->seen_eom || m->payload < 200 + next_test->send) {
-			lwsl_warn("%s: ACK_REMOTE but eom %d, payload %d\n",
+			aws_lwsl_warn("%s: ACK_REMOTE but eom %d, payload %d\n",
 				  __func__, m->seen_eom, (int)m->payload);
 			interrupted = 1;
 			return -1;
@@ -237,14 +237,14 @@ happy:
 		m->ended_well = 1;
 
 		if (!(++next_test)->ssi) {
-			lwsl_notice("%s: completed all tests\n", __func__);
+			aws_lwsl_notice("%s: completed all tests\n", __func__);
 			bad = 0;
 			interrupted = 1;
 			break;
 		}
-		if (lws_ss_create(context, 0, next_test->ssi,
+		if (aws_lws_ss_create(context, 0, next_test->ssi,
 				  NULL, NULL, NULL, NULL)) {
-			lwsl_err("%s: failed to create secure stream\n",
+			aws_lwsl_err("%s: failed to create secure stream\n",
 				 __func__);
 			return -1;
 		}
@@ -252,7 +252,7 @@ happy:
 
 	case LWSSSCS_DISCONNECTED:
 		if (!m->ended_well) {
-			lwsl_warn("%s: DISCONNECTED without good end\n",
+			aws_lwsl_warn("%s: DISCONNECTED without good end\n",
 				  __func__);
 			interrupted = 1;
 		}
@@ -264,7 +264,7 @@ happy:
 	return LWSSSSRET_OK;
 }
 
-static const lws_ss_info_t ssi_get = {
+static const aws_lws_ss_info_t ssi_get = {
 	.handle_offset			= offsetof(myss_t, ss),
 	.opaque_user_data_offset	= offsetof(myss_t, opaque_data),
 	.rx				= myss_rx,
@@ -299,10 +299,10 @@ static const atss_t test_list[] = {
 
 
 static int
-app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+app_system_state_nf(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		    int current, int target)
 {
-	struct lws_context *context = lws_system_context_from_system_mgr(mgr);
+	struct aws_lws_context *context = aws_lws_system_context_from_system_mgr(mgr);
 
 	/*
 	 * For the things we care about, let's notice if we are trying to get
@@ -316,9 +316,9 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 			next_test = &test_list[0];
 
-			if (lws_ss_create(context, 0, next_test->ssi,
+			if (aws_lws_ss_create(context, 0, next_test->ssi,
 					  NULL, NULL, NULL, NULL)) {
-				lwsl_err("%s: failed to create secure stream\n",
+				aws_lwsl_err("%s: failed to create secure stream\n",
 					 __func__);
 				return -1;
 			}
@@ -329,7 +329,7 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	return 0;
 }
 
-static lws_state_notify_link_t * const app_notifier_list[] = {
+static aws_lws_state_notify_link_t * const app_notifier_list[] = {
 	&nl, NULL
 };
 
@@ -341,15 +341,15 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS secure streams test client [-d<verb>]\n");
+	aws_lwsl_user("LWS secure streams test client [-d<verb>]\n");
 
 	/* these options are mutually exclusive if given */
 
@@ -368,20 +368,20 @@ int main(int argc, const char **argv)
 
 	/* create the context */
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	/* the event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

@@ -8,7 +8,7 @@
  *
  * This version holds a single message at a time, which may be lost if a new
  * message comes.  See the minimal-ws-server-ring sample for the same thing
- * but using an lws_ring ringbuffer to hold up to 8 messages at a time.
+ * but using an aws_lws_ring ringbuffer to hold up to 8 messages at a time.
  */
 
 #if !defined (LWS_PLUGIN_STATIC)
@@ -212,7 +212,7 @@ struct per_session_data__minimal {
 };
 
 static int
-callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal *pss =
@@ -222,7 +222,7 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 
 	switch (reason) {
 	case LWS_CALLBACK_ESTABLISHED:
-		if (lws_hdr_copy(wsi, (char *)buf, sizeof(buf),
+		if (aws_lws_hdr_copy(wsi, (char *)buf, sizeof(buf),
 				 WSI_TOKEN_GET_URI) < 0)
 			return -1;
 
@@ -230,24 +230,24 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 
 		if (pss->last > (int)LWS_ARRAY_SIZE(corner_lengths))
 			pss->last = 0;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
 		if (!pss->last)
 			break;
 
-		lwsl_err("%s: writable %d, %d\n", __func__, pss->last,
+		aws_lwsl_err("%s: writable %d, %d\n", __func__, pss->last,
 				corner_lengths[pss->last - 1]);
 
 		memcpy(buf + LWS_PRE, uncompressible,
 		       (unsigned int)corner_lengths[pss->last - 1]);
 
 		/* notice we allowed for LWS_PRE in the payload already */
-		m = lws_write(wsi, buf + LWS_PRE, (unsigned int)corner_lengths[pss->last - 1],
+		m = aws_lws_write(wsi, buf + LWS_PRE, (unsigned int)corner_lengths[pss->last - 1],
 				LWS_WRITE_BINARY);
 		if (m < corner_lengths[pss->last - 1]) {
-			lwsl_err("ERROR %d writing to ws socket\n", m);
+			aws_lwsl_err("ERROR %d writing to ws socket\n", m);
 			return -1;
 		}
 

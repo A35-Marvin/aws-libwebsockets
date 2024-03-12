@@ -30,7 +30,7 @@
  * Cryptographic Algorithms for Digital Signatures and MACs
  */
 
-static const struct lws_jose_jwe_alg lws_gencrypto_jws_alg_map[] = {
+static const struct aws_lws_jose_jwe_alg aws_lws_gencrypto_jws_alg_map[] = {
 
 	/*
 	 * JWSs MAY also be created that do not provide integrity protection.
@@ -251,7 +251,7 @@ static const struct lws_jose_jwe_alg lws_gencrypto_jws_alg_map[] = {
  * Encryption Key (CEK).
  */
 
-static const struct lws_jose_jwe_alg lws_gencrypto_jwe_alg_map[] = {
+static const struct aws_lws_jose_jwe_alg aws_lws_gencrypto_jwe_alg_map[] = {
 
 	/*
 	 * This section defines the specifics of encrypting a JWE CEK with
@@ -477,7 +477,7 @@ static const struct lws_jose_jwe_alg lws_gencrypto_jwe_alg_map[] = {
  * present and MUST be understood and processed by implementations.
  */
 
-static const struct lws_jose_jwe_alg lws_gencrypto_jwe_enc_map[] = {
+static const struct aws_lws_jose_jwe_alg aws_lws_gencrypto_jwe_enc_map[] = {
 	/*
 	 * AES_128_CBC_HMAC_SHA_256 / 512
 	 *
@@ -573,10 +573,10 @@ static const struct lws_jose_jwe_alg lws_gencrypto_jwe_enc_map[] = {
 };
 
 int
-lws_gencrypto_jws_alg_to_definition(const char *alg,
-				    const struct lws_jose_jwe_alg **jose)
+aws_lws_gencrypto_jws_alg_to_definition(const char *alg,
+				    const struct aws_lws_jose_jwe_alg **jose)
 {
-	const struct lws_jose_jwe_alg *a = lws_gencrypto_jws_alg_map;
+	const struct aws_lws_jose_jwe_alg *a = aws_lws_gencrypto_jws_alg_map;
 
 	while (a->alg) {
 		if (!strcmp(alg, a->alg)) {
@@ -591,10 +591,10 @@ lws_gencrypto_jws_alg_to_definition(const char *alg,
 }
 
 int
-lws_gencrypto_jwe_alg_to_definition(const char *alg,
-				    const struct lws_jose_jwe_alg **jose)
+aws_lws_gencrypto_jwe_alg_to_definition(const char *alg,
+				    const struct aws_lws_jose_jwe_alg **jose)
 {
-	const struct lws_jose_jwe_alg *a = lws_gencrypto_jwe_alg_map;
+	const struct aws_lws_jose_jwe_alg *a = aws_lws_gencrypto_jwe_alg_map;
 
 	while (a->alg) {
 		if (!strcmp(alg, a->alg)) {
@@ -609,10 +609,10 @@ lws_gencrypto_jwe_alg_to_definition(const char *alg,
 }
 
 int
-lws_gencrypto_jwe_enc_to_definition(const char *enc,
-				    const struct lws_jose_jwe_alg **jose)
+aws_lws_gencrypto_jwe_enc_to_definition(const char *enc,
+				    const struct aws_lws_jose_jwe_alg **jose)
 {
-	const struct lws_jose_jwe_alg *e = lws_gencrypto_jwe_enc_map;
+	const struct aws_lws_jose_jwe_alg *e = aws_lws_gencrypto_jwe_enc_map;
 
 	while (e->alg) {
 		if (!strcmp(enc, e->alg)) {
@@ -627,7 +627,7 @@ lws_gencrypto_jwe_enc_to_definition(const char *enc,
 }
 
 size_t
-lws_genhash_size(enum lws_genhash_types type)
+aws_lws_genhash_size(enum aws_lws_genhash_types type)
 {
 	switch(type) {
 	case LWS_GENHASH_TYPE_UNKNOWN:
@@ -648,7 +648,7 @@ lws_genhash_size(enum lws_genhash_types type)
 }
 
 size_t
-lws_genhmac_size(enum lws_genhmac_types type)
+aws_lws_genhmac_size(enum aws_lws_genhmac_types type)
 {
 	switch(type) {
 	case LWS_GENHMAC_TYPE_UNKNOWN:
@@ -665,7 +665,7 @@ lws_genhmac_size(enum lws_genhmac_types type)
 }
 
 int
-lws_gencrypto_bits_to_bytes(int bits)
+aws_lws_gencrypto_bits_to_bytes(int bits)
 {
 	if (bits & 7)
 		return (bits / 8) + 1;
@@ -674,22 +674,22 @@ lws_gencrypto_bits_to_bytes(int bits)
 }
 
 int
-lws_base64_size(int bytes)
+aws_lws_base64_size(int bytes)
 {
 	return ((bytes * 4) / 3) + 6;
 }
 
 void
-lws_gencrypto_destroy_elements(struct lws_gencrypto_keyelem *el, int m)
+aws_lws_gencrypto_destroy_elements(struct aws_lws_gencrypto_keyelem *el, int m)
 {
 	int n;
 
 	for (n = 0; n < m; n++)
 		if (el[n].buf)
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_free_set_NULL(el[n].buf);
 }
 
-size_t lws_gencrypto_padded_length(size_t pad_block_size, size_t len)
+size_t aws_lws_gencrypto_padded_length(size_t pad_block_size, size_t len)
 {
 	return (len / pad_block_size + 1) * pad_block_size;
 }

@@ -45,7 +45,7 @@
  */
 #define TEST_SERVER_KEY_PATH "/etc/lws-test-sshd-server-key"
 struct per_vhost_data__lws_sshd_demo {
-	const struct lws_protocols *ssh_base_protocol;
+	const struct aws_lws_protocols *ssh_base_protocol;
 	int privileged_fd;
 };
 
@@ -71,7 +71,7 @@ static const char *authorized_key =
 	"MQGXfMR1h1Wjvc+bkNs17gCIrQnFilAZLC3Sm3Opiz/4LO99Hw448G0RM2vQn0mJE46w"
 	"Eu/B10U6Jf4Efojhh1dk85BD1LTIb+N3Q== ssh-test-key@lws";
 
-static struct lws_context *context = NULL;
+static struct aws_lws_context *context = NULL;
 static volatile char force_exit = 0;
 
 /*
@@ -83,9 +83,9 @@ static volatile char force_exit = 0;
  */
 
 struct sshd_instance_priv {
-	struct lws_protocol_vhost_options *env;
-	struct lws_ring	*ring_stdout;
-	struct lws_ring	*ring_stderr;
+	struct aws_lws_protocol_vhost_options *env;
+	struct aws_lws_ring	*ring_stdout;
+	struct aws_lws_ring	*ring_stderr;
 
 	struct lws 	*wsi_stdout;
 	struct lws 	*wsi_stderr;
@@ -112,16 +112,16 @@ ssh_ops_channel_create(struct lws *wsi, void **_priv)
 
 	memset(priv, 0, sizeof(*priv));
 
-	priv->ring_stdout = lws_ring_create(1, 1024, NULL);
+	priv->ring_stdout = aws_lws_ring_create(1, 1024, NULL);
 	if (!priv->ring_stdout) {
 		free(priv);
 
 		return 1;
 	}
 
-	priv->ring_stderr = lws_ring_create(1, 1024, NULL);
+	priv->ring_stderr = aws_lws_ring_create(1, 1024, NULL);
 	if (!priv->ring_stderr) {
-		lws_ring_destroy(priv->ring_stdout);
+		aws_lws_ring_destroy(priv->ring_stdout);
 		free(priv);
 
 		return 1;
@@ -134,7 +134,7 @@ static int
 ssh_ops_channel_destroy(void *_priv)
 {
 	struct sshd_instance_priv *priv = _priv;
-	const struct lws_protocol_vhost_options *pvo = priv->env, *pvo1;
+	const struct aws_lws_protocol_vhost_options *pvo = priv->env, *pvo1;
 
 	while (pvo) {
 		pvo1 = pvo;
@@ -145,8 +145,8 @@ ssh_ops_channel_destroy(void *_priv)
 	}
 	priv->env = NULL;
 
-	lws_ring_destroy(priv->ring_stdout);
-	lws_ring_destroy(priv->ring_stderr);
+	aws_lws_ring_destroy(priv->ring_stdout);
+	aws_lws_ring_destroy(priv->ring_stderr);
 	free(priv);
 
 	return 0;
@@ -160,9 +160,9 @@ ssh_ops_tx_waiting(void *_priv)
 	struct sshd_instance_priv *priv = _priv;
 	int s = 0;
 
-	if (lws_ring_get_count_waiting_elements(priv->ring_stdout, NULL))
+	if (aws_lws_ring_get_count_waiting_elements(priv->ring_stdout, NULL))
 		s |= LWS_STDOUT;
-	if (lws_ring_get_count_waiting_elements(priv->ring_stderr, NULL))
+	if (aws_lws_ring_get_count_waiting_elements(priv->ring_stderr, NULL))
 		s |= LWS_STDERR;
 
 	return s;
@@ -172,7 +172,7 @@ static size_t
 ssh_ops_tx(void *_priv, int stdch, uint8_t *buf, size_t len)
 {
 	struct sshd_instance_priv *priv = _priv;
-	struct lws_ring *r;
+	struct aws_lws_ring *r;
 	struct lws *wsi;
 	size_t n;
 
@@ -184,10 +184,10 @@ ssh_ops_tx(void *_priv, int stdch, uint8_t *buf, size_t len)
 		wsi = priv->wsi_stderr;
 	}
 
-	n = lws_ring_consume(r, NULL, buf, len);
+	n = aws_lws_ring_consume(r, NULL, buf, len);
 
 	if (n)
-		lws_rx_flow_control(wsi, 1);
+		aws_lws_rx_flow_control(wsi, 1);
 
 	return n;
 }
@@ -197,22 +197,22 @@ static int
 ssh_ops_rx(void *_priv, struct lws *wsi, const uint8_t *buf, uint32_t len)
 {
 	struct sshd_instance_priv *priv = _priv;
-	struct lws *wsi_stdin = lws_cgi_get_stdwsi(wsi, LWS_STDIN);
+	struct lws *wsi_stdin = aws_lws_cgi_get_stdwsi(wsi, LWS_STDIN);
 	int fd;
 	uint8_t bbuf[256];
 
 	if (!wsi_stdin)
 		return -1;
 
-	fd = lws_get_socket_fd(wsi_stdin);
+	fd = aws_lws_get_socket_fd(wsi_stdin);
 
 	if (*buf != 0x0d) {
 		if (write(fd, buf, len) != (int)len)
 			return -1;
 		if (priv->pty_in_echo) {
-			if (!lws_ring_insert(priv->ring_stdout, buf, 1))
-				lwsl_notice("dropping...\n");
-			lws_callback_on_writable(wsi);
+			if (!aws_lws_ring_insert(priv->ring_stdout, buf, 1))
+				aws_lwsl_notice("dropping...\n");
+			aws_lws_callback_on_writable(wsi);
 		}
 	} else {
 		bbuf[0] = 0x0a;
@@ -223,9 +223,9 @@ ssh_ops_rx(void *_priv, struct lws *wsi, const uint8_t *buf, uint32_t len)
 		if (priv->pty_in_echo) {
 			bbuf[0] = 0x0d;
 			bbuf[1] = 0x0a;
-			if (!lws_ring_insert(priv->ring_stdout, bbuf, 2))
-				lwsl_notice("dropping...\n");
-			lws_callback_on_writable(wsi);
+			if (!aws_lws_ring_insert(priv->ring_stdout, bbuf, 2))
+				aws_lwsl_notice("dropping...\n");
+			aws_lws_callback_on_writable(wsi);
 		}
 	}
 
@@ -237,10 +237,10 @@ ssh_ops_rx(void *_priv, struct lws *wsi, const uint8_t *buf, uint32_t len)
 static size_t
 ssh_ops_get_server_key(struct lws *wsi, uint8_t *buf, size_t len)
 {
-	int fd = lws_open(TEST_SERVER_KEY_PATH, O_RDONLY), n;
+	int fd = aws_lws_open(TEST_SERVER_KEY_PATH, O_RDONLY), n;
 
 	if (fd == -1) {
-		lwsl_err("%s: unable to open %s for read: %s\n", __func__,
+		aws_lwsl_err("%s: unable to open %s for read: %s\n", __func__,
 				TEST_SERVER_KEY_PATH, strerror(errno));
 
 		return 0;
@@ -248,7 +248,7 @@ ssh_ops_get_server_key(struct lws *wsi, uint8_t *buf, size_t len)
 
 	n = (int)read(fd, buf, len);
 	if (n < 0) {
-		lwsl_err("%s: read failed: %d\n", __func__, n);
+		aws_lwsl_err("%s: read failed: %d\n", __func__, n);
 		n = 0;
 	}
 
@@ -260,12 +260,12 @@ ssh_ops_get_server_key(struct lws *wsi, uint8_t *buf, size_t len)
 static size_t
 ssh_ops_set_server_key(struct lws *wsi, uint8_t *buf, size_t len)
 {
-	int fd = lws_open(TEST_SERVER_KEY_PATH, O_CREAT | O_TRUNC | O_RDWR, 0600);
+	int fd = aws_lws_open(TEST_SERVER_KEY_PATH, O_CREAT | O_TRUNC | O_RDWR, 0600);
 	int n;
 
-	lwsl_notice("%s: %d\n", __func__, fd);
+	aws_lwsl_notice("%s: %d\n", __func__, fd);
 	if (fd == -1) {
-		lwsl_err("%s: unable to open %s for write: %s\n", __func__,
+		aws_lwsl_err("%s: unable to open %s for write: %s\n", __func__,
 				TEST_SERVER_KEY_PATH, strerror(errno));
 
 		return 0;
@@ -273,7 +273,7 @@ ssh_ops_set_server_key(struct lws *wsi, uint8_t *buf, size_t len)
 
 	n = (int)write(fd, buf, len);
 	if (n < 0) {
-		lwsl_err("%s: read failed: %d\n", __func__, errno);
+		aws_lwsl_err("%s: read failed: %d\n", __func__, errno);
 		n = 0;
 	}
 
@@ -292,32 +292,32 @@ ssh_ops_is_pubkey_authorized(const char *username, const char *type,
 	int n = (int)strlen(type), alen = 2048, ret = 2, len;
 	size_t s = 0;
 
-	lwsl_info("%s: checking pubkey for %s\n", __func__, username);
+	aws_lwsl_info("%s: checking pubkey for %s\n", __func__, username);
 
 	s = strlen(authorized_key) + 1;
 
 	aps = malloc(s);
 	if (!aps) {
-		lwsl_notice("OOM 1\n");
+		aws_lwsl_notice("OOM 1\n");
 		goto bail_p1;
 	}
 	memcpy(aps, authorized_key, s);
 
 	/* this is all we understand at the moment */
 	if (strcmp(type, "ssh-rsa")) {
-		lwsl_notice("type is not ssh-rsa\n");
+		aws_lwsl_notice("type is not ssh-rsa\n");
 		goto bail_p1;
 	}
 	p = aps;
 
 	if (strncmp(p, type, (unsigned int)n)) {
-		lwsl_notice("lead-in string  does not match %s\n", type);
+		aws_lwsl_notice("lead-in string  does not match %s\n", type);
 		goto bail_p1;
 	}
 
 	p += n;
 	if (*p != ' ') {
-		lwsl_notice("missing space at end of lead-in\n");
+		aws_lwsl_notice("missing space at end of lead-in\n");
 		goto bail_p1;
 	}
 
@@ -325,19 +325,19 @@ ssh_ops_is_pubkey_authorized(const char *username, const char *type,
 	p++;
 	ps = malloc((unsigned int)alen);
 	if (!ps) {
-		lwsl_notice("OOM 2\n");
+		aws_lwsl_notice("OOM 2\n");
 		free(aps);
 		goto bail;
 	}
-	len = lws_b64_decode_string(p, ps, alen);
+	len = aws_lws_b64_decode_string(p, ps, alen);
 	free(aps);
 	if (len < 0) {
-		lwsl_notice("key too big\n");
+		aws_lwsl_notice("key too big\n");
 		goto bail;
 	}
 
 	if (peer_len > len) {
-		lwsl_notice("peer_len %d bigger than decoded len %d\n",
+		aws_lwsl_notice("peer_len %d bigger than decoded len %d\n",
 				peer_len, len);
 		goto bail;
 	}
@@ -347,12 +347,12 @@ ssh_ops_is_pubkey_authorized(const char *username, const char *type,
 	 * <len32>E<len32>N that the peer sends us
 	 */
 
-	if (lws_timingsafe_bcmp(peer, ps, (uint32_t)peer_len)) {
-		lwsl_info("factors mismatch\n");
+	if (aws_lws_timingsafe_bcmp(peer, ps, (uint32_t)peer_len)) {
+		aws_lwsl_info("factors mismatch\n");
 		goto bail;
 	}
 
-	lwsl_info("pubkey authorized\n");
+	aws_lwsl_info("pubkey authorized\n");
 
 	ret = 0;
 bail:
@@ -373,7 +373,7 @@ static int
 ssh_cgi_env_add(struct sshd_instance_priv *priv, const char *name,
 		const char *value)
 {
-	struct lws_protocol_vhost_options *pvo = malloc(sizeof(*pvo));
+	struct aws_lws_protocol_vhost_options *pvo = malloc(sizeof(*pvo));
 
 	if (!pvo)
 		return 1;
@@ -397,7 +397,7 @@ ssh_cgi_env_add(struct sshd_instance_priv *priv, const char *name,
 	pvo->next = priv->env;
 	priv->env = pvo;
 
-	lwsl_notice("%s: ENV %s <- %s\n", __func__, name, value);
+	aws_lwsl_notice("%s: ENV %s <- %s\n", __func__, name, value);
 
 	return 0;
 }
@@ -412,13 +412,13 @@ ssh_ops_set_env(void *_priv, const char *name, const char *value)
 
 
 static int
-ssh_ops_pty_req(void *_priv, struct lws_ssh_pty *pty)
+ssh_ops_pty_req(void *_priv, struct aws_lws_ssh_pty *pty)
 {
 	struct sshd_instance_priv *priv = _priv;
 	uint8_t *p = (uint8_t *)pty->modes, opc;
 	uint32_t arg;
 
-	lwsl_notice("%s: pty term %s, modes_len %d\n", __func__, pty->term,
+	aws_lwsl_notice("%s: pty term %s, modes_len %d\n", __func__, pty->term,
 		    pty->modes_len);
 
 	ssh_cgi_env_add(priv, "TERM", pty->term);
@@ -435,20 +435,20 @@ ssh_ops_pty_req(void *_priv, struct lws_ssh_pty *pty)
 		arg |= (uint32_t)(*p++ << 8);
 		arg |= (uint32_t)(*p++);
 
-		lwsl_debug("pty opc %d: 0x%x\n", opc, arg);
+		aws_lwsl_debug("pty opc %d: 0x%x\n", opc, arg);
 
 		switch (opc) {
 		case SSHMO_ICRNL:
 			priv->pty_in_cr_to_nl = !!arg;
-			lwsl_notice(" SSHMO_ICRNL: %d\n", !!arg);
+			aws_lwsl_notice(" SSHMO_ICRNL: %d\n", !!arg);
 			break;
 		case SSHMO_ONLCR:
 			priv->pty_in_bloat_nl_to_crnl = !!arg;
-			lwsl_notice(" SSHMO_ONLCR: %d\n", !!arg);
+			aws_lwsl_notice(" SSHMO_ONLCR: %d\n", !!arg);
 			break;
 		case SSHMO_ECHO:
 //			priv->pty_in_echo = !!arg;
-			lwsl_notice(" SSHMO_ECHO: %d\n", !!arg);
+			aws_lwsl_notice(" SSHMO_ECHO: %d\n", !!arg);
 			break;
 		}
 	}
@@ -458,10 +458,10 @@ ssh_ops_pty_req(void *_priv, struct lws_ssh_pty *pty)
 
 static int
 ssh_ops_child_process_io(void *_priv, struct lws *wsi,
-			 struct lws_cgi_args *args)
+			 struct aws_lws_cgi_args *args)
 {
 	struct sshd_instance_priv *priv = _priv;
-	struct lws_ring *r = priv->ring_stdout;
+	struct aws_lws_ring *r = priv->ring_stdout;
 	void *rp;
 	size_t bytes;
 	int n, m;
@@ -471,16 +471,16 @@ ssh_ops_child_process_io(void *_priv, struct lws *wsi,
 
 	switch (args->ch) {
 	case LWS_STDIN:
-		lwsl_notice("STDIN\n");
+		aws_lwsl_notice("STDIN\n");
 		break;
 
 	case LWS_STDERR:
 		r = priv->ring_stderr;
 		/* fallthru */
 	case LWS_STDOUT:
-		if (lws_ring_next_linear_insert_range(r, &rp, &bytes) ||
+		if (aws_lws_ring_next_linear_insert_range(r, &rp, &bytes) ||
 		    bytes < 1) {
-			lwsl_notice("bytes %d\n", (int)bytes);
+			aws_lwsl_notice("bytes %d\n", (int)bytes);
 			/* no room in the fifo */
 			break;
 		}
@@ -497,14 +497,14 @@ ssh_ops_child_process_io(void *_priv, struct lws *wsi,
 			if (!n)
 				break;
 
-			m = lws_get_socket_fd(args->stdwsi[args->ch]);
+			m = aws_lws_get_socket_fd(args->stdwsi[args->ch]);
 			if (m < 0)
 				return -1;
 			n = (int)read(m, buf, (unsigned int)n);
 			if (n < 0)
 				return -1;
 			if (n == 0) {
-				lwsl_notice("zero length stdin %d\n", n);
+				aws_lwsl_notice("zero length stdin %d\n", n);
 				break;
 			}
 			m = 0;
@@ -520,14 +520,14 @@ ssh_ops_child_process_io(void *_priv, struct lws *wsi,
 
 				*p++ = *d++;
 			}
-			n = lws_ptr_diff((void *)p, rp);
+			n = aws_lws_ptr_diff((void *)p, rp);
 			if (n < (int)bytes && priv->insert_lf) {
 				priv->insert_lf = 0;
 				*p++ = 0x0d;
 				n++;
 			}
 		} else {
-			n = lws_get_socket_fd(args->stdwsi[args->ch]);
+			n = aws_lws_get_socket_fd(args->stdwsi[args->ch]);
 			if (n < 0)
 				return -1;
 			n = (int)read(n, rp, bytes);
@@ -535,10 +535,10 @@ ssh_ops_child_process_io(void *_priv, struct lws *wsi,
 				return -1;
 		}
 
-		lws_rx_flow_control(args->stdwsi[args->ch], 0);
+		aws_lws_rx_flow_control(args->stdwsi[args->ch], 0);
 
-		lws_ring_bump_head(r, (unsigned int)n);
-		lws_callback_on_writable(wsi);
+		aws_lws_ring_bump_head(r, (unsigned int)n);
+		aws_lws_callback_on_writable(wsi);
 		break;
 	}
 
@@ -548,21 +548,21 @@ ssh_ops_child_process_io(void *_priv, struct lws *wsi,
 static int
 ssh_ops_child_process_terminated(void *priv, struct lws *wsi)
 {
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 	return -1;
 }
 
 static int
-ssh_ops_exec(void *_priv, struct lws *wsi, const char *command, lws_ssh_finish_exec finish, void *finish_handle)
+ssh_ops_exec(void *_priv, struct lws *wsi, const char *command, aws_lws_ssh_finish_exec finish, void *finish_handle)
 {
-	lwsl_notice("%s: EXEC %s\n", __func__, command);
+	aws_lwsl_notice("%s: EXEC %s\n", __func__, command);
 
 	/* we don't want to exec anything */
 	return 1;
 }
 
 static int
-ssh_ops_shell(void *_priv, struct lws *wsi, lws_ssh_finish_exec finish, void *finish_handle)
+ssh_ops_shell(void *_priv, struct lws *wsi, aws_lws_ssh_finish_exec finish, void *finish_handle)
 {
 	struct sshd_instance_priv *priv = _priv;
 	const char *cmd[] = {
@@ -571,10 +571,10 @@ ssh_ops_shell(void *_priv, struct lws *wsi, lws_ssh_finish_exec finish, void *fi
 		"-l",
 		NULL
 	};
-	lwsl_notice("%s: SHELL\n", __func__);
+	aws_lwsl_notice("%s: SHELL\n", __func__);
 
-	if (lws_cgi(wsi, cmd, -1, 0, priv->env)) {
-		lwsl_notice("shell spawn failed\n");
+	if (aws_lws_cgi(wsi, cmd, -1, 0, priv->env)) {
+		aws_lwsl_notice("shell spawn failed\n");
 		return -1;
 	}
 
@@ -586,12 +586,12 @@ ssh_ops_shell(void *_priv, struct lws *wsi, lws_ssh_finish_exec finish, void *fi
 static size_t
 ssh_ops_banner(char *buf, size_t max_len, char *lang, size_t max_lang_len)
 {
-	int n = lws_snprintf(buf, max_len, "\n"
+	int n = aws_lws_snprintf(buf, max_len, "\n"
 		      " |\\---/|  lws-ssh Test Server\n"
 		      " | o_o |  SSH Terminal Server\n"
 		      "  \\_^_/   Copyright (C) 2017-2020 Crash Barrier Ltd\n\n");
 
-	lws_snprintf(lang, max_lang_len, "en/US");
+	aws_lws_snprintf(lang, max_lang_len, "en/US");
 
 	return (size_t)n;
 }
@@ -600,11 +600,11 @@ static void
 ssh_ops_disconnect_reason(uint32_t reason, const char *desc,
 			  const char *desc_lang)
 {
-	lwsl_notice("DISCONNECT reason 0x%X, %s (lang %s)\n", reason, desc,
+	aws_lwsl_notice("DISCONNECT reason 0x%X, %s (lang %s)\n", reason, desc,
 			desc_lang);
 }
 
-static const struct lws_ssh_ops ssh_ops = {
+static const struct aws_lws_ssh_ops ssh_ops = {
 	.channel_create			= ssh_ops_channel_create,
 	.channel_destroy		= ssh_ops_channel_destroy,
 	.tx_waiting			= ssh_ops_tx_waiting,
@@ -627,17 +627,17 @@ static const struct lws_ssh_ops ssh_ops = {
 
 /*
  * use per-vhost options to bind the ops struct to the instance of the
- * "lws_raw_sshd" protocol instantiated on our vhost
+ * "aws_lws_raw_sshd" protocol instantiated on our vhost
  */
 
-static const struct lws_protocol_vhost_options pvo_ssh_ops = {
+static const struct aws_lws_protocol_vhost_options pvo_ssh_ops = {
 	NULL,
 	NULL,
 	"ops",
 	(void *)&ssh_ops
 };
 
-static const struct lws_protocol_vhost_options pvo_ssh = {
+static const struct aws_lws_protocol_vhost_options pvo_ssh = {
 	NULL,
 	&pvo_ssh_ops,
 	"lws-ssh-base",
@@ -647,22 +647,22 @@ static const struct lws_protocol_vhost_options pvo_ssh = {
 void sighandler(int sig)
 {
 	force_exit = 1;
-	lws_cancel_service(context);
+	aws_lws_cancel_service(context);
 }
 
 static int
-callback_lws_sshd_demo(struct lws *wsi, enum lws_callback_reasons reason,
+callback_lws_sshd_demo(struct lws *wsi, enum aws_lws_callback_reasons reason,
 		       void *user, void *in, size_t len)
 {
 	struct per_vhost_data__lws_sshd_demo *vhd =
 			(struct per_vhost_data__lws_sshd_demo *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-						 lws_get_protocol(wsi));
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+						 aws_lws_get_protocol(wsi));
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-						  lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+						  aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__lws_sshd_demo));
 		if (!vhd)
 			return 0;
@@ -673,12 +673,12 @@ callback_lws_sshd_demo(struct lws *wsi, enum lws_callback_reasons reason,
 		 * deal with it down /etc/.. when just after this we will lose
 		 * the privileges needed to read / write /etc/...
 		 */
-		vhd->privileged_fd = lws_open(TEST_SERVER_KEY_PATH, O_RDONLY);
+		vhd->privileged_fd = aws_lws_open(TEST_SERVER_KEY_PATH, O_RDONLY);
 		if (vhd->privileged_fd == -1)
-			vhd->privileged_fd = lws_open(TEST_SERVER_KEY_PATH,
+			vhd->privileged_fd = aws_lws_open(TEST_SERVER_KEY_PATH,
 					O_CREAT | O_TRUNC | O_RDWR, 0600);
 		if (vhd->privileged_fd == -1) {
-			lwsl_warn("%s: Can't open %s\n", __func__,
+			aws_lwsl_warn("%s: Can't open %s\n", __func__,
 				 TEST_SERVER_KEY_PATH);
 			return 0;
 		}
@@ -697,11 +697,11 @@ callback_lws_sshd_demo(struct lws *wsi, enum lws_callback_reasons reason,
 
 	default:
 		if (!vhd->ssh_base_protocol) {
-			vhd->ssh_base_protocol = lws_vhost_name_to_protocol(
-							lws_get_vhost(wsi),
+			vhd->ssh_base_protocol = aws_lws_vhost_name_to_protocol(
+							aws_lws_get_vhost(wsi),
 							"lws-ssh-base");
 			if (vhd->ssh_base_protocol)
-				user = lws_adjust_protocol_psds(wsi,
+				user = aws_lws_adjust_protocol_psds(wsi,
 				vhd->ssh_base_protocol->per_session_data_size);
 		}
 
@@ -709,7 +709,7 @@ callback_lws_sshd_demo(struct lws *wsi, enum lws_callback_reasons reason,
 			return vhd->ssh_base_protocol->callback(wsi, reason,
 								user, in, len);
 		else
-			lwsl_notice("can't find lws-ssh-base\n");
+			aws_lwsl_notice("can't find lws-ssh-base\n");
 		break;
 	}
 
@@ -717,7 +717,7 @@ callback_lws_sshd_demo(struct lws *wsi, enum lws_callback_reasons reason,
 }
 
 
-const struct lws_protocols lws_sshd_demo_protocols[] = {
+const struct aws_lws_protocols aws_lws_sshd_demo_protocols[] = {
 	{
 		"lws-sshd-demo",
 		callback_lws_sshd_demo,
@@ -731,28 +731,28 @@ const struct lws_protocols lws_sshd_demo_protocols[] = {
 
 int main()
 {
-	static struct lws_context_creation_info info;
-	struct lws_vhost *vh_sshd;
+	static struct aws_lws_context_creation_info info;
+	struct aws_lws_vhost *vh_sshd;
 	int ret = 1, n;
 
 	/* info is on the stack, it must be cleared down before use */
 	memset(&info, 0, sizeof(info));
 
 	signal(SIGINT, sighandler);
-	lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE
+	aws_lws_set_log_level(LLL_ERR | LLL_WARN | LLL_NOTICE
 			/*| LLL_INFO */
 			/* | LLL_DEBUG */, NULL);
 
-	lwsl_notice("lws test-sshd -- Copyright (C) 2017 <andy@warmcat.com>\n");
+	aws_lwsl_notice("lws test-sshd -- Copyright (C) 2017 <andy@warmcat.com>\n");
 
 	/* create the lws context */
 
 	info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
 		       LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("Failed to create context\n");
+		aws_lwsl_err("Failed to create context\n");
 		return 1;
 	}
 
@@ -761,12 +761,12 @@ int main()
 	info.port = 2200;
 	info.options = LWS_SERVER_OPTION_ONLY_RAW;
 	info.vhost_name = "sshd";
-	info.protocols = lws_sshd_demo_protocols;
+	info.protocols = aws_lws_sshd_demo_protocols;
 	info.pvo = &pvo_ssh;
 
-	vh_sshd = lws_create_vhost(context, &info);
+	vh_sshd = aws_lws_create_vhost(context, &info);
 	if (!vh_sshd) {
-		lwsl_err("Failed to create sshd vhost\n");
+		aws_lwsl_err("Failed to create sshd vhost\n");
 		goto bail;
 	}
 
@@ -774,15 +774,15 @@ int main()
 
 	n = 0;
 	while (!n  && !force_exit)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 	ret = 0;
 
 	/* cleanup */
 
 bail:
-	lws_context_destroy(context);
-	lwsl_notice("exiting...\n");
+	aws_lws_context_destroy(context);
+	aws_lwsl_notice("exiting...\n");
 
 	return ret;
 }

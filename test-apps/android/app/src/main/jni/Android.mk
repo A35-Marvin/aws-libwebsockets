@@ -33,7 +33,7 @@ include $(PREBUILT_STATIC_LIBRARY)
 #
 include $(CLEAR_VARS)
 LOCAL_DISABLE_FATAL_LINKER_WARNINGS := true
-LOCAL_MODULE := lwsservice
+LOCAL_MODULE := aws_lwsservice
 LOCAL_SRC_FILES := LwsService.cpp
 LOCAL_C_INCLUDES := $(LOCAL_PATH) $(TARGET_ARCH_ABI)/include
 LOCAL_STATIC_LIBRARIES := websockets z ssl crypto

@@ -20,15 +20,15 @@
 #define LWS_PLUGIN_STATIC
 #include "protocol_lws_minimal.c"
 
-static struct lws_protocols protocols[] = {
-	{ "http", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+static struct aws_lws_protocols protocols[] = {
+	{ "http", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	LWS_PLUGIN_PROTOCOL_MINIMAL,
 	LWS_PROTOCOL_LIST_TERM
 };
 
 static int interrupted;
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin",  /* serve from dir */
@@ -48,10 +48,10 @@ static const struct lws_http_mount mount = {
 	/* .basic_auth_login_file */	NULL,
 };
 
-static const struct lws_extension extensions[] = {
+static const struct aws_lws_extension extensions[] = {
 	{
 		"permessage-deflate",
-		lws_extension_callback_pm_deflate,
+		aws_lws_extension_callback_pm_deflate,
 		"permessage-deflate"
 		 "; client_no_context_takeover"
 		 "; client_max_window_bits"
@@ -66,8 +66,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -79,11 +79,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws server + permessage-deflate Corner Cases | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws server + permessage-deflate Corner Cases | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -93,16 +93,16 @@ int main(int argc, const char **argv)
 	info.options =
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

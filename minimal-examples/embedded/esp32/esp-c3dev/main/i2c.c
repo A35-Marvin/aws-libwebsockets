@@ -1,7 +1,7 @@
 #include "i2c.h"
 	
 int
-lws_i2c_command(lws_i2c_ops_t *ctx, uint8_t ads, uint8_t c)
+aws_lws_i2c_command(aws_lws_i2c_ops_t *ctx, uint8_t ads, uint8_t c)
 {
 	if (ctx->start(ctx))
 		return 1;
@@ -20,10 +20,10 @@ lws_i2c_command(lws_i2c_ops_t *ctx, uint8_t ads, uint8_t c)
 }
 
 int
-lws_i2c_command_list(lws_i2c_ops_t *ctx, uint8_t ads, const uint8_t *buf, size_t len)
+aws_lws_i2c_command_list(aws_lws_i2c_ops_t *ctx, uint8_t ads, const uint8_t *buf, size_t len)
 {
 	while (len--)
-		if (lws_i2c_command(ctx, ads, *buf++))
+		if (aws_lws_i2c_command(ctx, ads, *buf++))
 			return 1;
 
 	return 0;

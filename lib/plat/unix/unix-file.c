@@ -35,7 +35,7 @@
 #endif
 #include <dirent.h>
 
-int lws_plat_apply_FD_CLOEXEC(int n)
+int aws_lws_plat_apply_FD_CLOEXEC(int n)
 {
 	if (n == -1)
 		return 0;
@@ -44,12 +44,12 @@ int lws_plat_apply_FD_CLOEXEC(int n)
 }
 
 int
-lws_plat_write_file(const char *filename, void *buf, size_t len)
+aws_lws_plat_write_file(const char *filename, void *buf, size_t len)
 {
 	ssize_t m;
 	int fd;
 
-	fd = lws_open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+	fd = aws_lws_open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0600);
 
 	if (fd == -1)
 		return 1;
@@ -64,9 +64,9 @@ lws_plat_write_file(const char *filename, void *buf, size_t len)
 }
 
 int
-lws_plat_read_file(const char *filename, void *buf, size_t len)
+aws_lws_plat_read_file(const char *filename, void *buf, size_t len)
 {
-	int fd = lws_open(filename, O_RDONLY);
+	int fd = aws_lws_open(filename, O_RDONLY);
 	ssize_t n;
 
 	if (fd == -1)
@@ -78,13 +78,13 @@ lws_plat_read_file(const char *filename, void *buf, size_t len)
 	return (int)n;
 }
 
-lws_fop_fd_t
-_lws_plat_file_open(const struct lws_plat_file_ops *fops, const char *filename,
-		    const char *vpath, lws_fop_flags_t *flags)
+aws_lws_fop_fd_t
+_lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
+		    const char *vpath, aws_lws_fop_flags_t *flags)
 {
 	struct stat stat_buf;
-	int ret = lws_open(filename, (*flags) & LWS_FOP_FLAGS_MASK, 0664);
-	lws_fop_fd_t fop_fd;
+	int ret = aws_lws_open(filename, (*flags) & LWS_FOP_FLAGS_MASK, 0664);
+	aws_lws_fop_fd_t fop_fd;
 
 	if (ret < 0)
 		return NULL;
@@ -100,7 +100,7 @@ _lws_plat_file_open(const struct lws_plat_file_ops *fops, const char *filename,
 	fop_fd->flags = *flags;
 	fop_fd->fd = ret;
 	fop_fd->filesystem_priv = NULL; /* we don't use it */
-	fop_fd->len = (lws_filepos_t)stat_buf.st_size;
+	fop_fd->len = (aws_lws_filepos_t)stat_buf.st_size;
 	fop_fd->pos = 0;
 
 	return fop_fd;
@@ -111,7 +111,7 @@ bail:
 }
 
 int
-_lws_plat_file_close(lws_fop_fd_t *fop_fd)
+_lws_plat_file_close(aws_lws_fop_fd_t *fop_fd)
 {
 	int fd = (*fop_fd)->fd;
 
@@ -121,32 +121,32 @@ _lws_plat_file_close(lws_fop_fd_t *fop_fd)
 	return close(fd);
 }
 
-lws_fileofs_t
-_lws_plat_file_seek_cur(lws_fop_fd_t fop_fd, lws_fileofs_t offset)
+aws_lws_fileofs_t
+_lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
 {
-	lws_fileofs_t r;
+	aws_lws_fileofs_t r;
 
 	if (offset > 0 &&
-	    offset > (lws_fileofs_t)fop_fd->len - (lws_fileofs_t)fop_fd->pos)
-		offset = (lws_fileofs_t)(fop_fd->len - fop_fd->pos);
+	    offset > (aws_lws_fileofs_t)fop_fd->len - (aws_lws_fileofs_t)fop_fd->pos)
+		offset = (aws_lws_fileofs_t)(fop_fd->len - fop_fd->pos);
 
-	if ((lws_fileofs_t)fop_fd->pos + offset < 0)
-		offset = (lws_fileofs_t)(-fop_fd->pos);
+	if ((aws_lws_fileofs_t)fop_fd->pos + offset < 0)
+		offset = (aws_lws_fileofs_t)(-fop_fd->pos);
 
 	r = lseek(fop_fd->fd, (off_t)offset, SEEK_CUR);
 
 	if (r >= 0)
-		fop_fd->pos = (lws_filepos_t)r;
+		fop_fd->pos = (aws_lws_filepos_t)r;
 	else
-		lwsl_err("error seeking from cur %ld, offset %ld\n",
+		aws_lwsl_err("error seeking from cur %ld, offset %ld\n",
                         (long)fop_fd->pos, (long)offset);
 
 	return r;
 }
 
 int
-_lws_plat_file_read(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		    uint8_t *buf, lws_filepos_t len)
+_lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		    uint8_t *buf, aws_lws_filepos_t len)
 {
 	ssize_t n;
 
@@ -155,18 +155,18 @@ _lws_plat_file_read(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
 		*amount = 0;
 		return -1;
 	}
-	fop_fd->pos = (lws_filepos_t)(fop_fd->pos + (lws_filepos_t)n);
-	lwsl_debug("%s: read %ld of req %ld, pos %ld, len %ld\n", __func__,
+	fop_fd->pos = (aws_lws_filepos_t)(fop_fd->pos + (aws_lws_filepos_t)n);
+	aws_lwsl_debug("%s: read %ld of req %ld, pos %ld, len %ld\n", __func__,
 			(long)n, (long)len, (long)fop_fd->pos,
 			(long)fop_fd->len);
-	*amount = (lws_filepos_t)n;
+	*amount = (aws_lws_filepos_t)n;
 
 	return 0;
 }
 
 int
-_lws_plat_file_write(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		     uint8_t *buf, lws_filepos_t len)
+_lws_plat_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		     uint8_t *buf, aws_lws_filepos_t len)
 {
 	ssize_t n;
 
@@ -176,8 +176,8 @@ _lws_plat_file_write(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
 		return -1;
 	}
 
-	fop_fd->pos = (lws_filepos_t)(fop_fd->pos + (lws_filepos_t)n);
-	*amount = (lws_filepos_t)n;
+	fop_fd->pos = (aws_lws_filepos_t)(fop_fd->pos + (aws_lws_filepos_t)n);
+	*amount = (aws_lws_filepos_t)n;
 
 	return 0;
 }

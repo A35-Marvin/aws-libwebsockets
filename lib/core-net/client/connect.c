@@ -36,12 +36,12 @@ static const uint8_t hnames[] = {
 };
 
 struct lws *
-lws_http_client_connect_via_info2(struct lws *wsi)
+aws_lws_http_client_connect_via_info2(struct lws *wsi)
 {
 	struct client_info_stash *stash = wsi->stash;
 	int n;
 
-	lwsl_wsi_debug(wsi, "stash %p", stash);
+	aws_lwsl_wsi_debug(wsi, "stash %p", stash);
 
 	if (!stash)
 		return wsi;
@@ -59,30 +59,30 @@ lws_http_client_connect_via_info2(struct lws *wsi)
 	 */
 	for (n = 0; n < (int)LWS_ARRAY_SIZE(hnames); n++)
 		if (hnames[n] && stash->cis[n] &&
-		    lws_hdr_simple_create(wsi, hnames[n], stash->cis[n]))
+		    aws_lws_hdr_simple_create(wsi, hnames[n], stash->cis[n]))
 			goto bail;
 
 #if defined(LWS_WITH_SOCKS5)
 	if (!wsi->a.vhost->socks_proxy_port)
-		lws_free_set_NULL(wsi->stash);
+		aws_lws_free_set_NULL(wsi->stash);
 #endif
 
 no_ah:
-	return lws_client_connect_2_dnsreq(wsi);
+	return aws_lws_client_connect_2_dnsreq(wsi);
 
 bail:
 #if defined(LWS_WITH_SOCKS5)
 	if (!wsi->a.vhost->socks_proxy_port)
-		lws_free_set_NULL(wsi->stash);
+		aws_lws_free_set_NULL(wsi->stash);
 #endif
 
-	lws_free_set_NULL(wsi->stash);
+	aws_lws_free_set_NULL(wsi->stash);
 
 	return NULL;
 }
 
 int
-lws_client_stash_create(struct lws *wsi, const char **cisin)
+aws_lws_client_stash_create(struct lws *wsi, const char **cisin)
 {
 	size_t size;
 	char *pc;
@@ -99,9 +99,9 @@ lws_client_stash_create(struct lws *wsi, const char **cisin)
 			size += strlen(cisin[n]) + 1;
 
 	if (wsi->stash)
-		lws_free_set_NULL(wsi->stash);
+		aws_lws_free_set_NULL(wsi->stash);
 
-	wsi->stash = lws_malloc(size, "client stash");
+	wsi->stash = aws_lws_malloc(size, "client stash");
 	if (!wsi->stash)
 		return 1;
 
@@ -125,20 +125,20 @@ lws_client_stash_create(struct lws *wsi, const char **cisin)
 }
 
 struct lws *
-lws_client_connect_via_info(const struct lws_client_connect_info *i)
+aws_lws_client_connect_via_info(const struct aws_lws_client_connect_info *i)
 {
 	const char *local = i->protocol;
 	struct lws *wsi, *safe = NULL;
-	const struct lws_protocols *p;
+	const struct aws_lws_protocols *p;
 	const char *cisin[CIS_COUNT];
-	struct lws_vhost *vh;
+	struct aws_lws_vhost *vh;
 	int tsi;
 
 	if (i->context->requested_stop_internal_loops)
 		return NULL;
 
 	if (!i->context->protocol_init_done)
-		if (lws_protocol_init(i->context))
+		if (aws_lws_protocol_init(i->context))
 			return NULL;
 
 	/*
@@ -148,34 +148,34 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	if (i->local_protocol_name)
 		local = i->local_protocol_name;
 
-	lws_context_lock(i->context, __func__);
+	aws_lws_context_lock(i->context, __func__);
 	/*
 	 * PHASE 1: if SMP, find out the tsi related to current service thread
 	 */
 
-	tsi = lws_pthread_self_to_tsi(i->context);
+	tsi = aws_lws_pthread_self_to_tsi(i->context);
 	assert(tsi >= 0);
 
 	/* PHASE 2: create a bare wsi */
 
 	wsi = __lws_wsi_create_with_role(i->context, tsi, NULL, i->log_cx);
-	lws_context_unlock(i->context);
+	aws_lws_context_unlock(i->context);
 	if (wsi == NULL)
 		return NULL;
 
 	vh = i->vhost;
 	if (!vh) {
 #if defined(LWS_WITH_TLS_JIT_TRUST)
-		if (lws_tls_jit_trust_vhost_bind(i->context, i->address, &vh))
+		if (aws_lws_tls_jit_trust_vhost_bind(i->context, i->address, &vh))
 #endif
 		{
-			vh = lws_get_vhost_by_name(i->context, "default");
+			vh = aws_lws_get_vhost_by_name(i->context, "default");
 			if (!vh) {
 
 				vh = i->context->vhost_list;
 
 				if (!vh) { /* coverity */
-					lwsl_cx_err(i->context, "no vhost");
+					aws_lwsl_cx_err(i->context, "no vhost");
 					goto bail;
 				}
 				if (!strcmp(vh->name, "system"))
@@ -197,31 +197,31 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	wsi->fic.name = "wsi";
 	if (i->fic.fi_owner.count)
 		/*
-		 * This moves all the lws_fi_t from i->fi to the vhost fi,
+		 * This moves all the aws_lws_fi_t from i->fi to the vhost fi,
 		 * leaving it empty
 		 */
-		lws_fi_import(&wsi->fic, &i->fic);
+		aws_lws_fi_import(&wsi->fic, &i->fic);
 
-	lws_fi_inherit_copy(&wsi->fic, &i->context->fic, "wsi", i->fi_wsi_name);
+	aws_lws_fi_inherit_copy(&wsi->fic, &i->context->fic, "wsi", i->fi_wsi_name);
 
-	if (lws_fi(&wsi->fic, "createfail"))
+	if (aws_lws_fi(&wsi->fic, "createfail"))
 		goto bail;
 
 #if defined(LWS_WITH_SECURE_STREAMS)
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
 	if (wsi->client_bound_sspc) {
-		lws_sspc_handle_t *fih = (lws_sspc_handle_t *)i->opaque_user_data;
-		lws_fi_inherit_copy(&wsi->fic, &fih->fic, "wsi", NULL);
+		aws_lws_sspc_handle_t *fih = (aws_lws_sspc_handle_t *)i->opaque_user_data;
+		aws_lws_fi_inherit_copy(&wsi->fic, &fih->fic, "wsi", NULL);
 	}
 #endif
 	if (wsi->for_ss) {
-		lws_ss_handle_t *fih = (lws_ss_handle_t *)i->opaque_user_data;
-		lws_fi_inherit_copy(&wsi->fic, &fih->fic, "wsi", NULL);
+		aws_lws_ss_handle_t *fih = (aws_lws_ss_handle_t *)i->opaque_user_data;
+		aws_lws_fi_inherit_copy(&wsi->fic, &fih->fic, "wsi", NULL);
 	}
 #endif
 #endif
 
-	lws_wsi_fault_timedclose(wsi);
+	aws_lws_wsi_fault_timedclose(wsi);
 
 	/*
 	 * Until we exit, we can report connection failure directly to the
@@ -247,15 +247,15 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	if (i->ssl_connection & LCCSCF_WAKE_SUSPEND__VALIDITY)
 		wsi->conn_validity_wakesuspend = 1;
 
-	lws_vhost_bind_wsi(vh, wsi);
+	aws_lws_vhost_bind_wsi(vh, wsi);
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
 	/* additionally inerit from vhost we bound to */
-	lws_fi_inherit_copy(&wsi->fic, &vh->fic, "wsi", i->fi_wsi_name);
+	aws_lws_fi_inherit_copy(&wsi->fic, &vh->fic, "wsi", i->fi_wsi_name);
 #endif
 
 	if (!wsi->a.vhost) {
-		lwsl_wsi_err(wsi, "No vhost in the context");
+		aws_lwsl_wsi_err(wsi, "No vhost in the context");
 
 		goto bail;
 	}
@@ -267,12 +267,12 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	 * we may want ws, but first we have to go through h1 to get that
 	 */
 
-	if (lws_role_call_client_bind(wsi, i) < 0) {
-		lwsl_wsi_err(wsi, "unable to bind to role");
+	if (aws_lws_role_call_client_bind(wsi, i) < 0) {
+		aws_lwsl_wsi_err(wsi, "unable to bind to role");
 
 		goto bail;
 	}
-	lwsl_wsi_info(wsi, "role binding to %s", wsi->role_ops->name);
+	aws_lwsl_wsi_info(wsi, "role binding to %s", wsi->role_ops->name);
 
 	/*
 	 * PHASE 4: fill up the wsi with stuff from the connect_info as far as
@@ -308,16 +308,16 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	}
 
 	if (local) {
-		lwsl_wsi_info(wsi, "vh %s protocol binding to %s\n",
+		aws_lwsl_wsi_info(wsi, "vh %s protocol binding to %s\n",
 				wsi->a.vhost->name, local);
-		p = lws_vhost_name_to_protocol(wsi->a.vhost, local);
+		p = aws_lws_vhost_name_to_protocol(wsi->a.vhost, local);
 		if (p)
-			lws_bind_protocol(wsi, p, __func__);
+			aws_lws_bind_protocol(wsi, p, __func__);
 		else
-			lwsl_wsi_info(wsi, "unknown protocol %s", local);
+			aws_lwsl_wsi_info(wsi, "unknown protocol %s", local);
 
-		lwsl_wsi_info(wsi, "%s: %s %s entry",
-			    lws_wsi_tag(wsi), wsi->role_ops->name,
+		aws_lwsl_wsi_info(wsi, "%s: %s %s entry",
+			    aws_lws_wsi_tag(wsi), wsi->role_ops->name,
 			    wsi->a.protocol ? wsi->a.protocol->name : "none");
 	}
 
@@ -335,7 +335,7 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	wsi->tls.use_ssl = (unsigned int)i->ssl_connection;
 #else
 	if (i->ssl_connection & LCCSCF_USE_SSL) {
-		lwsl_wsi_err(wsi, "lws not configured for tls");
+		aws_lwsl_wsi_err(wsi, "lws not configured for tls");
 		goto bail;
 	}
 #endif
@@ -360,12 +360,12 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	cisin[CIS_IFACE]	= i->iface;
 	cisin[CIS_ALPN]		= i->alpn;
 
-	if (lws_client_stash_create(wsi, cisin))
+	if (aws_lws_client_stash_create(wsi, cisin))
 		goto bail;
 
 #if defined(LWS_WITH_TLS)
 	if (i->alpn)
-		lws_strncpy(wsi->alpn, i->alpn, sizeof(wsi->alpn));
+		aws_lws_strncpy(wsi->alpn, i->alpn, sizeof(wsi->alpn));
 #endif
 
 	wsi->a.opaque_user_data = wsi->stash->opaque_user_data =
@@ -397,16 +397,16 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 			wsi->role_ops->name, i->address,
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API)
 			wsi->client_bound_sspc ?
-				lws_sspc_tag((lws_sspc_handle_t *)i->opaque_user_data) :
+				aws_lws_sspc_tag((aws_lws_sspc_handle_t *)i->opaque_user_data) :
 #endif
-			lws_ss_tag(((lws_ss_handle_t *)i->opaque_user_data)));
+			aws_lws_ss_tag(((aws_lws_ss_handle_t *)i->opaque_user_data)));
 	} else
 #endif
 		__lws_lc_tag(i->context, &i->context->lcg[LWSLCG_WSI_CLIENT], &wsi->lc,
 			     "%s/%s/%s/%s", i->method ? i->method : "WS",
 			     wsi->role_ops->name ? wsi->role_ops->name : "novh", vh->name, i->address);
 
-	lws_metrics_tag_wsi_add(wsi, "vh", wsi->a.vhost->name);
+	aws_lws_metrics_tag_wsi_add(wsi, "vh", wsi->a.vhost->name);
 
 	/*
 	 * at this point user callbacks like
@@ -416,8 +416,8 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	 */
 
 	if (i->parent_wsi) {
-		lwsl_wsi_info(wsi, "created as child %s",
-			      lws_wsi_tag(i->parent_wsi));
+		aws_lwsl_wsi_info(wsi, "created as child %s",
+			      aws_lws_wsi_tag(i->parent_wsi));
 		wsi->parent = i->parent_wsi;
 		safe = wsi->sibling_list = i->parent_wsi->child_list;
 		i->parent_wsi->child_list = wsi;
@@ -428,9 +428,9 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	 * see important info things via wsi->stash
 	 */
 
-	if (lws_rops_fidx(wsi->role_ops, LWS_ROPS_client_bind)) {
+	if (aws_lws_rops_fidx(wsi->role_ops, LWS_ROPS_client_bind)) {
 
-		int n = lws_rops_func_fidx(wsi->role_ops, LWS_ROPS_client_bind).
+		int n = aws_lws_rops_func_fidx(wsi->role_ops, LWS_ROPS_client_bind).
 							client_bind(wsi, NULL);
 
 		if (n && i->parent_wsi)
@@ -462,7 +462,7 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 	if (wsi->role_ops != &role_ops_raw_skt ||
 	    (i->local_protocol_name &&
 	     !strcmp(i->local_protocol_name, "raw-proxy"))) {
-		lwsl_wsi_debug(wsi, "adoption cb %d to %s %s",
+		aws_lwsl_wsi_debug(wsi, "adoption cb %d to %s %s",
 			   wsi->role_ops->adoption_cb[0],
 			   wsi->role_ops->name, wsi->a.protocol->name);
 
@@ -472,7 +472,7 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 
 #if defined(LWS_WITH_HUBBUB)
 	if (i->uri_replace_to)
-		wsi->http.rw = lws_rewrite_create(wsi, html_parser_cb,
+		wsi->http.rw = aws_lws_rewrite_create(wsi, html_parser_cb,
 					     i->uri_replace_from,
 					     i->uri_replace_to);
 #endif
@@ -495,9 +495,9 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 
 			switch (
 #if !defined(LWS_WITH_SYS_ASYNC_DNS)
-			lws_client_create_tls(wsi, &cce, 1)
+			aws_lws_client_create_tls(wsi, &cce, 1)
 #else
-			lws_client_create_tls(wsi, &cce, 0)
+			aws_lws_client_create_tls(wsi, &cce, 0)
 #endif
 			) {
 			case 1:
@@ -513,7 +513,7 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 
 		/* fallthru */
 
-		wsi = lws_http_client_connect_via_info2(wsi);
+		wsi = aws_lws_http_client_connect_via_info2(wsi);
 	}
 
 	if (wsi)
@@ -527,8 +527,8 @@ lws_client_connect_via_info(const struct lws_client_connect_info *i)
 
 #if defined(LWS_WITH_TLS)
 bail3:
-	lwsl_wsi_info(wsi, "tls start fail");
-	lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "tls start fail");
+	aws_lwsl_wsi_info(wsi, "tls start fail");
+	aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "tls start fail");
 
 	if (i->pwsi)
 		*i->pwsi = NULL;
@@ -539,12 +539,12 @@ bail3:
 bail:
 #if defined(LWS_WITH_TLS)
 	if (wsi->tls.ssl)
-		lws_tls_restrict_return(wsi);
+		aws_lws_tls_restrict_return(wsi);
 #endif
 
-	lws_free_set_NULL(wsi->stash);
-	lws_fi_destroy(&wsi->fic);
-	lws_free(wsi);
+	aws_lws_free_set_NULL(wsi->stash);
+	aws_lws_fi_destroy(&wsi->fic);
+	aws_lws_free(wsi);
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 bail2:
 #endif

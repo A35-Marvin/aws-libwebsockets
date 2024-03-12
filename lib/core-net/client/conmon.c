@@ -40,7 +40,7 @@
 #include <private-lib-core.h>
 
 int
-lws_conmon_append_copy_new_dns_results(struct lws *wsi,
+aws_lws_conmon_append_copy_new_dns_results(struct lws *wsi,
 				       const struct addrinfo *cai)
 {
 	if (!(wsi->flags & LCCSCF_CONMON))
@@ -96,9 +96,9 @@ lws_conmon_append_copy_new_dns_results(struct lws *wsi,
 			size_t cl = cai->ai_canonname ?
 					strlen(cai->ai_canonname) + 1 : 0;
 
-			ai = lws_malloc(al + cl + 1, __func__);
+			ai = aws_lws_malloc(al + cl + 1, __func__);
 			if (!ai) {
-				lwsl_wsi_warn(wsi, "OOM");
+				aws_lwsl_wsi_warn(wsi, "OOM");
 				return 1;
 			}
 			*ai = *cai;
@@ -122,18 +122,18 @@ lws_conmon_append_copy_new_dns_results(struct lws *wsi,
 }
 
 void
-lws_conmon_addrinfo_destroy(struct addrinfo *ai)
+aws_lws_conmon_addrinfo_destroy(struct addrinfo *ai)
 {
 	while (ai) {
 		struct addrinfo *ai1 = ai->ai_next;
 
-		lws_free(ai);
+		aws_lws_free(ai);
 		ai = ai1;
 	}
 }
 
 void
-lws_conmon_wsi_take(struct lws *wsi, struct lws_conmon *dest)
+aws_lws_conmon_wsi_take(struct lws *wsi, struct aws_lws_conmon *dest)
 {
 	memcpy(dest, &wsi->conmon, sizeof(*dest));
 	dest->peer46 = wsi->sa46_peer;
@@ -144,11 +144,11 @@ lws_conmon_wsi_take(struct lws *wsi, struct lws_conmon *dest)
 }
 
 void
-lws_conmon_release(struct lws_conmon *conmon)
+aws_lws_conmon_release(struct aws_lws_conmon *conmon)
 {
 	if (!conmon)
 		return;
 
-	lws_conmon_addrinfo_destroy(conmon->dns_results_copy);
+	aws_lws_conmon_addrinfo_destroy(conmon->dns_results_copy);
 	conmon->dns_results_copy = NULL;
 }

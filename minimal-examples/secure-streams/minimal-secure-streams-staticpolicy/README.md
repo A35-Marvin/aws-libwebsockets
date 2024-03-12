@@ -20,12 +20,12 @@ Commandline option|Meaning
 ```
 $ ./lws-minimal-secure-streams-staticpolicy
 [2020/03/26 15:49:12:6640] U: LWS secure streams static policy test client [-d<verb>]
-[2020/03/26 15:49:12:7067] N: lws_create_context: using ss proxy bind '(null)', port 0, ads '(null)'
-[2020/03/26 15:49:12:7567] N: lws_tls_client_create_vhost_context: using mem client CA cert 914
-[2020/03/26 15:49:12:7597] N: lws_tls_client_create_vhost_context: using mem client CA cert 1011
-[2020/03/26 15:49:12:7603] N: lws_tls_client_create_vhost_context: using mem client CA cert 1425
-[2020/03/26 15:49:12:7605] N: lws_tls_client_create_vhost_context: using mem client CA cert 1011
-[2020/03/26 15:49:12:9713] N: lws_system_cpd_set: setting CPD result OK
+[2020/03/26 15:49:12:7067] N: aws_lws_create_context: using ss proxy bind '(null)', port 0, ads '(null)'
+[2020/03/26 15:49:12:7567] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 914
+[2020/03/26 15:49:12:7597] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 1011
+[2020/03/26 15:49:12:7603] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 1425
+[2020/03/26 15:49:12:7605] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 1011
+[2020/03/26 15:49:12:9713] N: aws_lws_system_cpd_set: setting CPD result OK
 [2020/03/26 15:49:13:9625] N: ss_api_amazon_auth_rx: acquired 588-byte api.amazon.com auth token, exp 3600s
 [2020/03/26 15:49:13:9747] U: myss_state: LWSSSCS_CREATING, ord 0x0
 [2020/03/26 15:49:13:9774] U: myss_state: LWSSSCS_CONNECTING, ord 0x0
@@ -55,7 +55,7 @@ $ ./lws-minimal-secure-streams-staticpolicy
 [2020/03/26 15:49:14:2139] N: myss_state: LWSSSCS_QOS_ACK_REMOTE
 [2020/03/26 15:49:14:2170] U: myss_state: LWSSSCS_DISCONNECTED, ord 0x0
 [2020/03/26 15:49:14:2192] U: myss_state: LWSSSCS_DESTROYING, ord 0x0
-[2020/03/26 15:49:14:2265] E: lws_context_destroy3
+[2020/03/26 15:49:14:2265] E: aws_lws_context_destroy3
 [2020/03/26 15:49:14:2282] U: Completed: OK
 
 ```

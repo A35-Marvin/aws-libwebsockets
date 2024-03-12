@@ -38,17 +38,17 @@
 #include <fcntl.h>
 
 static int
-rm_rf_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
+rm_rf_cb(const char *dirpath, void *user, struct aws_lws_dir_entry *lde)
 {
 	char path[384];
 
 	if (!strcmp(lde->name, ".") || !strcmp(lde->name, ".."))
 		return 0;
 
-	lws_snprintf(path, sizeof(path), "%s/%s", dirpath, lde->name);
+	aws_lws_snprintf(path, sizeof(path), "%s/%s", dirpath, lde->name);
 
 	if (lde->type == LDOT_DIR) {
-		lws_dir(path, NULL, rm_rf_cb);
+		aws_lws_dir(path, NULL, rm_rf_cb);
 		rmdir(path);
 	} else
 		unlink(path);
@@ -57,7 +57,7 @@ rm_rf_cb(const char *dirpath, void *user, struct lws_dir_entry *lde)
 }
 
 int
-lws_fsmount_mount(struct lws_fsmount *fsm)
+aws_lws_fsmount_mount(struct aws_lws_fsmount *fsm)
 {
 	struct libmnt_context *ctx;
 	char opts[512], c;
@@ -73,7 +73,7 @@ lws_fsmount_mount(struct lws_fsmount *fsm)
 	 */
 
 	c = fsm->mp[0];
-	while (!lws_fsmount_unmount(fsm))
+	while (!aws_lws_fsmount_unmount(fsm))
 		fsm->mp[0] = c;
 	fsm->mp[0] = c;
 
@@ -84,31 +84,31 @@ lws_fsmount_mount(struct lws_fsmount *fsm)
 	 * even if the overlay path is empty or /
 	 */
 
-	lws_snprintf(opts, sizeof(opts), "%s/overlays/%s/session",
+	aws_lws_snprintf(opts, sizeof(opts), "%s/overlays/%s/session",
 		     fsm->overlay_path, fsm->ovname);
-	lwsl_info("%s: emptying session dir %s\n", __func__, opts);
-	lws_dir(opts, NULL, rm_rf_cb);
+	aws_lwsl_info("%s: emptying session dir %s\n", __func__, opts);
+	aws_lws_dir(opts, NULL, rm_rf_cb);
 
 	/*
 	 * Piece together the options for the overlay mount...
 	 */
 
-	n = lws_snprintf(opts, sizeof(opts), "lowerdir=");
+	n = aws_lws_snprintf(opts, sizeof(opts), "lowerdir=");
 	for (m = LWS_ARRAY_SIZE(fsm->layers) - 1; m >= 0; m--)
 		if (fsm->layers[m]) {
 			if (n != 9)
 				opts[n++] = ':';
 
-			n += lws_snprintf(&opts[n], (size_t)(sizeof(opts) - (unsigned int)n),
+			n += aws_lws_snprintf(&opts[n], (size_t)(sizeof(opts) - (unsigned int)n),
 					  "%s/%s/%s", fsm->layers_path,
 					  fsm->distro, fsm->layers[m]);
 		}
 
-	n += lws_snprintf(&opts[n], (size_t)(sizeof(opts) - (unsigned int)n),
+	n += aws_lws_snprintf(&opts[n], (size_t)(sizeof(opts) - (unsigned int)n),
 			  ",upperdir=%s/overlays/%s/session",
 			  fsm->overlay_path, fsm->ovname);
 
-	n += lws_snprintf(&opts[n], (size_t)(sizeof(opts) - (unsigned int)n),
+	n += aws_lws_snprintf(&opts[n], (size_t)(sizeof(opts) - (unsigned int)n),
 			  ",workdir=%s/overlays/%s/work",
 			  fsm->overlay_path, fsm->ovname);
 
@@ -122,11 +122,11 @@ lws_fsmount_mount(struct lws_fsmount *fsm)
 	mnt_context_set_target(ctx, fsm->mp);
 	mnt_context_set_source(ctx, "none");
 
-	lwsl_notice("%s: mount opts %s\n", __func__, opts);
+	aws_lwsl_notice("%s: mount opts %s\n", __func__, opts);
 	puts(opts);
 
 	m = mnt_context_mount(ctx);
-	lwsl_notice("%s: mountpoint %s: %d\n", __func__, fsm->mp, m);
+	aws_lwsl_notice("%s: mountpoint %s: %d\n", __func__, fsm->mp, m);
 
 	mnt_free_context(ctx);
 
@@ -134,12 +134,12 @@ lws_fsmount_mount(struct lws_fsmount *fsm)
 }
 
 int
-lws_fsmount_unmount(struct lws_fsmount *fsm)
+aws_lws_fsmount_unmount(struct aws_lws_fsmount *fsm)
 {
 	struct libmnt_context *ctx;
 	int m;
 
-	lwsl_notice("%s: %s\n", __func__, fsm->mp);
+	aws_lwsl_notice("%s: %s\n", __func__, fsm->mp);
 
 	ctx = mnt_new_context();
 	if (!ctx)

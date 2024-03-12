@@ -19,19 +19,19 @@
 const char *index_filepath = "./lws-fts.index";
 static int interrupted;
 
-static struct lws_protocols protocols[] = {
+static struct aws_lws_protocols protocols[] = {
 	LWS_PLUGIN_PROTOCOL_FULLTEXT_DEMO,
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static struct lws_protocol_vhost_options pvo_idx = {
+static struct aws_lws_protocol_vhost_options pvo_idx = {
 	NULL,
 	NULL,
 	"indexpath",		/* pvo name */
 	NULL	/* filled in at runtime */
 };
 
-static const struct lws_protocol_vhost_options pvo = {
+static const struct aws_lws_protocol_vhost_options pvo = {
 	NULL,		/* "next" pvo linked-list */
 	&pvo_idx,	/* "child" pvo linked-list */
 	"lws-test-fts",	/* protocol name we belong to on this vhost */
@@ -40,7 +40,7 @@ static const struct lws_protocol_vhost_options pvo = {
 
 /* override the default mount for /fts in the URL space */
 
-static const struct lws_http_mount mount_fts = {
+static const struct aws_lws_http_mount mount_fts = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/fts",		/* mountpoint URL */
 	/* .origin */			NULL,	/* protocol */
@@ -60,7 +60,7 @@ static const struct lws_http_mount mount_fts = {
 	/* .basic_auth_login_file */	NULL,
 };
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		&mount_fts,	/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -88,17 +88,17 @@ void sigint_handler(int sig)
 int main(int argc, const char **argv)
 {
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server fulltext search | "
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server fulltext search | "
 		  "visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info);
@@ -111,16 +111,16 @@ int main(int argc, const char **argv)
 
 	pvo_idx.value = index_filepath;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

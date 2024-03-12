@@ -29,10 +29,10 @@
  */
 ///@{
 #ifdef LWS_SHA1_USE_OPENSSL_NAME
-#define lws_SHA1 SHA1
+#define aws_lws_SHA1 SHA1
 #else
 /**
- * lws_SHA1(): make a SHA-1 digest of a buffer
+ * aws_lws_SHA1(): make a SHA-1 digest of a buffer
  *
  * \param d: incoming buffer
  * \param n: length of incoming buffer
@@ -41,10 +41,10 @@
  * Reduces any size buffer into a 20-byte SHA-1 hash.
  */
 LWS_VISIBLE LWS_EXTERN unsigned char *
-lws_SHA1(const unsigned char *d, size_t n, unsigned char *md);
+aws_lws_SHA1(const unsigned char *d, size_t n, unsigned char *md);
 #endif
 /**
- * lws_b64_encode_string(): encode a string into base 64
+ * aws_lws_b64_encode_string(): encode a string into base 64
  *
  * \param in: incoming buffer
  * \param in_len: length of incoming buffer
@@ -54,9 +54,9 @@ lws_SHA1(const unsigned char *d, size_t n, unsigned char *md);
  * Encodes a string using b64
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_b64_encode_string(const char *in, int in_len, char *out, int out_size);
+aws_lws_b64_encode_string(const char *in, int in_len, char *out, int out_size);
 /**
- * lws_b64_encode_string_url(): encode a string into base 64
+ * aws_lws_b64_encode_string_url(): encode a string into base 64
  *
  * \param in: incoming buffer
  * \param in_len: length of incoming buffer
@@ -66,9 +66,9 @@ lws_b64_encode_string(const char *in, int in_len, char *out, int out_size);
  * Encodes a string using b64 with the "URL" variant (+ -> -, and / -> _)
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_b64_encode_string_url(const char *in, int in_len, char *out, int out_size);
+aws_lws_b64_encode_string_url(const char *in, int in_len, char *out, int out_size);
 /**
- * lws_b64_decode_string(): decode a string from base 64
+ * aws_lws_b64_decode_string(): decode a string from base 64
  *
  * \param in: incoming buffer
  * \param out: result buffer
@@ -77,9 +77,9 @@ lws_b64_encode_string_url(const char *in, int in_len, char *out, int out_size);
  * Decodes a NUL-terminated string using b64
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_b64_decode_string(const char *in, char *out, int out_size);
+aws_lws_b64_decode_string(const char *in, char *out, int out_size);
 /**
- * lws_b64_decode_string_len(): decode a string from base 64
+ * aws_lws_b64_decode_string_len(): decode a string from base 64
  *
  * \param in: incoming buffer
  * \param in_len: length of incoming buffer
@@ -89,9 +89,9 @@ lws_b64_decode_string(const char *in, char *out, int out_size);
  * Decodes a range of chars using b64
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_b64_decode_string_len(const char *in, int in_len, char *out, int out_size);
+aws_lws_b64_decode_string_len(const char *in, int in_len, char *out, int out_size);
 
-struct lws_b64state {
+struct aws_lws_b64state {
 	unsigned char quad[4];
 	size_t done;
 	size_t len;
@@ -100,10 +100,10 @@ struct lws_b64state {
 };
 
 LWS_VISIBLE LWS_EXTERN void
-lws_b64_decode_state_init(struct lws_b64state *state);
+aws_lws_b64_decode_state_init(struct aws_lws_b64state *state);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_b64_decode_stateful(struct lws_b64state *s, const char *in, size_t *in_len,
+aws_lws_b64_decode_stateful(struct aws_lws_b64state *s, const char *in, size_t *in_len,
 			uint8_t *out, size_t *out_size, int final);
 ///@}
 

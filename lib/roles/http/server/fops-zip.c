@@ -54,7 +54,7 @@
 #define ZIP_COMPRESSION_METHOD_DEFLATE 8
 
 typedef struct {
-	lws_filepos_t		filename_start;
+	aws_lws_filepos_t		filename_start;
 	uint32_t		crc32;
 	uint32_t		comp_size;
 	uint32_t		uncomp_size;
@@ -64,17 +64,17 @@ typedef struct {
 	uint16_t		extra;
 	uint16_t		method;
 	uint16_t		file_com_len;
-} lws_fops_zip_hdr_t;
+} aws_lws_fops_zip_hdr_t;
 
 typedef struct {
-	struct lws_fop_fd	fop_fd; /* MUST BE FIRST logical fop_fd into
+	struct aws_lws_fop_fd	fop_fd; /* MUST BE FIRST logical fop_fd into
 	 	 	 	 	 * file inside zip: fops_zip fops */
-	lws_fop_fd_t		zip_fop_fd; /* logical fop fd on to zip file
+	aws_lws_fop_fd_t		zip_fop_fd; /* logical fop fd on to zip file
 	 	 	 	 	     * itself: using platform fops */
-	lws_fops_zip_hdr_t	hdr;
+	aws_lws_fops_zip_hdr_t	hdr;
 	z_stream		inflate;
-	lws_filepos_t		content_start;
-	lws_filepos_t		exp_uncomp_pos;
+	aws_lws_filepos_t		content_start;
+	aws_lws_filepos_t		exp_uncomp_pos;
 	union {
 		uint8_t		trailer8[8];
 		uint32_t	trailer32[2];
@@ -84,10 +84,10 @@ typedef struct {
 
 	unsigned int		decompress:1; /* 0 = direct from file */
 	unsigned int		add_gzip_container:1;
-} *lws_fops_zip_t;
+} *aws_lws_fops_zip_t;
 
-struct lws_plat_file_ops fops_zip;
-#define fop_fd_to_priv(FD) ((lws_fops_zip_t)(FD))
+struct aws_lws_plat_file_ops fops_zip;
+#define fop_fd_to_priv(FD) ((aws_lws_fops_zip_t)(FD))
 
 static const uint8_t hd[] = { 31, 139, 8, 0, 0, 0, 0, 0, 0, 3 };
 
@@ -164,16 +164,16 @@ get_u32(void *p)
 }
 
 int
-lws_fops_zip_scan(lws_fops_zip_t priv, const char *name, int len)
+aws_lws_fops_zip_scan(aws_lws_fops_zip_t priv, const char *name, int len)
 {
-	lws_filepos_t amount;
+	aws_lws_filepos_t amount;
 	uint8_t buf[96];
 	int i;
 
-	if (lws_vfs_file_seek_end(priv->zip_fop_fd, -ZE_DIRECTORY_LENGTH) < 0)
+	if (aws_lws_vfs_file_seek_end(priv->zip_fop_fd, -ZE_DIRECTORY_LENGTH) < 0)
 		return LWS_FZ_ERR_SEEK_END_RECORD;
 
-	if (lws_vfs_file_read(priv->zip_fop_fd, &amount, buf,
+	if (aws_lws_vfs_file_read(priv->zip_fop_fd, &amount, buf,
 			      ZE_DIRECTORY_LENGTH))
 		return LWS_FZ_ERR_READ_END_RECORD;
 
@@ -196,14 +196,14 @@ lws_fops_zip_scan(lws_fops_zip_t priv, const char *name, int len)
 
 	/* end record is OK... look for our file in the central dir */
 
-	if (lws_vfs_file_seek_set(priv->zip_fop_fd,
+	if (aws_lws_vfs_file_seek_set(priv->zip_fop_fd,
 				  get_u32(buf + ZE_CENTRAL_DIR_OFFSET)) < 0)
 		return LWS_FZ_ERR_CENTRAL_SEEK;
 
 	while (i--) {
-		priv->content_start = lws_vfs_tell(priv->zip_fop_fd);
+		priv->content_start = aws_lws_vfs_tell(priv->zip_fop_fd);
 
-		if (lws_vfs_file_read(priv->zip_fop_fd, &amount, buf,
+		if (aws_lws_vfs_file_read(priv->zip_fop_fd, &amount, buf,
 				      ZC_DIRECTORY_LENGTH))
 			return LWS_FZ_ERR_CENTRAL_READ;
 
@@ -213,11 +213,11 @@ lws_fops_zip_scan(lws_fops_zip_t priv, const char *name, int len)
 		if (get_u32(buf + ZC_SIGNATURE) != 0x02014B50)
 			return LWS_FZ_ERR_CENTRAL_SANITY;
 
-               lwsl_debug("cstart 0x%lx\n", (unsigned long)priv->content_start);
+               aws_lwsl_debug("cstart 0x%lx\n", (unsigned long)priv->content_start);
 
 		priv->hdr.filename_len = get_u16(buf + ZC_FILE_NAME_LENGTH);
 		priv->hdr.extra = get_u16(buf + ZC_EXTRA_FIELD_LENGTH);
-		priv->hdr.filename_start = lws_vfs_tell(priv->zip_fop_fd);
+		priv->hdr.filename_start = aws_lws_vfs_tell(priv->zip_fop_fd);
 
 		priv->hdr.method = get_u16(buf + ZC_COMPRESSION_METHOD);
 		priv->hdr.crc32 = get_u32(buf + ZC_CRC32);
@@ -240,13 +240,13 @@ lws_fops_zip_scan(lws_fops_zip_t priv, const char *name, int len)
 			return LWS_FZ_ERR_NAME_READ;
 
 		buf[len] = '\0';
-		lwsl_debug("check %s vs %s\n", buf, name);
+		aws_lwsl_debug("check %s vs %s\n", buf, name);
 
 		if (strcmp((const char *)buf, name))
 			goto next;
 
 		/* we found a match */
-		if (lws_vfs_file_seek_set(priv->zip_fop_fd, priv->hdr.offset) < 0)
+		if (aws_lws_vfs_file_seek_set(priv->zip_fop_fd, priv->hdr.offset) < 0)
 			return LWS_FZ_ERR_NAME_SEEK;
 		if (priv->zip_fop_fd->fops->LWS_FOP_READ(priv->zip_fop_fd,
 							&amount, buf,
@@ -260,14 +260,14 @@ lws_fops_zip_scan(lws_fops_zip_t priv, const char *name, int len)
 				      priv->hdr.filename_len +
 				      get_u16(buf + ZL_REL_OFFSET_CONTENT);
 
-		lwsl_debug("content supposed to start at 0x%lx\n",
+		aws_lwsl_debug("content supposed to start at 0x%lx\n",
                           (unsigned long)priv->content_start);
 
 		if (priv->content_start > priv->zip_fop_fd->len)
 			return LWS_FZ_ERR_CONTENT_SANITY;
 
-		if (lws_vfs_file_seek_set(priv->zip_fop_fd,
-					  (lws_fileofs_t)priv->content_start) < 0)
+		if (aws_lws_vfs_file_seek_set(priv->zip_fop_fd,
+					  (aws_lws_fileofs_t)priv->content_start) < 0)
 			return LWS_FZ_ERR_CONTENT_SEEK;
 
 		/* we are aligned at the start of the content */
@@ -277,8 +277,8 @@ lws_fops_zip_scan(lws_fops_zip_t priv, const char *name, int len)
 		return 0;
 
 next:
-		if (i && lws_vfs_file_seek_set(priv->zip_fop_fd,
-					       (lws_fileofs_t)priv->content_start +
+		if (i && aws_lws_vfs_file_seek_set(priv->zip_fop_fd,
+					       (aws_lws_fileofs_t)priv->content_start +
 					       (ZC_DIRECTORY_LENGTH +
 					       priv->hdr.filename_len +
 					       priv->hdr.extra +
@@ -290,7 +290,7 @@ next:
 }
 
 static int
-lws_fops_zip_reset_inflate(lws_fops_zip_t priv)
+aws_lws_fops_zip_reset_inflate(aws_lws_fops_zip_t priv)
 {
 	if (priv->decompress)
 		inflateEnd(&priv->inflate);
@@ -302,11 +302,11 @@ lws_fops_zip_reset_inflate(lws_fops_zip_t priv)
 	priv->inflate.next_in = Z_NULL;
 
 	if (inflateInit2(&priv->inflate, -MAX_WBITS) != Z_OK) {
-		lwsl_err("inflate init failed\n");
+		aws_lwsl_err("inflate init failed\n");
 		return LWS_FZ_ERR_ZLIB_INIT;
 	}
 
-	if (lws_vfs_file_seek_set(priv->zip_fop_fd, (lws_fileofs_t)priv->content_start) < 0)
+	if (aws_lws_vfs_file_seek_set(priv->zip_fop_fd, (aws_lws_fileofs_t)priv->content_start) < 0)
 		return LWS_FZ_ERR_CONTENT_SEEK;
 
 	priv->exp_uncomp_pos = 0;
@@ -314,12 +314,12 @@ lws_fops_zip_reset_inflate(lws_fops_zip_t priv)
 	return 0;
 }
 
-static lws_fop_fd_t
-lws_fops_zip_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
-		  const char *vpath, lws_fop_flags_t *flags)
+static aws_lws_fop_fd_t
+aws_lws_fops_zip_open(const struct aws_lws_plat_file_ops *fops, const char *vfs_path,
+		  const char *vpath, aws_lws_fop_flags_t *flags)
 {
-	lws_fop_flags_t local_flags = 0;
-	lws_fops_zip_t priv;
+	aws_lws_fop_flags_t local_flags = 0;
+	aws_lws_fops_zip_t priv;
 	char rp[192];
 	int m;
 
@@ -329,7 +329,7 @@ lws_fops_zip_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
 	 * will come pointing at "/index.html"
 	 */
 
-	priv = lws_zalloc(sizeof(*priv), "fops_zip priv");
+	priv = aws_lws_zalloc(sizeof(*priv), "fops_zip priv");
 	if (!priv)
 		return NULL;
 
@@ -337,23 +337,23 @@ lws_fops_zip_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
 
 	m = sizeof(rp) - 1;
 	if ((vpath - vfs_path - 1) < m)
-		m = lws_ptr_diff(vpath, vfs_path) - 1;
-	lws_strncpy(rp, vfs_path, (unsigned int)m + 1);
+		m = aws_lws_ptr_diff(vpath, vfs_path) - 1;
+	aws_lws_strncpy(rp, vfs_path, (unsigned int)m + 1);
 
 	/* open the zip file itself using the incoming fops, not fops_zip */
 
 	priv->zip_fop_fd = fops->LWS_FOP_OPEN(fops, rp, NULL, &local_flags);
 	if (!priv->zip_fop_fd) {
-		lwsl_err("%s: unable to open zip %s\n", __func__, rp);
+		aws_lwsl_err("%s: unable to open zip %s\n", __func__, rp);
 		goto bail1;
 	}
 
 	if (*vpath == '/')
 		vpath++;
 
-	m = lws_fops_zip_scan(priv, vpath, (int)strlen(vpath));
+	m = aws_lws_fops_zip_scan(priv, vpath, (int)strlen(vpath));
 	if (m) {
-		lwsl_err("unable to find record matching '%s' %d\n", vpath, m);
+		aws_lwsl_err("unable to find record matching '%s' %d\n", vpath, m);
 		goto bail2;
 	}
 
@@ -387,7 +387,7 @@ lws_fops_zip_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
 		 * zip with no gzip container;
 		 */
 
-		lwsl_info("direct zip serving (stored)\n");
+		aws_lwsl_info("direct zip serving (stored)\n");
 
 		priv->fop_fd.len = priv->hdr.uncomp_size;
 
@@ -408,12 +408,12 @@ lws_fops_zip_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
 		 * The 8-byte trailer is prepared now and held in the priv.
 		 */
 
-		lwsl_info("direct zip serving (gzipped)\n");
+		aws_lwsl_info("direct zip serving (gzipped)\n");
 
 		priv->fop_fd.len = sizeof(hd) + priv->hdr.comp_size +
 				   sizeof(priv->u);
 
-		if (lws_is_be()) {
+		if (aws_lws_is_be()) {
 			uint8_t *p = priv->u.trailer8;
 
 			*p++ = (uint8_t)priv->hdr.crc32;
@@ -440,12 +440,12 @@ lws_fops_zip_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
 
 		/* we must decompress it to serve it */
 
-		lwsl_info("decompressed zip serving\n");
+		aws_lwsl_info("decompressed zip serving\n");
 
 		priv->fop_fd.len = priv->hdr.uncomp_size;
 
-		if (lws_fops_zip_reset_inflate(priv)) {
-			lwsl_err("inflate init failed\n");
+		if (aws_lws_fops_zip_reset_inflate(priv)) {
+			aws_lwsl_err("inflate init failed\n");
 			goto bail2;
 		}
 
@@ -456,11 +456,11 @@ lws_fops_zip_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
 
 	/* we can't handle it ... */
 
-	lwsl_err("zipped file %s compressed in unknown way (%d)\n", vfs_path,
+	aws_lwsl_err("zipped file %s compressed in unknown way (%d)\n", vfs_path,
 		 priv->hdr.method);
 
 bail2:
-	lws_vfs_file_close(&priv->zip_fop_fd);
+	aws_lws_vfs_file_close(&priv->zip_fop_fd);
 bail1:
 	free(priv);
 
@@ -470,14 +470,14 @@ bail1:
 /* ie, we are closing the fop_fd for the file inside the gzip */
 
 static int
-lws_fops_zip_close(lws_fop_fd_t *fd)
+aws_lws_fops_zip_close(aws_lws_fop_fd_t *fd)
 {
-	lws_fops_zip_t priv = fop_fd_to_priv(*fd);
+	aws_lws_fops_zip_t priv = fop_fd_to_priv(*fd);
 
 	if (priv->decompress)
 		inflateEnd(&priv->inflate);
 
-	lws_vfs_file_close(&priv->zip_fop_fd); /* close the gzip fop_fd */
+	aws_lws_vfs_file_close(&priv->zip_fop_fd); /* close the gzip fop_fd */
 
 	free(priv);
 	*fd = NULL;
@@ -485,20 +485,20 @@ lws_fops_zip_close(lws_fop_fd_t *fd)
 	return 0;
 }
 
-static lws_fileofs_t
-lws_fops_zip_seek_cur(lws_fop_fd_t fd, lws_fileofs_t offset_from_cur_pos)
+static aws_lws_fileofs_t
+aws_lws_fops_zip_seek_cur(aws_lws_fop_fd_t fd, aws_lws_fileofs_t offset_from_cur_pos)
 {
-	fd->pos = (lws_filepos_t)((lws_fileofs_t)fd->pos + offset_from_cur_pos);
+	fd->pos = (aws_lws_filepos_t)((aws_lws_fileofs_t)fd->pos + offset_from_cur_pos);
 
-	return (lws_fileofs_t)fd->pos;
+	return (aws_lws_fileofs_t)fd->pos;
 }
 
 static int
-lws_fops_zip_read(lws_fop_fd_t fd, lws_filepos_t *amount, uint8_t *buf,
-		  lws_filepos_t len)
+aws_lws_fops_zip_read(aws_lws_fop_fd_t fd, aws_lws_filepos_t *amount, uint8_t *buf,
+		  aws_lws_filepos_t len)
 {
-	lws_fops_zip_t priv = fop_fd_to_priv(fd);
-	lws_filepos_t ramount, rlen, cur = lws_vfs_tell(fd);
+	aws_lws_fops_zip_t priv = fop_fd_to_priv(fd);
+	aws_lws_filepos_t ramount, rlen, cur = aws_lws_vfs_tell(fd);
 	int ret;
 
 	if (priv->decompress) {
@@ -509,15 +509,15 @@ lws_fops_zip_read(lws_fop_fd_t fd, lws_filepos_t *amount, uint8_t *buf,
 			 * we have to restart the decompression and loop eating
 			 * the decompressed data up to the seek point
 			 */
-			lwsl_info("seek in decompressed\n");
+			aws_lwsl_info("seek in decompressed\n");
 
-			lws_fops_zip_reset_inflate(priv);
+			aws_lws_fops_zip_reset_inflate(priv);
 
 			while (priv->exp_uncomp_pos != fd->pos) {
 				rlen = len;
 				if (rlen > fd->pos - priv->exp_uncomp_pos)
 					rlen = fd->pos - priv->exp_uncomp_pos;
-				if (lws_fops_zip_read(fd, amount, buf, rlen))
+				if (aws_lws_fops_zip_read(fd, amount, buf, rlen))
 					return LWS_FZ_ERR_SEEK_COMPRESSED;
 			}
 			*amount = 0;
@@ -571,7 +571,7 @@ spin:
 
 	if (priv->add_gzip_container) {
 
-		lwsl_info("%s: gzip + container\n", __func__);
+		aws_lwsl_info("%s: gzip + container\n", __func__);
 		*amount = 0;
 
 		/* place the canned header at the start */
@@ -601,7 +601,7 @@ spin:
 			if (rlen &&
 			    priv->zip_fop_fd->pos < (priv->hdr.comp_size +
 					    	     priv->content_start)) {
-				if (lws_vfs_file_read(priv->zip_fop_fd,
+				if (aws_lws_vfs_file_read(priv->zip_fop_fd,
 						      &ramount, buf, rlen))
 					return LWS_FZ_ERR_READ_CONTENT;
 				*amount += ramount;
@@ -630,7 +630,7 @@ spin:
 		return 0;
 	}
 
-	lwsl_info("%s: store\n", __func__);
+	aws_lwsl_info("%s: store\n", __func__);
 
 	if (len > eff_size(priv) - cur)
 		len = eff_size(priv) - cur;
@@ -644,11 +644,11 @@ spin:
 	return 0;
 }
 
-struct lws_plat_file_ops fops_zip = {
-	lws_fops_zip_open,
-	lws_fops_zip_close,
-	lws_fops_zip_seek_cur,
-	lws_fops_zip_read,
+struct aws_lws_plat_file_ops fops_zip = {
+	aws_lws_fops_zip_open,
+	aws_lws_fops_zip_close,
+	aws_lws_fops_zip_seek_cur,
+	aws_lws_fops_zip_read,
 	NULL,
 	{ { ".zip/", 5 }, { ".jar/", 5 }, { ".war/", 5 } },
 	NULL,

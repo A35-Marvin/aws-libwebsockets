@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genrsa provides an RSA abstraction api in lws that works the
+ *  aws_lws_genrsa provides an RSA abstraction api in lws that works the
  *  same whether you are using openssl or mbedtls crypto functions underneath.
  */
 #include "private-lib-core.h"
@@ -29,25 +29,25 @@
 #include <mbedtls/rsa.h>
 
 void
-lws_genrsa_destroy_elements(struct lws_gencrypto_keyelem *el)
+aws_lws_genrsa_destroy_elements(struct aws_lws_gencrypto_keyelem *el)
 {
 	int n;
 
 	for (n = 0; n < LWS_GENCRYPTO_RSA_KEYEL_COUNT; n++)
 		if (el[n].buf)
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_free_set_NULL(el[n].buf);
 }
 
 static int mode_map[] = { MBEDTLS_RSA_PKCS_V15, MBEDTLS_RSA_PKCS_V21 };
 
 int
-lws_genrsa_create(struct lws_genrsa_ctx *ctx,
-		  const struct lws_gencrypto_keyelem *el,
-		  struct lws_context *context, enum enum_genrsa_mode mode,
-		  enum lws_genhash_types oaep_hashid)
+aws_lws_genrsa_create(struct aws_lws_genrsa_ctx *ctx,
+		  const struct aws_lws_gencrypto_keyelem *el,
+		  struct aws_lws_context *context, enum enum_genrsa_mode mode,
+		  enum aws_lws_genhash_types oaep_hashid)
 {
 	memset(ctx, 0, sizeof(*ctx));
-	ctx->ctx = lws_zalloc(sizeof(*ctx->ctx), "genrsa");
+	ctx->ctx = aws_lws_zalloc(sizeof(*ctx->ctx), "genrsa");
 	if (!ctx->ctx)
 		return 1;
 
@@ -66,7 +66,7 @@ lws_genrsa_create(struct lws_genrsa_ctx *ctx,
 
 	ctx->ctx->MBEDTLS_PRIVATE(padding) = mode_map[mode];
 	ctx->ctx->MBEDTLS_PRIVATE(hash_id) =
-			(int)lws_gencrypto_mbedtls_hash_to_MD_TYPE(oaep_hashid);
+			(int)aws_lws_gencrypto_mbedtls_hash_to_MD_TYPE(oaep_hashid);
 
 	{
 		int n;
@@ -86,8 +86,8 @@ lws_genrsa_create(struct lws_genrsa_ctx *ctx,
 			if (el[n].buf &&
 			    mbedtls_mpi_read_binary(mpi[n], el[n].buf,
 					    	    el[n].len)) {
-				lwsl_notice("mpi load failed\n");
-				lws_free_set_NULL(ctx->ctx);
+				aws_lwsl_notice("mpi load failed\n");
+				aws_lws_free_set_NULL(ctx->ctx);
 
 				return -1;
 			}
@@ -99,12 +99,12 @@ lws_genrsa_create(struct lws_genrsa_ctx *ctx,
 		    !el[LWS_GENCRYPTO_RSA_KEYEL_Q].len) {
 #if defined(LWS_HAVE_mbedtls_rsa_complete)
 			if (mbedtls_rsa_complete(ctx->ctx)) {
-				lwsl_notice("mbedtls_rsa_complete failed\n");
+				aws_lwsl_notice("mbedtls_rsa_complete failed\n");
 #else
 			{
-				lwsl_notice("%s: you have to provide P and Q\n", __func__);
+				aws_lwsl_notice("%s: you have to provide P and Q\n", __func__);
 #endif
-				lws_free_set_NULL(ctx->ctx);
+				aws_lws_free_set_NULL(ctx->ctx);
 
 				return -1;
 			}
@@ -120,21 +120,21 @@ lws_genrsa_create(struct lws_genrsa_ctx *ctx,
 static int
 _rngf(void *context, unsigned char *buf, size_t len)
 {
-	if ((size_t)lws_get_random(context, buf, len) == len)
+	if ((size_t)aws_lws_get_random(context, buf, len) == len)
 		return 0;
 
 	return -1;
 }
 
 int
-lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
-		       enum enum_genrsa_mode mode, struct lws_gencrypto_keyelem *el,
+aws_lws_genrsa_new_keypair(struct aws_lws_context *context, struct aws_lws_genrsa_ctx *ctx,
+		       enum enum_genrsa_mode mode, struct aws_lws_gencrypto_keyelem *el,
 		       int bits)
 {
 	int n;
 
 	memset(ctx, 0, sizeof(*ctx));
-	ctx->ctx = lws_zalloc(sizeof(*ctx->ctx), "genrsa");
+	ctx->ctx = aws_lws_zalloc(sizeof(*ctx->ctx), "genrsa");
 	if (!ctx->ctx)
 		return -1;
 
@@ -153,7 +153,7 @@ lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
 
 	n = mbedtls_rsa_gen_key(ctx->ctx, _rngf, context, (unsigned int)bits, 65537);
 	if (n) {
-		lwsl_err("mbedtls_rsa_gen_key failed 0x%x\n", -n);
+		aws_lwsl_err("mbedtls_rsa_gen_key failed 0x%x\n", -n);
 		goto cleanup_1;
 	}
 
@@ -171,7 +171,7 @@ lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
 
 		for (n = 0; n < LWS_GENCRYPTO_RSA_KEYEL_COUNT; n++)
 			if (mpi[n] && mbedtls_mpi_size(mpi[n])) {
-				el[n].buf = lws_malloc(
+				el[n].buf = aws_lws_malloc(
 					mbedtls_mpi_size(mpi[n]), "genrsakey");
 				if (!el[n].buf)
 					goto cleanup;
@@ -187,15 +187,15 @@ lws_genrsa_new_keypair(struct lws_context *context, struct lws_genrsa_ctx *ctx,
 cleanup:
 	for (n = 0; n < LWS_GENCRYPTO_RSA_KEYEL_COUNT; n++)
 		if (el[n].buf)
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_free_set_NULL(el[n].buf);
 cleanup_1:
-	lws_free(ctx->ctx);
+	aws_lws_free(ctx->ctx);
 
 	return -1;
 }
 
 int
-lws_genrsa_public_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_public_decrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			  size_t in_len, uint8_t *out, size_t out_max)
 {
 	size_t olen = 0;
@@ -230,7 +230,7 @@ lws_genrsa_public_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 		return -1;
 	}
 	if (n) {
-		lwsl_notice("%s: -0x%x\n", __func__, -n);
+		aws_lwsl_notice("%s: -0x%x\n", __func__, -n);
 
 		return -1;
 	}
@@ -239,7 +239,7 @@ lws_genrsa_public_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_private_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_private_decrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			   size_t in_len, uint8_t *out, size_t out_max)
 {
 	size_t olen = 0;
@@ -274,7 +274,7 @@ lws_genrsa_private_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 		return -1;
 	}
 	if (n) {
-		lwsl_notice("%s: -0x%x\n", __func__, -n);
+		aws_lwsl_notice("%s: -0x%x\n", __func__, -n);
 
 		return -1;
 	}
@@ -283,7 +283,7 @@ lws_genrsa_private_decrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_public_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_public_encrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			  size_t in_len, uint8_t *out)
 {
 	int n;
@@ -314,7 +314,7 @@ lws_genrsa_public_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 		return -1;
 	}
 	if (n < 0) {
-		lwsl_notice("%s: -0x%x: in_len: %d\n", __func__, -n,
+		aws_lwsl_notice("%s: -0x%x: in_len: %d\n", __func__, -n,
 				(int)in_len);
 
 		return -1;
@@ -324,7 +324,7 @@ lws_genrsa_public_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_private_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
+aws_lws_genrsa_private_encrypt(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
 			   size_t in_len, uint8_t *out)
 {
 	int n;
@@ -355,7 +355,7 @@ lws_genrsa_private_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 		return -1;
 	}
 	if (n) {
-		lwsl_notice("%s: -0x%x: in_len: %d\n", __func__, -n,
+		aws_lwsl_notice("%s: -0x%x: in_len: %d\n", __func__, -n,
 				(int)in_len);
 
 		return -1;
@@ -365,11 +365,11 @@ lws_genrsa_private_encrypt(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
-			 enum lws_genhash_types hash_type, const uint8_t *sig,
+aws_lws_genrsa_hash_sig_verify(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
+			 enum aws_lws_genhash_types hash_type, const uint8_t *sig,
 			 size_t sig_len)
 {
-	int n, h = (int)lws_gencrypto_mbedtls_hash_to_MD_TYPE(hash_type);
+	int n, h = (int)aws_lws_gencrypto_mbedtls_hash_to_MD_TYPE(hash_type);
 
 	if (h < 0)
 		return -1;
@@ -386,7 +386,7 @@ lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 							MBEDTLS_RSA_PUBLIC,
 #endif
 							(mbedtls_md_type_t)h,
-							(unsigned int)lws_genhash_size(hash_type),
+							(unsigned int)aws_lws_genhash_size(hash_type),
 							in, sig);
 		break;
 	case LGRSAM_PKCS1_OAEP_PSS:
@@ -396,14 +396,14 @@ lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 						  MBEDTLS_RSA_PUBLIC,
 #endif
 						  (mbedtls_md_type_t)h,
-						  (unsigned int)lws_genhash_size(hash_type),
+						  (unsigned int)aws_lws_genhash_size(hash_type),
 						  in, sig);
 		break;
 	default:
 		return -1;
 	}
 	if (n < 0) {
-		lwsl_notice("%s: (mode %d) -0x%x\n", __func__, ctx->mode, -n);
+		aws_lwsl_notice("%s: (mode %d) -0x%x\n", __func__, ctx->mode, -n);
 
 		return -1;
 	}
@@ -412,11 +412,11 @@ lws_genrsa_hash_sig_verify(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
-		       enum lws_genhash_types hash_type, uint8_t *sig,
+aws_lws_genrsa_hash_sign(struct aws_lws_genrsa_ctx *ctx, const uint8_t *in,
+		       enum aws_lws_genhash_types hash_type, uint8_t *sig,
 		       size_t sig_len)
 {
-	int n, h = (int)lws_gencrypto_mbedtls_hash_to_MD_TYPE(hash_type);
+	int n, h = (int)aws_lws_gencrypto_mbedtls_hash_to_MD_TYPE(hash_type);
 
 	if (h < 0)
 		return -1;
@@ -441,7 +441,7 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 						      MBEDTLS_RSA_PRIVATE,
 #endif
 						      (mbedtls_md_type_t)h,
-						      (unsigned int)lws_genhash_size(hash_type),
+						      (unsigned int)aws_lws_genhash_size(hash_type),
 						      in, sig);
 		break;
 	case LGRSAM_PKCS1_OAEP_PSS:
@@ -452,7 +452,7 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 						MBEDTLS_RSA_PRIVATE,
 #endif
 						(mbedtls_md_type_t)h,
-						(unsigned int)lws_genhash_size(hash_type),
+						(unsigned int)aws_lws_genhash_size(hash_type),
 						in, sig);
 		break;
 	default:
@@ -460,7 +460,7 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 	}
 
 	if (n < 0) {
-		lwsl_notice("%s: -0x%x\n", __func__, -n);
+		aws_lwsl_notice("%s: -0x%x\n", __func__, -n);
 
 		return -1;
 	}
@@ -469,7 +469,7 @@ lws_genrsa_hash_sign(struct lws_genrsa_ctx *ctx, const uint8_t *in,
 }
 
 int
-lws_genrsa_render_pkey_asn1(struct lws_genrsa_ctx *ctx, int _private,
+aws_lws_genrsa_render_pkey_asn1(struct aws_lws_genrsa_ctx *ctx, int _private,
 			    uint8_t *pkey_asn1, size_t pkey_asn1_len)
 {
 	uint8_t *p = pkey_asn1, *totlen, *end = pkey_asn1 + pkey_asn1_len - 1;
@@ -545,7 +545,7 @@ lws_genrsa_render_pkey_asn1(struct lws_genrsa_ctx *ctx, int _private,
 		p += m;
 	}
 
-	n = lws_ptr_diff(p, pkey_asn1);
+	n = aws_lws_ptr_diff(p, pkey_asn1);
 
 	*totlen++ = (uint8_t)((n - 4) >> 8);
 	*totlen = (uint8_t)((n - 4) & 0xff);
@@ -554,11 +554,11 @@ lws_genrsa_render_pkey_asn1(struct lws_genrsa_ctx *ctx, int _private,
 }
 
 void
-lws_genrsa_destroy(struct lws_genrsa_ctx *ctx)
+aws_lws_genrsa_destroy(struct aws_lws_genrsa_ctx *ctx)
 {
 	if (!ctx->ctx)
 		return;
 	mbedtls_rsa_free(ctx->ctx);
-	lws_free(ctx->ctx);
+	aws_lws_free(ctx->ctx);
 	ctx->ctx = NULL;
 }

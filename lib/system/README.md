@@ -14,8 +14,8 @@ features are bound to this.  In the context object, this is available as
 # Attaching to an existing context from other threads
 
 To simplify the case different pieces of code want to attach to a single
-lws_context at runtime, from different thread contexts, lws_system has an api
-via an lws_system operation function pointer where the other threads can use
+aws_lws_context at runtime, from different thread contexts, aws_lws_system has an api
+via an aws_lws_system operation function pointer where the other threads can use
 platform-specific locking to request callbacks to their own code from the
 lws event loop thread context safely.
 
@@ -27,12 +27,12 @@ from the lws event loop context.
 
 ## Implementing the system-specific locking
 
-`lws_system_ops_t` struct has a member `.attach`
+`aws_lws_system_ops_t` struct has a member `.attach`
 
 ```
-	int (*attach)(struct lws_context *context, int tsi, lws_attach_cb_t *cb,
-		      lws_system_states_t state, void *opaque,
-		      struct lws_attach_item **get);
+	int (*attach)(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t *cb,
+		      aws_lws_system_states_t state, void *opaque,
+		      struct aws_lws_attach_item **get);
 ```
 
 This should be defined in user code as setting locking, then passing the
@@ -40,9 +40,9 @@ arguments through to a non-threadsafe helper
 
 ```
 int
-__lws_system_attach(struct lws_context *context, int tsi, lws_attach_cb_t *cb,
-		    lws_system_states_t state, void *opaque,
-		    struct lws_attach_item **get);
+__lws_system_attach(struct aws_lws_context *context, int tsi, aws_lws_attach_cb_t *cb,
+		    aws_lws_system_states_t state, void *opaque,
+		    struct aws_lws_attach_item **get);
 ```
 
 that does the actual attach work.  When it returns, the locking should be
@@ -50,17 +50,17 @@ unlocked and the return passed back.
 
 ## Attaching the callback request
 
-User code should call the lws_system_ops_t `.attach` function like
+User code should call the aws_lws_system_ops_t `.attach` function like
 
 ```
-	lws_system_get_ops(context)->attach(...);
+	aws_lws_system_get_ops(context)->attach(...);
 ```
 
 The callback function which will be called from the lws event loop context
 should look like this
 
 ```
-void my_callback(struct lws_context *context, int tsi, void *opaque);
+void my_callback(struct aws_lws_context *context, int tsi, void *opaque);
 ```
 
 with the callback function name passed into the (*attach)() call above.  When

@@ -3,9 +3,9 @@
 This directory contains the code wiring up normal lws protocols
 to Secure Streams.
 
-## The lws_protocols callback
+## The aws_lws_protocols callback
 
-This is the normal lws struct lws_protocols callback that handles events and
+This is the normal lws struct aws_lws_protocols callback that handles events and
 traffic on the lws protocol being supported.
 
 The various events and traffic are converted into calls using the Secure
@@ -26,7 +26,7 @@ name.
 Each protocol binding exports two things to other parts of lws (they
 are not exported to user code)
 
- - a struct lws_protocols, including a pointer to the callback
+ - a struct aws_lws_protocols, including a pointer to the callback
 
  - a struct ss_pcols describing how secure_streams should use, including
    a pointer to the related connect_munge helper.

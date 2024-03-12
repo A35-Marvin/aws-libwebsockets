@@ -40,16 +40,16 @@ static const unsigned char lextable_h1[] = {
 #endif
 
 static struct allocated_headers *
-_lws_create_ah(struct lws_context_per_thread *pt, ah_data_idx_t data_size)
+_lws_create_ah(struct aws_lws_context_per_thread *pt, ah_data_idx_t data_size)
 {
-	struct allocated_headers *ah = lws_zalloc(sizeof(*ah), "ah struct");
+	struct allocated_headers *ah = aws_lws_zalloc(sizeof(*ah), "ah struct");
 
 	if (!ah)
 		return NULL;
 
-	ah->data = lws_malloc(data_size, "ah data");
+	ah->data = aws_lws_malloc(data_size, "ah data");
 	if (!ah->data) {
-		lws_free(ah);
+		aws_lws_free(ah);
 
 		return NULL;
 	}
@@ -58,29 +58,29 @@ _lws_create_ah(struct lws_context_per_thread *pt, ah_data_idx_t data_size)
 	ah->data_length = data_size;
 	pt->http.ah_pool_length++;
 
-	lwsl_info("%s: created ah %p (size %d): pool length %u\n", __func__,
+	aws_lwsl_info("%s: created ah %p (size %d): pool length %u\n", __func__,
 		    ah, (int)data_size, (unsigned int)pt->http.ah_pool_length);
 
 	return ah;
 }
 
 int
-_lws_destroy_ah(struct lws_context_per_thread *pt, struct allocated_headers *ah)
+_lws_destroy_ah(struct aws_lws_context_per_thread *pt, struct allocated_headers *ah)
 {
-	lws_start_foreach_llp(struct allocated_headers **, a, pt->http.ah_list) {
+	aws_lws_start_foreach_llp(struct allocated_headers **, a, pt->http.ah_list) {
 		if ((*a) == ah) {
 			*a = ah->next;
 			pt->http.ah_pool_length--;
-			lwsl_info("%s: freed ah %p : pool length %u\n",
+			aws_lwsl_info("%s: freed ah %p : pool length %u\n",
 				    __func__, ah,
 				    (unsigned int)pt->http.ah_pool_length);
 			if (ah->data)
-				lws_free(ah->data);
-			lws_free(ah);
+				aws_lws_free(ah->data);
+			aws_lws_free(ah);
 
 			return 0;
 		}
-	} lws_end_foreach_llp(a, next);
+	} aws_lws_end_foreach_llp(a, next);
 
 	return 1;
 }
@@ -109,8 +109,8 @@ void
 __lws_header_table_reset(struct lws *wsi, int autoservice)
 {
 	struct allocated_headers *ah = wsi->http.ah;
-	struct lws_context_per_thread *pt;
-	struct lws_pollfd *pfd;
+	struct aws_lws_context_per_thread *pt;
+	struct aws_lws_pollfd *pfd;
 
 	/* if we have the idea we're resetting 'our' ah, must be bound to one */
 	assert(ah);
@@ -129,9 +129,9 @@ __lws_header_table_reset(struct lws *wsi, int autoservice)
 	time(&ah->assigned);
 
 	if (wsi->position_in_fds_table != LWS_NO_FDS_POS &&
-	    lws_buflist_next_segment_len(&wsi->buflist, NULL) &&
+	    aws_lws_buflist_next_segment_len(&wsi->buflist, NULL) &&
 	    autoservice) {
-		lwsl_debug("%s: service on readbuf ah\n", __func__);
+		aws_lwsl_debug("%s: service on readbuf ah\n", __func__);
 
 		pt = &wsi->a.context->pt[(int)wsi->tsi];
 		/*
@@ -140,28 +140,28 @@ __lws_header_table_reset(struct lws *wsi, int autoservice)
 		 */
 		pfd = &pt->fds[wsi->position_in_fds_table];
 		pfd->revents |= LWS_POLLIN;
-		lwsl_err("%s: calling service\n", __func__);
-		lws_service_fd_tsi(wsi->a.context, pfd, wsi->tsi);
+		aws_lwsl_err("%s: calling service\n", __func__);
+		aws_lws_service_fd_tsi(wsi->a.context, pfd, wsi->tsi);
 	}
 }
 
 void
-lws_header_table_reset(struct lws *wsi, int autoservice)
+aws_lws_header_table_reset(struct lws *wsi, int autoservice)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 
 	__lws_header_table_reset(wsi, autoservice);
 
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 }
 
 static void
 _lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws_pollargs pa;
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_pollargs pa;
 	struct lws **pwsi = &pt->http.ah_wait_list;
 
 	while (*pwsi) {
@@ -170,7 +170,7 @@ _lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
 		pwsi = &(*pwsi)->http.ah_wait_list;
 	}
 
-	lwsl_info("%s: wsi: %s\n", __func__, lws_wsi_tag(wsi));
+	aws_lwsl_info("%s: wsi: %s\n", __func__, aws_lws_wsi_tag(wsi));
 	wsi->http.ah_wait_list = pt->http.ah_wait_list;
 	pt->http.ah_wait_list = wsi;
 	pt->http.ah_wait_list_length++;
@@ -183,12 +183,12 @@ _lws_header_ensure_we_are_on_waiting_list(struct lws *wsi)
 static int
 __lws_remove_from_ah_waiting_list(struct lws *wsi)
 {
-        struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+        struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct lws **pwsi =&pt->http.ah_wait_list;
 
 	while (*pwsi) {
 		if (*pwsi == wsi) {
-			lwsl_info("%s: wsi %s\n", __func__, lws_wsi_tag(wsi));
+			aws_lwsl_info("%s: wsi %s\n", __func__, aws_lws_wsi_tag(wsi));
 			/* point prev guy to our next */
 			*pwsi = wsi->http.ah_wait_list;
 			/* we shouldn't point anywhere now */
@@ -204,40 +204,40 @@ __lws_remove_from_ah_waiting_list(struct lws *wsi)
 }
 
 int LWS_WARN_UNUSED_RESULT
-lws_header_table_attach(struct lws *wsi, int autoservice)
+aws_lws_header_table_attach(struct lws *wsi, int autoservice)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
-	struct lws_pollargs pa;
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_pollargs pa;
 	int n;
 
 #if defined(LWS_ROLE_MQTT) && defined(LWS_WITH_CLIENT)
-	if (lwsi_role_mqtt(wsi))
+	if (aws_lwsi_role_mqtt(wsi))
 		goto connect_via_info2;
 #endif
 
-	lwsl_info("%s: %s: ah %p (tsi %d, count = %d) in\n", __func__,
-		  lws_wsi_tag(wsi), (void *)wsi->http.ah, wsi->tsi,
+	aws_lwsl_info("%s: %s: ah %p (tsi %d, count = %d) in\n", __func__,
+		  aws_lws_wsi_tag(wsi), (void *)wsi->http.ah, wsi->tsi,
 		  pt->http.ah_count_in_use);
 
-	if (!lwsi_role_http(wsi)) {
-		lwsl_err("%s: bad role %s\n", __func__, wsi->role_ops->name);
+	if (!aws_lwsi_role_http(wsi)) {
+		aws_lwsl_err("%s: bad role %s\n", __func__, wsi->role_ops->name);
 		assert(0);
 		return -1;
 	}
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 
 	/* if we are already bound to one, just clear it down */
 	if (wsi->http.ah) {
-		lwsl_info("%s: cleardown\n", __func__);
+		aws_lwsl_info("%s: cleardown\n", __func__);
 		goto reset;
 	}
 
 	n = pt->http.ah_count_in_use == (int)context->max_http_header_pool;
 #if defined(LWS_WITH_PEER_LIMITS)
 	if (!n)
-		n = lws_peer_confirm_ah_attach_ok(context, wsi->peer);
+		n = aws_lws_peer_confirm_ah_attach_ok(context, wsi->peer);
 #endif
 	if (n) {
 		/*
@@ -267,28 +267,28 @@ lws_header_table_attach(struct lws *wsi, int autoservice)
 
 #if defined(LWS_WITH_PEER_LIMITS) && (defined(LWS_ROLE_H1) || \
     defined(LWS_ROLE_H2))
-	lws_context_lock(context, "ah attach"); /* <========================= */
+	aws_lws_context_lock(context, "ah attach"); /* <========================= */
 	if (wsi->peer)
 		wsi->peer->http.count_ah++;
-	lws_context_unlock(context); /* ====================================> */
+	aws_lws_context_unlock(context); /* ====================================> */
 #endif
 
 	_lws_change_pollfd(wsi, 0, LWS_POLLIN, &pa);
 
-	lwsl_info("%s: did attach wsi %s: ah %p: count %d (on exit)\n", __func__,
-		  lws_wsi_tag(wsi), (void *)wsi->http.ah, pt->http.ah_count_in_use);
+	aws_lwsl_info("%s: did attach wsi %s: ah %p: count %d (on exit)\n", __func__,
+		  aws_lws_wsi_tag(wsi), (void *)wsi->http.ah, pt->http.ah_count_in_use);
 
 reset:
 	__lws_header_table_reset(wsi, autoservice);
 
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
 #if defined(LWS_WITH_CLIENT)
 #if defined(LWS_ROLE_MQTT)
 connect_via_info2:
 #endif
-	if (lwsi_role_client(wsi) && lwsi_state(wsi) == LRS_UNCONNECTED)
-		if (!lws_http_client_connect_via_info2(wsi))
+	if (aws_lwsi_role_client(wsi) && aws_lwsi_state(wsi) == LRS_UNCONNECTED)
+		if (!aws_lws_http_client_connect_via_info2(wsi))
 			/* our client connect has failed, the wsi
 			 * has been closed
 			 */
@@ -298,17 +298,17 @@ connect_via_info2:
 	return 0;
 
 bail:
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
 	return 1;
 }
 
 int __lws_header_table_detach(struct lws *wsi, int autoservice)
 {
-	struct lws_context *context = wsi->a.context;
+	struct aws_lws_context *context = wsi->a.context;
 	struct allocated_headers *ah = wsi->http.ah;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
-	struct lws_pollargs pa;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_pollargs pa;
 	struct lws **pwsi, **pwsi_eligible;
 	time_t now;
 
@@ -317,8 +317,8 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 	if (!ah)
 		return 0;
 
-	lwsl_info("%s: %s: ah %p (tsi=%d, count = %d)\n", __func__,
-		  lws_wsi_tag(wsi), (void *)ah, wsi->tsi,
+	aws_lwsl_info("%s: %s: ah %p (tsi=%d, count = %d)\n", __func__,
+		  aws_lws_wsi_tag(wsi), (void *)ah, wsi->tsi,
 		  pt->http.ah_count_in_use);
 
 	/* we did have an ah attached */
@@ -328,10 +328,10 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 		 * we're detaching the ah, but it was held an
 		 * unreasonably long time
 		 */
-		lwsl_debug("%s: %s: ah held %ds, role/state 0x%lx 0x%x,"
-			    "\n", __func__, lws_wsi_tag(wsi),
+		aws_lwsl_debug("%s: %s: ah held %ds, role/state 0x%lx 0x%x,"
+			    "\n", __func__, aws_lws_wsi_tag(wsi),
 			    (int)(now - ah->assigned),
-			    (unsigned long)lwsi_role(wsi), lwsi_state(wsi));
+			    (unsigned long)aws_lwsi_role(wsi), aws_lwsi_state(wsi));
 	}
 
 	ah->assigned = 0;
@@ -344,7 +344,7 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 
 #if defined(LWS_WITH_PEER_LIMITS)
 	if (ah->wsi)
-		lws_peer_track_ah_detach(context, wsi->peer);
+		aws_lws_peer_track_ah_detach(context, wsi->peer);
 #endif
 	ah->wsi = NULL; /* no owner */
 	wsi->http.ah = NULL;
@@ -359,14 +359,14 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 	 * at least one wsi on the same tsi is waiting, give it to oldest guy
 	 * who is allowed to take it (if any)
 	 */
-	lwsl_info("%s: pt wait list %s\n", __func__, lws_wsi_tag(*pwsi));
+	aws_lwsl_info("%s: pt wait list %s\n", __func__, aws_lws_wsi_tag(*pwsi));
 	wsi = NULL;
 	pwsi_eligible = NULL;
 
 	while (*pwsi) {
 #if defined(LWS_WITH_PEER_LIMITS)
 		/* are we willing to give this guy an ah? */
-		if (!lws_peer_confirm_ah_attach_ok(context, (*pwsi)->peer))
+		if (!aws_lws_peer_confirm_ah_attach_ok(context, (*pwsi)->peer))
 #endif
 		{
 			wsi = *pwsi;
@@ -379,8 +379,8 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 	if (!wsi) /* everybody waiting already has too many ah... */
 		goto nobody_usable_waiting;
 
-	lwsl_info("%s: transferring ah to last eligible wsi in wait list "
-		  "%s (wsistate 0x%lx)\n", __func__, lws_wsi_tag(wsi),
+	aws_lwsl_info("%s: transferring ah to last eligible wsi in wait list "
+		  "%s (wsistate 0x%lx)\n", __func__, aws_lws_wsi_tag(wsi),
 		  (unsigned long)wsi->wsistate);
 
 	wsi->http.ah = ah;
@@ -389,15 +389,15 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 	__lws_header_table_reset(wsi, autoservice);
 #if defined(LWS_WITH_PEER_LIMITS) && (defined(LWS_ROLE_H1) || \
     defined(LWS_ROLE_H2))
-	lws_context_lock(context, "ah detach"); /* <========================= */
+	aws_lws_context_lock(context, "ah detach"); /* <========================= */
 	if (wsi->peer)
 		wsi->peer->http.count_ah++;
-	lws_context_unlock(context); /* ====================================> */
+	aws_lws_context_unlock(context); /* ====================================> */
 #endif
 
 	/* clients acquire the ah and then insert themselves in fds table... */
 	if (wsi->position_in_fds_table != LWS_NO_FDS_POS) {
-		lwsl_info("%s: Enabling %s POLLIN\n", __func__, lws_wsi_tag(wsi));
+		aws_lwsl_info("%s: Enabling %s POLLIN\n", __func__, aws_lws_wsi_tag(wsi));
 
 		/* he has been stuck waiting for an ah, but now his wait is
 		 * over, let him progress */
@@ -412,10 +412,10 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 	pt->http.ah_wait_list_length--;
 
 #if defined(LWS_WITH_CLIENT)
-	if (lwsi_role_client(wsi) && lwsi_state(wsi) == LRS_UNCONNECTED) {
-		lws_pt_unlock(pt);
+	if (aws_lwsi_role_client(wsi) && aws_lwsi_state(wsi) == LRS_UNCONNECTED) {
+		aws_lws_pt_unlock(pt);
 
-		if (!lws_http_client_connect_via_info2(wsi)) {
+		if (!aws_lws_http_client_connect_via_info2(wsi)) {
 			/* our client connect has failed, the wsi
 			 * has been closed
 			 */
@@ -427,36 +427,36 @@ int __lws_header_table_detach(struct lws *wsi, int autoservice)
 #endif
 
 	assert(!!pt->http.ah_wait_list_length ==
-			!!(lws_intptr_t)pt->http.ah_wait_list);
+			!!(aws_lws_intptr_t)pt->http.ah_wait_list);
 bail:
-	lwsl_info("%s: %s: ah %p (tsi=%d, count = %d)\n", __func__,
-		  lws_wsi_tag(wsi), (void *)ah, pt->tid, pt->http.ah_count_in_use);
+	aws_lwsl_info("%s: %s: ah %p (tsi=%d, count = %d)\n", __func__,
+		  aws_lws_wsi_tag(wsi), (void *)ah, pt->tid, pt->http.ah_count_in_use);
 
 	return 0;
 
 nobody_usable_waiting:
-	lwsl_info("%s: nobody usable waiting\n", __func__);
+	aws_lwsl_info("%s: nobody usable waiting\n", __func__);
 	_lws_destroy_ah(pt, ah);
 	pt->http.ah_count_in_use--;
 
 	goto bail;
 }
 
-int lws_header_table_detach(struct lws *wsi, int autoservice)
+int aws_lws_header_table_detach(struct lws *wsi, int autoservice)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	int n;
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 	n = __lws_header_table_detach(wsi, autoservice);
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
 	return n;
 }
 
 int
-lws_hdr_fragment_length(struct lws *wsi, enum lws_token_indexes h, int frag_idx)
+aws_lws_hdr_fragment_length(struct lws *wsi, enum aws_lws_token_indexes h, int frag_idx)
 {
 	int n;
 
@@ -475,7 +475,7 @@ lws_hdr_fragment_length(struct lws *wsi, enum lws_token_indexes h, int frag_idx)
 	return 0;
 }
 
-int lws_hdr_total_length(struct lws *wsi, enum lws_token_indexes h)
+int aws_lws_hdr_total_length(struct lws *wsi, enum aws_lws_token_indexes h)
 {
 	int n;
 	int len = 0;
@@ -498,8 +498,8 @@ int lws_hdr_total_length(struct lws *wsi, enum lws_token_indexes h)
 	return len;
 }
 
-int lws_hdr_copy_fragment(struct lws *wsi, char *dst, int len,
-				      enum lws_token_indexes h, int frag_idx)
+int aws_lws_hdr_copy_fragment(struct lws *wsi, char *dst, int len,
+				      enum aws_lws_token_indexes h, int frag_idx)
 {
 	int n = 0;
 	int f;
@@ -529,10 +529,10 @@ int lws_hdr_copy_fragment(struct lws *wsi, char *dst, int len,
 	return wsi->http.ah->frags[f].len;
 }
 
-int lws_hdr_copy(struct lws *wsi, char *dst, int len,
-			     enum lws_token_indexes h)
+int aws_lws_hdr_copy(struct lws *wsi, char *dst, int len,
+			     enum aws_lws_token_indexes h)
 {
-	int toklen = lws_hdr_total_length(wsi, h), n, comma;
+	int toklen = aws_lws_hdr_total_length(wsi, h), n, comma;
 
 	*dst = '\0';
 	if (!toklen)
@@ -551,13 +551,13 @@ int lws_hdr_copy(struct lws *wsi, char *dst, int len,
 		comma = (wsi->http.ah->frags[n].nfrag) ? 1 : 0;
 
 		if (h == WSI_TOKEN_HTTP_URI_ARGS)
-			lwsl_notice("%s: WSI_TOKEN_HTTP_URI_ARGS '%.*s'\n",
+			aws_lwsl_notice("%s: WSI_TOKEN_HTTP_URI_ARGS '%.*s'\n",
 				    __func__, (int)wsi->http.ah->frags[n].len,
 				    &wsi->http.ah->data[
 				                wsi->http.ah->frags[n].offset]);
 
 		if (wsi->http.ah->frags[n].len + comma >= len) {
-			lwsl_notice("blowout len\n");
+			aws_lwsl_notice("blowout len\n");
 			return -1;
 		}
 		strncpy(dst, &wsi->http.ah->data[wsi->http.ah->frags[n].offset],
@@ -568,7 +568,7 @@ int lws_hdr_copy(struct lws *wsi, char *dst, int len,
 
 		/*
 		 * Note if you change this logic, take care about updating len
-		 * and make sure lws_hdr_total_length() gives the same resulting
+		 * and make sure aws_lws_hdr_total_length() gives the same resulting
 		 * length
 		 */
 
@@ -588,14 +588,14 @@ int lws_hdr_copy(struct lws *wsi, char *dst, int len,
 	*dst = '\0';
 
 	if (h == WSI_TOKEN_HTTP_URI_ARGS)
-		lwsl_err("%s: WSI_TOKEN_HTTP_URI_ARGS toklen %d\n", __func__, (int)toklen);
+		aws_lwsl_err("%s: WSI_TOKEN_HTTP_URI_ARGS toklen %d\n", __func__, (int)toklen);
 
 	return toklen;
 }
 
 #if defined(LWS_WITH_CUSTOM_HEADERS)
 int
-lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen)
+aws_lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen)
 {
 	ah_data_idx_t ll;
 
@@ -606,20 +606,20 @@ lws_hdr_custom_length(struct lws *wsi, const char *name, int nlen)
 	while (ll) {
 		if (ll >= wsi->http.ah->data_length)
 			return -1;
-		if (nlen == lws_ser_ru16be(
+		if (nlen == aws_lws_ser_ru16be(
 			(uint8_t *)&wsi->http.ah->data[ll + UHO_NLEN]) &&
 		    !strncmp(name, &wsi->http.ah->data[ll + UHO_NAME], (unsigned int)nlen))
-			return lws_ser_ru16be(
+			return aws_lws_ser_ru16be(
 				(uint8_t *)&wsi->http.ah->data[ll + UHO_VLEN]);
 
-		ll = lws_ser_ru32be((uint8_t *)&wsi->http.ah->data[ll + UHO_LL]);
+		ll = aws_lws_ser_ru32be((uint8_t *)&wsi->http.ah->data[ll + UHO_LL]);
 	}
 
 	return -1;
 }
 
 int
-lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
+aws_lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
 		    int nlen)
 {
 	ah_data_idx_t ll;
@@ -634,10 +634,10 @@ lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
 	while (ll) {
 		if (ll >= wsi->http.ah->data_length)
 			return -1;
-		if (nlen == lws_ser_ru16be(
+		if (nlen == aws_lws_ser_ru16be(
 			(uint8_t *)&wsi->http.ah->data[ll + UHO_NLEN]) &&
 		    !strncmp(name, &wsi->http.ah->data[ll + UHO_NAME], (unsigned int)nlen)) {
-			n = lws_ser_ru16be(
+			n = aws_lws_ser_ru16be(
 				(uint8_t *)&wsi->http.ah->data[ll + UHO_VLEN]);
 			if (n + 1 > len)
 				return -1;
@@ -646,14 +646,14 @@ lws_hdr_custom_copy(struct lws *wsi, char *dst, int len, const char *name,
 
 			return n;
 		}
-		ll = lws_ser_ru32be((uint8_t *)&wsi->http.ah->data[ll + UHO_LL]);
+		ll = aws_lws_ser_ru32be((uint8_t *)&wsi->http.ah->data[ll + UHO_LL]);
 	}
 
 	return -1;
 }
 
 int
-lws_hdr_custom_name_foreach(struct lws *wsi, lws_hdr_custom_fe_cb_t cb,
+aws_lws_hdr_custom_name_foreach(struct lws *wsi, aws_lws_hdr_custom_fe_cb_t cb,
 			    void *custom)
 {
 	ah_data_idx_t ll;
@@ -668,17 +668,17 @@ lws_hdr_custom_name_foreach(struct lws *wsi, lws_hdr_custom_fe_cb_t cb,
 			return -1;
 
 		cb(&wsi->http.ah->data[ll + UHO_NAME],
-		   lws_ser_ru16be((uint8_t *)&wsi->http.ah->data[ll + UHO_NLEN]),
+		   aws_lws_ser_ru16be((uint8_t *)&wsi->http.ah->data[ll + UHO_NLEN]),
 		   custom);
 
-		ll = lws_ser_ru32be((uint8_t *)&wsi->http.ah->data[ll + UHO_LL]);
+		ll = aws_lws_ser_ru32be((uint8_t *)&wsi->http.ah->data[ll + UHO_LL]);
 	}
 
 	return 0;
 }
 #endif
 
-char *lws_hdr_simple_ptr(struct lws *wsi, enum lws_token_indexes h)
+char *aws_lws_hdr_simple_ptr(struct lws *wsi, enum aws_lws_token_indexes h)
 {
 	int n;
 
@@ -693,7 +693,7 @@ char *lws_hdr_simple_ptr(struct lws *wsi, enum lws_token_indexes h)
 }
 
 static int LWS_WARN_UNUSED_RESULT
-lws_pos_in_bounds(struct lws *wsi)
+aws_lws_pos_in_bounds(struct lws *wsi)
 {
 	if (!wsi->http.ah)
 		return -1;
@@ -703,7 +703,7 @@ lws_pos_in_bounds(struct lws *wsi)
 		return 0;
 
 	if ((int)wsi->http.ah->pos >= (int)wsi->a.context->max_http_header_data - 1) {
-		lwsl_err("Ran out of header data space\n");
+		aws_lwsl_err("Ran out of header data space\n");
 		return 1;
 	}
 
@@ -711,7 +711,7 @@ lws_pos_in_bounds(struct lws *wsi)
 	 * with these tests everywhere, it should never be able to exceed
 	 * the limit, only meet it
 	 */
-	lwsl_err("%s: pos %ld, limit %ld\n", __func__,
+	aws_lwsl_err("%s: pos %ld, limit %ld\n", __func__,
 		 (unsigned long)wsi->http.ah->pos,
 		 (unsigned long)wsi->a.context->max_http_header_data);
 	assert(0);
@@ -720,7 +720,7 @@ lws_pos_in_bounds(struct lws *wsi)
 }
 
 int LWS_WARN_UNUSED_RESULT
-lws_hdr_simple_create(struct lws *wsi, enum lws_token_indexes h, const char *s)
+aws_lws_hdr_simple_create(struct lws *wsi, enum aws_lws_token_indexes h, const char *s)
 {
 	if (!*s) {
 		/*
@@ -734,7 +734,7 @@ lws_hdr_simple_create(struct lws *wsi, enum lws_token_indexes h, const char *s)
 
 	wsi->http.ah->nfrag++;
 	if (wsi->http.ah->nfrag == LWS_ARRAY_SIZE(wsi->http.ah->frags)) {
-		lwsl_warn("More hdr frags than we can deal with, dropping\n");
+		aws_lwsl_warn("More hdr frags than we can deal with, dropping\n");
 		return -1;
 	}
 
@@ -745,7 +745,7 @@ lws_hdr_simple_create(struct lws *wsi, enum lws_token_indexes h, const char *s)
 	wsi->http.ah->frags[wsi->http.ah->nfrag].nfrag = 0;
 
 	do {
-		if (lws_pos_in_bounds(wsi))
+		if (aws_lws_pos_in_bounds(wsi))
 			return -1;
 
 		wsi->http.ah->data[wsi->http.ah->pos++] = *s;
@@ -761,7 +761,7 @@ issue_char(struct lws *wsi, unsigned char c)
 {
 	unsigned short frag_len;
 
-	if (lws_pos_in_bounds(wsi))
+	if (aws_lws_pos_in_bounds(wsi))
 		return -1;
 
 	frag_len = wsi->http.ah->frags[wsi->http.ah->nfrag].len;
@@ -778,11 +778,11 @@ issue_char(struct lws *wsi, unsigned char c)
 
 	/* Insert a null character when we *hit* the limit: */
 	if (frag_len == wsi->http.ah->current_token_limit) {
-		if (lws_pos_in_bounds(wsi))
+		if (aws_lws_pos_in_bounds(wsi))
 			return -1;
 
 		wsi->http.ah->data[wsi->http.ah->pos++] = '\0';
-		lwsl_warn("header %li exceeds limit %ld\n",
+		aws_lwsl_warn("header %li exceeds limit %ld\n",
 			  (long)wsi->http.ah->parser_state,
 			  (long)wsi->http.ah->current_token_limit);
 	}
@@ -791,13 +791,13 @@ issue_char(struct lws *wsi, unsigned char c)
 }
 
 int
-lws_parse_urldecode(struct lws *wsi, uint8_t *_c)
+aws_lws_parse_urldecode(struct lws *wsi, uint8_t *_c)
 {
 	struct allocated_headers *ah = wsi->http.ah;
 	unsigned int enc = 0;
 	uint8_t c = *_c;
 
-	// lwsl_notice("ah->ups %d\n", ah->ups);
+	// aws_lwsl_notice("ah->ups %d\n", ah->ups);
 
 	/*
 	 * PRIORITY 1
@@ -851,7 +851,7 @@ lws_parse_urldecode(struct lws *wsi, uint8_t *_c)
 		 * It's allowed in the urlargs, because the apis to access
 		 * those only allow retreival with explicit length.
 		 */
-		lwsl_warn("%s: saw NUL outside of uri args\n", __func__);
+		aws_lwsl_warn("%s: saw NUL outside of uri args\n", __func__);
 		return -1;
 	}
 
@@ -1014,11 +1014,11 @@ static const unsigned char methods[] = {
  * possible returns:, -1 fail, 0 ok or 2, transition to raw
  */
 
-lws_parser_return_t LWS_WARN_UNUSED_RESULT
-lws_parse(struct lws *wsi, unsigned char *buf, int *len)
+aws_lws_parser_return_t LWS_WARN_UNUSED_RESULT
+aws_lws_parse(struct lws *wsi, unsigned char *buf, int *len)
 {
 	struct allocated_headers *ah = wsi->http.ah;
-	struct lws_context *context = wsi->a.context;
+	struct aws_lws_context *context = wsi->a.context;
 	unsigned int n, m;
 	unsigned char c;
 	int r, pos;
@@ -1036,7 +1036,7 @@ lws_parse(struct lws *wsi, unsigned char *buf, int *len)
 			if (c == '\r')
 				break;
 			if (c == '\n') {
-				lws_ser_wu16be((uint8_t *)&ah->data[ah->unk_pos + 2],
+				aws_lws_ser_wu16be((uint8_t *)&ah->data[ah->unk_pos + 2],
 					       (uint16_t)(ah->pos - ah->unk_value_pos));
 				ah->parser_state = WSI_TOKEN_NAME_PART;
 				ah->unk_pos = 0;
@@ -1048,7 +1048,7 @@ lws_parse(struct lws *wsi, unsigned char *buf, int *len)
 			if (ah->pos != ah->unk_value_pos ||
 			    (c != ' ' && c != '\t')) {
 
-				if (lws_pos_in_bounds(wsi))
+				if (aws_lws_pos_in_bounds(wsi))
 					return LPR_FAIL;
 
 				ah->data[ah->pos++] = (char)c;
@@ -1058,7 +1058,7 @@ lws_parse(struct lws *wsi, unsigned char *buf, int *len)
 #endif
 		default:
 
-			lwsl_parser("WSI_TOK_(%d) '%c'\n", ah->parser_state, c);
+			aws_lwsl_parser("WSI_TOK_(%d) '%c'\n", ah->parser_state, c);
 
 			/* collect into malloc'd buffers */
 			/* optional initial space swallow */
@@ -1108,7 +1108,7 @@ lws_parse(struct lws *wsi, unsigned char *buf, int *len)
 				goto start_fragment;
 			}
 
-			r = lws_parse_urldecode(wsi, &c);
+			r = aws_lws_parse_urldecode(wsi, &c);
 			switch (r) {
 			case LPUR_CONTINUE:
 				break;
@@ -1137,7 +1137,7 @@ check_eol:
 					ah->parser_state = WSI_TOKEN_SKIPPING_SAW_CR;
 
 				c = '\0';
-				lwsl_parser("*\n");
+				aws_lwsl_parser("*\n");
 			}
 
 			n = (unsigned int)issue_char(wsi, c);
@@ -1166,10 +1166,10 @@ swallow:
 
 			/* collecting and checking a name part */
 		case WSI_TOKEN_NAME_PART:
-			lwsl_parser("WSI_TOKEN_NAME_PART '%c' 0x%02X "
+			aws_lwsl_parser("WSI_TOKEN_NAME_PART '%c' 0x%02X "
 				    "(role=0x%lx) "
 				    "wsi->lextable_pos=%d\n", c, c,
-				    (unsigned long)lwsi_role(wsi),
+				    (unsigned long)aws_lwsi_role(wsi),
 				    ah->lextable_pos);
 
 			if (!ah->unk_pos && c == '\x0a')
@@ -1196,12 +1196,12 @@ swallow:
 				 *  - 32-bit BE: data offset of next, or 0
 				 */
 				for (n = 0; n < 8; n++)
-					if (!lws_pos_in_bounds(wsi))
+					if (!aws_lws_pos_in_bounds(wsi))
 						ah->data[ah->pos++] = 0;
 #endif
 			}
 
-			if (lws_pos_in_bounds(wsi))
+			if (aws_lws_pos_in_bounds(wsi))
 				return LPR_FAIL;
 
 			ah->data[ah->pos++] = (char)c;
@@ -1224,7 +1224,7 @@ swallow:
 					ah->unk_ll_head = ah->unk_pos;
 
 				if (ah->unk_ll_tail)
-					lws_ser_wu32be(
+					aws_lws_ser_wu32be(
 				(uint8_t *)&ah->data[ah->unk_ll_tail + UHO_LL],
 						       ah->unk_pos);
 
@@ -1232,10 +1232,10 @@ swallow:
 
 #if defined(_DEBUG)
 				uhlen = (int)(ah->pos - (ah->unk_pos + UHO_NAME));
-				lws_strnncpy(dotstar,
+				aws_lws_strnncpy(dotstar,
 					&ah->data[ah->unk_pos + UHO_NAME],
 					uhlen, sizeof(dotstar));
-				lwsl_debug("%s: unk header %d '%s'\n",
+				aws_lwsl_debug("%s: unk header %d '%s'\n",
 					    __func__,
 					    ah->pos - (ah->unk_pos + UHO_NAME),
 					    dotstar);
@@ -1243,7 +1243,7 @@ swallow:
 
 				/* set the unknown header name part length */
 
-				lws_ser_wu16be((uint8_t *)&ah->data[ah->unk_pos],
+				aws_lws_ser_wu16be((uint8_t *)&ah->data[ah->unk_pos],
 					       (uint16_t)((ah->pos - ah->unk_pos) - UHO_NAME));
 
 				ah->unk_value_pos = ah->pos;
@@ -1312,8 +1312,8 @@ nope:
 			 * If it's h1, server needs to be on the look out for
 			 * unknown methods...
 			 */
-			if (ah->lextable_pos < 0 && lwsi_role_h1(wsi) &&
-			    lwsi_role_server(wsi)) {
+			if (ah->lextable_pos < 0 && aws_lwsi_role_h1(wsi) &&
+			    aws_lwsi_role_server(wsi)) {
 				/*
 				 * this is not a header we know about... did
 				 * we get a valid method (GET, POST etc)
@@ -1353,15 +1353,15 @@ nope:
 				 * Are we set up to transition to another role
 				 * in these cases?
 				 */
-				if (lws_check_opt(wsi->a.vhost->options,
+				if (aws_lws_check_opt(wsi->a.vhost->options,
 		    LWS_SERVER_OPTION_FALLBACK_TO_APPLY_LISTEN_ACCEPT_CONFIG)) {
-					lwsl_notice("%s: http fail fallback\n",
+					aws_lwsl_notice("%s: http fail fallback\n",
 						    __func__);
 					 /* transition to other role */
 					return LPR_DO_FALLBACK;
 				}
 
-				lwsl_info("Unknown method - dropping\n");
+				aws_lwsl_info("Unknown method - dropping\n");
 				goto forbid;
 			}
 			if (ah->lextable_pos < 0) {
@@ -1386,11 +1386,11 @@ nope:
 				n = ((unsigned int)lextable_h1[ah->lextable_pos] << 8) |
 						lextable_h1[ah->lextable_pos + 1];
 
-				lwsl_parser("known hdr %d\n", n);
+				aws_lwsl_parser("known hdr %d\n", n);
 				for (m = 0; m < LWS_ARRAY_SIZE(methods); m++)
 					if (n == methods[m] &&
 					    ah->frag_index[methods[m]]) {
-						lwsl_warn("Duplicated method\n");
+						aws_lwsl_warn("Duplicated method\n");
 						return LPR_FAIL;
 					}
 
@@ -1444,7 +1444,7 @@ start_fragment:
 			ah->nfrag++;
 excessive:
 			if (ah->nfrag == LWS_ARRAY_SIZE(ah->frags)) {
-				lwsl_warn("More hdr frags than we can deal with\n");
+				aws_lwsl_warn("More hdr frags than we can deal with\n");
 				return LPR_FAIL;
 			}
 
@@ -1470,7 +1470,7 @@ excessive:
 
 			/* skipping arg part of a name we didn't recognize */
 		case WSI_TOKEN_SKIPPING:
-			lwsl_parser("WSI_TOKEN_SKIPPING '%c'\n", c);
+			aws_lwsl_parser("WSI_TOKEN_SKIPPING '%c'\n", c);
 
 			if (c == '\x0a') {
 				/* broken peer */
@@ -1484,7 +1484,7 @@ excessive:
 			break;
 
 		case WSI_TOKEN_SKIPPING_SAW_CR:
-			lwsl_parser("WSI_TOKEN_SKIPPING_SAW_CR '%c'\n", c);
+			aws_lwsl_parser("WSI_TOKEN_SKIPPING_SAW_CR '%c'\n", c);
 			if (ah->ues != URIES_IDLE)
 				goto forbid;
 			if (c == '\x0a') {
@@ -1497,7 +1497,7 @@ excessive:
 			/* we're done, ignore anything else */
 
 		case WSI_PARSING_COMPLETE:
-			lwsl_parser("WSI_PARSING_COMPLETE '%c'\n", c);
+			aws_lwsl_parser("WSI_PARSING_COMPLETE '%c'\n", c);
 			break;
 		}
 
@@ -1509,13 +1509,13 @@ set_parsing_complete:
 	if (ah->ues != URIES_IDLE)
 		goto forbid;
 
-	if (lws_hdr_total_length(wsi, WSI_TOKEN_UPGRADE)) {
+	if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_UPGRADE)) {
 #if defined(LWS_ROLE_WS)
-		const char *pv = lws_hdr_simple_ptr(wsi, WSI_TOKEN_VERSION);
+		const char *pv = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_VERSION);
 		if (pv)
 			wsi->rx_frame_type = (char)atoi(pv);
 
-		lwsl_parser("v%02d hdrs done\n", wsi->rx_frame_type);
+		aws_lwsl_parser("v%02d hdrs done\n", wsi->rx_frame_type);
 #endif
 	}
 	ah->parser_state = WSI_PARSING_COMPLETE;
@@ -1524,23 +1524,23 @@ set_parsing_complete:
 	return LPR_OK;
 
 forbid:
-	lwsl_info(" forbidding on uri sanitation\n");
+	aws_lwsl_info(" forbidding on uri sanitation\n");
 #if defined(LWS_WITH_SERVER)
-	lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, NULL);
+	aws_lws_return_http_status(wsi, HTTP_STATUS_FORBIDDEN, NULL);
 #endif
 
 	return LPR_FORBIDDEN;
 }
 
 int
-lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
+aws_lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
 		    size_t *max_len)
 {
 	size_t max = *max_len, bl = strlen(name);
 	char *p, *bo = buf;
 	int n;
 
-	n = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE);
+	n = aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COOKIE);
 	if ((unsigned int)n < bl + 1)
 		return 1;
 
@@ -1550,7 +1550,7 @@ lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
 	 */
 
 #if defined(LWS_ROLE_H2)
-	if (lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COLON_METHOD)) {
+	if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COLON_METHOD)) {
 
 		/*
 		 * The h2 way...
@@ -1586,7 +1586,7 @@ lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
 	 * The h1 way...
 	 */
 
-	p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COOKIE);
+	p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COOKIE);
 	if (!p)
 		return 1;
 
@@ -1603,7 +1603,7 @@ lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
 				return 2;
 
 			*buf = '\0';
-			*max_len = lws_ptr_diff_size_t(buf, bo);
+			*max_len = aws_lws_ptr_diff_size_t(buf, bo);
 
 			return 0;
 		}
@@ -1618,8 +1618,8 @@ lws_http_cookie_get(struct lws *wsi, const char *name, char *buf,
 #define MAX_JWT_SIZE 1024
 
 int
-lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
-				     struct lws_jwt_sign_set_cookie *i,
+aws_lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
+				     struct aws_lws_jwt_sign_set_cookie *i,
 				     char *out, size_t *out_len)
 {
 	char temp[MAX_JWT_SIZE * 2];
@@ -1628,17 +1628,17 @@ lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
 
 	/* first use out to hold the encoded JWT */
 
-	if (lws_http_cookie_get(wsi, i->cookie_name, out, out_len)) {
-		lwsl_debug("%s: cookie %s not provided\n", __func__,
+	if (aws_lws_http_cookie_get(wsi, i->cookie_name, out, out_len)) {
+		aws_lwsl_debug("%s: cookie %s not provided\n", __func__,
 				i->cookie_name);
 		return 1;
 	}
 
 	/* decode the JWT into temp */
 
-	if (lws_jwt_signed_validate(wsi->a.context, i->jwk, i->alg, out,
+	if (aws_lws_jwt_signed_validate(wsi->a.context, i->jwk, i->alg, out,
 				    *out_len, temp, sizeof(temp), out, &cml)) {
-		lwsl_info("%s: jwt validation failed\n", __func__);
+		aws_lwsl_info("%s: jwt validation failed\n", __func__);
 		return 1;
 	}
 
@@ -1648,10 +1648,10 @@ lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
 	 * translated into allocated buffers in the JOSE object)
 	 */
 
-	if (lws_jwt_token_sanity(out, cml, i->iss, i->aud, i->csrf_in,
+	if (aws_lws_jwt_token_sanity(out, cml, i->iss, i->aud, i->csrf_in,
 				 i->sub, sizeof(i->sub),
 				 &i->expiry_unix_time)) {
-		lwsl_notice("%s: jwt sanity failed\n", __func__);
+		aws_lwsl_notice("%s: jwt sanity failed\n", __func__);
 		return 1;
 	}
 
@@ -1660,19 +1660,19 @@ lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
 	 * the args struct (it's pointing to the data in out
 	 */
 
-	cp = lws_json_simple_find(out, cml, "\"ext\":", &i->extra_json_len);
+	cp = aws_lws_json_simple_find(out, cml, "\"ext\":", &i->extra_json_len);
 	if (cp)
 		i->extra_json = cp;
 
 	if (!cp)
-		lwsl_notice("%s: no ext JWT payload\n", __func__);
+		aws_lwsl_notice("%s: no ext JWT payload\n", __func__);
 
 	return 0;
 }
 
 int
-lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
-				   const struct lws_jwt_sign_set_cookie *i,
+aws_lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
+				   const struct aws_lws_jwt_sign_set_cookie *i,
 				   uint8_t **p, uint8_t *end)
 {
 	char plain[MAX_JWT_SIZE + 1], temp[MAX_JWT_SIZE * 2], csrf[17];
@@ -1684,9 +1684,9 @@ lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
 	 * Create a 16-char random csrf token with the same lifetime as the JWT
 	 */
 
-	lws_hex_random(wsi->a.context, csrf, sizeof(csrf));
-	ull = lws_now_secs();
-	if (lws_jwt_sign_compact(wsi->a.context, i->jwk, i->alg, plain, &pl,
+	aws_lws_hex_random(wsi->a.context, csrf, sizeof(csrf));
+	ull = aws_lws_now_secs();
+	if (aws_lws_jwt_sign_compact(wsi->a.context, i->jwk, i->alg, plain, &pl,
 			         temp, sizeof(temp),
 			         "{\"iss\":\"%s\",\"aud\":\"%s\","
 			          "\"iat\":%llu,\"nbf\":%llu,\"exp\":%llu,"
@@ -1697,7 +1697,7 @@ lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
 			         i->extra_json ? ",\"ext\":{" : "",
 			         i->extra_json ? i->extra_json : "",
 			         i->extra_json ? "}" : "")) {
-		lwsl_err("%s: failed to create JWT\n", __func__);
+		aws_lwsl_err("%s: failed to create JWT\n", __func__);
 
 		return 1;
 	}
@@ -1707,7 +1707,7 @@ lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
 	 * expiry time, so set it to be the same.
 	 */
 
-	n = lws_snprintf(temp, sizeof(temp), "__Host-%s=%s;"
+	n = aws_lws_snprintf(temp, sizeof(temp), "__Host-%s=%s;"
 			 "HttpOnly;"
 			 "Secure;"
 			 "SameSite=strict;"
@@ -1715,9 +1715,9 @@ lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
 			 "Max-Age=%lu",
 			 i->cookie_name, plain, i->expiry_unix_time);
 
-	if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_SET_COOKIE,
+	if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_SET_COOKIE,
 					 (uint8_t *)temp, n, p, end)) {
-		lwsl_err("%s: failed to add JWT cookie header\n", __func__);
+		aws_lwsl_err("%s: failed to add JWT cookie header\n", __func__);
 		return 1;
 	}
 

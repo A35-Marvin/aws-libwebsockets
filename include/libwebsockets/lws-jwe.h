@@ -42,10 +42,10 @@
 #define LWS_JWE_LIMIT_KEY_ELEMENT_BYTES (LWS_JWE_LIMIT_RSA_KEY_BITS / 8)
 
 
-struct lws_jwe {
-	struct lws_jose jose;
-	struct lws_jws jws;
-	struct lws_jwk jwk;
+struct aws_lws_jwe {
+	struct aws_lws_jose jose;
+	struct aws_lws_jws jws;
+	struct aws_lws_jwk jwk;
 
 	/*
 	 * We have to keep a copy of the CEK so we can reuse it with later
@@ -58,13 +58,13 @@ struct lws_jwe {
 };
 
 LWS_VISIBLE LWS_EXTERN void
-lws_jwe_init(struct lws_jwe *jwe, struct lws_context *context);
+aws_lws_jwe_init(struct aws_lws_jwe *jwe, struct aws_lws_context *context);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_jwe_destroy(struct lws_jwe *jwe);
+aws_lws_jwe_destroy(struct aws_lws_jwe *jwe);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_jwe_be64(uint64_t c, uint8_t *p8);
+aws_lws_jwe_be64(uint64_t c, uint8_t *p8);
 
 /*
  * JWE Compact Serialization consists of
@@ -77,17 +77,17 @@ lws_jwe_be64(uint64_t c, uint8_t *p8);
  */
 
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_render_compact(struct lws_jwe *jwe, char *out, size_t out_len);
+aws_lws_jwe_render_compact(struct aws_lws_jwe *jwe, char *out, size_t out_len);
 
 LWS_VISIBLE int
-lws_jwe_render_flattened(struct lws_jwe *jwe, char *out, size_t out_len);
+aws_lws_jwe_render_flattened(struct aws_lws_jwe *jwe, char *out, size_t out_len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_json_parse(struct lws_jwe *jwe, const uint8_t *buf, int len,
+aws_lws_jwe_json_parse(struct aws_lws_jwe *jwe, const uint8_t *buf, int len,
 		   char *temp, int *temp_len);
 
 /**
- * lws_jwe_auth_and_decrypt() - confirm and decrypt JWE
+ * aws_lws_jwe_auth_and_decrypt() - confirm and decrypt JWE
  *
  * \param jose: jose context
  * \param jws: jws / jwe context... .map and .map_b64 must be filled already
@@ -110,10 +110,10 @@ lws_jwe_json_parse(struct lws_jwe *jwe, const uint8_t *buf, int len,
  * Returns decrypt length, or -1 for failure.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_auth_and_decrypt(struct lws_jwe *jwe, char *temp, int *temp_len);
+aws_lws_jwe_auth_and_decrypt(struct aws_lws_jwe *jwe, char *temp, int *temp_len);
 
 /**
- * lws_jwe_encrypt() - perform JWE encryption
+ * aws_lws_jwe_encrypt() - perform JWE encryption
  *
  * \param jose: the JOSE header information (encryption types, etc)
  * \param jws: the JWE elements, pointer to jwk etc
@@ -126,39 +126,39 @@ lws_jwe_auth_and_decrypt(struct lws_jwe *jwe, char *temp, int *temp_len);
  * returns the amount of temp used, or -1 for error.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_encrypt(struct lws_jwe *jwe, char *temp, int *temp_len);
+aws_lws_jwe_encrypt(struct aws_lws_jwe *jwe, char *temp, int *temp_len);
 
 /**
- * lws_jwe_create_packet() - add b64 sig to b64 hdr + payload
+ * aws_lws_jwe_create_packet() - add b64 sig to b64 hdr + payload
  *
- * \param jwe: the struct lws_jwe we are trying to render
+ * \param jwe: the struct aws_lws_jwe we are trying to render
  * \param payload: unencoded payload JSON
  * \param len: length of unencoded payload JSON
  * \param nonce: Nonse string to include in protected header
  * \param out: buffer to take signed packet
  * \param out_len: size of \p out buffer
- * \param conext: lws_context to get random from
+ * \param conext: aws_lws_context to get random from
  *
  * This creates a "flattened" JWS packet from the jwk and the plaintext
  * payload, and signs it.  The packet is written into \p out.
  *
  * This does the whole packet assembly and signing, calling through to
- * lws_jws_sign_from_b64() as part of the process.
+ * aws_lws_jws_sign_from_b64() as part of the process.
  *
  * Returns the length written to \p out, or -1.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_create_packet(struct lws_jwe *jwe,
+aws_lws_jwe_create_packet(struct aws_lws_jwe *jwe,
 		      const char *payload, size_t len, const char *nonce,
-		      char *out, size_t out_len, struct lws_context *context);
+		      char *out, size_t out_len, struct aws_lws_context *context);
 
 
 /* only exposed because we have test vectors that need it */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_auth_and_decrypt_cbc_hs(struct lws_jwe *jwe, uint8_t *enc_cek,
+aws_lws_jwe_auth_and_decrypt_cbc_hs(struct aws_lws_jwe *jwe, uint8_t *enc_cek,
 					uint8_t *aad, int aad_len);
 
 /* only exposed because we have test vectors that need it */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwa_concat_kdf(struct lws_jwe *jwe, int direct,
+aws_lws_jwa_concat_kdf(struct aws_lws_jwe *jwe, int direct,
 		   uint8_t *out, const uint8_t *shared_secret, int sslen);

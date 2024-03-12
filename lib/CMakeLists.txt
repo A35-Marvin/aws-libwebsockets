@@ -290,12 +290,12 @@ if (UNIX OR MINGW)
 
 # figure out pkfcfg required libs here
 
-set(lws_requires "")
+set(aws_lws_requires "")
 if (LWS_HAVE_LIBCAP)
-	if (NOT lws_requires STREQUAL "")
-		set(lws_requires "${lws_requires},libcap")
+	if (NOT aws_lws_requires STREQUAL "")
+		set(aws_lws_requires "${aws_lws_requires},libcap")
 	else()
-		set(lws_requires "libcap")
+		set(aws_lws_requires "libcap")
 	endif()
 endif()
 
@@ -316,8 +316,8 @@ Libs: -L\${libdir} -lwebsockets
 Cflags: -I\${includedir}
 "
 )
-if (NOT ${lws_requires} STREQUAL "")
-        file(APPEND "${PROJECT_BINARY_DIR}/libwebsockets.pc" "Requires: ${lws_requires}")
+if (NOT ${aws_lws_requires} STREQUAL "")
+        file(APPEND "${PROJECT_BINARY_DIR}/libwebsockets.pc" "Requires: ${aws_lws_requires}")
 endif()
 
 
@@ -340,8 +340,8 @@ Cflags: -I\${includedir}
 "
 )
 
-if (NOT ${lws_requires} STREQUAL "")
-        file(APPEND "${PROJECT_BINARY_DIR}/libwebsockets_static.pc" "Requires: ${lws_requires}")
+if (NOT ${aws_lws_requires} STREQUAL "")
+        file(APPEND "${PROJECT_BINARY_DIR}/libwebsockets_static.pc" "Requires: ${aws_lws_requires}")
 endif()
 
 

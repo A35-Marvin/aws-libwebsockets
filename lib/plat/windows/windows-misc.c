@@ -28,19 +28,19 @@
 #include "private-lib-core.h"
 
 /*
- * Normally you don't want this, use lws_sul instead inside the event loop.
+ * Normally you don't want this, use aws_lws_sul instead inside the event loop.
  * But sometimes for drivers it makes sense, so there's an internal-only
  * crossplatform api for it.
  */
 
 void
-lws_msleep(unsigned int ms)
+aws_lws_msleep(unsigned int ms)
 {
         Sleep(ms);
 }
 
-lws_usec_t
-lws_now_usecs(void)
+aws_lws_usec_t
+aws_lws_now_usecs(void)
 {
 #ifndef DELTA_EPOCH_IN_MICROSECS
 #define DELTA_EPOCH_IN_MICROSECS 11644473600000000ULL
@@ -70,7 +70,7 @@ lws_now_usecs(void)
 #ifdef _WIN32_WCE
 time_t time(time_t *t)
 {
-	time_t ret = lws_now_usecs() / 1000000;
+	time_t ret = aws_lws_now_usecs() / 1000000;
 
 	if(t != NULL)
 		*t = ret;
@@ -80,7 +80,7 @@ time_t time(time_t *t)
 #endif
 
 size_t
-lws_get_random(struct lws_context *context, void *buf, size_t len)
+aws_lws_get_random(struct aws_lws_context *context, void *buf, size_t len)
 {
 	size_t n;
 	char *p = (char *)buf;
@@ -93,27 +93,27 @@ lws_get_random(struct lws_context *context, void *buf, size_t len)
 
 
 void
-lwsl_emit_syslog(int level, const char *line)
+aws_lwsl_emit_syslog(int level, const char *line)
 {
-	lwsl_emit_stderr(level, line);
+	aws_lwsl_emit_stderr(level, line);
 }
 
 
 int kill(int pid, int sig)
 {
-	lwsl_err("Sorry Windows doesn't support kill().");
+	aws_lwsl_err("Sorry Windows doesn't support kill().");
 	exit(0);
 }
 
 int fork(void)
 {
-	lwsl_err("Sorry Windows doesn't support fork().");
+	aws_lwsl_err("Sorry Windows doesn't support fork().");
 	exit(0);
 }
 
 
 int
-lws_plat_recommended_rsa_bits(void)
+aws_lws_plat_recommended_rsa_bits(void)
 {
 	return 4096;
 }

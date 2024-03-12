@@ -43,9 +43,9 @@ struct vhd_fts_demo {
 };
 
 struct pss_fts_demo {
-	struct lwsac *result;
-	struct lws_fts_result_autocomplete *ac;
-	struct lws_fts_result_filepath *fp;
+	struct aws_lwsac *result;
+	struct aws_lws_fts_result_autocomplete *ac;
+	struct aws_lws_fts_result_filepath *fp;
 
 	uint32_t *li;
 	int done;
@@ -57,29 +57,29 @@ struct pss_fts_demo {
 };
 
 static int
-callback_fts(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_fts(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	struct vhd_fts_demo *vhd = (struct vhd_fts_demo *)
-		lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					 lws_get_protocol(wsi));
+		aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					 aws_lws_get_protocol(wsi));
 	struct pss_fts_demo *pss = (struct pss_fts_demo *)user;
 	uint8_t buf[LWS_PRE + 2048], *start = &buf[LWS_PRE], *p = start,
 		*end = &buf[sizeof(buf) - LWS_PRE - 1];
-	struct lws_fts_search_params params;
+	struct aws_lws_fts_search_params params;
 	const char *ccp = (const char *)in;
-	struct lws_fts_result *result;
-	struct lws_fts_file *jtf;
+	struct aws_lws_fts_result *result;
+	struct aws_lws_fts_file *jtf;
 	int n;
 
 	switch (reason) {
 
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-			     lws_get_protocol(wsi),sizeof(struct vhd_fts_demo));
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+			     aws_lws_get_protocol(wsi),sizeof(struct vhd_fts_demo));
 		if (!vhd)
 			return 0;
-		if (lws_pvo_get_str(in, "indexpath",
+		if (aws_lws_pvo_get_str(in, "indexpath",
 				    (const char **)&vhd->indexpath))
 			return 1;
 
@@ -112,15 +112,15 @@ callback_fts(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		params.max_autocomplete = 10;
 		params.max_files = 10;
 
-		jtf = lws_fts_open(vhd->indexpath);
+		jtf = aws_lws_fts_open(vhd->indexpath);
 		if (!jtf) {
-			lwsl_err("unable to open %s\n", vhd->indexpath);
+			aws_lwsl_err("unable to open %s\n", vhd->indexpath);
 			/* we'll inform the client in the JSON */
 			goto reply_200;
 		}
 
-		result = lws_fts_search(jtf, &params);
-		lws_fts_close(jtf);
+		result = aws_lws_fts_search(jtf, &params);
+		aws_lws_fts_close(jtf);
 		if (result) {
 			pss->result = params.results_head;
 			pss->ac = result->autocomplete_head;
@@ -129,30 +129,30 @@ callback_fts(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		/* NULL result will be told in the json as "indexed": 0 */
 
 reply_200:
-		if (lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
+		if (aws_lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
 						"text/html",
 					LWS_ILLEGAL_HTTP_CONTENT_LEN, &p, end))
 			return 1;
 
-		if (lws_finalize_write_http_header(wsi, start, &p, end))
+		if (aws_lws_finalize_write_http_header(wsi, start, &p, end))
 			return 1;
 
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		return 0;
 
 reply_404:
-		if (lws_add_http_common_headers(wsi, HTTP_STATUS_NOT_FOUND,
+		if (aws_lws_add_http_common_headers(wsi, HTTP_STATUS_NOT_FOUND,
 						"text/html",
 					LWS_ILLEGAL_HTTP_CONTENT_LEN, &p, end))
 			return 1;
 
-		if (lws_finalize_write_http_header(wsi, start, &p, end))
+		if (aws_lws_finalize_write_http_header(wsi, start, &p, end))
 			return 1;
-		return lws_http_transaction_completed(wsi);
+		return aws_lws_http_transaction_completed(wsi);
 
 	case LWS_CALLBACK_CLOSED_HTTP:
 		if (pss && pss->result)
-			lwsac_free(&pss->result);
+			aws_lwsac_free(&pss->result);
 		break;
 
 	case LWS_CALLBACK_HTTP_WRITEABLE:
@@ -162,11 +162,11 @@ reply_404:
 
 		n = LWS_WRITE_HTTP;
 		if (pss->first)
-			p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p),
 				"{\"indexed\": %d, \"ac\": [", !!pss->result);
 
-		while (pss->ac && lws_ptr_diff(end, p) > 256) {
-			p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p),
+		while (pss->ac && aws_lws_ptr_diff(end, p) > 256) {
+			p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p),
 				"%c{\"ac\": \"%s\",\"matches\": %d,"
 				"\"agg\": %d, \"elided\": %d}",
 				pss->first ? ' ' : ',', (char *)(pss->ac + 1),
@@ -180,14 +180,14 @@ reply_404:
 		if (!pss->ac_done && !pss->ac && pss->fp) {
 			pss->ac_done = 1;
 
-			p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p),
 					  "], \"fp\": [");
 		}
 
-		while (pss->fp && lws_ptr_diff_size_t(end, p) > 256) {
+		while (pss->fp && aws_lws_ptr_diff_size_t(end, p) > 256) {
 			if (!pss->fp_init_done) {
-				p += lws_snprintf((char *)p,
-						lws_ptr_diff_size_t(end, p),
+				p += aws_lws_snprintf((char *)p,
+						aws_lws_ptr_diff_size_t(end, p),
 					"%c{\"path\": \"%s\",\"matches\": %d,"
 					"\"origlines\": %d,"
 					"\"hits\": [", pss->first ? ' ' : ',',
@@ -202,10 +202,10 @@ reply_404:
 				pss->first = 0;
 			} else {
 				while (pss->done < pss->fp->matches &&
-				       lws_ptr_diff(end, p) > 256) {
+				       aws_lws_ptr_diff(end, p) > 256) {
 
-					p += lws_snprintf((char *)p,
-							lws_ptr_diff_size_t(end, p),
+					p += aws_lws_snprintf((char *)p,
+							aws_lws_ptr_diff_size_t(end, p),
 						"%c\n{\"l\":%d,\"o\":%d,"
 						"\"s\":\"%s\"}",
 						!pss->done ? ' ' : ',',
@@ -228,22 +228,22 @@ reply_404:
 
 		if (!pss->ac && !pss->fp) {
 			n = LWS_WRITE_HTTP_FINAL;
-			p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p),
 						"]}");
 		}
 
-		if (lws_write(wsi, (uint8_t *)start,
-				lws_ptr_diff_size_t(p, start), (enum lws_write_protocol)n) !=
-					      lws_ptr_diff(p, start))
+		if (aws_lws_write(wsi, (uint8_t *)start,
+				aws_lws_ptr_diff_size_t(p, start), (enum aws_lws_write_protocol)n) !=
+					      aws_lws_ptr_diff(p, start))
 			return 1;
 
 		if (n == LWS_WRITE_HTTP_FINAL) {
 			if (pss->result)
-				lwsac_free(&pss->result);
-			if (lws_http_transaction_completed(wsi))
+				aws_lwsac_free(&pss->result);
+			if (aws_lws_http_transaction_completed(wsi))
 				return -1;
 		} else
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 
 		return 0;
 
@@ -251,7 +251,7 @@ reply_404:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
 
@@ -266,14 +266,14 @@ reply_404:
 
 #if !defined (LWS_PLUGIN_STATIC)
 
-LWS_VISIBLE const struct lws_protocols fulltext_demo_protocols[] = {
+LWS_VISIBLE const struct aws_lws_protocols fulltext_demo_protocols[] = {
 	LWS_PLUGIN_PROTOCOL_FULLTEXT_DEMO
 };
 
-LWS_VISIBLE const lws_plugin_protocol_t fulltext_demo = {
+LWS_VISIBLE const aws_lws_plugin_protocol_t fulltext_demo = {
 	.hdr = {
 		"fulltext demo",
-		"lws_protocol_plugin",
+		"aws_lws_protocol_plugin",
 		LWS_BUILD_HASH,
 		LWS_PLUGIN_API_MAGIC
 	},

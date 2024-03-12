@@ -65,7 +65,7 @@
  */
 
 int
-lws_ranges_next(struct lws_range_parsing *rp)
+aws_lws_ranges_next(struct aws_lws_range_parsing *rp)
 {
 	static const char * const beq = "bytes=";
 
@@ -163,7 +163,7 @@ lws_ranges_next(struct lws_range_parsing *rp)
 }
 
 void
-lws_ranges_reset(struct lws_range_parsing *rp)
+aws_lws_ranges_reset(struct aws_lws_range_parsing *rp)
 {
 	rp->pos = 0;
 	rp->ctr = 0;
@@ -178,7 +178,7 @@ lws_ranges_reset(struct lws_range_parsing *rp)
  * returns count of valid ranges
  */
 int
-lws_ranges_init(struct lws *wsi, struct lws_range_parsing *rp,
+aws_lws_ranges_init(struct lws *wsi, struct aws_lws_range_parsing *rp,
 		unsigned long long extent)
 {
 	rp->agg = 0;
@@ -186,29 +186,29 @@ lws_ranges_init(struct lws *wsi, struct lws_range_parsing *rp,
 	rp->inside = 0;
 	rp->count_ranges = 0;
 	rp->did_try = 0;
-	lws_ranges_reset(rp);
+	aws_lws_ranges_reset(rp);
 	rp->state = LWSRS_COMPLETED;
 
 	rp->extent = extent;
 
-	if (lws_hdr_copy(wsi, (char *)rp->buf, sizeof(rp->buf),
+	if (aws_lws_hdr_copy(wsi, (char *)rp->buf, sizeof(rp->buf),
 			 WSI_TOKEN_HTTP_RANGE) <= 0)
 		return 0;
 
 	rp->state = LWSRS_BYTES_EQ;
 
-	while (lws_ranges_next(rp)) {
+	while (aws_lws_ranges_next(rp)) {
 		rp->count_ranges++;
 		rp->agg += rp->end - rp->start + 1;
 	}
 
-	lwsl_debug("%s: count %d\n", __func__, rp->count_ranges);
-	lws_ranges_reset(rp);
+	aws_lwsl_debug("%s: count %d\n", __func__, rp->count_ranges);
+	aws_lws_ranges_reset(rp);
 
 	if (rp->did_try && !rp->count_ranges)
 		return -1; /* "not satisfiable */
 
-	lws_ranges_next(rp);
+	aws_lws_ranges_next(rp);
 
 	return rp->count_ranges;
 }

@@ -22,4 +22,4 @@
  * IN THE SOFTWARE.
  */
 
-extern const lws_gpio_ops_t lws_gpio_plat;
+extern const aws_lws_gpio_ops_t aws_lws_gpio_plat;

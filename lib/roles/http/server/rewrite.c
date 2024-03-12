@@ -2,19 +2,19 @@
 
 #if defined(LWS_WITH_HUBBUB)
 
-struct lws_rewrite *
-lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from,
+struct aws_lws_rewrite *
+aws_lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from,
 		   const char *to)
 {
-	struct lws_rewrite *r = lws_malloc(sizeof(*r), "rewrite");
+	struct aws_lws_rewrite *r = aws_lws_malloc(sizeof(*r), "rewrite");
 
 	if (!r) {
-		lwsl_err("OOM\n");
+		aws_lwsl_err("OOM\n");
 		return NULL;
 	}
 
 	if (hubbub_parser_create("UTF-8", false, &r->parser) != HUBBUB_OK) {
-		lws_free(r);
+		aws_lws_free(r);
 
 		return NULL;
 	}
@@ -27,7 +27,7 @@ lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from,
 	r->params.token_handler.pw = (void *)r;
 	if (hubbub_parser_setopt(r->parser, HUBBUB_PARSER_TOKEN_HANDLER,
 				 &r->params) != HUBBUB_OK) {
-		lws_free(r);
+		aws_lws_free(r);
 
 		return NULL;
 	}
@@ -36,7 +36,7 @@ lws_rewrite_create(struct lws *wsi, hubbub_callback_t cb, const char *from,
 }
 
 int
-lws_rewrite_parse(struct lws_rewrite *r,
+aws_lws_rewrite_parse(struct aws_lws_rewrite *r,
 		  const unsigned char *in, int in_len)
 {
 	if (r && hubbub_parser_parse_chunk(r->parser, in, in_len) != HUBBUB_OK)
@@ -46,10 +46,10 @@ lws_rewrite_parse(struct lws_rewrite *r,
 }
 
 void
-lws_rewrite_destroy(struct lws_rewrite *r)
+aws_lws_rewrite_destroy(struct aws_lws_rewrite *r)
 {
 	hubbub_parser_destroy(r->parser);
-	lws_free(r);
+	aws_lws_free(r);
 }
 
 #endif

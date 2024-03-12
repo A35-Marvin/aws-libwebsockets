@@ -33,7 +33,7 @@
  */
 
 int
-lws_gencrypto_openssl_hash_to_NID(enum lws_genhash_types hash_type)
+aws_lws_gencrypto_openssl_hash_to_NID(enum aws_lws_genhash_types hash_type)
 {
 	int h = -1;
 
@@ -61,7 +61,7 @@ lws_gencrypto_openssl_hash_to_NID(enum lws_genhash_types hash_type)
 }
 
 const EVP_MD *
-lws_gencrypto_openssl_hash_to_EVP_MD(enum lws_genhash_types hash_type)
+aws_lws_gencrypto_openssl_hash_to_EVP_MD(enum aws_lws_genhash_types hash_type)
 {
 	const EVP_MD *h = NULL;
 

@@ -41,7 +41,7 @@ static int interrupted;
 #define SECS_REPORT 3
 
 static int
-callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_sse(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 	struct pss *pss = (struct pss *)user;
@@ -55,20 +55,20 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * you can use this to determine what data to return and store
 		 * that in the pss
 		 */
-		lwsl_notice("%s: LWS_CALLBACK_HTTP: '%s'\n", __func__,
+		aws_lwsl_notice("%s: LWS_CALLBACK_HTTP: '%s'\n", __func__,
 			    (const char *)in);
 
 		pss->established = time(NULL);
 
 		/* SSE requires a response with this content-type */
 
-		if (lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
+		if (aws_lws_add_http_common_headers(wsi, HTTP_STATUS_OK,
 						"text/event-stream",
 						LWS_ILLEGAL_HTTP_CONTENT_LEN,
 						&p, end))
 			return 1;
 
-		if (lws_finalize_write_http_header(wsi, start, &p, end))
+		if (aws_lws_finalize_write_http_header(wsi, start, &p, end))
 			return 1;
 
 		/*
@@ -78,17 +78,17 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * stops idle timeouts being applied to the network connection
 		 * while this wsi is still open.
 		 */
-		lws_http_mark_sse(wsi);
+		aws_lws_http_mark_sse(wsi);
 
 		/* write the body separately */
 
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 
 		return 0;
 
 	case LWS_CALLBACK_HTTP_WRITEABLE:
 
-		lwsl_notice("%s: LWS_CALLBACK_HTTP_WRITEABLE\n", __func__);
+		aws_lwsl_notice("%s: LWS_CALLBACK_HTTP_WRITEABLE\n", __func__);
 
 		if (!pss)
 			break;
@@ -98,23 +98,23 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * own private data and timer.
 		 */
 
-		p += lws_snprintf((char *)p, lws_ptr_diff_size_t(end, p),
+		p += aws_lws_snprintf((char *)p, aws_lws_ptr_diff_size_t(end, p),
 				  "data: %llu\x0d\x0a\x0d\x0a",
 				  (unsigned long long)(time(NULL) -
 				  pss->established));
 
-		if (lws_write(wsi, (uint8_t *)start, lws_ptr_diff_size_t(p, start),
-			      LWS_WRITE_HTTP) != lws_ptr_diff(p, start))
+		if (aws_lws_write(wsi, (uint8_t *)start, aws_lws_ptr_diff_size_t(p, start),
+			      LWS_WRITE_HTTP) != aws_lws_ptr_diff(p, start))
 			return 1;
 
-		lws_set_timer_usecs(wsi, SECS_REPORT * LWS_USEC_PER_SEC);
+		aws_lws_set_timer_usecs(wsi, SECS_REPORT * LWS_USEC_PER_SEC);
 
 		return 0;
 
 	case LWS_CALLBACK_TIMER:
 
-		lwsl_notice("%s: LWS_CALLBACK_TIMER\n", __func__);
-		lws_callback_on_writable(wsi);
+		aws_lwsl_notice("%s: LWS_CALLBACK_TIMER\n", __func__);
+		aws_lws_callback_on_writable(wsi);
 
 		return 0;
 
@@ -122,18 +122,18 @@ callback_sse(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static struct lws_protocols protocols[] = {
-	{ "http", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+static struct aws_lws_protocols protocols[] = {
+	{ "http", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	{ "sse", callback_sse, sizeof(struct pss), 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
 
 /* override the default mount for /sse in the URL space */
 
-static const struct lws_http_mount mount_sse = {
+static const struct aws_lws_http_mount mount_sse = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/sse",		/* mountpoint URL */
 	/* .origin */			NULL,		/* protocol */
@@ -155,7 +155,7 @@ static const struct lws_http_mount mount_sse = {
 
 /* default mount serves the URL space from ./mount-origin */
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		&mount_sse,	/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -182,8 +182,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -195,11 +195,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http Server-Side Events | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http Server-Side Events | visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 
@@ -210,7 +210,7 @@ int main(int argc, const char **argv)
 	info.port = 7681;
 
 #if defined(LWS_WITH_TLS)
-	if (lws_cmdline_option(argc, argv, "-s")) {
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
 		info.port = 443;
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 		info.ssl_cert_filepath = "localhost-100y.cert";
@@ -218,16 +218,16 @@ int main(int argc, const char **argv)
 	}
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

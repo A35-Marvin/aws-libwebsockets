@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 void
-lws_tls_kid_copy(union lws_tls_cert_info_results *ci, lws_tls_kid_t *kid)
+aws_lws_tls_kid_copy(union aws_lws_tls_cert_info_results *ci, aws_lws_tls_kid_t *kid)
 {
 
 	/*
@@ -42,7 +42,7 @@ lws_tls_kid_copy(union lws_tls_cert_info_results *ci, lws_tls_kid_t *kid)
 }
 
 void
-lws_tls_kid_copy_kid(lws_tls_kid_t *kid, const lws_tls_kid_t *src)
+aws_lws_tls_kid_copy_kid(aws_lws_tls_kid_t *kid, const aws_lws_tls_kid_t *src)
 {
 	int klen = sizeof(kid->kid);
 
@@ -55,7 +55,7 @@ lws_tls_kid_copy_kid(lws_tls_kid_t *kid, const lws_tls_kid_t *src)
 }
 
 int
-lws_tls_kid_cmp(const lws_tls_kid_t *a, const lws_tls_kid_t *b)
+aws_lws_tls_kid_cmp(const aws_lws_tls_kid_t *a, const aws_lws_tls_kid_t *b)
 {
 	if (a->kid_len != b->kid_len)
 		return 1;
@@ -85,22 +85,22 @@ lws_tls_kid_cmp(const lws_tls_kid_t *a, const lws_tls_kid_t *b)
  */
 
 int
-lws_tls_jit_trust_sort_kids(struct lws *wsi, lws_tls_kid_chain_t *ch)
+aws_lws_tls_jit_trust_sort_kids(struct lws *wsi, aws_lws_tls_kid_chain_t *ch)
 {
 	size_t hl;
-	lws_tls_jit_inflight_t *inf;
+	aws_lws_tls_jit_inflight_t *inf;
 	int n, m, sanity = 10;
 	const char *host = wsi->cli_hostname_copy;
 	char more = 1;
 
-	lwsl_info("%s\n", __func__);
+	aws_lwsl_info("%s\n", __func__);
 
 	if (!host) {
 		if (wsi->stash && wsi->stash->cis[CIS_HOST])
 			host = wsi->stash->cis[CIS_HOST];
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 		else
-			host = lws_hdr_simple_ptr(wsi,
+			host = aws_lws_hdr_simple_ptr(wsi,
 					      _WSI_TOKEN_CLIENT_PEER_ADDRESS);
 	}
 #endif
@@ -129,7 +129,7 @@ lws_tls_jit_trust_sort_kids(struct lws *wsi, lws_tls_kid_chain_t *ch)
 			more = 0;
 			for (n = 0; n < ch->count - 1; n++) {
 
-				if (!lws_tls_kid_cmp(&ch->skid[n],
+				if (!aws_lws_tls_kid_cmp(&ch->skid[n],
 						     &ch->akid[n + 1]))
 					/* next belongs with this one */
 					continue;
@@ -143,9 +143,9 @@ lws_tls_jit_trust_sort_kids(struct lws *wsi, lws_tls_kid_chain_t *ch)
 				for (m = 0; m < ch->count; m++) {
 					if (n == m)
 						continue;
-					if (!lws_tls_kid_cmp(&ch->skid[n],
+					if (!aws_lws_tls_kid_cmp(&ch->skid[n],
 							     &ch->akid[m])) {
-						lws_tls_kid_t t;
+						aws_lws_tls_kid_t t;
 
 						/*
 						 * m references us, so we
@@ -174,10 +174,10 @@ lws_tls_jit_trust_sort_kids(struct lws *wsi, lws_tls_kid_chain_t *ch)
 	}
 
 	for (n = 0; n < ch->count; n++) {
-		lwsl_info("%s: AKID[%d]\n", __func__, n);
-		lwsl_hexdump_info(ch->akid[n].kid, ch->akid[n].kid_len);
-		lwsl_info("%s: SKID[%d]\n", __func__, n);
-		lwsl_hexdump_info(ch->skid[n].kid, ch->skid[n].kid_len);
+		aws_lwsl_info("%s: AKID[%d]\n", __func__, n);
+		aws_lwsl_hexdump_info(ch->akid[n].kid, ch->akid[n].kid_len);
+		aws_lwsl_info("%s: SKID[%d]\n", __func__, n);
+		aws_lwsl_hexdump_info(ch->skid[n].kid, ch->skid[n].kid_len);
 	}
 
 	/* to go further, user must provide a lookup helper */
@@ -192,27 +192,27 @@ lws_tls_jit_trust_sort_kids(struct lws *wsi, lws_tls_kid_chain_t *ch)
 	 * can see it)
 	 */
 
-	lws_start_foreach_dll(struct lws_dll2 *, d,
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
 			      wsi->a.context->jit_inflight.head) {
-		inf = lws_container_of(d, lws_tls_jit_inflight_t, list);
+		inf = aws_lws_container_of(d, aws_lws_tls_jit_inflight_t, list);
 
 		if (!strcmp((const char *)&inf[1], host))
 			/* already being handled */
 			return 1;
 
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 
 	/*
 	 * No... let's make an inflight entry for this host, then
 	 */
 
-	inf = lws_zalloc(sizeof(*inf) + hl + 1, __func__);
+	inf = aws_lws_zalloc(sizeof(*inf) + hl + 1, __func__);
 	if (!inf)
 		return 1;
 
 	memcpy(&inf[1], host, hl + 1);
 	inf->refcount = (char)ch->count;
-	lws_dll2_add_tail(&inf->list, &wsi->a.context->jit_inflight);
+	aws_lws_dll2_add_tail(&inf->list, &wsi->a.context->jit_inflight);
 
 	/*
 	 * ...kid_chain[0] AKID should indicate the right CA SKID that we want.
@@ -232,20 +232,20 @@ lws_tls_jit_trust_sort_kids(struct lws *wsi, lws_tls_kid_chain_t *ch)
 static void
 tag_to_vh_name(char *result, size_t max, uint32_t tag)
 {
-	lws_snprintf(result, max, "jitt-%08X", tag);
+	aws_lws_snprintf(result, max, "jitt-%08X", tag);
 }
 
 int
-lws_tls_jit_trust_vhost_bind(struct lws_context *cx, const char *address,
-			     struct lws_vhost **pvh)
+aws_lws_tls_jit_trust_vhost_bind(struct aws_lws_context *cx, const char *address,
+			     struct aws_lws_vhost **pvh)
 {
-	lws_tls_jit_cache_item_t *ci, jci;
-	lws_tls_jit_inflight_t *inf;
+	aws_lws_tls_jit_cache_item_t *ci, jci;
+	aws_lws_tls_jit_inflight_t *inf;
 	char vhtag[32];
 	size_t size;
 	int n;
 
-	if (lws_cache_item_get(cx->trust_cache, address, (const void **)&ci,
+	if (aws_lws_cache_item_get(cx->trust_cache, address, (const void **)&ci,
 									&size))
 		/*
 		 * There's no cached info, we have to start from scratch on
@@ -267,9 +267,9 @@ lws_tls_jit_trust_vhost_bind(struct lws_context *cx, const char *address,
 
 	tag_to_vh_name(vhtag, sizeof(vhtag), jci.xor_tag);
 
-	*pvh = lws_get_vhost_by_name(cx, vhtag);
+	*pvh = aws_lws_get_vhost_by_name(cx, vhtag);
 	if (*pvh) {
-		lwsl_info("%s: %s -> existing %s\n", __func__, address, vhtag);
+		aws_lwsl_info("%s: %s -> existing %s\n", __func__, address, vhtag);
 		/* hit, let's just use that then */
 		return 0;
 	}
@@ -287,13 +287,13 @@ lws_tls_jit_trust_vhost_bind(struct lws_context *cx, const char *address,
 	 */
 
 	size = strlen(address);
-	inf = lws_zalloc(sizeof(*inf) + size + 1, __func__);
+	inf = aws_lws_zalloc(sizeof(*inf) + size + 1, __func__);
 	if (!inf)
 		return 1;
 
 	memcpy(&inf[1], address, size + 1);
 	inf->refcount = (char)jci.count_skids;
-	lws_dll2_add_tail(&inf->list, &cx->jit_inflight);
+	aws_lws_dll2_add_tail(&inf->list, &cx->jit_inflight);
 
 	/*
 	 * ...kid_chain[0] AKID should indicate the right CA SKID that we want.
@@ -309,13 +309,13 @@ lws_tls_jit_trust_vhost_bind(struct lws_context *cx, const char *address,
 
 	/* ... in case synchronous and it already finished the queries */
 
-	*pvh = lws_get_vhost_by_name(cx, vhtag);
+	*pvh = aws_lws_get_vhost_by_name(cx, vhtag);
 	if (*pvh) {
 		/* hit, let's just use that then */
-		lwsl_info("%s: bind to created vhost %s\n", __func__, vhtag);
+		aws_lwsl_info("%s: bind to created vhost %s\n", __func__, vhtag);
 		return 0;
 	} else
-		lwsl_err("%s: unable to bind to %s\n", __func__, vhtag);
+		aws_lwsl_err("%s: unable to bind to %s\n", __func__, vhtag);
 
 	/* right now, nothing to offer */
 
@@ -323,88 +323,88 @@ lws_tls_jit_trust_vhost_bind(struct lws_context *cx, const char *address,
 }
 
 void
-lws_tls_jit_trust_inflight_destroy(lws_tls_jit_inflight_t *inf)
+aws_lws_tls_jit_trust_inflight_destroy(aws_lws_tls_jit_inflight_t *inf)
 {
 	int n;
 
 	for (n = 0; n < inf->ders; n++)
-		lws_free_set_NULL(inf->der[n]);
-	lws_dll2_remove(&inf->list);
+		aws_lws_free_set_NULL(inf->der[n]);
+	aws_lws_dll2_remove(&inf->list);
 
-	lws_free(inf);
+	aws_lws_free(inf);
 }
 
 static int
-inflight_destroy(struct lws_dll2 *d, void *user)
+inflight_destroy(struct aws_lws_dll2 *d, void *user)
 {
-	lws_tls_jit_inflight_t *inf;
+	aws_lws_tls_jit_inflight_t *inf;
 
-	inf = lws_container_of(d, lws_tls_jit_inflight_t, list);
+	inf = aws_lws_container_of(d, aws_lws_tls_jit_inflight_t, list);
 
-	lws_tls_jit_trust_inflight_destroy(inf);
+	aws_lws_tls_jit_trust_inflight_destroy(inf);
 
 	return 0;
 }
 
 void
-lws_tls_jit_trust_inflight_destroy_all(struct lws_context *cx)
+aws_lws_tls_jit_trust_inflight_destroy_all(struct aws_lws_context *cx)
 {
-	lws_dll2_foreach_safe(&cx->jit_inflight, cx, inflight_destroy);
+	aws_lws_dll2_foreach_safe(&cx->jit_inflight, cx, inflight_destroy);
 }
 
 static void
-unref_vh_grace_cb(lws_sorted_usec_list_t *sul)
+unref_vh_grace_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_vhost *vh = lws_container_of(sul, struct lws_vhost,
+	struct aws_lws_vhost *vh = aws_lws_container_of(sul, struct aws_lws_vhost,
 						sul_unref);
 
-	lwsl_info("%s: %s\n", __func__, vh->lc.gutag);
+	aws_lwsl_info("%s: %s\n", __func__, vh->lc.gutag);
 
-	lws_vhost_destroy(vh);
+	aws_lws_vhost_destroy(vh);
 }
 
 void
-lws_tls_jit_trust_vh_start_grace(struct lws_vhost *vh)
+aws_lws_tls_jit_trust_vh_start_grace(struct aws_lws_vhost *vh)
 {
-	lwsl_info("%s: %s: unused, grace %dms\n", __func__, vh->lc.gutag,
+	aws_lwsl_info("%s: %s: unused, grace %dms\n", __func__, vh->lc.gutag,
 			vh->context->vh_idle_grace_ms);
-	lws_sul_schedule(vh->context, 0, &vh->sul_unref, unref_vh_grace_cb,
-			 (lws_usec_t)vh->context->vh_idle_grace_ms *
+	aws_lws_sul_schedule(vh->context, 0, &vh->sul_unref, unref_vh_grace_cb,
+			 (aws_lws_usec_t)vh->context->vh_idle_grace_ms *
 								LWS_US_PER_MS);
 }
 
 #if defined(_DEBUG)
 static void
-lws_tls_jit_trust_cert_info(const uint8_t *der, size_t der_len)
+aws_lws_tls_jit_trust_cert_info(const uint8_t *der, size_t der_len)
 {
-	struct lws_x509_cert *x;
-	union lws_tls_cert_info_results *u;
+	struct aws_lws_x509_cert *x;
+	union aws_lws_tls_cert_info_results *u;
 	char p = 0, buf[192 + sizeof(*u)];
 
-	if (lws_x509_create(&x))
+	if (aws_lws_x509_create(&x))
 		return;
 
-	if (!lws_x509_parse_from_pem(x, der, der_len)) {
+	if (!aws_lws_x509_parse_from_pem(x, der, der_len)) {
 
-		u = (union lws_tls_cert_info_results *)buf;
+		u = (union aws_lws_tls_cert_info_results *)buf;
 
-		if (!lws_x509_info(x, LWS_TLS_CERT_INFO_ISSUER_NAME, u, 192)) {
-			lwsl_info("ISS: %s\n", u->ns.name);
+		if (!aws_lws_x509_info(x, LWS_TLS_CERT_INFO_ISSUER_NAME, u, 192)) {
+			aws_lwsl_info("ISS: %s\n", u->ns.name);
 			p = 1;
 		}
-		if (!lws_x509_info(x, LWS_TLS_CERT_INFO_COMMON_NAME, u, 192)) {
-			lwsl_info("CN: %s\n", u->ns.name);
+		if (!aws_lws_x509_info(x, LWS_TLS_CERT_INFO_COMMON_NAME, u, 192)) {
+			aws_lwsl_info("CN: %s\n", u->ns.name);
 			p = 1;
 		}
 
 		if (!p) {
-			lwsl_err("%s: unable to get any info\n", __func__);
-			lwsl_hexdump_err(der, der_len);
+			aws_lwsl_err("%s: unable to get any info\n", __func__);
+			aws_lwsl_hexdump_err(der, der_len);
 		}
 	} else
-		lwsl_err("%s: unable to load DER\n", __func__);
+		aws_lwsl_err("%s: unable to load DER\n", __func__);
 
-	lws_x509_destroy(&x);
+	aws_lws_x509_destroy(&x);
 }
 #endif
 
@@ -413,14 +413,14 @@ lws_tls_jit_trust_cert_info(const uint8_t *der, size_t der_len)
  */
 
 int
-lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
+aws_lws_tls_jit_trust_got_cert_cb(struct aws_lws_context *cx, void *got_opaque,
 			      const uint8_t *skid, size_t skid_len,
 			      const uint8_t *der, size_t der_len)
 {
-	lws_tls_jit_inflight_t *inf = (lws_tls_jit_inflight_t *)got_opaque;
-	struct lws_context_creation_info info;
-	lws_tls_jit_cache_item_t jci;
-	struct lws_vhost *v;
+	aws_lws_tls_jit_inflight_t *inf = (aws_lws_tls_jit_inflight_t *)got_opaque;
+	struct aws_lws_context_creation_info info;
+	aws_lws_tls_jit_cache_item_t jci;
+	struct aws_lws_vhost *v;
 	char vhtag[20];
 	char hit = 0;
 	int n;
@@ -433,15 +433,15 @@ lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
 	 * trusted CA, it will just cause temporary conn fail.
 	 */
 
-	lws_start_foreach_dll(struct lws_dll2 *, e, cx->jit_inflight.head) {
-		lws_tls_jit_inflight_t *i = lws_container_of(e,
-						lws_tls_jit_inflight_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, e, cx->jit_inflight.head) {
+		aws_lws_tls_jit_inflight_t *i = aws_lws_container_of(e,
+						aws_lws_tls_jit_inflight_t, list);
 		if (i == inf) {
 			hit = 1;
 			break;
 		}
 
-	} lws_end_foreach_dll(e);
+	} aws_lws_end_foreach_dll(e);
 
 	if (!hit)
 		/* inf has already gone */
@@ -464,7 +464,7 @@ lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
 		memcpy(inf->kid[inf->ders].kid, skid,
 		       inf->kid[inf->ders].kid_len);
 
-		inf->der[inf->ders] = lws_malloc(der_len, __func__);
+		inf->der[inf->ders] = aws_lws_malloc(der_len, __func__);
 		if (!inf->der[inf->ders])
 			return 1;
 		memcpy(inf->der[inf->ders], der, der_len);
@@ -488,7 +488,7 @@ lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
 		return 0;
 
 	if (!der && !inf->ders) {
-		lwsl_warn("%s: no trusted CA certs matching\n", __func__);
+		aws_lwsl_warn("%s: no trusted CA certs matching\n", __func__);
 
 		goto destroy_inf;
 	}
@@ -520,7 +520,7 @@ lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
 
 	for (n = 0; n < (int)LWS_ARRAY_SIZE(inf->der); n++)
 		if (inf->kid[n].kid_len)
-			lws_tls_kid_copy_kid(&jci.skids[jci.count_skids++],
+			aws_lws_tls_kid_copy_kid(&jci.skids[jci.count_skids++],
 						&inf->kid[n]);
 
 	if (skid_len) {
@@ -530,19 +530,19 @@ lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
 		memcpy(jci.skids[jci.count_skids++].kid, skid, skid_len);
 	}
 
-	lwsl_info("%s: adding cache mapping %s -> %s\n", __func__,
+	aws_lwsl_info("%s: adding cache mapping %s -> %s\n", __func__,
 			(const char *)&inf[1], vhtag);
 
-	if (lws_cache_write_through(cx->trust_cache, (const char *)&inf[1],
+	if (aws_lws_cache_write_through(cx->trust_cache, (const char *)&inf[1],
 				    (const uint8_t *)&jci, sizeof(jci),
-				    lws_now_usecs() + (3600ll *LWS_US_PER_SEC),
+				    aws_lws_now_usecs() + (3600ll *LWS_US_PER_SEC),
 				    NULL))
-		lwsl_warn("%s: add to cache failed\n", __func__);
+		aws_lwsl_warn("%s: add to cache failed\n", __func__);
 
 	/* is there already a vhost for this commutative-xor SKID trust? */
 
-	if (lws_get_vhost_by_name(cx, vhtag)) {
-		lwsl_info("%s: tag vhost %s already exists, skipping\n",
+	if (aws_lws_get_vhost_by_name(cx, vhtag)) {
+		aws_lwsl_info("%s: tag vhost %s already exists, skipping\n",
 				__func__, vhtag);
 		goto destroy_inf;
 	}
@@ -580,18 +580,18 @@ lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
 	}
 
 #if defined(_DEBUG)
-	lws_tls_jit_trust_cert_info(info.client_ssl_ca_mem,
+	aws_lws_tls_jit_trust_cert_info(info.client_ssl_ca_mem,
 				    info.client_ssl_ca_mem_len);
 #endif
 
 	info.protocols = cx->protocols_copy;
 
-	v = lws_create_vhost(cx, &info);
+	v = aws_lws_create_vhost(cx, &info);
 	if (!v)
-		lwsl_err("%s: failed to create vh %s\n", __func__, vhtag);
+		aws_lwsl_err("%s: failed to create vh %s\n", __func__, vhtag);
 
 	v->grace_after_unref = 1;
-	lws_tls_jit_trust_vh_start_grace(v);
+	aws_lws_tls_jit_trust_vh_start_grace(v);
 
 	/*
 	 * Do we need to add more trusted certs from inflight?
@@ -600,21 +600,21 @@ lws_tls_jit_trust_got_cert_cb(struct lws_context *cx, void *got_opaque,
 	while (n < inf->ders) {
 
 #if defined(_DEBUG)
-		lws_tls_jit_trust_cert_info(inf->der[n],
+		aws_lws_tls_jit_trust_cert_info(inf->der[n],
 					    (size_t)inf->der_len[n]);
 #endif
 
-		if (lws_tls_client_vhost_extra_cert_mem(v, inf->der[n],
+		if (aws_lws_tls_client_vhost_extra_cert_mem(v, inf->der[n],
 						(size_t)inf->der_len[n]))
-			lwsl_err("%s: add extra cert failed\n", __func__);
+			aws_lwsl_err("%s: add extra cert failed\n", __func__);
 		n++;
 	}
 
-	lwsl_info("%s: created jitt %s -> vh %s\n", __func__,
+	aws_lwsl_info("%s: created jitt %s -> vh %s\n", __func__,
 				(const char *)&inf[1], vhtag);
 
 destroy_inf:
-	lws_tls_jit_trust_inflight_destroy(inf);
+	aws_lws_tls_jit_trust_inflight_destroy(inf);
 
 	return 0;
 }
@@ -624,7 +624,7 @@ destroy_inf:
  */
 
 int
-lws_tls_jit_trust_blob_queury_skid(const void *_blob, size_t blen,
+aws_lws_tls_jit_trust_blob_queury_skid(const void *_blob, size_t blen,
 				   const uint8_t *skid, size_t skid_len,
 				   const uint8_t **prpder, size_t *prder_len)
 {
@@ -635,9 +635,9 @@ lws_tls_jit_trust_blob_queury_skid(const void *_blob, size_t blen,
 	/* sanity check blob length and magic */
 
 	if (blen < 32768 ||
-	   lws_ser_ru32be(blob) != LWS_JIT_TRUST_MAGIC_BE ||
-	   lws_ser_ru32be(blob + LJT_OFS_END) != blen) {
-		lwsl_err("%s: blob not sane\n", __func__);
+	   aws_lws_ser_ru32be(blob) != LWS_JIT_TRUST_MAGIC_BE ||
+	   aws_lws_ser_ru32be(blob + LJT_OFS_END) != blen) {
+		aws_lwsl_err("%s: blob not sane\n", __func__);
 
 		return -1;
 	}
@@ -647,12 +647,12 @@ lws_tls_jit_trust_blob_queury_skid(const void *_blob, size_t blen,
 
 	/* point into the various sub-tables */
 
-	certs		= (int)lws_ser_ru16be(blob + LJT_OFS_32_COUNT_CERTS);
+	certs		= (int)aws_lws_ser_ru16be(blob + LJT_OFS_32_COUNT_CERTS);
 
-	pderlen		= (uint16_t *)(blob + lws_ser_ru32be(blob +
+	pderlen		= (uint16_t *)(blob + aws_lws_ser_ru32be(blob +
 							LJT_OFS_32_DERLEN));
-	pskidlen	= blob + lws_ser_ru32be(blob + LJT_OFS_32_SKIDLEN);
-	pskids		= blob + lws_ser_ru32be(blob + LJT_OFS_32_SKID);
+	pskidlen	= blob + aws_lws_ser_ru32be(blob + LJT_OFS_32_SKIDLEN);
+	pskids		= blob + aws_lws_ser_ru32be(blob + LJT_OFS_32_SKID);
 	pder		= blob + LJT_OFS_DER;
 
 	/* check each cert SKID in turn, return the DER if found */
@@ -674,12 +674,12 @@ lws_tls_jit_trust_blob_queury_skid(const void *_blob, size_t blen,
 			 * We found a trusted CA cert of the right SKID
 			 */
 		        *prpder = pder;
-		        *prder_len = lws_ser_ru16be((uint8_t *)pderlen);
+		        *prder_len = aws_lws_ser_ru16be((uint8_t *)pderlen);
 
 		        return 0;
 		}
 
-		pder += lws_ser_ru16be((uint8_t *)pderlen);
+		pder += aws_lws_ser_ru16be((uint8_t *)pderlen);
 		pskids += *pskidlen;
 		pderlen++;
 		pskidlen++;

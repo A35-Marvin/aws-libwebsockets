@@ -657,7 +657,7 @@ extern const struct {
 } keyset1, key3, key8, key9, key10;
 
 static int
-xcb(lws_cose_sig_ext_pay_t *x)
+xcb(aws_lws_cose_sig_ext_pay_t *x)
 {
 	x->ext = sign1_pass_02_ext;
 	x->xl = sizeof(sign1_pass_02_ext);
@@ -668,13 +668,13 @@ xcb(lws_cose_sig_ext_pay_t *x)
 
 
 int
-test_cose_sign(struct lws_context *context)
+test_cose_sign(struct aws_lws_context *context)
 {
-	struct lws_cose_validate_context *cps;
-	lws_cose_validate_create_info_t info;
-	lws_cose_validate_res_t *res;
-	lws_dll2_owner_t set;
-	lws_dll2_owner_t *o;
+	struct aws_lws_cose_validate_context *cps;
+	aws_lws_cose_validate_create_info_t info;
+	aws_lws_cose_validate_res_t *res;
+	aws_lws_dll2_owner_t set;
+	aws_lws_dll2_owner_t *o;
 	int n;
 
 	memset(&info, 0, sizeof(info));
@@ -697,1166 +697,1166 @@ test_cose_sign(struct lws_context *context)
 	 * valid sign1 we have key for
 	 */
 
-	lwsl_user("%s: sign1/sign-pass-01\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-pass-01\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_pass_01, sizeof(sign1_pass_01),
+	n = aws_lws_cose_validate_chunk(cps, sign1_pass_01, sizeof(sign1_pass_01),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid sign1 but empty key set, so can't judge it
 	 */
 
-	lwsl_user("%s: sign1/sign-pass-01 - no key\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-pass-01 - no key\n", __func__);
 
-	lws_dll2_owner_clear(&set);
+	aws_lws_dll2_owner_clear(&set);
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_pass_01, sizeof(sign1_pass_01),
+	n = aws_lws_cose_validate_chunk(cps, sign1_pass_01, sizeof(sign1_pass_01),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid sign1
 	 */
 
-	lwsl_user("%s: sign1/sign-pass-02\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-pass-02\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
 	info.ext_cb = xcb;
 	info.ext_len = sizeof(sign1_pass_02_ext);
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_pass_02, sizeof(sign1_pass_02),
+	n = aws_lws_cose_validate_chunk(cps, sign1_pass_02, sizeof(sign1_pass_02),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid sign1 without enclosing tag
 	 */
 
-	lwsl_user("%s: sign1/sign-pass-03\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-pass-03\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
 	info.ext_cb = NULL;
 	info.ext_len = 0;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_pass_03, sizeof(sign1_pass_03),
+	n = aws_lws_cose_validate_chunk(cps, sign1_pass_03, sizeof(sign1_pass_03),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * sign1 with wrong tag
 	 */
 
-	lwsl_user("%s: sign1/sign-fail-01\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-fail-01\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_fail_01, sizeof(sign1_fail_01),
+	n = aws_lws_cose_validate_chunk(cps, sign1_fail_01, sizeof(sign1_fail_01),
 				    NULL);
 	if (!n) {
-		lwsl_notice("%s: sign_val_chunk should have failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk should have failed\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * invalid sign1, signature tampered
 	 */
 
-	lwsl_user("%s: sign1/sign-fail-02\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-fail-02\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_fail_02, sizeof(sign1_fail_02),
+	n = aws_lws_cose_validate_chunk(cps, sign1_fail_02, sizeof(sign1_fail_02),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		/* validation result must be fail */
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * invalid sign1, alg tampered
 	 */
 
-	lwsl_user("%s: sign1/sign-fail-03\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-fail-03\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_fail_03, sizeof(sign1_fail_03),
+	n = aws_lws_cose_validate_chunk(cps, sign1_fail_03, sizeof(sign1_fail_03),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		/* validation result must be fail */
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * invalid sign1, alg sign tampered
 	 */
 
-	lwsl_user("%s: sign1/sign-fail-04\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-fail-04\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_fail_04, sizeof(sign1_fail_04),
+	n = aws_lws_cose_validate_chunk(cps, sign1_fail_04, sizeof(sign1_fail_04),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		/* validation result must be fail */
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * invalid sign1, protected attributes tampered
 	 */
 
-	lwsl_user("%s: sign1/sign-fail-06\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-fail-06\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_fail_06, sizeof(sign1_fail_06),
+	n = aws_lws_cose_validate_chunk(cps, sign1_fail_06, sizeof(sign1_fail_06),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		/* validation result must be fail */
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * invalid sign1, protected attribute removed
 	 */
 
-	lwsl_user("%s: sign1/sign-fail-07\n", __func__);
+	aws_lwsl_user("%s: sign1/sign-fail-07\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_SINGLE;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign1_fail_07, sizeof(sign1_fail_07),
+	n = aws_lws_cose_validate_chunk(cps, sign1_fail_07, sizeof(sign1_fail_07),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1)
 		goto bail1;
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		/* validation result must be fail */
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid sign we have key for
 	 */
 
-	lwsl_user("%s: sign/sign-pass-01\n", __func__);
+	aws_lwsl_user("%s: sign/sign-pass-01\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_pass_01, sizeof(sign_pass_01),
+	n = aws_lws_cose_validate_chunk(cps, sign_pass_01, sizeof(sign_pass_01),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid sign we have key for
 	 */
 
-	lwsl_user("%s: sign/sign-pass-02\n", __func__);
+	aws_lwsl_user("%s: sign/sign-pass-02\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
 	info.ext_cb = xcb;
 	info.ext_len = sizeof(sign1_pass_02_ext);
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_pass_02, sizeof(sign_pass_02),
+	n = aws_lws_cose_validate_chunk(cps, sign_pass_02, sizeof(sign_pass_02),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid sign we have key for
 	 */
 
-	lwsl_user("%s: sign/sign-pass-03\n", __func__);
+	aws_lwsl_user("%s: sign/sign-pass-03\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
 	info.ext_cb = NULL;
 	info.ext_len = 0;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_pass_03, sizeof(sign_pass_03),
+	n = aws_lws_cose_validate_chunk(cps, sign_pass_03, sizeof(sign_pass_03),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * wrong cbor tag
 	 */
 
-	lwsl_user("%s: sign/sign-fail-01\n", __func__);
+	aws_lwsl_user("%s: sign/sign-fail-01\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_fail_01, sizeof(sign_fail_01),
+	n = aws_lws_cose_validate_chunk(cps, sign_fail_01, sizeof(sign_fail_01),
 				    NULL);
 	if (!n) {
-		lwsl_notice("%s: sign_val_chunk should fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk should fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * tampered signature
 	 */
 
-	lwsl_user("%s: sign/sign-fail-02\n", __func__);
+	aws_lwsl_user("%s: sign/sign-fail-02\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_fail_02, sizeof(sign_fail_02),
+	n = aws_lws_cose_validate_chunk(cps, sign_fail_02, sizeof(sign_fail_02),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * tampered sign alg -999
 	 */
 
-	lwsl_user("%s: sign/sign-fail-03\n", __func__);
+	aws_lwsl_user("%s: sign/sign-fail-03\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_fail_03, sizeof(sign_fail_03),
+	n = aws_lws_cose_validate_chunk(cps, sign_fail_03, sizeof(sign_fail_03),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * tampered sign alg 0
 	 */
 
-	lwsl_user("%s: sign/sign-fail-04\n", __func__);
+	aws_lwsl_user("%s: sign/sign-fail-04\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_fail_04, sizeof(sign_fail_04),
+	n = aws_lws_cose_validate_chunk(cps, sign_fail_04, sizeof(sign_fail_04),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * add protected attribute
 	 */
 
-	lwsl_user("%s: sign/sign-fail-06\n", __func__);
+	aws_lwsl_user("%s: sign/sign-fail-06\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_fail_06, sizeof(sign_fail_06),
+	n = aws_lws_cose_validate_chunk(cps, sign_fail_06, sizeof(sign_fail_06),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * remove protected attribute
 	 */
 
-	lwsl_user("%s: sign/sign-fail-07\n", __func__);
+	aws_lwsl_user("%s: sign/sign-fail-07\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MULTI;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_fail_07, sizeof(sign_fail_07),
+	n = aws_lws_cose_validate_chunk(cps, sign_fail_07, sizeof(sign_fail_07),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_notice("%s: results: %d\n", __func__, o->count);
+		aws_lwsl_notice("%s: results: %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result)
 		goto bail1;
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 
 	/*
 	 * valid HMAC sign we have key for
 	 */
 
-	lwsl_user("%s: hmac-examples/hmac-01\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/hmac-01\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_hmac_01, sizeof(sign_hmac_01),
+	n = aws_lws_cose_validate_chunk(cps, sign_hmac_01, sizeof(sign_hmac_01),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid HMAC sign we have key for
 	 */
 
-	lwsl_user("%s: hmac-examples/hmac-02\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/hmac-02\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_hmac_02, sizeof(sign_hmac_02),
+	n = aws_lws_cose_validate_chunk(cps, sign_hmac_02, sizeof(sign_hmac_02),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 
 	/*
 	 * valid HMAC sign we have key for
 	 */
 
-	lwsl_user("%s: hmac-examples/hmac-03\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/hmac-03\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_hmac_03, sizeof(sign_hmac_03),
+	n = aws_lws_cose_validate_chunk(cps, sign_hmac_03, sizeof(sign_hmac_03),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * invalid HMAC sign we have key for
 	 */
 
-	lwsl_user("%s: hmac-examples/hmac-04 fail mac tag\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/hmac-04 fail mac tag\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_hmac_04, sizeof(sign_hmac_04),
+	n = aws_lws_cose_validate_chunk(cps, sign_hmac_04, sizeof(sign_hmac_04),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result) {
-		lwsl_err("%s: result is wrongly succeeding\n", __func__);
+		aws_lwsl_err("%s: result is wrongly succeeding\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid HMAC sign we have key for HS256/64
 	 */
 
-	lwsl_user("%s: hmac-examples/hmac-05\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/hmac-05\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, keyset1.set, keyset1.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, sign_hmac_05, sizeof(sign_hmac_05),
+	n = aws_lws_cose_validate_chunk(cps, sign_hmac_05, sizeof(sign_hmac_05),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid HMAC sign with implicit HS256 key
 	 */
 
-	lwsl_user("%s: hmac-examples/enc-01\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/enc-01\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, key3.set, key3.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, key3.set, key3.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC0;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, enc_hmac_01, sizeof(enc_hmac_01),
+	n = aws_lws_cose_validate_chunk(cps, enc_hmac_01, sizeof(enc_hmac_01),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid HMAC sign with implicit HS384 key
 	 */
 
-	lwsl_user("%s: hmac-examples/enc-02\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/enc-02\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, key8.set, key8.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, key8.set, key8.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC0;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, enc_hmac_02, sizeof(enc_hmac_02),
+	n = aws_lws_cose_validate_chunk(cps, enc_hmac_02, sizeof(enc_hmac_02),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid HMAC sign with implicit HS512 key
 	 */
 
-	lwsl_user("%s: hmac-examples/enc-03\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/enc-03\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, key9.set, key9.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, key9.set, key9.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC0;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, enc_hmac_03, sizeof(enc_hmac_03),
+	n = aws_lws_cose_validate_chunk(cps, enc_hmac_03, sizeof(enc_hmac_03),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * invalid HMAC sign with implicit HS256 key, tampered hmac tag
 	 */
 
-	lwsl_user("%s: hmac-examples/enc-04\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/enc-04\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, key3.set, key3.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, key3.set, key3.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC0;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, enc_hmac_04, sizeof(enc_hmac_04),
+	n = aws_lws_cose_validate_chunk(cps, enc_hmac_04, sizeof(enc_hmac_04),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (!res->result) {
-		lwsl_err("%s: result wrongly succeeds\n", __func__);
+		aws_lwsl_err("%s: result wrongly succeeds\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 
 	/*
 	 * valid HMAC sign with implicit HS256 key, HS256/64
 	 */
 
-	lwsl_user("%s: hmac-examples/enc-05\n", __func__);
+	aws_lwsl_user("%s: hmac-examples/enc-05\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, key3.set, key3.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, key3.set, key3.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_MAC0;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, enc_hmac_05, sizeof(enc_hmac_05),
+	n = aws_lws_cose_validate_chunk(cps, enc_hmac_05, sizeof(enc_hmac_05),
 				    NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 #if 0
 	/*
 	 * valid Ed25519 signature with countersignature from same key + alg
 	 */
 
-	lwsl_user("%s: countersign/sign-01\n", __func__);
+	aws_lwsl_user("%s: countersign/sign-01\n", __func__);
 
-	lws_dll2_owner_clear(&set);
-	if (!lws_cose_key_import(&set, NULL, NULL, key10.set, key10.len)) {
-		lwsl_notice("%s: key import fail\n", __func__);
+	aws_lws_dll2_owner_clear(&set);
+	if (!aws_lws_cose_key_import(&set, NULL, NULL, key10.set, key10.len)) {
+		aws_lwsl_notice("%s: key import fail\n", __func__);
 		return 1;
 	}
 
 	info.sigtype = SIGTYPE_COUNTERSIGNED;
-	cps = lws_cose_validate_create(&info);
+	cps = aws_lws_cose_validate_create(&info);
 	if (!cps) {
-		lwsl_notice("%s: sign_val_create fail\n", __func__);
+		aws_lwsl_notice("%s: sign_val_create fail\n", __func__);
 		goto bail;
 	}
 
-	n = lws_cose_validate_chunk(cps, countersign_sign_01,
+	n = aws_lws_cose_validate_chunk(cps, countersign_sign_01,
 					 sizeof(countersign_sign_01), NULL);
 	if (n) {
-		lwsl_notice("%s: sign_val_chunk failed\n", __func__);
+		aws_lwsl_notice("%s: sign_val_chunk failed\n", __func__);
 		goto bail1;
 	}
 
-	o = lws_cose_validate_results(cps);
+	o = aws_lws_cose_validate_results(cps);
 	if (o->count != 1) {
-		lwsl_err("%s: result count %d\n", __func__, o->count);
+		aws_lwsl_err("%s: result count %d\n", __func__, o->count);
 		goto bail1;
 	}
 
-	res = lws_container_of(o->head, lws_cose_validate_res_t, list);
+	res = aws_lws_container_of(o->head, aws_lws_cose_validate_res_t, list);
 	if (res->result) {
-		lwsl_err("%s: result is fail\n", __func__);
+		aws_lwsl_err("%s: result is fail\n", __func__);
 		goto bail1;
 	}
 
-	lws_cose_validate_destroy(&cps);
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_validate_destroy(&cps);
+	aws_lws_cose_key_set_destroy(&set);
 #endif
 
 	return 0;
 
 bail1:
-	lws_cose_validate_destroy(&cps);
+	aws_lws_cose_validate_destroy(&cps);
 bail:
-	lws_cose_key_set_destroy(&set);
+	aws_lws_cose_key_set_destroy(&set);
 
 	return 1;
 }

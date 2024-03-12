@@ -24,7 +24,7 @@
  * Public apis related to metric collection and reporting
  */
 
-/* lws_metrics public part */
+/* aws_lws_metrics public part */
 
 typedef uint64_t u_mt_t;
 
@@ -47,7 +47,7 @@ enum {
 };
 
 /*
- * lws_metrics_tag allows your object to accumulate OpenMetrics-style
+ * aws_lws_metrics_tag allows your object to accumulate OpenMetrics-style
  * descriptive tags before accounting for it with a metrics object at the end.
  *
  * Tags should represent low entropy information that is likely to repeat
@@ -68,15 +68,15 @@ enum {
  * on different transactions resolve to the same qualification string.
  */
 
-typedef struct lws_metrics_tag {
-	lws_dll2_t	list;
+typedef struct aws_lws_metrics_tag {
+	aws_lws_dll2_t	list;
 
 	const char	*name; /* tag, intended to be in .rodata, not copied */
 	/* overallocated value */
-} lws_metrics_tag_t;
+} aws_lws_metrics_tag_t;
 
 LWS_EXTERN LWS_VISIBLE int
-lws_metrics_tag_add(lws_dll2_owner_t *owner, const char *name, const char *val);
+aws_lws_metrics_tag_add(aws_lws_dll2_owner_t *owner, const char *name, const char *val);
 
 #if defined(LWS_WITH_SYS_METRICS)
 /*
@@ -84,9 +84,9 @@ lws_metrics_tag_add(lws_dll2_owner_t *owner, const char *name, const char *val);
  * used for logging the wsi identity
  */
 LWS_EXTERN LWS_VISIBLE int
-lws_metrics_tag_wsi_add(struct lws *wsi, const char *name, const char *val);
+aws_lws_metrics_tag_wsi_add(struct lws *wsi, const char *name, const char *val);
 #else
-#define lws_metrics_tag_wsi_add(_a, _b, _c)
+#define aws_lws_metrics_tag_wsi_add(_a, _b, _c)
 #endif
 
 #if defined(LWS_WITH_SECURE_STREAMS)
@@ -96,33 +96,33 @@ lws_metrics_tag_wsi_add(struct lws *wsi, const char *name, const char *val);
  */
 #if defined(LWS_WITH_SYS_METRICS)
 LWS_EXTERN LWS_VISIBLE int
-lws_metrics_tag_ss_add(struct lws_ss_handle *ss, const char *name, const char *val);
+aws_lws_metrics_tag_ss_add(struct aws_lws_ss_handle *ss, const char *name, const char *val);
 #else
-#define lws_metrics_tag_ss_add(_a, _b, _c)
+#define aws_lws_metrics_tag_ss_add(_a, _b, _c)
 #endif
 #endif
 
 LWS_EXTERN LWS_VISIBLE void
-lws_metrics_tags_destroy(lws_dll2_owner_t *owner);
+aws_lws_metrics_tags_destroy(aws_lws_dll2_owner_t *owner);
 
 LWS_EXTERN LWS_VISIBLE size_t
-lws_metrics_tags_serialize(lws_dll2_owner_t *owner, char *buf, size_t len);
+aws_lws_metrics_tags_serialize(aws_lws_dll2_owner_t *owner, char *buf, size_t len);
 
 LWS_EXTERN LWS_VISIBLE const char *
-lws_metrics_tag_get(lws_dll2_owner_t *owner, const char *name);
+aws_lws_metrics_tag_get(aws_lws_dll2_owner_t *owner, const char *name);
 
 /* histogram bucket */
 
-typedef struct lws_metric_bucket {
-	struct lws_metric_bucket	*next;
+typedef struct aws_lws_metric_bucket {
+	struct aws_lws_metric_bucket	*next;
 	uint64_t			count;
 
 	/* name + NUL is overallocated */
-} lws_metric_bucket_t;
+} aws_lws_metric_bucket_t;
 
 /* get overallocated name of bucket from bucket pointer */
-#define lws_metric_bucket_name_len(_b) (*((uint8_t *)&(_b)[1]))
-#define lws_metric_bucket_name(_b) (((const char *)&(_b)[1]) + 1)
+#define aws_lws_metric_bucket_name_len(_b) (*((uint8_t *)&(_b)[1]))
+#define aws_lws_metric_bucket_name(_b) (((const char *)&(_b)[1]) + 1)
 
 /*
  * These represent persistent local event measurements.  They may aggregate
@@ -146,22 +146,22 @@ typedef struct lws_metric_bucket {
  *
  * The same type with a union covers both cases.
  *
- * The lws_system ops api that hooks lws_metrics up to a metrics backend is
+ * The aws_lws_system ops api that hooks aws_lws_metrics up to a metrics backend is
  * given a pointer to these according to the related policy, eg, hourly, or
  * every event passed straight through.
  */
 
-typedef struct lws_metric_pub {
+typedef struct aws_lws_metric_pub {
 	const char		*name;
 	/**< eg, "n.cn.dns", "vh.myendpoint" */
 	void			*backend_opaque;
 	/**< ignored by lws, backend handler completely owns it */
 
-	lws_usec_t		us_first;
+	aws_lws_usec_t		us_first;
 	/**< us time metric started collecting, reset to us_dumped at dump */
-	lws_usec_t		us_last;
+	aws_lws_usec_t		us_last;
 	/**< 0, or us time last event, reset to 0 at last dump */
-	lws_usec_t		us_dumped;
+	aws_lws_usec_t		us_dumped;
 	/**< 0 if never, else us time of last dump to external api */
 
 	/* scope of data in .u is "since last dump" --> */
@@ -184,7 +184,7 @@ typedef struct lws_metric_pub {
 		/* histogram with dynamic named buckets */
 
 		struct {
-			lws_metric_bucket_t	*head;
+			aws_lws_metric_bucket_t	*head;
 			/**< first bucket in our bucket list */
 
 			uint64_t		total_count;
@@ -196,11 +196,11 @@ typedef struct lws_metric_pub {
 
 	uint8_t			flags;
 
-} lws_metric_pub_t;
+} aws_lws_metric_pub_t;
 
 LWS_EXTERN LWS_VISIBLE void
-lws_metrics_hist_bump_priv_tagged(lws_metric_pub_t *mt, lws_dll2_owner_t *tow,
-				  lws_dll2_owner_t *tow2);
+aws_lws_metrics_hist_bump_priv_tagged(aws_lws_metric_pub_t *mt, aws_lws_dll2_owner_t *tow,
+				  aws_lws_dll2_owner_t *tow2);
 
 
 /*
@@ -212,59 +212,59 @@ lws_metrics_hist_bump_priv_tagged(lws_metric_pub_t *mt, lws_dll2_owner_t *tow,
  * cleanly if WITH_SYS_METRICS is disabled for the build.
  */
 
-struct lws_metric;
+struct aws_lws_metric;
 
-typedef struct lws_metric_caliper {
-	struct lws_dll2_owner	mtags_owner; /**< collect tags here during
+typedef struct aws_lws_metric_caliper {
+	struct aws_lws_dll2_owner	mtags_owner; /**< collect tags here during
 					      * caliper lifetime */
-	struct lws_metric	*mt; /**< NULL == inactive */
-	lws_usec_t		us_start;
-} lws_metric_caliper_t;
+	struct aws_lws_metric	*mt; /**< NULL == inactive */
+	aws_lws_usec_t		us_start;
+} aws_lws_metric_caliper_t;
 
 #if defined(LWS_WITH_SYS_METRICS)
-#define lws_metrics_caliper_compose(_name) \
-		lws_metric_caliper_t _name;
-#define lws_metrics_caliper_bind(_name, _mt) \
+#define aws_lws_metrics_caliper_compose(_name) \
+		aws_lws_metric_caliper_t _name;
+#define aws_lws_metrics_caliper_bind(_name, _mt) \
 	{ if (_name.mt) { \
-		lwsl_err("caliper: overwrite %s\n", \
-				lws_metrics_priv_to_pub(_name.mt)->name); \
+		aws_lwsl_err("caliper: overwrite %s\n", \
+				aws_lws_metrics_priv_to_pub(_name.mt)->name); \
 		assert(0); } \
-	  _name.mt = _mt; _name.us_start = lws_now_usecs(); }
-#define lws_metrics_caliper_declare(_name, _mt) \
-	lws_metric_caliper_t _name = { .mt = _mt, .us_start = lws_now_usecs() }
-#define lws_metrics_caliper_report(_name, _go_nogo) \
-	{ if (_name.us_start) { lws_metric_event(_name.mt, _go_nogo, \
-			   (u_mt_t)(lws_now_usecs() - \
+	  _name.mt = _mt; _name.us_start = aws_lws_now_usecs(); }
+#define aws_lws_metrics_caliper_declare(_name, _mt) \
+	aws_lws_metric_caliper_t _name = { .mt = _mt, .us_start = aws_lws_now_usecs() }
+#define aws_lws_metrics_caliper_report(_name, _go_nogo) \
+	{ if (_name.us_start) { aws_lws_metric_event(_name.mt, _go_nogo, \
+			   (u_mt_t)(aws_lws_now_usecs() - \
 					   _name.us_start)); \
-					  }  lws_metrics_caliper_done(_name);  }
-#define lws_metrics_caliper_report_hist(_name, pwsi) if (_name.mt) { \
-		lws_metrics_hist_bump_priv_tagged(lws_metrics_priv_to_pub(_name.mt), \
+					  }  aws_lws_metrics_caliper_done(_name);  }
+#define aws_lws_metrics_caliper_report_hist(_name, pwsi) if (_name.mt) { \
+		aws_lws_metrics_hist_bump_priv_tagged(aws_lws_metrics_priv_to_pub(_name.mt), \
 						  &_name.mtags_owner, \
 						  pwsi ? &((pwsi)->cal_conn.mtags_owner) : NULL); \
-		lws_metrics_caliper_done(_name);  }
+		aws_lws_metrics_caliper_done(_name);  }
 
-#define lws_metrics_caliper_cancel(_name) { lws_metrics_caliper_done(_name); }
-#define lws_metrics_hist_bump(_mt, _name) \
-		lws_metrics_hist_bump_(_mt, _name)
-#define lws_metrics_hist_bump_priv(_mt, _name) \
-		lws_metrics_hist_bump_(lws_metrics_priv_to_pub(_mt), _name)
-#define lws_metrics_caliper_done(_name) { \
+#define aws_lws_metrics_caliper_cancel(_name) { aws_lws_metrics_caliper_done(_name); }
+#define aws_lws_metrics_hist_bump(_mt, _name) \
+		aws_lws_metrics_hist_bump_(_mt, _name)
+#define aws_lws_metrics_hist_bump_priv(_mt, _name) \
+		aws_lws_metrics_hist_bump_(aws_lws_metrics_priv_to_pub(_mt), _name)
+#define aws_lws_metrics_caliper_done(_name) { \
 		_name.us_start = 0; _name.mt = NULL; \
-		lws_metrics_tags_destroy(&_name.mtags_owner); }
+		aws_lws_metrics_tags_destroy(&_name.mtags_owner); }
 #else
-#define lws_metrics_caliper_compose(_name)
-#define lws_metrics_caliper_bind(_name, _mt)
-#define lws_metrics_caliper_declare(_name, _mp)
-#define lws_metrics_caliper_report(_name, _go_nogo)
-#define lws_metrics_caliper_report_hist(_name, pwsiconn)
-#define lws_metrics_caliper_cancel(_name)
-#define lws_metrics_hist_bump(_mt, _name)
-#define lws_metrics_hist_bump_priv(_mt, _name)
-#define lws_metrics_caliper_done(_name)
+#define aws_lws_metrics_caliper_compose(_name)
+#define aws_lws_metrics_caliper_bind(_name, _mt)
+#define aws_lws_metrics_caliper_declare(_name, _mp)
+#define aws_lws_metrics_caliper_report(_name, _go_nogo)
+#define aws_lws_metrics_caliper_report_hist(_name, pwsiconn)
+#define aws_lws_metrics_caliper_cancel(_name)
+#define aws_lws_metrics_hist_bump(_mt, _name)
+#define aws_lws_metrics_hist_bump_priv(_mt, _name)
+#define aws_lws_metrics_caliper_done(_name)
 #endif
 
 /**
- * lws_metrics_format() - helper to format a metrics object for logging
+ * aws_lws_metrics_format() - helper to format a metrics object for logging
  *
  * \param pub: public part of metrics object
  * \param buf: output buffer to place string in
@@ -279,11 +279,11 @@ typedef struct lws_metric_caliper {
  * as a histogram if LWSMTFL_REPORT_HIST etc
  */
 LWS_EXTERN LWS_VISIBLE int
-lws_metrics_format(lws_metric_pub_t *pub, lws_metric_bucket_t **sub,
+aws_lws_metrics_format(aws_lws_metric_pub_t *pub, aws_lws_metric_bucket_t **sub,
 		   char *buf, size_t len);
 
 /**
- * lws_metrics_hist_bump() - add or increment histogram bucket
+ * aws_lws_metrics_hist_bump() - add or increment histogram bucket
  *
  * \param pub: public part of metrics object
  * \param name: bucket name to increment
@@ -294,19 +294,19 @@ lws_metrics_format(lws_metric_pub_t *pub, lws_metric_bucket_t **sub,
  * The metrics object must have been created with flag LWSMTFL_REPORT_HIST
  *
  * Normally, you will actually use the preprocessor wrapper
- * lws_metrics_hist_bump() defined above, since this automatically takes care of
+ * aws_lws_metrics_hist_bump() defined above, since this automatically takes care of
  * removing itself from the build if WITH_SYS_METRICS is not defined, without
  * needing any preprocessor conditionals.
  */
 LWS_EXTERN LWS_VISIBLE int
-lws_metrics_hist_bump_(lws_metric_pub_t *pub, const char *name);
+aws_lws_metrics_hist_bump_(aws_lws_metric_pub_t *pub, const char *name);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_metrics_foreach(struct lws_context *ctx, void *user,
-		    int (*cb)(lws_metric_pub_t *pub, void *user));
+aws_lws_metrics_foreach(struct aws_lws_context *ctx, void *user,
+		    int (*cb)(aws_lws_metric_pub_t *pub, void *user));
 
 LWS_VISIBLE LWS_EXTERN int
-lws_metrics_hist_bump_describe_wsi(struct lws *wsi, lws_metric_pub_t *pub,
+aws_lws_metrics_hist_bump_describe_wsi(struct lws *wsi, aws_lws_metric_pub_t *pub,
 				   const char *name);
 
 enum {
@@ -318,10 +318,10 @@ enum {
 	LMT_COUNT,
 };
 
-typedef enum lws_metric_rpt {
+typedef enum aws_lws_metric_rpt {
 	LMR_PERIODIC = 0,	/* we are reporting on a schedule */
 	LMR_OUTLIER,		/* we are reporting the last outlier */
-} lws_metric_rpt_kind_t;
+} aws_lws_metric_rpt_kind_t;
 
 #define METRES_GO	0
 #define METRES_NOGO	1

@@ -43,15 +43,15 @@ You will notice a lot of the main C code is the same boilerplate
 repeated for each example.  The actual interesting part is in
 the protocol callback only.
 
-Lws provides (-DLWS_WITH_LWSWS=1) a generic lightweight server app called 'lwsws' that
+Lws provides (-DLWS_WITH_LWSWS=1) a generic lightweight server app called 'aws_lwsws' that
 can be configured by JSON.  Combined with your protocol as a plugin,
 it means you don't actually have to make a special server "app"
-part, you can just use lwsws and pass per-vhost configuration
+part, you can just use aws_lwsws and pass per-vhost configuration
 from JSON into your protocol.  (Of course in some cases you have
 an existing app you are bolting lws on to, then you don't care
 about this for that particular case).
 
-Because lwsws has no dependency on whatever your plugin does, it
+Because aws_lwsws has no dependency on whatever your plugin does, it
 can mix and match different protocols randomly without needing any code
 changes.  It reduces the size of the task to just writing the
 code you care about in your protocol handler, and nothing else to write
@@ -70,7 +70,7 @@ You could make these variables "filescope" one-time globals, but that
 means your protocol cannot instantiate multiple times.
 
 Lws supports vhosts (virtual hosts), for example both https://warmcat.com
-and https://libwebsockets are running on the same lwsws instance on the
+and https://libwebsockets are running on the same aws_lwsws instance on the
 same server and same IP... each of these is a separate vhost.
 
 Your protocol may be enabled on multiple vhosts, each of these vhosts
@@ -83,7 +83,7 @@ linked-list head on that vhd will only list connections to his vhost.
 
 The example "ws-server/minimal-ws-server-threads" demonstrates how to deliver
 external configuration data to a specific vhost + protocol
-combination using code.  In lwsws, this is simply a matter of setting
+combination using code.  In aws_lwsws, this is simply a matter of setting
 the desired JSON config.
 
 

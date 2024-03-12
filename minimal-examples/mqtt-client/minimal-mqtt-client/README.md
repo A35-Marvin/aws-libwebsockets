@@ -26,7 +26,7 @@ Run the example
 
 ```
 [2020/01/31 10:40:23:7789] U: LWS minimal MQTT client unencrypted [-d<verbosity>][-s]
-[2020/01/31 10:40:23:8539] N: lws_mqtt_generate_id: User space provided a client ID 'lwsMqttClient'
+[2020/01/31 10:40:23:8539] N: aws_lws_mqtt_generate_id: User space provided a client ID 'aws_lwsMqttClient'
 [2020/01/31 10:40:23:9893] N: _lws_mqtt_rx_parser: migrated nwsi 0x50febd0 to sid 1 0x5106820
 [2020/01/31 10:40:23:9899] U: callback_mqtt: MQTT_CLIENT_ESTABLISHED
 [2020/01/31 10:40:23:9967] U: callback_mqtt: WRITEABLE: Subscribing

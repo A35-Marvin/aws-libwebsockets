@@ -59,14 +59,14 @@ static uint8_t ili9341_320x240_init[] = {
 };
 
 int
-lws_display_ili9341_spi_init(const struct lws_display *disp)
+aws_lws_display_ili9341_spi_init(const struct aws_lws_display *disp)
 {
-	const lws_display_ili9341_t *ili = (const lws_display_ili9341_t *)disp;
-	lws_spi_desc_t desc;
+	const aws_lws_display_ili9341_t *ili = (const aws_lws_display_ili9341_t *)disp;
+	aws_lws_spi_desc_t desc;
 	size_t pos = 0;
 	uint8_t u[8];
 
-	lwsl_user("%s\n", __func__);
+	aws_lwsl_user("%s\n", __func__);
 
 	/* hardware nRESET */
 
@@ -75,9 +75,9 @@ lws_display_ili9341_spi_init(const struct lws_display *disp)
 					         LWSGGPIO_FL_PULLUP);
 		ili->gpio->set(ili->reset_gpio, 0);
 
-		lws_msleep(1);
+		aws_lws_msleep(1);
 		ili->gpio->set(ili->reset_gpio, 1);
-		lws_msleep(1);
+		aws_lws_msleep(1);
 	}
 
 	/*
@@ -103,7 +103,7 @@ lws_display_ili9341_spi_init(const struct lws_display *disp)
 	desc.count_write = 0;
 	ili->spi->queue(ili->spi, &desc);
 
-	lws_msleep(5);
+	aws_lws_msleep(5);
 
 	u[0] = ILI9341_DISPON;
 	ili->spi->queue(ili->spi, &desc);
@@ -114,18 +114,18 @@ lws_display_ili9341_spi_init(const struct lws_display *disp)
 /* backlight handled by PWM */
 
 int
-lws_display_ili9341_spi_brightness(const struct lws_display *disp, uint8_t b)
+aws_lws_display_ili9341_spi_brightness(const struct aws_lws_display *disp, uint8_t b)
 {
 	return 0;
 }
 
 int
-lws_display_ili9341_spi_blit(const struct lws_display *disp, const uint8_t *src,
-			     lws_display_scalar x, lws_display_scalar y,
-			     lws_display_scalar w, lws_display_scalar h)
+aws_lws_display_ili9341_spi_blit(const struct aws_lws_display *disp, const uint8_t *src,
+			     aws_lws_display_scalar x, aws_lws_display_scalar y,
+			     aws_lws_display_scalar w, aws_lws_display_scalar h)
 {
-	const lws_display_ili9341_t *ili = (const lws_display_ili9341_t *)disp;
-	lws_spi_desc_t desc;
+	const aws_lws_display_ili9341_t *ili = (const aws_lws_display_ili9341_t *)disp;
+	aws_lws_spi_desc_t desc;
 	uint8_t u[5];
 
 	memset(&desc, 0, sizeof(desc));
@@ -168,11 +168,11 @@ lws_display_ili9341_spi_blit(const struct lws_display *disp, const uint8_t *src,
 }
 
 int
-lws_display_ili9341_spi_power(const struct lws_display *disp, int state)
+aws_lws_display_ili9341_spi_power(const struct aws_lws_display *disp, int state)
 {
 
-	const lws_display_ili9341_t *ili = (const lws_display_ili9341_t *)disp;
-	lws_spi_desc_t desc;
+	const aws_lws_display_ili9341_t *ili = (const aws_lws_display_ili9341_t *)disp;
+	aws_lws_spi_desc_t desc;
 	uint8_t u[1];
 
 	memset(&desc, 0, sizeof(desc));

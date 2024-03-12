@@ -25,11 +25,11 @@
  *
  * Validation:
  *
- *  - we put all our pieces and results in an lwsac in the parse state object
+ *  - we put all our pieces and results in an aws_lwsac in the parse state object
  *
- *  - we collect pieces needed for sig validation into lwsac elements
+ *  - we collect pieces needed for sig validation into aws_lwsac elements
  *
- *  - we go through each signature making discrete results in the lwsac for
+ *  - we go through each signature making discrete results in the aws_lwsac for
  *    the user code to assess
  */
 
@@ -119,7 +119,7 @@ const char *cose_sections[] = {
 #endif
 
 const char *
-lws_cose_alg_to_name(cose_param_t alg)
+aws_lws_cose_alg_to_name(cose_param_t alg)
 {
 	size_t n;
 
@@ -131,7 +131,7 @@ lws_cose_alg_to_name(cose_param_t alg)
 }
 
 cose_param_t
-lws_cose_name_to_alg(const char *name)
+aws_lws_cose_name_to_alg(const char *name)
 {
 	size_t n;
 
@@ -183,16 +183,16 @@ b1:
 b:
 	*t++ = (uint8_t)len;
 
-	return lws_ptr_diff_size_t(t, ot);
+	return aws_lws_ptr_diff_size_t(t, ot);
 }
 
 static int
-apply_external(struct lws_cose_validate_context *cps)
+apply_external(struct aws_lws_cose_validate_context *cps)
 {
-	lws_cose_sig_alg_t *alg;
+	aws_lws_cose_sig_alg_t *alg;
 	uint8_t t[9];
 
-	alg = lws_container_of(cps->algs.head, lws_cose_sig_alg_t, list);
+	alg = aws_lws_container_of(cps->algs.head, aws_lws_cose_sig_alg_t, list);
 	if (!alg)
 		/* expected if no key */
 		return 0;
@@ -200,12 +200,12 @@ apply_external(struct lws_cose_validate_context *cps)
 	/* get the external payload first, if any indicated */
 
 	if (cps->info.ext_len) {
-		lws_cose_sig_ext_pay_t ex;
+		aws_lws_cose_sig_ext_pay_t ex;
 		size_t s;
 
 		s = bstr_len(t, sizeof(t), LWS_CBOR_MAJTYP_BSTR,
 			     cps->info.ext_len);
-		if (lws_cose_val_alg_hash(alg, t, s))
+		if (aws_lws_cose_val_alg_hash(alg, t, s))
 			return 1;
 
 		memset(&ex, 0, sizeof(ex));
@@ -218,7 +218,7 @@ apply_external(struct lws_cose_validate_context *cps)
 			n = cps->info.ext_cb(&ex);
 
 			if (ex.xl &&
-			    lws_cose_val_alg_hash(alg, ex.ext, ex.xl))
+			    aws_lws_cose_val_alg_hash(alg, ex.ext, ex.xl))
 				return 1;
 
 			if (n == LCOSESIGEXTCB_RET_ERROR)
@@ -233,31 +233,31 @@ apply_external(struct lws_cose_validate_context *cps)
 }
 
 static int
-create_alg(struct lecp_ctx *ctx, struct lws_cose_validate_context *cps)
+create_alg(struct lecp_ctx *ctx, struct aws_lws_cose_validate_context *cps)
 {
-	lws_cose_validate_param_stack_t *sl = &cps->st[cps->sp], *sl0 = &cps->st[0];
-	lws_cose_validate_res_t *res;
-	lws_cose_sig_alg_t *alg;
-	lws_cose_key_t *ck;
+	aws_lws_cose_validate_param_stack_t *sl = &cps->st[cps->sp], *sl0 = &cps->st[0];
+	aws_lws_cose_validate_res_t *res;
+	aws_lws_cose_sig_alg_t *alg;
+	aws_lws_cose_key_t *ck;
 	uint8_t *p;
 	size_t s;
 
 	/* with sign1, we can hash the payload in a
 	 * single pass */
 
-	ck = lws_cose_key_from_set(cps->info.keyset, sl->kid.buf, sl->kid.len);
+	ck = aws_lws_cose_key_from_set(cps->info.keyset, sl->kid.buf, sl->kid.len);
 	if (!ck) {
-		lwsl_notice("%s: no key\n", __func__);
-		lwsl_hexdump_notice(sl->kid.buf, sl->kid.len);
+		aws_lwsl_notice("%s: no key\n", __func__);
+		aws_lwsl_hexdump_notice(sl->kid.buf, sl->kid.len);
 		goto no_key_or_alg;
 	}
 
-	// lwsl_notice("%s: cps->alg %d\n", __func__, (int)cps->alg);
+	// aws_lwsl_notice("%s: cps->alg %d\n", __func__, (int)cps->alg);
 
-	alg = lws_cose_val_alg_create(cps->info.cx, ck, cps->st[0].alg,
+	alg = aws_lws_cose_val_alg_create(cps->info.cx, ck, cps->st[0].alg,
 				      LWSCOSE_WKKO_VERIFY);
 	if (!alg) {
-		lwsl_info("%s: no alg\n", __func__);
+		aws_lwsl_info("%s: no alg\n", __func__);
 
 no_key_or_alg:
 		/*
@@ -266,24 +266,24 @@ no_key_or_alg:
 		 * case and continue on
 		 */
 
-		res = lws_zalloc(sizeof(*res), __func__);
+		res = aws_lws_zalloc(sizeof(*res), __func__);
 		if (res) {
 			res->result = -1001;
 
-			lws_dll2_add_tail(&res->list, &cps->results);
+			aws_lws_dll2_add_tail(&res->list, &cps->results);
 		}
 
 		return 0;
 	}
 
-	lws_dll2_add_tail(&alg->list, &cps->algs);
+	aws_lws_dll2_add_tail(&alg->list, &cps->algs);
 
 	/*
 	 * Hash step 1: The first hash content depends on
 	 *              sign/sign1/csign/mac/mac0 constant bstr
 	 */
 
-	if (lws_cose_val_alg_hash(alg, sig_mctx[cps->info.sigtype],
+	if (aws_lws_cose_val_alg_hash(alg, sig_mctx[cps->info.sigtype],
 			       sig_mctx_len[cps->info.sigtype]))
 		goto bail;
 
@@ -315,7 +315,7 @@ no_key_or_alg:
 		}
 	}
 
-	if (lws_cose_val_alg_hash(alg, p, s))
+	if (aws_lws_cose_val_alg_hash(alg, p, s))
 		goto bail;
 
 	/*
@@ -343,7 +343,7 @@ no_key_or_alg:
 			}
 		}
 
-		if (lws_cose_val_alg_hash(alg, p, s))
+		if (aws_lws_cose_val_alg_hash(alg, p, s))
 			goto bail;
 	}
 
@@ -353,7 +353,7 @@ no_key_or_alg:
 
 	if (!cps->info.ext_len) { /* ie, if no app data */
 		uint8_t u = LWS_CBOR_MAJTYP_BSTR;
-		if (lws_cose_val_alg_hash(alg, &u, 1))
+		if (aws_lws_cose_val_alg_hash(alg, &u, 1))
 			goto bail;
 	}
 
@@ -366,17 +366,17 @@ no_key_or_alg:
 		return 0;
 
 	if (!cps->payload_stash) {
-		lwsl_notice("%s: no payload stash\n", __func__);
+		aws_lwsl_notice("%s: no payload stash\n", __func__);
 		goto bail;
 	}
 
 	apply_external(cps);
 
-	if (lws_cose_val_alg_hash(alg, cps->payload_stash, cps->payload_pos))
+	if (aws_lws_cose_val_alg_hash(alg, cps->payload_stash, cps->payload_pos))
 		goto bail;
-lwsl_notice("a %d\n", (int)cps->sig_agg_pos);
+aws_lwsl_notice("a %d\n", (int)cps->sig_agg_pos);
 
-	lws_cose_val_alg_destroy(cps, &alg, (const uint8_t *)cps->sig_agg,
+	aws_lws_cose_val_alg_destroy(cps, &alg, (const uint8_t *)cps->sig_agg,
 				 cps->sig_agg_pos);
 
 	return 0;
@@ -423,7 +423,7 @@ static const char * const reason_names[] = {
 #endif
 
 static int
-ph_index(struct lws_cose_validate_context *cps)
+ph_index(struct aws_lws_cose_validate_context *cps)
 {
 	switch (cps->tli) {
 	case ST_OUTER_PROTECTED:
@@ -443,17 +443,17 @@ ph_index(struct lws_cose_validate_context *cps)
 static signed char
 cb_cose_sig(struct lecp_ctx *ctx, char reason)
 {
-	struct lws_cose_validate_context *cps =
-			(struct lws_cose_validate_context *)ctx->user;
-	lws_cose_validate_param_stack_t *sl;
-	struct lws_gencrypto_keyelem *ke;
-	lws_cose_sig_alg_t *alg;
+	struct aws_lws_cose_validate_context *cps =
+			(struct aws_lws_cose_validate_context *)ctx->user;
+	aws_lws_cose_validate_param_stack_t *sl;
+	struct aws_lws_gencrypto_keyelem *ke;
+	aws_lws_cose_sig_alg_t *alg;
 	uint8_t t[9];
 	size_t s;
 	int hi;
 
 #if defined(VERBOSE)
-	lwsl_notice("%s: %s, tli %s, sub %d, ppos %d, sp %d\n", __func__,
+	aws_lwsl_notice("%s: %s, tli %s, sub %d, ppos %d, sp %d\n", __func__,
 			reason_names[reason & 0x1f], cose_sections[cps->tli],
 			cps->sub, ctx->pst[ctx->pst_sp].ppos, cps->sp);
 #endif
@@ -464,7 +464,7 @@ cb_cose_sig(struct lecp_ctx *ctx, char reason)
 
 	case LECPCB_TAG_START:
 
-		lwsl_notice("%s: tag sigtype %d\n", __func__, cps->info.sigtype);
+		aws_lwsl_notice("%s: tag sigtype %d\n", __func__, cps->info.sigtype);
 
 		switch (cps->info.sigtype) {
 		default:
@@ -511,7 +511,7 @@ cb_cose_sig(struct lecp_ctx *ctx, char reason)
 		case SIGTYPE_MAC:
 			if (ctx->item.u.u64 != LWSCOAP_CONTENTFORMAT_COSE_MAC) {
 unexpected_tag:
-				lwsl_warn("%s: unexpected tag %d\n", __func__,
+				aws_lwsl_warn("%s: unexpected tag %d\n", __func__,
 						(int)ctx->item.u.u64);
 				goto bail;
 			}
@@ -626,10 +626,10 @@ unexpected_tag:
 				break;
 
 			case ST_INNER_UNPROTECTED:
-				lwsl_notice("ST_INNER_UNPROTECTED end\n");
+				aws_lwsl_notice("ST_INNER_UNPROTECTED end\n");
 				break;
 			case ST_INNER_PROTECTED:
-				lwsl_notice("ST_INNER_PROTECTED end\n");
+				aws_lwsl_notice("ST_INNER_PROTECTED end\n");
 				break;
 
 			case ST_INNER_EXCESS:
@@ -704,7 +704,7 @@ unexpected_tag:
 
 			case ST_INNER_SIGNATURE:
 				if (cps->info.sigtype == SIGTYPE_MAC) {
-					// lwsl_err("Y: alg %d\n", (int)cps->alg);
+					// aws_lwsl_err("Y: alg %d\n", (int)cps->alg);
 					if (create_alg(ctx, cps))
 						goto bail;
 				}
@@ -727,11 +727,11 @@ unexpected_tag:
 		case ST_OUTER_UNPROTECTED:
 			if (lecp_parse_map_is_key(ctx)) {
 				cps->map_key = ctx->item.u.i64;
-				// lwsl_notice("%s: key %d\n", __func__, (int)cps->map_key);
+				// aws_lwsl_notice("%s: key %d\n", __func__, (int)cps->map_key);
 				break;
 			}
 
-			// lwsl_notice("%s: key %d val %d\n", __func__, (int)cps->map_key, (int)ctx->item.u.i64);
+			// aws_lwsl_notice("%s: key %d val %d\n", __func__, (int)cps->map_key, (int)ctx->item.u.i64);
 
 			if (cps->map_key == LWSCOSE_WKL_ALG) {
 				sl = &cps->st[cps->sp];
@@ -759,7 +759,7 @@ unexpected_tag:
 
 	case LECPCB_VAL_BLOB_START:
 
-		lwsl_notice("%s: blob size %d\n", __func__, (int)ctx->item.u.u64);
+		aws_lwsl_notice("%s: blob size %d\n", __func__, (int)ctx->item.u.u64);
 
 		if (cps->tli == ST_OUTER_SIGN1_SIGNATURE ||
 		    cps->tli == ST_INNER_SIGNATURE) {
@@ -773,7 +773,7 @@ unexpected_tag:
 			break;
 
 		if (apply_external(cps)) {
-			lwsl_notice("%s: ext\n", __func__);
+			aws_lwsl_notice("%s: ext\n", __func__);
 			goto bail;
 		}
 
@@ -781,13 +781,13 @@ unexpected_tag:
 			     ctx->item.u.u64);
 
 		if (cps->info.sigtype == SIGTYPE_SINGLE) {
-			alg = lws_container_of(cps->algs.head,
-					       lws_cose_sig_alg_t, list);
+			alg = aws_lws_container_of(cps->algs.head,
+					       aws_lws_cose_sig_alg_t, list);
 			if (!alg)
 				/* expected if no key */
 				break;
-			if (lws_cose_val_alg_hash(alg, t, s)) {
-				lwsl_notice("%s: hash failed\n", __func__);
+			if (aws_lws_cose_val_alg_hash(alg, t, s)) {
+				aws_lwsl_notice("%s: hash failed\n", __func__);
 				goto bail;
 			}
 
@@ -795,10 +795,10 @@ unexpected_tag:
 		}
 
 		cps->payload_stash_size = (size_t)(ctx->item.u.u64 + s);
-		cps->payload_stash = lws_malloc(cps->payload_stash_size,
+		cps->payload_stash = aws_lws_malloc(cps->payload_stash_size,
 							__func__);
 		if (!cps->payload_stash) {
-			lwsl_notice("%s: oom\n", __func__);
+			aws_lwsl_notice("%s: oom\n", __func__);
 			goto bail;
 		}
 
@@ -824,15 +824,15 @@ unexpected_tag:
 				cps->payload_pos += ctx->npos;
 				break;
 			}
-			alg = lws_container_of(cps->algs.head,
-					       lws_cose_sig_alg_t, list);
+			alg = aws_lws_container_of(cps->algs.head,
+					       aws_lws_cose_sig_alg_t, list);
 			if (!alg)
 				/* expected if no key */
 				break;
 			if (ctx->npos &&
-			    lws_cose_val_alg_hash(alg, (uint8_t *)ctx->buf,
+			    aws_lws_cose_val_alg_hash(alg, (uint8_t *)ctx->buf,
 					      ctx->npos)) {
-				lwsl_notice("%s: chunk fail\n", __func__);
+				aws_lwsl_notice("%s: chunk fail\n", __func__);
 				goto bail;
 			}
 			break;
@@ -855,7 +855,7 @@ unexpected_tag:
 				memcpy(cps->sig_agg + cps->sig_agg_pos, ctx->buf,
 					ctx->npos);
 				cps->sig_agg_pos = cps->sig_agg_pos + ctx->npos;
-				// lwsl_err("Y: alg %d\n", (int)cps->alg);
+				// aws_lwsl_err("Y: alg %d\n", (int)cps->alg);
 				if (create_alg(ctx, cps))
 					goto bail;
 				break;
@@ -871,8 +871,8 @@ unexpected_tag:
 				sl = &cps->st[cps->sp];
 				ke = &sl->kid;
 				if (ke->buf)
-					lws_free(ke->buf);
-				ke->buf = lws_malloc(ctx->npos, __func__);
+					aws_lws_free(ke->buf);
+				ke->buf = aws_lws_malloc(ctx->npos, __func__);
 				if (!ke->buf)
 					goto bail;
 				ke->len = ctx->npos;
@@ -894,14 +894,14 @@ unexpected_tag:
 				cps->payload_pos += ctx->npos;
 				break;
 			}
-			alg = lws_container_of(cps->algs.head,
-					       lws_cose_sig_alg_t, list);
+			alg = aws_lws_container_of(cps->algs.head,
+					       aws_lws_cose_sig_alg_t, list);
 			if (!alg)
 				/* expected if no key */
 				break;
 
 			if (ctx->npos &&
-			    lws_cose_val_alg_hash(alg, (uint8_t *)ctx->buf,
+			    aws_lws_cose_val_alg_hash(alg, (uint8_t *)ctx->buf,
 					      ctx->npos))
 				goto bail;
 			break;
@@ -914,11 +914,11 @@ unexpected_tag:
 				ctx->npos);
 			cps->sig_agg_pos += ctx->npos;
 
-			alg = lws_container_of(cps->algs.head,
-					lws_cose_sig_alg_t, list);
-			lwsl_notice("b\n");
+			alg = aws_lws_container_of(cps->algs.head,
+					aws_lws_cose_sig_alg_t, list);
+			aws_lwsl_notice("b\n");
 			if (alg)
-				lws_cose_val_alg_destroy(cps, &alg,
+				aws_lws_cose_val_alg_destroy(cps, &alg,
 							 cps->sig_agg,
 							 cps->sig_agg_pos);
 			break;
@@ -965,17 +965,17 @@ bail:
 	return -1;
 }
 
-struct lws_cose_validate_context *
-lws_cose_validate_create(const lws_cose_validate_create_info_t *info)
+struct aws_lws_cose_validate_context *
+aws_lws_cose_validate_create(const aws_lws_cose_validate_create_info_t *info)
 {
-	struct lws_cose_validate_context *cps;
+	struct aws_lws_cose_validate_context *cps;
 
 	/* you have to provide at least one key in a cose_keyset */
 	assert(info->keyset);
-	/* you have to provide an lws_context (for crypto random) */
+	/* you have to provide an aws_lws_context (for crypto random) */
 	assert(info->cx);
 
-	cps = lws_zalloc(sizeof(*cps), __func__);
+	cps = aws_lws_zalloc(sizeof(*cps), __func__);
 	if (!cps)
 		return NULL;
 
@@ -988,7 +988,7 @@ lws_cose_validate_create(const lws_cose_validate_create_info_t *info)
 }
 
 int
-lws_cose_validate_chunk(struct lws_cose_validate_context *cps,
+aws_lws_cose_validate_chunk(struct aws_lws_cose_validate_context *cps,
 			const uint8_t *in, size_t in_len, size_t *used_in)
 {
 	int n;
@@ -1005,47 +1005,47 @@ lws_cose_validate_chunk(struct lws_cose_validate_context *cps,
 	return n;
 }
 
-lws_dll2_owner_t *
-lws_cose_validate_results(struct lws_cose_validate_context *cps)
+aws_lws_dll2_owner_t *
+aws_lws_cose_validate_results(struct aws_lws_cose_validate_context *cps)
 {
 	return &cps->results;
 }
 
 void
-lws_cose_validate_destroy(struct lws_cose_validate_context **_cps)
+aws_lws_cose_validate_destroy(struct aws_lws_cose_validate_context **_cps)
 {
-	struct lws_cose_validate_context *cps = *_cps;
+	struct aws_lws_cose_validate_context *cps = *_cps;
 
 	if (!cps)
 		return;
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, p, tp,
-				   lws_dll2_get_head(&cps->algs)) {
-		lws_cose_sig_alg_t *alg = lws_container_of(p,
-						lws_cose_sig_alg_t, list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, tp,
+				   aws_lws_dll2_get_head(&cps->algs)) {
+		aws_lws_cose_sig_alg_t *alg = aws_lws_container_of(p,
+						aws_lws_cose_sig_alg_t, list);
 
-		lws_dll2_remove(p);
-		lws_cose_val_alg_destroy(cps, &alg, NULL, 0);
-	} lws_end_foreach_dll_safe(p, tp);
+		aws_lws_dll2_remove(p);
+		aws_lws_cose_val_alg_destroy(cps, &alg, NULL, 0);
+	} aws_lws_end_foreach_dll_safe(p, tp);
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, p, tp,
-				   lws_dll2_get_head(&cps->results)) {
-		lws_cose_validate_res_t *res = lws_container_of(p,
-					lws_cose_validate_res_t, list);
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, tp,
+				   aws_lws_dll2_get_head(&cps->results)) {
+		aws_lws_cose_validate_res_t *res = aws_lws_container_of(p,
+					aws_lws_cose_validate_res_t, list);
 
-		lws_dll2_remove(p);
-		lws_free(res);
-	} lws_end_foreach_dll_safe(p, tp);
+		aws_lws_dll2_remove(p);
+		aws_lws_free(res);
+	} aws_lws_end_foreach_dll_safe(p, tp);
 
-	lws_free_set_NULL(cps->payload_stash);
+	aws_lws_free_set_NULL(cps->payload_stash);
 
-	lwsac_free(&cps->ac);
+	aws_lwsac_free(&cps->ac);
 
 	while (cps->sp >= 0) {
 		if (cps->st[cps->sp].kid.buf)
-			lws_free(cps->st[cps->sp].kid.buf);
+			aws_lws_free(cps->st[cps->sp].kid.buf);
 		cps->sp--;
 	}
 
-	lws_free_set_NULL(*_cps);
+	aws_lws_free_set_NULL(*_cps);
 }

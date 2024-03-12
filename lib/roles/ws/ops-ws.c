@@ -27,15 +27,15 @@
 #define LWS_CPYAPP(ptr, str) { strcpy(ptr, str); ptr += strlen(str); }
 
 /*
- * client-parser.c: lws_ws_client_rx_sm() needs to be roughly kept in
+ * client-parser.c: aws_lws_ws_client_rx_sm() needs to be roughly kept in
  *   sync with changes here, esp related to ext draining
  */
 
 int
-lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c)
+aws_lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c)
 {
 	int callback_action = LWS_CALLBACK_RECEIVE;
-	struct lws_ext_pm_deflate_rx_ebufs pmdrx;
+	struct aws_lws_ext_pm_deflate_rx_ebufs pmdrx;
 	unsigned short close_code;
 	unsigned char *pp;
 	int ret = 0;
@@ -50,7 +50,7 @@ lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c)
 	pmdrx.eb_out.token = NULL;
 	pmdrx.eb_out.len = 0;
 
-	switch (wsi->lws_rx_parse_state) {
+	switch (wsi->aws_lws_rx_parse_state) {
 	case LWS_RXPS_NEW:
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 		if (wsi->ws->rx_draining_ext) {
@@ -58,9 +58,9 @@ lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c)
 			pmdrx.eb_in.len = 0;
 			pmdrx.eb_out.token = NULL;
 			pmdrx.eb_out.len = 0;
-			lws_remove_wsi_from_draining_ext_list(wsi);
+			aws_lws_remove_wsi_from_draining_ext_list(wsi);
 			rx_draining_ext = 1;
-			lwsl_debug("%s: doing draining flow\n", __func__);
+			aws_lwsl_debug("%s: doing draining flow\n", __func__);
 
 			goto drain_extension;
 		}
@@ -74,7 +74,7 @@ lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c)
 			goto handle_first;
 
 		default:
-			lwsl_warn("lws_ws_rx_sm: unknown spec version %d\n",
+			aws_lwsl_warn("aws_lws_ws_rx_sm: unknown spec version %d\n",
 				  wsi->ws->ietf_spec_revision);
 			break;
 		}
@@ -83,13 +83,13 @@ lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c)
 		wsi->ws->mask[1] = c;
 		if (c)
 			wsi->ws->all_zero_nonce = 0;
-		wsi->lws_rx_parse_state = LWS_RXPS_04_mask_2;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_mask_2;
 		break;
 	case LWS_RXPS_04_mask_2:
 		wsi->ws->mask[2] = c;
 		if (c)
 			wsi->ws->all_zero_nonce = 0;
-		wsi->lws_rx_parse_state = LWS_RXPS_04_mask_3;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_mask_3;
 		break;
 	case LWS_RXPS_04_mask_3:
 		wsi->ws->mask[3] = c;
@@ -103,7 +103,7 @@ lws_ws_rx_sm(struct lws *wsi, char already_processed, unsigned char c)
 
 		wsi->ws->mask_idx = 0;
 
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_1;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_1;
 		break;
 
 	/*
@@ -145,14 +145,14 @@ handle_first:
 		wsi->ws->defeat_check_utf8 = 0;
 
 		if (((wsi->ws->opcode) & 8) && !wsi->ws->final) {
-			lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
+			aws_lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
 					(uint8_t *)"frag ctl", 8);
 			return -1;
 		}
 
 		switch (wsi->ws->opcode) {
 		case LWSWSOPC_TEXT_FRAME:
-			wsi->ws->check_utf8 = lws_check_opt(
+			wsi->ws->check_utf8 = aws_lws_check_opt(
 				wsi->a.context->options,
 				LWS_SERVER_OPTION_VALIDATE_UTF8);
 			/* fallthru */
@@ -160,7 +160,7 @@ handle_first:
 			if (wsi->ws->opcode == LWSWSOPC_BINARY_FRAME)
 				wsi->ws->check_utf8 = 0;
 			if (wsi->ws->continuation_possible) {
-				lws_close_reason(wsi,
+				aws_lws_close_reason(wsi,
 					LWS_CLOSE_STATUS_PROTOCOL_ERR,
 					(uint8_t *)"bad cont", 8);
 				return -1;
@@ -181,7 +181,7 @@ handle_first:
 			break;
 		case LWSWSOPC_CONTINUATION:
 			if (!wsi->ws->continuation_possible) {
-				lws_close_reason(wsi,
+				aws_lws_close_reason(wsi,
 					LWS_CLOSE_STATUS_PROTOCOL_ERR,
 					(uint8_t *)"bad cont", 8);
 				return -1;
@@ -201,17 +201,17 @@ handle_first:
 		case 0xd:
 		case 0xe:
 		case 0xf:
-			lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
+			aws_lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
 					(uint8_t *)"bad opc", 7);
-			lwsl_info("illegal opcode\n");
+			aws_lwsl_info("illegal opcode\n");
 			return -1;
 		}
 
 		if (wsi->ws->owed_a_fin &&
 		    (wsi->ws->opcode == LWSWSOPC_TEXT_FRAME ||
 		     wsi->ws->opcode == LWSWSOPC_BINARY_FRAME)) {
-			lwsl_info("hey you owed us a FIN\n");
-			lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
+			aws_lwsl_info("hey you owed us a FIN\n");
+			aws_lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
 					(uint8_t *)"bad fin", 7);
 			return -1;
 		}
@@ -223,14 +223,14 @@ handle_first:
 		if (!wsi->ws->final)
 			wsi->ws->owed_a_fin = 1;
 
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN;
 		if (wsi->ws->rsv &&
 		    (
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 				    !wsi->ws->count_act_ext ||
 #endif
 				    (wsi->ws->rsv & ~0x40))) {
-			lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
+			aws_lws_close_reason(wsi, LWS_CLOSE_STATUS_PROTOCOL_ERR,
 					 (uint8_t *)"rsv bits", 8);
 			return -1;
 		}
@@ -246,28 +246,28 @@ handle_first:
 			if (wsi->ws->opcode & 8)
 				goto illegal_ctl_length;
 
-			wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN16_2;
+			wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN16_2;
 			break;
 		case 127:
 			/* control frames are not allowed to have big lengths */
 			if (wsi->ws->opcode & 8)
 				goto illegal_ctl_length;
 
-			wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_8;
+			wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_8;
 			break;
 		default:
 			wsi->ws->rx_packet_length = c & 0x7f;
 
 
 			if (wsi->ws->this_frame_masked)
-				wsi->lws_rx_parse_state =
+				wsi->aws_lws_rx_parse_state =
 						LWS_RXPS_07_COLLECT_FRAME_KEY_1;
 			else
 				if (wsi->ws->rx_packet_length) {
-					wsi->lws_rx_parse_state =
+					wsi->aws_lws_rx_parse_state =
 					LWS_RXPS_WS_FRAME_PAYLOAD;
 				} else {
-					wsi->lws_rx_parse_state = LWS_RXPS_NEW;
+					wsi->aws_lws_rx_parse_state = LWS_RXPS_NEW;
 					goto spill;
 				}
 			break;
@@ -276,23 +276,23 @@ handle_first:
 
 	case LWS_RXPS_04_FRAME_HDR_LEN16_2:
 		wsi->ws->rx_packet_length = (size_t)(c << 8);
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN16_1;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN16_1;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN16_1:
 		wsi->ws->rx_packet_length |= c;
 		if (wsi->ws->this_frame_masked)
-			wsi->lws_rx_parse_state =
+			wsi->aws_lws_rx_parse_state =
 					LWS_RXPS_07_COLLECT_FRAME_KEY_1;
 		else {
-			wsi->lws_rx_parse_state =
+			wsi->aws_lws_rx_parse_state =
 				LWS_RXPS_WS_FRAME_PAYLOAD;
 		}
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_8:
 		if (c & 0x80) {
-			lwsl_warn("b63 of length must be zero\n");
+			aws_lwsl_warn("b63 of length must be zero\n");
 			/* kill the connection */
 			return -1;
 		}
@@ -301,83 +301,83 @@ handle_first:
 #else
 		wsi->ws->rx_packet_length = 0;
 #endif
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_7;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_7;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_7:
 #if defined __LP64__
 		wsi->ws->rx_packet_length |= ((size_t)c) << 48;
 #endif
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_6;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_6;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_6:
 #if defined __LP64__
 		wsi->ws->rx_packet_length |= ((size_t)c) << 40;
 #endif
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_5;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_5;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_5:
 #if defined __LP64__
 		wsi->ws->rx_packet_length |= ((size_t)c) << 32;
 #endif
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_4;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_4;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_4:
 		wsi->ws->rx_packet_length |= ((size_t)c) << 24;
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_3;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_3;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_3:
 		wsi->ws->rx_packet_length |= ((size_t)c) << 16;
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_2;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_2;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_2:
 		wsi->ws->rx_packet_length |= ((size_t)c) << 8;
-		wsi->lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_1;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_04_FRAME_HDR_LEN64_1;
 		break;
 
 	case LWS_RXPS_04_FRAME_HDR_LEN64_1:
 		wsi->ws->rx_packet_length |= ((size_t)c);
 		if (wsi->ws->this_frame_masked)
-			wsi->lws_rx_parse_state =
+			wsi->aws_lws_rx_parse_state =
 					LWS_RXPS_07_COLLECT_FRAME_KEY_1;
 		else
-			wsi->lws_rx_parse_state = LWS_RXPS_WS_FRAME_PAYLOAD;
+			wsi->aws_lws_rx_parse_state = LWS_RXPS_WS_FRAME_PAYLOAD;
 		break;
 
 	case LWS_RXPS_07_COLLECT_FRAME_KEY_1:
 		wsi->ws->mask[0] = c;
 		if (c)
 			wsi->ws->all_zero_nonce = 0;
-		wsi->lws_rx_parse_state = LWS_RXPS_07_COLLECT_FRAME_KEY_2;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_07_COLLECT_FRAME_KEY_2;
 		break;
 
 	case LWS_RXPS_07_COLLECT_FRAME_KEY_2:
 		wsi->ws->mask[1] = c;
 		if (c)
 			wsi->ws->all_zero_nonce = 0;
-		wsi->lws_rx_parse_state = LWS_RXPS_07_COLLECT_FRAME_KEY_3;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_07_COLLECT_FRAME_KEY_3;
 		break;
 
 	case LWS_RXPS_07_COLLECT_FRAME_KEY_3:
 		wsi->ws->mask[2] = c;
 		if (c)
 			wsi->ws->all_zero_nonce = 0;
-		wsi->lws_rx_parse_state = LWS_RXPS_07_COLLECT_FRAME_KEY_4;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_07_COLLECT_FRAME_KEY_4;
 		break;
 
 	case LWS_RXPS_07_COLLECT_FRAME_KEY_4:
 		wsi->ws->mask[3] = c;
 		if (c)
 			wsi->ws->all_zero_nonce = 0;
-		wsi->lws_rx_parse_state = LWS_RXPS_WS_FRAME_PAYLOAD;
+		wsi->aws_lws_rx_parse_state = LWS_RXPS_WS_FRAME_PAYLOAD;
 		wsi->ws->mask_idx = 0;
 		if (wsi->ws->rx_packet_length == 0) {
-			wsi->lws_rx_parse_state = LWS_RXPS_NEW;
+			wsi->aws_lws_rx_parse_state = LWS_RXPS_NEW;
 			goto spill;
 		}
 		break;
@@ -387,7 +387,7 @@ handle_first:
 		assert(wsi->ws->rx_ubuf);
 
 		if (wsi->ws->rx_ubuf_head + LWS_PRE >= wsi->ws->rx_ubuf_alloc) {
-			lwsl_err("Attempted overflow \n");
+			aws_lwsl_err("Attempted overflow \n");
 			return -1;
 		}
 		if (!(already_processed & ALREADY_PROCESSED_IGNORE_CHAR)) {
@@ -403,15 +403,15 @@ handle_first:
 		}
 
 		if (!wsi->ws->rx_packet_length) {
-			lwsl_debug("%s: ws fragment length exhausted\n",
+			aws_lwsl_debug("%s: ws fragment length exhausted\n",
 				   __func__);
 			/* spill because we have the whole frame */
-			wsi->lws_rx_parse_state = LWS_RXPS_NEW;
+			wsi->aws_lws_rx_parse_state = LWS_RXPS_NEW;
 			goto spill;
 		}
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 		if (wsi->ws->rx_draining_ext) {
-			lwsl_debug("%s: UNTIL_EXHAUSTED draining\n", __func__);
+			aws_lwsl_debug("%s: UNTIL_EXHAUSTED draining\n", __func__);
 			goto drain_extension;
 		}
 #endif
@@ -434,7 +434,7 @@ spill:
 		 * layer?  If so service it and hide it from the user callback
 		 */
 
-		lwsl_parser("spill on %s\n", wsi->a.protocol->name);
+		aws_lwsl_parser("spill on %s\n", wsi->a.protocol->name);
 
 		switch (wsi->ws->opcode) {
 		case LWSWSOPC_CLOSE:
@@ -445,34 +445,34 @@ spill:
 			wsi->ws->peer_has_sent_close = 1;
 
 			pp = &wsi->ws->rx_ubuf[LWS_PRE];
-			if (lws_check_opt(wsi->a.context->options,
+			if (aws_lws_check_opt(wsi->a.context->options,
 					  LWS_SERVER_OPTION_VALIDATE_UTF8) &&
 			    wsi->ws->rx_ubuf_head > 2 &&
-			    lws_check_utf8(&wsi->ws->utf8, pp + 2,
+			    aws_lws_check_utf8(&wsi->ws->utf8, pp + 2,
 					   wsi->ws->rx_ubuf_head - 2))
 				goto utf8_fail;
 
 			/* is this an acknowledgment of our close? */
-			if (lwsi_state(wsi) == LRS_AWAITING_CLOSE_ACK) {
+			if (aws_lwsi_state(wsi) == LRS_AWAITING_CLOSE_ACK) {
 				/*
 				 * fine he has told us he is closing too, let's
 				 * finish our close
 				 */
-				lwsl_parser("seen client close ack\n");
+				aws_lwsl_parser("seen client close ack\n");
 				return -1;
 			}
-			if (lwsi_state(wsi) == LRS_RETURNED_CLOSE)
+			if (aws_lwsi_state(wsi) == LRS_RETURNED_CLOSE)
 				/* if he sends us 2 CLOSE, kill him */
 				return -1;
 
-			if (lws_partial_buffered(wsi)) {
+			if (aws_lws_partial_buffered(wsi)) {
 				/*
 				 * if we're in the middle of something,
 				 * we can't do a normal close response and
 				 * have to just close our end.
 				 */
 				wsi->socket_is_permanently_unusable = 1;
-				lwsl_parser("Closing on peer close "
+				aws_lwsl_parser("Closing on peer close "
 					    "due to pending tx\n");
 				return -1;
 			}
@@ -502,14 +502,14 @@ spill:
 					wsi->ws->rx_ubuf_head))
 				return -1;
 
-			lwsl_parser("server sees client close packet\n");
-			lwsi_set_state(wsi, LRS_RETURNED_CLOSE);
+			aws_lwsl_parser("server sees client close packet\n");
+			aws_lwsi_set_state(wsi, LRS_RETURNED_CLOSE);
 			/* deal with the close packet contents as a PONG */
 			wsi->ws->payload_is_close = 1;
 			goto process_as_ping;
 
 		case LWSWSOPC_PING:
-			lwsl_info("received %d byte ping, sending pong\n",
+			aws_lwsl_info("received %d byte ping, sending pong\n",
 						 (int)wsi->ws->rx_ubuf_head);
 
 			if (wsi->ws->pong_pending_flag) {
@@ -517,13 +517,13 @@ spill:
 				 * there is already a pending pong payload
 				 * we should just log and drop
 				 */
-				lwsl_parser("DROP PING since one pending\n");
+				aws_lwsl_parser("DROP PING since one pending\n");
 				goto ping_drop;
 			}
 process_as_ping:
 			/* control packets can only be < 128 bytes long */
 			if (wsi->ws->rx_ubuf_head > 128 - 3) {
-				lwsl_parser("DROP PING payload too large\n");
+				aws_lwsl_parser("DROP PING payload too large\n");
 				goto ping_drop;
 			}
 
@@ -536,17 +536,17 @@ process_as_ping:
 			wsi->ws->pong_pending_flag = 1;
 
 			/* get it sent as soon as possible */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 ping_drop:
 			wsi->ws->rx_ubuf_head = 0;
 			return 0;
 
 		case LWSWSOPC_PONG:
-			lwsl_info("received pong\n");
-			lwsl_hexdump(&wsi->ws->rx_ubuf[LWS_PRE],
+			aws_lwsl_info("received pong\n");
+			aws_lwsl_hexdump(&wsi->ws->rx_ubuf[LWS_PRE],
 			             wsi->ws->rx_ubuf_head);
 
-			lws_validity_confirmed(wsi);
+			aws_lws_validity_confirmed(wsi);
 
 			/* issue it */
 			callback_action = LWS_CALLBACK_RECEIVE_PONG;
@@ -558,7 +558,7 @@ ping_drop:
 			break;
 
 		default:
-			lwsl_parser("unknown opc %x\n", wsi->ws->opcode);
+			aws_lwsl_parser("unknown opc %x\n", wsi->ws->opcode);
 
 			return -1;
 		}
@@ -570,7 +570,7 @@ ping_drop:
 		 * LWS_RXPS_WS_FRAME_PAYLOAD clause above.
 		 *
 		 * It's nicely buffered with the pre-padding taken care of
-		 * so it can be sent straight out again using lws_write.
+		 * so it can be sent straight out again using aws_lws_write.
 		 *
 		 * However, now we have a chunk of it, we want to deal with it
 		 * all here.  Since this may be input to permessage-deflate and
@@ -593,11 +593,11 @@ drain_extension:
 
 		do {
 
-//			lwsl_notice("%s: pmdrx.eb_in.len: %d\n", __func__,
+//			aws_lwsl_notice("%s: pmdrx.eb_in.len: %d\n", __func__,
 //					(int)pmdrx.eb_in.len);
 
-			if (lwsi_state(wsi) == LRS_RETURNED_CLOSE ||
-			    lwsi_state(wsi) == LRS_AWAITING_CLOSE_ACK)
+			if (aws_lwsi_state(wsi) == LRS_RETURNED_CLOSE ||
+			    aws_lwsi_state(wsi) == LRS_AWAITING_CLOSE_ACK)
 				goto already_done;
 
 			n = PMDR_DID_NOTHING;
@@ -605,12 +605,12 @@ drain_extension:
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 			lin = pmdrx.eb_in.len;
 			//if (lin)
-			//	lwsl_hexdump_notice(ebuf.token, ebuf.len);
-			lwsl_ext("%s: +++ passing %d %p to ext\n", __func__,
+			//	aws_lwsl_hexdump_notice(ebuf.token, ebuf.len);
+			aws_lwsl_ext("%s: +++ passing %d %p to ext\n", __func__,
 					pmdrx.eb_in.len, pmdrx.eb_in.token);
 
-			n = lws_ext_cb_active(wsi, LWS_EXT_CB_PAYLOAD_RX, &pmdrx, 0);
-			lwsl_debug("%s: ext says %d / ebuf.len %d\n", __func__,
+			n = aws_lws_ext_cb_active(wsi, LWS_EXT_CB_PAYLOAD_RX, &pmdrx, 0);
+			aws_lwsl_debug("%s: ext says %d / ebuf.len %d\n", __func__,
 				   n, pmdrx.eb_out.len);
 			if (wsi->ws->rx_draining_ext)
 				already_processed &= (char)~ALREADY_PROCESSED_NO_CB;
@@ -633,13 +633,13 @@ drain_extension:
 				/* ie, not PMDR_NOTHING_WE_SHOULD_DO */
 				break;
 #endif
-			lwsl_debug("%s: post ext ret %d, ebuf in %d / out %d\n",
+			aws_lwsl_debug("%s: post ext ret %d, ebuf in %d / out %d\n",
 				    __func__, n, pmdrx.eb_in.len,
 				    pmdrx.eb_out.len);
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 			if (rx_draining_ext && !pmdrx.eb_out.len) {
-				lwsl_debug("   --- ending drain on 0 read\n");
+				aws_lwsl_debug("   --- ending drain on 0 read\n");
 				goto already_done;
 			}
 
@@ -648,19 +648,19 @@ drain_extension:
 				 * extension had more...
 				 * main loop will come back
 				 */
-				lws_add_wsi_to_draining_ext_list(wsi);
+				aws_lws_add_wsi_to_draining_ext_list(wsi);
 			else
-				lws_remove_wsi_from_draining_ext_list(wsi);
+				aws_lws_remove_wsi_from_draining_ext_list(wsi);
 
 			rx_draining_ext = wsi->ws->rx_draining_ext;
 #endif
 
 			if (pmdrx.eb_out.len &&
 			    wsi->ws->check_utf8 && !wsi->ws->defeat_check_utf8) {
-				if (lws_check_utf8(&wsi->ws->utf8,
+				if (aws_lws_check_utf8(&wsi->ws->utf8,
 						   pmdrx.eb_out.token,
 						   (size_t)pmdrx.eb_out.len)) {
-					lws_close_reason(wsi,
+					aws_lws_close_reason(wsi,
 						LWS_CLOSE_STATUS_INVALID_PAYLOAD,
 						(uint8_t *)"bad utf8", 8);
 					goto utf8_fail;
@@ -674,13 +674,13 @@ drain_extension:
 				    && (n == PMDR_EMPTY_FINAL || n == PMDR_UNKNOWN)
 #endif
 				) {
-					lwsl_info("FINAL utf8 error\n");
-					lws_close_reason(wsi,
+					aws_lwsl_info("FINAL utf8 error\n");
+					aws_lws_close_reason(wsi,
 						LWS_CLOSE_STATUS_INVALID_PAYLOAD,
 						(uint8_t *)"partial utf8", 12);
 utf8_fail:
-					lwsl_notice("utf8 error\n");
-					lwsl_hexdump_notice(pmdrx.eb_out.token,
+					aws_lwsl_notice("utf8 error\n");
+					aws_lwsl_hexdump_notice(pmdrx.eb_out.token,
 							    (size_t)pmdrx.eb_out.len);
 
 					return -1;
@@ -709,11 +709,11 @@ utf8_fail:
 				    !(already_processed & ALREADY_PROCESSED_NO_CB)) {
 					if (callback_action ==
 						      LWS_CALLBACK_RECEIVE_PONG)
-						lwsl_info("Doing pong callback\n");
+						aws_lwsl_info("Doing pong callback\n");
 
 					ret = user_callback_handle_rxflow(
 						wsi->a.protocol->callback, wsi,
-						(enum lws_callback_reasons)
+						(enum aws_lws_callback_reasons)
 							     callback_action,
 						wsi->user_space,
 						pmdrx.eb_out.token,
@@ -742,33 +742,33 @@ already_done:
 
 illegal_ctl_length:
 
-	lwsl_warn("Control frame with xtended length is illegal\n");
+	aws_lwsl_warn("Control frame with xtended length is illegal\n");
 	/* kill the connection */
 	return -1;
 }
 
 
 size_t
-lws_remaining_packet_payload(struct lws *wsi)
+aws_lws_remaining_packet_payload(struct lws *wsi)
 {
 	return wsi->ws->rx_packet_length;
 }
 
-int lws_frame_is_binary(struct lws *wsi)
+int aws_lws_frame_is_binary(struct lws *wsi)
 {
 	return wsi->ws->frame_is_binary;
 }
 
 void
-lws_add_wsi_to_draining_ext_list(struct lws *wsi)
+aws_lws_add_wsi_to_draining_ext_list(struct lws *wsi)
 {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
 	if (wsi->ws->rx_draining_ext)
 		return;
 
-	lwsl_debug("%s: RX EXT DRAINING: Adding to list\n", __func__);
+	aws_lwsl_debug("%s: RX EXT DRAINING: Adding to list\n", __func__);
 
 	wsi->ws->rx_draining_ext = 1;
 	wsi->ws->rx_draining_ext_list = pt->ws.rx_draining_ext_list;
@@ -777,16 +777,16 @@ lws_add_wsi_to_draining_ext_list(struct lws *wsi)
 }
 
 void
-lws_remove_wsi_from_draining_ext_list(struct lws *wsi)
+aws_lws_remove_wsi_from_draining_ext_list(struct lws *wsi)
 {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	struct lws **w = &pt->ws.rx_draining_ext_list;
 
 	if (!wsi->ws->rx_draining_ext)
 		return;
 
-	lwsl_debug("%s: RX EXT DRAINING: Removing from list\n", __func__);
+	aws_lwsl_debug("%s: RX EXT DRAINING: Removing from list\n", __func__);
 
 	wsi->ws->rx_draining_ext = 0;
 
@@ -804,14 +804,14 @@ lws_remove_wsi_from_draining_ext_list(struct lws *wsi)
 }
 
 static int
-lws_0405_frame_mask_generate(struct lws *wsi)
+aws_lws_0405_frame_mask_generate(struct lws *wsi)
 {
 	size_t n;
 	/* fetch the per-frame nonce */
 
-	n = lws_get_random(lws_get_context(wsi), wsi->ws->mask, 4);
+	n = aws_lws_get_random(aws_lws_get_context(wsi), wsi->ws->mask, 4);
 	if (n != 4) {
-		lwsl_parser("Unable to read from random device %s %d\n",
+		aws_lwsl_parser("Unable to read from random device %s %d\n",
 			    SYSTEM_RANDOM_FILEPATH, (int)n);
 		return 1;
 	}
@@ -823,11 +823,11 @@ lws_0405_frame_mask_generate(struct lws *wsi)
 }
 
 int
-lws_server_init_wsi_for_ws(struct lws *wsi)
+aws_lws_server_init_wsi_for_ws(struct lws *wsi)
 {
 	int n;
 
-	lwsi_set_state(wsi, LRS_ESTABLISHED);
+	aws_lwsi_set_state(wsi, LRS_ESTABLISHED);
 
 	/*
 	 * create the frame buffer for this connection according to the
@@ -839,9 +839,9 @@ lws_server_init_wsi_for_ws(struct lws *wsi)
 	if (!n)
 		n = (int)wsi->a.context->pt_serv_buf_size;
 	n += LWS_PRE;
-	wsi->ws->rx_ubuf = lws_malloc((unsigned int)n + 4 /* 0x0000ffff zlib */, "rx_ubuf");
+	wsi->ws->rx_ubuf = aws_lws_malloc((unsigned int)n + 4 /* 0x0000ffff zlib */, "rx_ubuf");
 	if (!wsi->ws->rx_ubuf) {
-		lwsl_err("Out of Mem allocating rx buffer %d\n", n);
+		aws_lwsl_err("Out of Mem allocating rx buffer %d\n", n);
 		return 1;
 	}
 	wsi->ws->rx_ubuf_alloc = (uint32_t)n;
@@ -859,8 +859,8 @@ lws_server_init_wsi_for_ws(struct lws *wsi)
 					    wsi->h2_stream_carries_ws))
 			return 1;
 
-	lws_validity_confirmed(wsi);
-	lwsl_debug("ws established\n");
+	aws_lws_validity_confirmed(wsi);
+	aws_lwsl_debug("ws established\n");
 
 	return 0;
 }
@@ -868,10 +868,10 @@ lws_server_init_wsi_for_ws(struct lws *wsi)
 
 
 int
-lws_is_final_fragment(struct lws *wsi)
+aws_lws_is_final_fragment(struct lws *wsi)
 {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	lwsl_debug("%s: final %d, rx pk length %ld, draining %ld\n", __func__,
+	aws_lwsl_debug("%s: final %d, rx pk length %ld, draining %ld\n", __func__,
 		   wsi->ws->final, (long)wsi->ws->rx_packet_length,
 		   (long)wsi->ws->rx_draining_ext);
 	return wsi->ws->final && !wsi->ws->rx_packet_length &&
@@ -882,37 +882,37 @@ lws_is_final_fragment(struct lws *wsi)
 }
 
 int
-lws_is_first_fragment(struct lws *wsi)
+aws_lws_is_first_fragment(struct lws *wsi)
 {
 	return wsi->ws->first_fragment;
 }
 
 unsigned char
-lws_get_reserved_bits(struct lws *wsi)
+aws_lws_get_reserved_bits(struct lws *wsi)
 {
 	return wsi->ws->rsv;
 }
 
 int
-lws_get_close_length(struct lws *wsi)
+aws_lws_get_close_length(struct lws *wsi)
 {
 	return wsi->ws->close_in_ping_buffer_len;
 }
 
 unsigned char *
-lws_get_close_payload(struct lws *wsi)
+aws_lws_get_close_payload(struct lws *wsi)
 {
 	return &wsi->ws->ping_payload_buf[LWS_PRE];
 }
 
 void
-lws_close_reason(struct lws *wsi, enum lws_close_status status,
+aws_lws_close_reason(struct lws *wsi, enum aws_lws_close_status status,
 		 unsigned char *buf, size_t len)
 {
 	unsigned char *p, *start;
 	int budget = sizeof(wsi->ws->ping_payload_buf) - LWS_PRE;
 
-	assert(lwsi_role_ws(wsi));
+	assert(aws_lwsi_role_ws(wsi));
 
 	start = p = &wsi->ws->ping_payload_buf[LWS_PRE];
 
@@ -923,25 +923,25 @@ lws_close_reason(struct lws *wsi, enum lws_close_status status,
 		while (len-- && p < start + budget)
 			*p++ = *buf++;
 
-	wsi->ws->close_in_ping_buffer_len = (uint8_t)lws_ptr_diff(p, start);
+	wsi->ws->close_in_ping_buffer_len = (uint8_t)aws_lws_ptr_diff(p, start);
 }
 
 static int
-lws_is_ws_with_ext(struct lws *wsi)
+aws_lws_is_ws_with_ext(struct lws *wsi)
 {
 #if defined(LWS_WITHOUT_EXTENSIONS)
 	return 0;
 #else
-	return lwsi_role_ws(wsi) && !!wsi->ws->count_act_ext;
+	return aws_lwsi_role_ws(wsi) && !!wsi->ws->count_act_ext;
 #endif
 }
 
 static int
-rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
-		       struct lws_pollfd *pollfd)
+rops_handle_POLLIN_ws(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+		       struct aws_lws_pollfd *pollfd)
 {
 	unsigned int pending = 0;
-	struct lws_tokens ebuf;
+	struct aws_lws_tokens ebuf;
 	char buffered = 0;
 	int n = 0, m, sanity = 10;
 #if defined(LWS_WITH_HTTP2)
@@ -949,20 +949,20 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 #endif
 
 	if (!wsi->ws) {
-		lwsl_err("ws role wsi with no ws\n");
+		aws_lwsl_err("ws role wsi with no ws\n");
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
 
-	// lwsl_notice("%s: %s\n", __func__, wsi->a.protocol->name);
+	// aws_lwsl_notice("%s: %s\n", __func__, wsi->a.protocol->name);
 
-	//lwsl_info("%s: wsistate 0x%x, pollout %d\n", __func__,
+	//aws_lwsl_info("%s: wsistate 0x%x, pollout %d\n", __func__,
 	//	   wsi->wsistate, pollfd->revents & LWS_POLLOUT);
 
 	/*
 	 * something went wrong with parsing the handshake, and
 	 * we ended up back in the event loop without completing it
 	 */
-	if (lwsi_state(wsi) == LRS_PRE_WS_SERVING_ACCEPT) {
+	if (aws_lwsi_state(wsi) == LRS_PRE_WS_SERVING_ACCEPT) {
 		wsi->socket_is_permanently_unusable = 1;
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
@@ -970,15 +970,15 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 	ebuf.token = NULL;
 	ebuf.len = 0;
 
-	if (lwsi_state(wsi) == LRS_WAITING_CONNECT) {
+	if (aws_lwsi_state(wsi) == LRS_WAITING_CONNECT) {
 #if defined(LWS_WITH_CLIENT)
 		if ((pollfd->revents & LWS_POLLOUT) &&
-		    lws_handle_POLLOUT_event(wsi, pollfd)) {
-			lwsl_debug("POLLOUT event closed it\n");
+		    aws_lws_handle_POLLOUT_event(wsi, pollfd)) {
+			aws_lwsl_debug("POLLOUT event closed it\n");
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
 
-		n = lws_http_client_socket_service(wsi, pollfd);
+		n = aws_lws_http_client_socket_service(wsi, pollfd);
 		if (n)
 			return LWS_HPI_RET_WSI_ALREADY_DIED;
 #endif
@@ -988,22 +988,22 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 	/* 1: something requested a callback when it was OK to write */
 
 	if ((pollfd->revents & LWS_POLLOUT) &&
-	    lwsi_state_can_handle_POLLOUT(wsi) &&
-	    lws_handle_POLLOUT_event(wsi, pollfd)) {
-		if (lwsi_state(wsi) == LRS_RETURNED_CLOSE)
-			lwsi_set_state(wsi, LRS_FLUSHING_BEFORE_CLOSE);
+	    aws_lwsi_state_can_handle_POLLOUT(wsi) &&
+	    aws_lws_handle_POLLOUT_event(wsi, pollfd)) {
+		if (aws_lwsi_state(wsi) == LRS_RETURNED_CLOSE)
+			aws_lwsi_set_state(wsi, LRS_FLUSHING_BEFORE_CLOSE);
 
 		return LWS_HPI_RET_PLEASE_CLOSE_ME;
 	}
 
-	if (lwsi_state(wsi) == LRS_RETURNED_CLOSE ||
-	    lwsi_state(wsi) == LRS_WAITING_TO_SEND_CLOSE) {
+	if (aws_lwsi_state(wsi) == LRS_RETURNED_CLOSE ||
+	    aws_lwsi_state(wsi) == LRS_WAITING_TO_SEND_CLOSE) {
 		/*
 		 * we stopped caring about anything except control
 		 * packets.  Force flow control off, defeat tx
 		 * draining.
 		 */
-		lws_rx_flow_control(wsi, 1);
+		aws_lws_rx_flow_control(wsi, 1);
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 		if (wsi->ws)
 			wsi->ws->tx_draining_ext = 0;
@@ -1011,8 +1011,8 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 	}
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 	if (wsi->ws->tx_draining_ext) {
-		lws_handle_POLLOUT_event(wsi, pollfd);
-		//lwsl_notice("%s: tx drain\n", __func__);
+		aws_lws_handle_POLLOUT_event(wsi, pollfd);
+		//aws_lwsl_notice("%s: tx drain\n", __func__);
 		/*
 		 * We cannot deal with new RX until the TX ext path has
 		 * been drained.  It's because new rx will, eg, crap on
@@ -1021,15 +1021,15 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 		 * TX ext drain path MUST go through event loop to avoid
 		 * blocking.
 		 */
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		return LWS_HPI_RET_HANDLED;
 	}
 #endif
-	if ((pollfd->revents & LWS_POLLIN) && lws_is_flowcontrolled(wsi)) {
+	if ((pollfd->revents & LWS_POLLIN) && aws_lws_is_flowcontrolled(wsi)) {
 		/* We cannot deal with any kind of new RX because we are
 		 * RX-flowcontrolled.
 		 */
-		lwsl_info("%s: flowcontrolled, ignoring rx\n", __func__);
+		aws_lwsl_info("%s: flowcontrolled, ignoring rx\n", __func__);
 
 		if (__lws_change_pollfd(wsi, LWS_POLLIN, 0))
 			return -1;
@@ -1037,13 +1037,13 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 		return LWS_HPI_RET_HANDLED;
 	}
 
-	if (lws_is_flowcontrolled(wsi))
+	if (aws_lws_is_flowcontrolled(wsi))
 		return LWS_HPI_RET_HANDLED;
 
 #if defined(LWS_WITH_HTTP2)
 	if (wsi->mux_substream || wsi->upgraded_to_http2) {
-		wsi1 = lws_get_network_wsi(wsi);
-		if (wsi1 && lws_has_buffered_out(wsi1))
+		wsi1 = aws_lws_get_network_wsi(wsi);
+		if (wsi1 && aws_lws_has_buffered_out(wsi1))
 			/* We cannot deal with any kind of new RX
 			 * because we are dealing with a partial send
 			 * (new RX may trigger new http_action() that
@@ -1059,16 +1059,16 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 
 	if (wsi->ws->rx_draining_ext) {
 
-		lwsl_debug("%s: RX EXT DRAINING: Service\n", __func__);
+		aws_lwsl_debug("%s: RX EXT DRAINING: Service\n", __func__);
 #if defined(LWS_WITH_CLIENT)
-		if (lwsi_role_client(wsi)) {
-			n = lws_ws_client_rx_sm(wsi, 0);
+		if (aws_lwsi_role_client(wsi)) {
+			n = aws_lws_ws_client_rx_sm(wsi, 0);
 			if (n < 0)
 				/* we closed wsi */
 				return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		} else
 #endif
-			n = lws_ws_rx_sm(wsi, ALREADY_PROCESSED_IGNORE_CHAR, 0);
+			n = aws_lws_ws_rx_sm(wsi, ALREADY_PROCESSED_IGNORE_CHAR, 0);
 
 		return LWS_HPI_RET_HANDLED;
 	}
@@ -1085,11 +1085,11 @@ rops_handle_POLLIN_ws(struct lws_context_per_thread *pt, struct lws *wsi,
 	/* 3: buflist needs to be drained
 	 */
 read:
-	//lws_buflist_describe(&wsi->buflist, wsi, __func__);
-	ebuf.len = (int)lws_buflist_next_segment_len(&wsi->buflist,
+	//aws_lws_buflist_describe(&wsi->buflist, wsi, __func__);
+	ebuf.len = (int)aws_lws_buflist_next_segment_len(&wsi->buflist,
 						     &ebuf.token);
 	if (ebuf.len) {
-		lwsl_info("draining buflist (len %d)\n", ebuf.len);
+		aws_lwsl_info("draining buflist (len %d)\n", ebuf.len);
 		buffered = 1;
 		goto drain;
 	}
@@ -1097,16 +1097,16 @@ read:
 	if (!(pollfd->revents & pollfd->events & LWS_POLLIN) && !wsi->http.ah)
 		return LWS_HPI_RET_HANDLED;
 
-	if (lws_is_flowcontrolled(wsi)) {
-		lwsl_info("%s: %p should be rxflow (bm 0x%x)..\n",
+	if (aws_lws_is_flowcontrolled(wsi)) {
+		aws_lwsl_info("%s: %p should be rxflow (bm 0x%x)..\n",
 			    __func__, wsi, wsi->rxflow_bitmap);
 		return LWS_HPI_RET_HANDLED;
 	}
 
-	if (!(lwsi_role_client(wsi) &&
-	      (lwsi_state(wsi) != LRS_ESTABLISHED &&
-	       lwsi_state(wsi) != LRS_AWAITING_CLOSE_ACK &&
-	       lwsi_state(wsi) != LRS_H2_WAITING_TO_SEND_HEADERS))) {
+	if (!(aws_lwsi_role_client(wsi) &&
+	      (aws_lwsi_state(wsi) != LRS_ESTABLISHED &&
+	       aws_lwsi_state(wsi) != LRS_AWAITING_CLOSE_ACK &&
+	       aws_lwsi_state(wsi) != LRS_H2_WAITING_TO_SEND_HEADERS))) {
 		/*
 		 * In case we are going to react to this rx by scheduling
 		 * writes, we need to restrict the amount of rx to the size
@@ -1119,7 +1119,7 @@ read:
 
 		buffered = 0;
 		ebuf.token = pt->serv_buf;
-		if (lwsi_role_ws(wsi))
+		if (aws_lwsi_role_ws(wsi))
 			ebuf.len = (int)wsi->ws->rx_ubuf_alloc;
 		else
 			ebuf.len = (int)wsi->a.context->pt_serv_buf_size;
@@ -1130,19 +1130,19 @@ read:
 		if ((int)pending > ebuf.len)
 			pending = (unsigned int)ebuf.len;
 
-		ebuf.len = lws_ssl_capable_read(wsi, ebuf.token,
+		ebuf.len = aws_lws_ssl_capable_read(wsi, ebuf.token,
 						(size_t)(pending ? pending :
 						(unsigned int)ebuf.len));
 		switch (ebuf.len) {
 		case 0:
-			lwsl_info("%s: zero length read\n",
+			aws_lwsl_info("%s: zero length read\n",
 				  __func__);
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		case LWS_SSL_CAPABLE_MORE_SERVICE:
-			lwsl_info("SSL Capable more service\n");
+			aws_lwsl_info("SSL Capable more service\n");
 			return LWS_HPI_RET_HANDLED;
 		case LWS_SSL_CAPABLE_ERROR:
-			lwsl_info("%s: LWS_SSL_CAPABLE_ERROR\n",
+			aws_lwsl_info("%s: LWS_SSL_CAPABLE_ERROR\n",
 					__func__);
 			return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
@@ -1158,7 +1158,7 @@ drain:
 
 	/*
 	 * give any active extensions a chance to munge the buffer
-	 * before parse.  We pass in a pointer to an lws_tokens struct
+	 * before parse.  We pass in a pointer to an aws_lws_tokens struct
 	 * prepared with the default buffer and content length that's in
 	 * there.  Rather than rewrite the default buffer, extensions
 	 * that expect to grow the buffer can adapt .token to
@@ -1171,26 +1171,26 @@ drain:
 	do {
 
 		/* service incoming data */
-		//lws_buflist_describe(&wsi->buflist, wsi, __func__);
+		//aws_lws_buflist_describe(&wsi->buflist, wsi, __func__);
 		if (ebuf.len > 0) {
 #if defined(LWS_ROLE_H2)
-			if (lwsi_role_h2(wsi) && lwsi_state(wsi) != LRS_BODY &&
-			    lwsi_state(wsi) != LRS_DISCARD_BODY)
-				n = lws_read_h2(wsi, ebuf.token,
+			if (aws_lwsi_role_h2(wsi) && aws_lwsi_state(wsi) != LRS_BODY &&
+			    aws_lwsi_state(wsi) != LRS_DISCARD_BODY)
+				n = aws_lws_read_h2(wsi, ebuf.token,
 					     (unsigned int)ebuf.len);
 			else
 #endif
-				n = lws_read_h1(wsi, ebuf.token,
+				n = aws_lws_read_h1(wsi, ebuf.token,
 					     (unsigned int)ebuf.len);
 
 			if (n < 0) {
 				/* we closed wsi */
 				return LWS_HPI_RET_WSI_ALREADY_DIED;
 			}
-			//lws_buflist_describe(&wsi->buflist, wsi, __func__);
-			//lwsl_notice("%s: consuming %d / %d\n", __func__, n, ebuf.len);
+			//aws_lws_buflist_describe(&wsi->buflist, wsi, __func__);
+			//aws_lwsl_notice("%s: consuming %d / %d\n", __func__, n, ebuf.len);
 			if (ebuf.len < 0 ||
-			    lws_buflist_aware_finished_consuming(wsi, &ebuf, n,
+			    aws_lws_buflist_aware_finished_consuming(wsi, &ebuf, n,
 							buffered, __func__))
 				return LWS_HPI_RET_PLEASE_CLOSE_ME;
 		}
@@ -1204,20 +1204,20 @@ drain:
 			&& !wsi->client_h2_alpn
 #endif
 			) {
-		lwsl_info("%s: %p: detaching ah\n", __func__, wsi);
-		lws_header_table_detach(wsi, 0);
+		aws_lwsl_info("%s: %p: detaching ah\n", __func__, wsi);
+		aws_lws_header_table_detach(wsi, 0);
 	}
 
-	pending = (unsigned int)lws_ssl_pending(wsi);
+	pending = (unsigned int)aws_lws_ssl_pending(wsi);
 
 #if defined(LWS_WITH_CLIENT)
 	if (!pending && (wsi->flags & LCCSCF_PRIORITIZE_READS) &&
-	    lws_buflist_total_len(&wsi->buflist))
+	    aws_lws_buflist_total_len(&wsi->buflist))
 		pending = 9999999;
 #endif
 
 	if (pending) {
-		if (lws_is_ws_with_ext(wsi))
+		if (aws_lws_is_ws_with_ext(wsi))
 			pending = pending > wsi->ws->rx_ubuf_alloc ?
 				wsi->ws->rx_ubuf_alloc : pending;
 		else
@@ -1234,8 +1234,8 @@ drain:
 	}
 
 	if (buffered && /* were draining, now nothing left */
-	    !lws_buflist_next_segment_len(&wsi->buflist, NULL)) {
-		lwsl_info("%s: %p flow buf: drained\n", __func__, wsi);
+	    !aws_lws_buflist_next_segment_len(&wsi->buflist, NULL)) {
+		aws_lwsl_info("%s: %p flow buf: drained\n", __func__, wsi);
 		/* having drained the rxflow buffer, can rearm POLLIN */
 #if !defined(LWS_WITH_SERVER)
 		n =
@@ -1253,13 +1253,13 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 {
 	int write_type = LWS_WRITE_PONG;
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	struct lws_ext_pm_deflate_rx_ebufs pmdrx;
+	struct aws_lws_ext_pm_deflate_rx_ebufs pmdrx;
 	int ret, m;
 #endif
 	int n;
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	lwsl_debug("%s: %s: wsi->ws->tx_draining_ext %d\n", __func__,
+	aws_lwsl_debug("%s: %s: wsi->ws->tx_draining_ext %d\n", __func__,
 			wsi->a.protocol->name, wsi->ws->tx_draining_ext);
 #endif
 
@@ -1268,25 +1268,25 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 	 * 3a: close notification packet requested from close api
 	 */
 
-	if (lwsi_state(wsi) == LRS_WAITING_TO_SEND_CLOSE) {
-		lwsl_debug("sending close packet\n");
-		lwsl_hexdump_debug(&wsi->ws->ping_payload_buf[LWS_PRE],
+	if (aws_lwsi_state(wsi) == LRS_WAITING_TO_SEND_CLOSE) {
+		aws_lwsl_debug("sending close packet\n");
+		aws_lwsl_hexdump_debug(&wsi->ws->ping_payload_buf[LWS_PRE],
 				   wsi->ws->close_in_ping_buffer_len);
 		wsi->waiting_to_send_close_frame = 0;
-		n = lws_write(wsi, &wsi->ws->ping_payload_buf[LWS_PRE],
+		n = aws_lws_write(wsi, &wsi->ws->ping_payload_buf[LWS_PRE],
 			      wsi->ws->close_in_ping_buffer_len,
 			      LWS_WRITE_CLOSE);
 		if (n >= 0) {
 			if (wsi->close_needs_ack) {
-				lwsi_set_state(wsi, LRS_AWAITING_CLOSE_ACK);
-				lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_ACK,
+				aws_lwsi_set_state(wsi, LRS_AWAITING_CLOSE_ACK);
+				aws_lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_ACK,
 						5);
-				lwsl_debug("sent close, await ack\n");
+				aws_lwsl_debug("sent close, await ack\n");
 
 				return LWS_HP_RET_BAIL_OK;
 			}
 			wsi->close_needs_ack = 0;
-			lwsi_set_state(wsi, LRS_RETURNED_CLOSE);
+			aws_lwsi_set_state(wsi, LRS_RETURNED_CLOSE);
 		}
 
 		return LWS_HP_RET_BAIL_DIE;
@@ -1294,8 +1294,8 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 
 	/* else, the send failed and we should just hang up */
 
-	if ((lwsi_role_ws(wsi) && wsi->ws->pong_pending_flag) ||
-	    (lwsi_state(wsi) == LRS_RETURNED_CLOSE &&
+	if ((aws_lwsi_role_ws(wsi) && wsi->ws->pong_pending_flag) ||
+	    (aws_lwsi_state(wsi) == LRS_RETURNED_CLOSE &&
 	     wsi->ws->payload_is_close)) {
 
 		if (wsi->ws->payload_is_close)
@@ -1306,12 +1306,12 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 				wsi->ws->pong_pending_flag = 0;
 				return LWS_HP_RET_BAIL_OK;
 			}
-			lwsl_info("issuing pong %d on %s\n",
-				  wsi->ws->pong_payload_len, lws_wsi_tag(wsi));
+			aws_lwsl_info("issuing pong %d on %s\n",
+				  wsi->ws->pong_payload_len, aws_lws_wsi_tag(wsi));
 		}
 
-		n = lws_write(wsi, &wsi->ws->pong_payload_buf[LWS_PRE],
-			      wsi->ws->pong_payload_len, (enum lws_write_protocol)write_type);
+		n = aws_lws_write(wsi, &wsi->ws->pong_payload_buf[LWS_PRE],
+			      wsi->ws->pong_payload_len, (enum aws_lws_write_protocol)write_type);
 		if (n < 0)
 			return LWS_HP_RET_BAIL_DIE;
 
@@ -1330,12 +1330,12 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 	if (!wsi->socket_is_permanently_unusable &&
 	    wsi->ws->send_check_ping) {
 
-		lwsl_info("%s: issuing ping on wsi %s: %s %s h2: %d\n", __func__,
-				lws_wsi_tag(wsi),
+		aws_lwsl_info("%s: issuing ping on wsi %s: %s %s h2: %d\n", __func__,
+				aws_lws_wsi_tag(wsi),
 				wsi->role_ops->name, wsi->a.protocol->name,
 				wsi->mux_substream);
 		wsi->ws->send_check_ping = 0;
-		n = lws_write(wsi, &wsi->ws->ping_payload_buf[LWS_PRE],
+		n = aws_lws_write(wsi, &wsi->ws->ping_payload_buf[LWS_PRE],
 			      0, LWS_WRITE_PING);
 		if (n < 0)
 			return LWS_HP_RET_BAIL_DIE;
@@ -1346,7 +1346,7 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 	/* Priority 4: if we are closing, not allowed to send more data frags
 	 *	       which means user callback or tx ext flush banned now
 	 */
-	if (lwsi_state(wsi) == LRS_RETURNED_CLOSE)
+	if (aws_lwsi_state(wsi) == LRS_RETURNED_CLOSE)
 		return LWS_HP_RET_USER_SERVICE;
 
 #if !defined(LWS_WITHOUT_EXTENSIONS)
@@ -1358,8 +1358,8 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 	 *	       fragments control packets can interleave OK.
 	 */
 	if (wsi->ws->tx_draining_ext) {
-		lwsl_ext("SERVICING TX EXT DRAINING\n");
-		if (lws_write(wsi, NULL, 0, LWS_WRITE_CONTINUATION) < 0)
+		aws_lwsl_ext("SERVICING TX EXT DRAINING\n");
+		if (aws_lws_write(wsi, NULL, 0, LWS_WRITE_CONTINUATION) < 0)
 			return LWS_HP_RET_BAIL_DIE;
 		/* leave POLLOUT active */
 		return LWS_HP_RET_BAIL_OK;
@@ -1368,7 +1368,7 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 	/* Priority 6: extensions
 	 */
 	if (!wsi->ws->extension_data_pending && !wsi->ws->tx_draining_ext) {
-		lwsl_ext("%s: !wsi->ws->extension_data_pending\n", __func__);
+		aws_lwsl_ext("%s: !wsi->ws->extension_data_pending\n", __func__);
 		return LWS_HP_RET_USER_SERVICE;
 	}
 
@@ -1398,10 +1398,10 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 
 		/* give every extension a chance to spill */
 
-		m = lws_ext_cb_active(wsi, LWS_EXT_CB_PACKET_TX_PRESEND,
+		m = aws_lws_ext_cb_active(wsi, LWS_EXT_CB_PACKET_TX_PRESEND,
 				      &pmdrx, 0);
 		if (m < 0) {
-			lwsl_err("ext reports fatal error\n");
+			aws_lwsl_err("ext reports fatal error\n");
 			return LWS_HP_RET_BAIL_DIE;
 		}
 		if (m)
@@ -1414,17 +1414,17 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 		/* assuming they gave us something to send, send it */
 
 		if (pmdrx.eb_in.len) {
-			n = lws_issue_raw(wsi, (unsigned char *)pmdrx.eb_in.token,
+			n = aws_lws_issue_raw(wsi, (unsigned char *)pmdrx.eb_in.token,
 					(unsigned int)pmdrx.eb_in.len);
 			if (n < 0) {
-				lwsl_info("closing from POLLOUT spill\n");
+				aws_lwsl_info("closing from POLLOUT spill\n");
 				return LWS_HP_RET_BAIL_DIE;
 			}
 			/*
 			 * Keep amount spilled small to minimize chance of this
 			 */
 			if (n != pmdrx.eb_in.len) {
-				lwsl_err("Unable to spill ext %d vs %d\n",
+				aws_lwsl_err("Unable to spill ext %d vs %d\n",
 						pmdrx.eb_in.len, n);
 				return LWS_HP_RET_BAIL_DIE;
 			}
@@ -1441,11 +1441,11 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 		 * something... did that leave the pipe choked?
 		 */
 
-		if (!lws_send_pipe_choked(wsi))
+		if (!aws_lws_send_pipe_choked(wsi))
 			/* no we could add more */
 			continue;
 
-		lwsl_info("choked in POLLOUT service\n");
+		aws_lwsl_info("choked in POLLOUT service\n");
 
 		/*
 		 * Yes, he's choked.  Leave the POLLOUT masked on so we will
@@ -1464,10 +1464,10 @@ int rops_handle_POLLOUT_ws(struct lws *wsi)
 }
 
 static int
-rops_service_flag_pending_ws(struct lws_context *context, int tsi)
+rops_service_flag_pending_ws(struct aws_lws_context *context, int tsi)
 {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	struct lws_context_per_thread *pt = &context->pt[tsi];
+	struct aws_lws_context_per_thread *pt = &context->pt[tsi];
 	struct lws *wsi;
 	int forced = 0;
 
@@ -1495,7 +1495,7 @@ rops_service_flag_pending_ws(struct lws_context *context, int tsi)
 }
 
 static int
-rops_close_via_role_protocol_ws(struct lws *wsi, enum lws_close_status reason)
+rops_close_via_role_protocol_ws(struct lws *wsi, enum aws_lws_close_status reason)
 {
 	if (!wsi->ws)
 		return 0;
@@ -1505,7 +1505,7 @@ rops_close_via_role_protocol_ws(struct lws *wsi, enum lws_close_status reason)
 	      reason == LWS_CLOSE_STATUS_NOSTATUS_CONTEXT_DESTROY))
 		return 0;
 
-	lwsl_debug("%s: sending close indication...\n", __func__);
+	aws_lwsl_debug("%s: sending close indication...\n", __func__);
 
 	/* if no prepared close reason, use 1000 and no aux data */
 
@@ -1517,16 +1517,16 @@ rops_close_via_role_protocol_ws(struct lws *wsi, enum lws_close_status reason)
 
 	wsi->waiting_to_send_close_frame = 1;
 	wsi->close_needs_ack = 1;
-	lwsi_set_state(wsi, LRS_WAITING_TO_SEND_CLOSE);
+	aws_lwsi_set_state(wsi, LRS_WAITING_TO_SEND_CLOSE);
 	__lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_SEND, 5);
 
-	lws_callback_on_writable(wsi);
+	aws_lws_callback_on_writable(wsi);
 
 	return 1;
 }
 
 static int
-rops_close_role_ws(struct lws_context_per_thread *pt, struct lws *wsi)
+rops_close_role_ws(struct aws_lws_context_per_thread *pt, struct lws *wsi)
 {
 	if (!wsi->ws)
 		return 0;
@@ -1550,7 +1550,7 @@ rops_close_role_ws(struct lws_context_per_thread *pt, struct lws *wsi)
 
 	if (wsi->ws->tx_draining_ext) {
 		struct lws **w = &pt->ws.tx_draining_ext_list;
-		lwsl_ext("%s: CLEARING tx_draining_ext\n", __func__);
+		aws_lwsl_ext("%s: CLEARING tx_draining_ext\n", __func__);
 		wsi->ws->tx_draining_ext = 0;
 		/* remove us from context draining ext list */
 		while (*w) {
@@ -1563,41 +1563,41 @@ rops_close_role_ws(struct lws_context_per_thread *pt, struct lws *wsi)
 		wsi->ws->tx_draining_ext_list = NULL;
 	}
 #endif
-	lws_free_set_NULL(wsi->ws->rx_ubuf);
+	aws_lws_free_set_NULL(wsi->ws->rx_ubuf);
 
 	wsi->ws->pong_payload_len = 0;
 	wsi->ws->pong_pending_flag = 0;
 
 	/* deallocate any active extension contexts */
 
-	if (lws_ext_cb_active(wsi, LWS_EXT_CB_DESTROY, NULL, 0) < 0)
-		lwsl_warn("extension destruction failed\n");
+	if (aws_lws_ext_cb_active(wsi, LWS_EXT_CB_DESTROY, NULL, 0) < 0)
+		aws_lwsl_warn("extension destruction failed\n");
 
 	return 0;
 }
 
 static int
 rops_write_role_protocol_ws(struct lws *wsi, unsigned char *buf, size_t len,
-			    enum lws_write_protocol *wp)
+			    enum aws_lws_write_protocol *wp)
 {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	enum lws_write_protocol wpt;
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	enum aws_lws_write_protocol wpt;
 #endif
-	struct lws_ext_pm_deflate_rx_ebufs pmdrx;
-	int masked7 = lwsi_role_client(wsi);
+	struct aws_lws_ext_pm_deflate_rx_ebufs pmdrx;
+	int masked7 = aws_lwsi_role_client(wsi);
 	unsigned char is_masked_bit = 0;
 	unsigned char *dropmask = NULL;
 	size_t orig_len = len;
 	int pre = 0, n = 0;
 
-	// lwsl_err("%s: wp 0x%x len %d\n", __func__, *wp, (int)len);
+	// aws_lwsl_err("%s: wp 0x%x len %d\n", __func__, *wp, (int)len);
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 	if (wsi->ws->tx_draining_ext) {
 		/* remove us from the list */
 		struct lws **w = &pt->ws.tx_draining_ext_list;
 
-		lwsl_ext("%s: CLEARING tx_draining_ext\n", __func__);
+		aws_lwsl_ext("%s: CLEARING tx_draining_ext\n", __func__);
 		wsi->ws->tx_draining_ext = 0;
 		/* remove us from context draining ext list */
 		while (*w) {
@@ -1620,9 +1620,9 @@ rops_write_role_protocol_ws(struct lws *wsi, unsigned char *buf, size_t len,
 		 */
 
 		if (!(wpt & LWS_WRITE_NO_FIN) && len)
-			*wp &= (enum lws_write_protocol)~LWS_WRITE_NO_FIN;
+			*wp &= (enum aws_lws_write_protocol)~LWS_WRITE_NO_FIN;
 
-		lwsl_ext("FORCED draining wp to 0x%02X "
+		aws_lwsl_ext("FORCED draining wp to 0x%02X "
 			 "(stashed 0x%02X, incoming 0x%02X)\n", *wp,
 			 wsi->ws->tx_draining_stashed_wp, wpt);
 		// assert(0);
@@ -1640,7 +1640,7 @@ rops_write_role_protocol_ws(struct lws *wsi, unsigned char *buf, size_t len,
 	/* if we are continuing a frame that already had its header done */
 
 	if (wsi->ws->inside_frame) {
-		lwsl_debug("INSIDE FRAME\n");
+		aws_lwsl_debug("INSIDE FRAME\n");
 		goto do_more_inside_frame;
 	}
 
@@ -1674,15 +1674,15 @@ rops_write_role_protocol_ws(struct lws *wsi, unsigned char *buf, size_t len,
 		break;
 	default:
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-		n = lws_ext_cb_active(wsi, (int)LWS_EXT_CB_PAYLOAD_TX, &pmdrx, (int)*wp);
+		n = aws_lws_ext_cb_active(wsi, (int)LWS_EXT_CB_PAYLOAD_TX, &pmdrx, (int)*wp);
 		if (n < 0)
 			return -1;
-		lwsl_ext("%s: defl ext ret %d, ext in remaining %d, "
+		aws_lwsl_ext("%s: defl ext ret %d, ext in remaining %d, "
 			    "out %d compressed (wp 0x%x)\n", __func__, n,
 			    (int)pmdrx.eb_in.len, (int)pmdrx.eb_out.len, *wp);
 
 		if (n == PMDR_HAS_PENDING) {
-			lwsl_ext("%s: HAS PENDING: write drain len %d "
+			aws_lwsl_ext("%s: HAS PENDING: write drain len %d "
 				    "(wp 0x%x) SETTING tx_draining_ext "
 				    "(remaining in %d)\n", __func__,
 				    (int)pmdrx.eb_out.len, *wp,
@@ -1693,7 +1693,7 @@ rops_write_role_protocol_ws(struct lws *wsi, unsigned char *buf, size_t len,
 					pt->ws.tx_draining_ext_list;
 			pt->ws.tx_draining_ext_list = wsi;
 			/* we must come back to do more */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 			/*
 			 * keep a copy of the write type for the overall
 			 * action that has provoked generation of these
@@ -1748,7 +1748,7 @@ rops_write_role_protocol_ws(struct lws *wsi, unsigned char *buf, size_t len,
 	len = (unsigned int)pmdrx.eb_out.len;
 
 	if (!buf) {
-		lwsl_err("null buf (%d)\n", (int)len);
+		aws_lwsl_err("null buf (%d)\n", (int)len);
 		return -1;
 	}
 
@@ -1781,7 +1781,7 @@ rops_write_role_protocol_ws(struct lws *wsi, unsigned char *buf, size_t len,
 			n = LWSWSOPC_PONG;
 			break;
 		default:
-			lwsl_warn("lws_write: unknown write opc / wp\n");
+			aws_lwsl_warn("aws_lws_write: unknown write opc / wp\n");
 			return -1;
 		}
 
@@ -1832,8 +1832,8 @@ do_more_inside_frame:
 
 	if (masked7) {
 		if (!wsi->ws->inside_frame)
-			if (lws_0405_frame_mask_generate(wsi)) {
-				lwsl_err("frame mask generation failed\n");
+			if (aws_lws_0405_frame_mask_generate(wsi)) {
+				aws_lwsl_err("frame mask generation failed\n");
 				return -1;
 			}
 
@@ -1850,12 +1850,12 @@ do_more_inside_frame:
 		}
 	}
 
-	if (lwsi_role_h2_ENCAPSULATION(wsi)) {
-		struct lws *encap = lws_get_network_wsi(wsi);
+	if (aws_lwsi_role_h2_ENCAPSULATION(wsi)) {
+		struct lws *encap = aws_lws_get_network_wsi(wsi);
 
 		assert(encap != wsi);
 
-		return lws_rops_func_fidx(encap->role_ops,
+		return aws_lws_rops_func_fidx(encap->role_ops,
 				   LWS_ROPS_write_role_protocol).
 					write_role_protocol(wsi, buf - pre,
 							    len + (unsigned int)pre, wp);
@@ -1870,7 +1870,7 @@ do_more_inside_frame:
 			/*
 			 * give any active extensions a chance to munge the
 			 * buffer before send.  We pass in a pointer to an
-			 * lws_tokens struct prepared with the default buffer
+			 * aws_lws_tokens struct prepared with the default buffer
 			 * and content length that's in there.  Rather than
 			 * rewrite the default buffer, extensions that expect
 			 * to grow the buffer can adapt .token to point to their
@@ -1890,7 +1890,7 @@ do_more_inside_frame:
 			 * consumed.
 			 */
 
-			n = lws_issue_raw_ext_access(wsi, buf - pre, len + (unsigned int)pre);
+			n = aws_lws_issue_raw_ext_access(wsi, buf - pre, len + (unsigned int)pre);
 			wsi->ws->inside_frame = 1;
 			if (n <= 0)
 				return n;
@@ -1906,7 +1906,7 @@ do_more_inside_frame:
 			 * it is how many bytes of user buffer got sent... may
 			 * be < orig_len in which case callback when writable
 			 * has already been arranged and user code can call
-			 * lws_write() again with the rest later.
+			 * aws_lws_write() again with the rest later.
 			 */
 
 			return n - pre;
@@ -1917,16 +1917,16 @@ do_more_inside_frame:
 	}
 
 send_raw:
-	return lws_issue_raw(wsi, (unsigned char *)buf - pre, len + (unsigned int)pre);
+	return aws_lws_issue_raw(wsi, (unsigned char *)buf - pre, len + (unsigned int)pre);
 }
 
 static int
-rops_close_kill_connection_ws(struct lws *wsi, enum lws_close_status reason)
+rops_close_kill_connection_ws(struct lws *wsi, enum aws_lws_close_status reason)
 {
 	/* deal with ws encapsulation in h2 */
 #if defined(LWS_WITH_HTTP2)
 	if (wsi->mux_substream && wsi->h2_stream_carries_ws)
-		return lws_rops_func_fidx(&role_ops_h2,
+		return aws_lws_rops_func_fidx(&role_ops_h2,
 				   LWS_ROPS_close_kill_connection).
 				close_kill_connection(wsi, reason);
 
@@ -1940,14 +1940,14 @@ static int
 rops_callback_on_writable_ws(struct lws *wsi)
 {
 #if defined(LWS_WITH_HTTP2)
-	if (lwsi_role_h2_ENCAPSULATION(wsi)) {
+	if (aws_lwsi_role_h2_ENCAPSULATION(wsi)) {
 		/* we know then that it has an h2 parent */
-		struct lws *enc = lws_rops_func_fidx(&role_ops_h2,
+		struct lws *enc = aws_lws_rops_func_fidx(&role_ops_h2,
 						     LWS_ROPS_encapsulation_parent).
 						     encapsulation_parent(wsi);
 
 		assert(enc);
-		if (lws_rops_func_fidx(enc->role_ops,
+		if (aws_lws_rops_func_fidx(enc->role_ops,
 				       LWS_ROPS_callback_on_writable).
 						callback_on_writable(wsi))
 			return 1;
@@ -1957,12 +1957,12 @@ rops_callback_on_writable_ws(struct lws *wsi)
 }
 
 static int
-rops_init_vhost_ws(struct lws_vhost *vh,
-		   const struct lws_context_creation_info *info)
+rops_init_vhost_ws(struct aws_lws_vhost *vh,
+		   const struct aws_lws_context_creation_info *info)
 {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 #ifdef LWS_WITH_PLUGINS
-	struct lws_plugin *plugin;
+	struct aws_lws_plugin *plugin;
 	int m;
 
 	if (vh->context->plugin_extension_count) {
@@ -1975,22 +1975,22 @@ rops_init_vhost_ws(struct lws_vhost *vh,
 		 * give the vhost a unified list of extensions including the
 		 * ones that came from plugins
 		 */
-		vh->ws.extensions = lws_zalloc(sizeof(struct lws_extension) *
+		vh->ws.extensions = aws_lws_zalloc(sizeof(struct aws_lws_extension) *
 				     (unsigned int)(m + vh->context->plugin_extension_count + 1),
 				     "extensions");
 		if (!vh->ws.extensions)
 			return 1;
 
-		memcpy((struct lws_extension *)vh->ws.extensions, info->extensions,
-		       sizeof(struct lws_extension) * (unsigned int)m);
+		memcpy((struct aws_lws_extension *)vh->ws.extensions, info->extensions,
+		       sizeof(struct aws_lws_extension) * (unsigned int)m);
 		plugin = vh->context->plugin_list;
 		while (plugin) {
-			const lws_plugin_protocol_t *plpr =
-				(const lws_plugin_protocol_t *)plugin->hdr;
+			const aws_lws_plugin_protocol_t *plpr =
+				(const aws_lws_plugin_protocol_t *)plugin->hdr;
 
-			memcpy((struct lws_extension *)&vh->ws.extensions[m],
+			memcpy((struct aws_lws_extension *)&vh->ws.extensions[m],
 				plpr->extensions,
-			       sizeof(struct lws_extension) *
+			       sizeof(struct aws_lws_extension) *
 			       (unsigned int)plpr->count_extensions);
 			m += plpr->count_extensions;
 			plugin = plugin->list;
@@ -2004,12 +2004,12 @@ rops_init_vhost_ws(struct lws_vhost *vh,
 }
 
 static int
-rops_destroy_vhost_ws(struct lws_vhost *vh)
+rops_destroy_vhost_ws(struct aws_lws_vhost *vh)
 {
 #ifdef LWS_WITH_PLUGINS
 #if !defined(LWS_WITHOUT_EXTENSIONS)
 	if (vh->context->plugin_extension_count)
-		lws_free((void *)vh->ws.extensions);
+		aws_lws_free((void *)vh->ws.extensions);
 #endif
 #endif
 
@@ -2018,9 +2018,9 @@ rops_destroy_vhost_ws(struct lws_vhost *vh)
 
 #if defined(LWS_WITH_HTTP_PROXY)
 static int
-ws_destroy_proxy_buf(struct lws_dll2 *d, void *user)
+ws_destroy_proxy_buf(struct aws_lws_dll2 *d, void *user)
 {
-	lws_free(d);
+	aws_lws_free(d);
 
 	return 0;
 }
@@ -2030,10 +2030,10 @@ static int
 rops_destroy_role_ws(struct lws *wsi)
 {
 #if defined(LWS_WITH_HTTP_PROXY)
-	lws_dll2_foreach_safe(&wsi->ws->proxy_owner, NULL, ws_destroy_proxy_buf);
+	aws_lws_dll2_foreach_safe(&wsi->ws->proxy_owner, NULL, ws_destroy_proxy_buf);
 #endif
 
-	lws_free_set_NULL(wsi->ws);
+	aws_lws_free_set_NULL(wsi->ws);
 
 	return 0;
 }
@@ -2044,14 +2044,14 @@ rops_issue_keepalive_ws(struct lws *wsi, int isvalid)
 	uint64_t us;
 
 #if defined(LWS_WITH_HTTP2)
-	if (lwsi_role_h2_ENCAPSULATION(wsi)) {
+	if (aws_lwsi_role_h2_ENCAPSULATION(wsi)) {
 		/* we know then that it has an h2 parent */
-		struct lws *enc = lws_rops_func_fidx(&role_ops_h2,
+		struct lws *enc = aws_lws_rops_func_fidx(&role_ops_h2,
 						     LWS_ROPS_encapsulation_parent).
 						     encapsulation_parent(wsi);
 
 		assert(enc);
-		if (lws_rops_func_fidx(enc->role_ops, LWS_ROPS_issue_keepalive).
+		if (aws_lws_rops_func_fidx(enc->role_ops, LWS_ROPS_issue_keepalive).
 						  issue_keepalive(enc, isvalid))
 			return 1;
 	}
@@ -2060,16 +2060,16 @@ rops_issue_keepalive_ws(struct lws *wsi, int isvalid)
 	if (isvalid)
 		_lws_validity_confirmed_role(wsi);
 	else {
-		us = (uint64_t)lws_now_usecs();
+		us = (uint64_t)aws_lws_now_usecs();
 		memcpy(&wsi->ws->ping_payload_buf[LWS_PRE], &us, 8);
 		wsi->ws->send_check_ping = 1;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 	}
 
 	return 0;
 }
 
-static const lws_rops_t rops_table_ws[] = {
+static const aws_lws_rops_t rops_table_ws[] = {
 	/*  1 */ { .init_vhost		    = rops_init_vhost_ws },
 	/*  2 */ { .destroy_vhost	    = rops_destroy_vhost_ws },
 	/*  3 */ { .service_flag_pending    = rops_service_flag_pending_ws },
@@ -2084,7 +2084,7 @@ static const lws_rops_t rops_table_ws[] = {
 	/* 12 */ { .issue_keepalive	    = rops_issue_keepalive_ws },
 };
 
-const struct lws_role_ops role_ops_ws = {
+const struct aws_lws_role_ops role_ops_ws = {
 	/* role name */			"ws",
 	/* alpn id */			NULL,
 

@@ -65,22 +65,22 @@ typedef enum cbreason {
 	LCN_EOL			= (1 << 1)
 } cbreason_t;
 
-typedef int (*nsc_cb_t)(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
+typedef int (*nsc_cb_t)(aws_lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 			const char *buf, size_t size);
 
 static void
-expiry_cb(lws_sorted_usec_list_t *sul);
+expiry_cb(aws_lws_sorted_usec_list_t *sul);
 
 static int
-nsc_backing_open_lock(lws_cache_nscookiejar_t *cache, int mode, const char *par)
+nsc_backing_open_lock(aws_lws_cache_nscookiejar_t *cache, int mode, const char *par)
 {
 	int sanity = 50;
 	char lock[128];
 	int fd_lock, fd;
 
-	lwsl_debug("%s: %s\n", __func__, par);
+	aws_lwsl_debug("%s: %s\n", __func__, par);
 
-	lws_snprintf(lock, sizeof(lock), "%s.LCK",
+	aws_lws_snprintf(lock, sizeof(lock), "%s.LCK",
 			cache->cache.info.u.nscookiejar.filepath);
 
 	do {
@@ -91,7 +91,7 @@ nsc_backing_open_lock(lws_cache_nscookiejar_t *cache, int mode, const char *par)
 		}
 
 		if (!sanity--) {
-			lwsl_warn("%s: unable to lock %s: errno %d\n", __func__,
+			aws_lwsl_warn("%s: unable to lock %s: errno %d\n", __func__,
 					lock, errno);
 			return -1;
 		}
@@ -107,7 +107,7 @@ nsc_backing_open_lock(lws_cache_nscookiejar_t *cache, int mode, const char *par)
 		      LWS_O_CREAT | mode, 0600);
 
 	if (fd == -1) {
-		lwsl_warn("%s: unable to open or create %s\n", __func__,
+		aws_lwsl_warn("%s: unable to open or create %s\n", __func__,
 				cache->cache.info.u.nscookiejar.filepath);
 		unlink(lock);
 	}
@@ -116,13 +116,13 @@ nsc_backing_open_lock(lws_cache_nscookiejar_t *cache, int mode, const char *par)
 }
 
 static void
-nsc_backing_close_unlock(lws_cache_nscookiejar_t *cache, int fd)
+nsc_backing_close_unlock(aws_lws_cache_nscookiejar_t *cache, int fd)
 {
 	char lock[128];
 
-	lwsl_debug("%s\n", __func__);
+	aws_lwsl_debug("%s\n", __func__);
 
-	lws_snprintf(lock, sizeof(lock), "%s.LCK",
+	aws_lws_snprintf(lock, sizeof(lock), "%s.LCK",
 			cache->cache.info.u.nscookiejar.filepath);
 	if (fd >= 0)
 		close(fd);
@@ -147,7 +147,7 @@ nsc_backing_close_unlock(lws_cache_nscookiejar_t *cache, int fd)
  */
 
 static int
-nscookiejar_iterate(lws_cache_nscookiejar_t *cache, int fd,
+nscookiejar_iterate(aws_lws_cache_nscookiejar_t *cache, int fd,
 		    nsc_cb_t cb, void *opaque)
 {
 	int m = 0, n = 0, e, r = LCN_SOL, ignore = 0, ret = 0;
@@ -160,12 +160,12 @@ nscookiejar_iterate(lws_cache_nscookiejar_t *cache, int fd,
 
 		int n1;
 
-		lwsl_debug("%s: n %d, m %d\n", __func__, n, m);
+		aws_lwsl_debug("%s: n %d, m %d\n", __func__, n, m);
 
 read:
 		n1 = (int)read(fd, temp + n, sizeof(temp) - (size_t)n);
 
-		lwsl_debug("%s: n1 %d\n", __func__, n1);
+		aws_lwsl_debug("%s: n1 %d\n", __func__, n1);
 
 		if (n1 <= 0) {
 			eof = 1;
@@ -271,7 +271,7 @@ nsc_match(const char *wc, size_t wc_len, const char *col, size_t col_len,
 	size_t n = 0;
 
 	if (idx != NSC_COL_PATH)
-		return lws_strcmp_wildcard(wc, wc_len, col, col_len);
+		return aws_lws_strcmp_wildcard(wc, wc_len, col, col_len);
 
 	/*
 	 * Cookie path match is special, if we lookup on a path like /my/path,
@@ -304,14 +304,14 @@ nsc_match(const char *wc, size_t wc_len, const char *col, size_t col_len,
 static const uint8_t nsc_cols[] = { NSC_COL_HOST, NSC_COL_PATH, NSC_COL_NAME };
 
 static int
-lws_cache_nscookiejar_tag_match(struct lws_cache_ttl_lru *cache,
+aws_lws_cache_nscookiejar_tag_match(struct aws_lws_cache_ttl_lru *cache,
 				const char *wc, const char *tag, char lookup)
 {
 	const char *wc_end = wc + strlen(wc), *tag_end = tag + strlen(tag),
 			*start_wc, *start_tag;
 	int n = 0;
 
-	lwsl_cache("%s: '%s' vs '%s'\n", __func__, wc, tag);
+	aws_lwsl_cache("%s: '%s' vs '%s'\n", __func__, wc, tag);
 
 	/*
 	 * Given a well-formed host|path|name tag and a wildcard term,
@@ -328,13 +328,13 @@ lws_cache_nscookiejar_tag_match(struct lws_cache_ttl_lru *cache,
 		while (tag < tag_end && *tag != LWSCTAG_SEP)
 			tag++;
 
-		lwsl_cache("%s:   '%.*s' vs '%.*s'\n", __func__,
-				lws_ptr_diff(wc, start_wc), start_wc,
-				lws_ptr_diff(tag, start_tag), start_tag);
-		if (nsc_match(start_wc, lws_ptr_diff_size_t(wc, start_wc),
-			      start_tag, lws_ptr_diff_size_t(tag, start_tag),
+		aws_lwsl_cache("%s:   '%.*s' vs '%.*s'\n", __func__,
+				aws_lws_ptr_diff(wc, start_wc), start_wc,
+				aws_lws_ptr_diff(tag, start_tag), start_tag);
+		if (nsc_match(start_wc, aws_lws_ptr_diff_size_t(wc, start_wc),
+			      start_tag, aws_lws_ptr_diff_size_t(tag, start_tag),
 			      lookup ? nsc_cols[n] : NSC_COL_HOST)) {
-			lwsl_cache("%s: fail\n", __func__);
+			aws_lwsl_cache("%s: fail\n", __func__);
 			return 1;
 		}
 
@@ -346,7 +346,7 @@ lws_cache_nscookiejar_tag_match(struct lws_cache_ttl_lru *cache,
 		n++;
 	}
 
-	lwsl_cache("%s: hit\n", __func__);
+	aws_lwsl_cache("%s: hit\n", __func__);
 
 	return 0; /* match */
 }
@@ -357,10 +357,10 @@ lws_cache_nscookiejar_tag_match(struct lws_cache_ttl_lru *cache,
 
 static int
 nsc_line_to_tag(const char *buf, size_t size, char *tag, size_t max_tag,
-		lws_usec_t *pexpiry)
+		aws_lws_usec_t *pexpiry)
 {
 	int n, idx = 0, tl = 0;
-	lws_usec_t expiry = 0;
+	aws_lws_usec_t expiry = 0;
 	size_t bn = 0;
 	char col[64];
 
@@ -379,8 +379,8 @@ nsc_line_to_tag(const char *buf, size_t size, char *tag, size_t max_tag,
 
 		switch (idx) {
 		case NSC_COL_EXPIRY:
-			expiry = (lws_usec_t)((unsigned long long)atoll(col) *
-					(lws_usec_t)LWS_US_PER_SEC);
+			expiry = (aws_lws_usec_t)((unsigned long long)atoll(col) *
+					(aws_lws_usec_t)LWS_US_PER_SEC);
 			break;
 
 		case NSC_COL_HOST:
@@ -410,25 +410,25 @@ nsc_line_to_tag(const char *buf, size_t size, char *tag, size_t max_tag,
 	if (pexpiry)
 		*pexpiry = expiry;
 
-	lwsl_info("%s: %.*s: tag '%s'\n", __func__, (int)size, buf, tag);
+	aws_lwsl_info("%s: %.*s: tag '%s'\n", __func__, (int)size, buf, tag);
 
 	return 0;
 }
 
 struct nsc_lookup_ctx {
 	const char		*wildcard_key;
-	lws_dll2_owner_t	*results_owner;
-	lws_cache_match_t	*match; /* current match if any */
+	aws_lws_dll2_owner_t	*results_owner;
+	aws_lws_cache_match_t	*match; /* current match if any */
 	size_t			wklen;
 };
 
 
 static int
-nsc_lookup_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
+nsc_lookup_cb(aws_lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 	      const char *buf, size_t size)
 {
 	struct nsc_lookup_ctx *ctx = (struct nsc_lookup_ctx *)opaque;
-	lws_usec_t expiry;
+	aws_lws_usec_t expiry;
 	char tag[200];
 	int tl;
 
@@ -450,7 +450,7 @@ nsc_lookup_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 	if (nsc_line_to_tag(buf, size, tag, sizeof(tag), &expiry))
 		return NIR_CONTINUE;
 
-	if (lws_cache_nscookiejar_tag_match(&cache->cache,
+	if (aws_lws_cache_nscookiejar_tag_match(&cache->cache,
 					    ctx->wildcard_key, tag, 1))
 		return NIR_CONTINUE;
 
@@ -461,8 +461,8 @@ nsc_lookup_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 	 * object with the specific tag, and add it to the owner list
 	 */
 
-	ctx->match = lws_fi(&cache->cache.info.cx->fic, "cache_lookup_oom") ? NULL :
-			lws_malloc(sizeof(*ctx->match) + (unsigned int)tl + 1u,
+	ctx->match = aws_lws_fi(&cache->cache.info.cx->fic, "cache_lookup_oom") ? NULL :
+			aws_lws_malloc(sizeof(*ctx->match) + (unsigned int)tl + 1u,
 				__func__);
 	if (!ctx->match)
 		/* caller of lookup will clean results list on fail */
@@ -474,17 +474,17 @@ nsc_lookup_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 
 	memset(&ctx->match->list, 0, sizeof(ctx->match->list));
 	memcpy(&ctx->match[1], tag, (size_t)tl + 1u);
-	lws_dll2_add_tail(&ctx->match->list, ctx->results_owner);
+	aws_lws_dll2_add_tail(&ctx->match->list, ctx->results_owner);
 
 	return NIR_CONTINUE;
 }
 
 static int
-lws_cache_nscookiejar_lookup(struct lws_cache_ttl_lru *_c,
+aws_lws_cache_nscookiejar_lookup(struct aws_lws_cache_ttl_lru *_c,
 			     const char *wildcard_key,
-			     lws_dll2_owner_t *results_owner)
+			     aws_lws_dll2_owner_t *results_owner)
 {
-	lws_cache_nscookiejar_t *cache = (lws_cache_nscookiejar_t *)_c;
+	aws_lws_cache_nscookiejar_t *cache = (aws_lws_cache_nscookiejar_t *)_c;
 	struct nsc_lookup_ctx ctx;
 	int ret, fd;
 
@@ -528,7 +528,7 @@ lws_cache_nscookiejar_lookup(struct lws_cache_ttl_lru *_c,
 struct nsc_regen_ctx {
 	const char		*wildcard_key_delete;
 	const void		*add_data;
-	lws_usec_t		curr;
+	aws_lws_usec_t		curr;
 	size_t			add_size;
 	int			fdt;
 	char			drop;
@@ -537,12 +537,12 @@ struct nsc_regen_ctx {
 /* only used by nsc_regen() */
 
 static int
-nsc_regen_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
+nsc_regen_cb(aws_lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 	      const char *buf, size_t size)
 {
 	struct nsc_regen_ctx *ctx = (struct nsc_regen_ctx *)opaque;
 	char tag[256];
-	lws_usec_t expiry;
+	aws_lws_usec_t expiry;
 
 	if (flags & LCN_SOL) {
 
@@ -563,13 +563,13 @@ nsc_regen_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 			goto drop;
 
 		if (ctx->wildcard_key_delete)
-			lwsl_cache("%s: %s vs %s\n", __func__,
+			aws_lwsl_cache("%s: %s vs %s\n", __func__,
 					tag, ctx->wildcard_key_delete);
 		if (ctx->wildcard_key_delete &&
-		    !lws_cache_nscookiejar_tag_match(&cache->cache,
+		    !aws_lws_cache_nscookiejar_tag_match(&cache->cache,
 						     ctx->wildcard_key_delete,
 						     tag, 0)) {
-			lwsl_cache("%s: %s matches wc delete %s\n", __func__,
+			aws_lwsl_cache("%s: %s matches wc delete %s\n", __func__,
 					tag, ctx->wildcard_key_delete);
 			goto drop;
 		}
@@ -596,7 +596,7 @@ drop:
 }
 
 static int
-nsc_regen(lws_cache_nscookiejar_t *cache, const char *wc_delete,
+nsc_regen(aws_lws_cache_nscookiejar_t *cache, const char *wc_delete,
 	  const void *pay, size_t pay_size)
 {
 	struct nsc_regen_ctx ctx;
@@ -607,11 +607,11 @@ nsc_regen(lws_cache_nscookiejar_t *cache, const char *wc_delete,
 	if (fd < 0)
 		return 1;
 
-	lws_snprintf(filepath, sizeof(filepath), "%s.tmp",
+	aws_lws_snprintf(filepath, sizeof(filepath), "%s.tmp",
 			cache->cache.info.u.nscookiejar.filepath);
 	unlink(filepath);
 
-	if (lws_fi(&cache->cache.info.cx->fic, "cache_regen_temp_open"))
+	if (aws_lws_fi(&cache->cache.info.cx->fic, "cache_regen_temp_open"))
 		goto bail;
 
 	ctx.fdt = open(filepath, LWS_O_CREAT | LWS_O_WRONLY, 0600);
@@ -620,7 +620,7 @@ nsc_regen(lws_cache_nscookiejar_t *cache, const char *wc_delete,
 
 	/* magic header */
 
-	if (lws_fi(&cache->cache.info.cx->fic, "cache_regen_temp_write") ||
+	if (aws_lws_fi(&cache->cache.info.cx->fic, "cache_regen_temp_write") ||
 	/* other consumers insist to see this at start of cookie jar */
 	    write(ctx.fdt, "# Netscape HTTP Cookie File\n", 28) != 28)
 		goto bail1;
@@ -639,12 +639,12 @@ nsc_regen(lws_cache_nscookiejar_t *cache, const char *wc_delete,
 	ctx.wildcard_key_delete = wc_delete;
 	ctx.add_data = pay;
 	ctx.add_size = pay_size;
-	ctx.curr = lws_now_usecs();
+	ctx.curr = aws_lws_now_usecs();
 	ctx.drop = 0;
 
 	cache->earliest_expiry = 0;
 
-	if (lws_fi(&cache->cache.info.cx->fic, "cache_regen_iter_fail") ||
+	if (aws_lws_fi(&cache->cache.info.cx->fic, "cache_regen_iter_fail") ||
 	    nscookiejar_iterate(cache, fd, nsc_regen_cb, &ctx))
 		goto bail1;
 
@@ -652,14 +652,14 @@ nsc_regen(lws_cache_nscookiejar_t *cache, const char *wc_delete,
 	ctx.fdt = -1;
 
 	if (unlink(cache->cache.info.u.nscookiejar.filepath) == -1)
-		lwsl_info("%s: unlink %s failed\n", __func__,
+		aws_lwsl_info("%s: unlink %s failed\n", __func__,
 			  cache->cache.info.u.nscookiejar.filepath);
 	if (rename(filepath, cache->cache.info.u.nscookiejar.filepath) == -1)
-		lwsl_info("%s: rename %s failed\n", __func__,
+		aws_lwsl_info("%s: rename %s failed\n", __func__,
 			  cache->cache.info.u.nscookiejar.filepath);
 
 	if (cache->earliest_expiry)
-		lws_cache_schedule(&cache->cache, expiry_cb,
+		aws_lws_cache_schedule(&cache->cache, expiry_cb,
 				   cache->earliest_expiry);
 
 	ret = 0;
@@ -677,10 +677,10 @@ bail:
 }
 
 static void
-expiry_cb(lws_sorted_usec_list_t *sul)
+expiry_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	lws_cache_nscookiejar_t *cache = lws_container_of(sul,
-					lws_cache_nscookiejar_t, cache.sul);
+	aws_lws_cache_nscookiejar_t *cache = aws_lws_container_of(sul,
+					aws_lws_cache_nscookiejar_t, cache.sul);
 
 	/*
 	 * regen the cookie jar without changes, so expired are removed and
@@ -690,7 +690,7 @@ expiry_cb(lws_sorted_usec_list_t *sul)
 		return;
 
 	if (cache->earliest_expiry)
-		lws_cache_schedule(&cache->cache, expiry_cb,
+		aws_lws_cache_schedule(&cache->cache, expiry_cb,
 				   cache->earliest_expiry);
 }
 
@@ -698,14 +698,14 @@ expiry_cb(lws_sorted_usec_list_t *sul)
 /* specific_key and expiry are ignored, since it must be encoded in payload */
 
 static int
-lws_cache_nscookiejar_write(struct lws_cache_ttl_lru *_c,
+aws_lws_cache_nscookiejar_write(struct aws_lws_cache_ttl_lru *_c,
 			    const char *specific_key, const uint8_t *source,
-			    size_t size, lws_usec_t expiry, void **ppvoid)
+			    size_t size, aws_lws_usec_t expiry, void **ppvoid)
 {
-	lws_cache_nscookiejar_t *cache = (lws_cache_nscookiejar_t *)_c;
+	aws_lws_cache_nscookiejar_t *cache = (aws_lws_cache_nscookiejar_t *)_c;
 	char tag[128];
 
-	lwsl_cache("%s: %s: len %d\n", __func__, _c->info.name, (int)size);
+	aws_lwsl_cache("%s: %s: len %d\n", __func__, _c->info.name, (int)size);
 
 	assert(source);
 
@@ -716,7 +716,7 @@ lws_cache_nscookiejar_write(struct lws_cache_ttl_lru *_c,
 		*ppvoid = NULL;
 
 	if (nsc_regen(cache, tag, source, size)) {
-		lwsl_err("%s: regen failed\n", __func__);
+		aws_lwsl_err("%s: regen failed\n", __func__);
 
 		return 1;
 	}
@@ -725,12 +725,12 @@ lws_cache_nscookiejar_write(struct lws_cache_ttl_lru *_c,
 }
 
 struct nsc_get_ctx {
-	struct lws_buflist	*buflist;
+	struct aws_lws_buflist	*buflist;
 	const char		*specific_key;
 	const void		**pdata;
 	size_t			*psize;
-	lws_cache_ttl_lru_t	*l1;
-	lws_usec_t		expiry;
+	aws_lws_cache_ttl_lru_t	*l1;
+	aws_lws_usec_t		expiry;
 };
 
 /*
@@ -739,7 +739,7 @@ struct nsc_get_ctx {
  */
 
 static int
-nsc_get_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
+nsc_get_cb(aws_lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 	   const char *buf, size_t size)
 {
 	struct nsc_get_ctx *ctx = (struct nsc_get_ctx *)opaque;
@@ -753,20 +753,20 @@ nsc_get_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 		return NIR_CONTINUE;
 
 	if (nsc_line_to_tag(buf, size, tag, sizeof(tag), &ctx->expiry)) {
-		lwsl_err("%s: can't get tag\n", __func__);
+		aws_lwsl_err("%s: can't get tag\n", __func__);
 		return NIR_CONTINUE;
 	}
 
-	lwsl_cache("%s: %s %s\n", __func__, ctx->specific_key, tag);
+	aws_lwsl_cache("%s: %s %s\n", __func__, ctx->specific_key, tag);
 
 	if (strcmp(ctx->specific_key, tag)) {
-		lwsl_cache("%s: no match\n", __func__);
+		aws_lwsl_cache("%s: no match\n", __func__);
 		return NIR_CONTINUE;
 	}
 
 	/* it's a match */
 
-	lwsl_cache("%s: IS match\n", __func__);
+	aws_lwsl_cache("%s: IS match\n", __func__);
 
 	if (!(flags & LCN_EOL))
 		goto collect;
@@ -787,7 +787,7 @@ collect:
 	 * on a buflist and create it when we have it all
 	 */
 
-	if (lws_buflist_append_segment(&ctx->buflist, (const uint8_t *)buf,
+	if (aws_lws_buflist_append_segment(&ctx->buflist, (const uint8_t *)buf,
 				       size))
 		goto cleanup;
 
@@ -798,7 +798,7 @@ collect:
 
 	*ctx->psize = size;
 	if (ctx->l1->info.ops->write(ctx->l1, ctx->specific_key, NULL,
-				     lws_buflist_total_len(&ctx->buflist),
+				     aws_lws_buflist_total_len(&ctx->buflist),
 				     ctx->expiry, (void **)&q))
 		goto cleanup;
 	*ctx->pdata = q;
@@ -807,28 +807,28 @@ collect:
 
 	do {
 		uint8_t *p;
-		size_t len = lws_buflist_next_segment_len(&ctx->buflist, &p);
+		size_t len = aws_lws_buflist_next_segment_len(&ctx->buflist, &p);
 
 		memcpy(q, p, len);
 		q += len;
 
-		lws_buflist_use_segment(&ctx->buflist, len);
+		aws_lws_buflist_use_segment(&ctx->buflist, len);
 	} while (ctx->buflist);
 
 	return NIR_FINISH_OK;
 
 cleanup:
-	lws_buflist_destroy_all_segments(&ctx->buflist);
+	aws_lws_buflist_destroy_all_segments(&ctx->buflist);
 
 	return NIR_FINISH_ERROR;
 }
 
 static int
-lws_cache_nscookiejar_get(struct lws_cache_ttl_lru *_c,
+aws_lws_cache_nscookiejar_get(struct aws_lws_cache_ttl_lru *_c,
 			  const char *specific_key, const void **pdata,
 			  size_t *psize)
 {
-	lws_cache_nscookiejar_t *cache = (lws_cache_nscookiejar_t *)_c;
+	aws_lws_cache_nscookiejar_t *cache = (aws_lws_cache_nscookiejar_t *)_c;
 	struct nsc_get_ctx ctx;
 	int ret, fd;
 
@@ -855,21 +855,21 @@ lws_cache_nscookiejar_get(struct lws_cache_ttl_lru *_c,
 }
 
 static int
-lws_cache_nscookiejar_invalidate(struct lws_cache_ttl_lru *_c,
+aws_lws_cache_nscookiejar_invalidate(struct aws_lws_cache_ttl_lru *_c,
 				 const char *wc_key)
 {
-	lws_cache_nscookiejar_t *cache = (lws_cache_nscookiejar_t *)_c;
+	aws_lws_cache_nscookiejar_t *cache = (aws_lws_cache_nscookiejar_t *)_c;
 
 	return nsc_regen(cache, wc_key, NULL, 0);
 }
 
-static struct lws_cache_ttl_lru *
-lws_cache_nscookiejar_create(const struct lws_cache_creation_info *info)
+static struct aws_lws_cache_ttl_lru *
+aws_lws_cache_nscookiejar_create(const struct aws_lws_cache_creation_info *info)
 {
-	lws_cache_nscookiejar_t *cache;
+	aws_lws_cache_nscookiejar_t *cache;
 
-	cache = lws_fi(&info->cx->fic, "cache_createfail") ? NULL :
-					lws_zalloc(sizeof(*cache), __func__);
+	cache = aws_lws_fi(&info->cx->fic, "cache_createfail") ? NULL :
+					aws_lws_zalloc(sizeof(*cache), __func__);
 	if (!cache)
 		return NULL;
 
@@ -881,15 +881,15 @@ lws_cache_nscookiejar_create(const struct lws_cache_creation_info *info)
 	 */
 	expiry_cb(&cache->cache.sul);
 
-	lwsl_notice("%s: create %s\n", __func__, info->name ? info->name : "?");
+	aws_lwsl_notice("%s: create %s\n", __func__, info->name ? info->name : "?");
 
-	return (struct lws_cache_ttl_lru *)cache;
+	return (struct aws_lws_cache_ttl_lru *)cache;
 }
 
 static int
-lws_cache_nscookiejar_expunge(struct lws_cache_ttl_lru *_c)
+aws_lws_cache_nscookiejar_expunge(struct aws_lws_cache_ttl_lru *_c)
 {
-	lws_cache_nscookiejar_t *cache = (lws_cache_nscookiejar_t *)_c;
+	aws_lws_cache_nscookiejar_t *cache = (aws_lws_cache_nscookiejar_t *)_c;
 	int r;
 
 	if (!cache)
@@ -897,46 +897,46 @@ lws_cache_nscookiejar_expunge(struct lws_cache_ttl_lru *_c)
 
 	r = unlink(cache->cache.info.u.nscookiejar.filepath);
 	if (r)
-		lwsl_warn("%s: failed to unlink %s\n", __func__,
+		aws_lwsl_warn("%s: failed to unlink %s\n", __func__,
 				cache->cache.info.u.nscookiejar.filepath);
 
 	return r;
 }
 
 static void
-lws_cache_nscookiejar_destroy(struct lws_cache_ttl_lru **_pc)
+aws_lws_cache_nscookiejar_destroy(struct aws_lws_cache_ttl_lru **_pc)
 {
-	lws_cache_nscookiejar_t *cache = (lws_cache_nscookiejar_t *)*_pc;
+	aws_lws_cache_nscookiejar_t *cache = (aws_lws_cache_nscookiejar_t *)*_pc;
 
 	if (!cache)
 		return;
 
-	lws_sul_cancel(&cache->cache.sul);
+	aws_lws_sul_cancel(&cache->cache.sul);
 
-	lws_free_set_NULL(*_pc);
+	aws_lws_free_set_NULL(*_pc);
 }
 
 #if defined(_DEBUG)
 
 static int
-nsc_dump_cb(lws_cache_nscookiejar_t *cache, void *opaque, int flags,
+nsc_dump_cb(aws_lws_cache_nscookiejar_t *cache, void *opaque, int flags,
 	      const char *buf, size_t size)
 {
-	lwsl_hexdump_cache(buf, size);
+	aws_lwsl_hexdump_cache(buf, size);
 
 	return 0;
 }
 
 static void
-lws_cache_nscookiejar_debug_dump(struct lws_cache_ttl_lru *_c)
+aws_lws_cache_nscookiejar_debug_dump(struct aws_lws_cache_ttl_lru *_c)
 {
-	lws_cache_nscookiejar_t *cache = (lws_cache_nscookiejar_t *)_c;
+	aws_lws_cache_nscookiejar_t *cache = (aws_lws_cache_nscookiejar_t *)_c;
 	int fd = nsc_backing_open_lock(cache, LWS_O_RDONLY, __func__);
 
 	if (fd < 0)
 		return;
 
-	lwsl_cache("%s: %s\n", __func__, _c->info.name);
+	aws_lwsl_cache("%s: %s\n", __func__, _c->info.name);
 
 	nscookiejar_iterate(cache, fd, nsc_dump_cb, NULL);
 
@@ -944,17 +944,17 @@ lws_cache_nscookiejar_debug_dump(struct lws_cache_ttl_lru *_c)
 }
 #endif
 
-const struct lws_cache_ops lws_cache_ops_nscookiejar = {
-	.create			= lws_cache_nscookiejar_create,
-	.destroy		= lws_cache_nscookiejar_destroy,
-	.expunge		= lws_cache_nscookiejar_expunge,
+const struct aws_lws_cache_ops aws_lws_cache_ops_nscookiejar = {
+	.create			= aws_lws_cache_nscookiejar_create,
+	.destroy		= aws_lws_cache_nscookiejar_destroy,
+	.expunge		= aws_lws_cache_nscookiejar_expunge,
 
-	.write			= lws_cache_nscookiejar_write,
-	.tag_match		= lws_cache_nscookiejar_tag_match,
-	.lookup			= lws_cache_nscookiejar_lookup,
-	.invalidate		= lws_cache_nscookiejar_invalidate,
-	.get			= lws_cache_nscookiejar_get,
+	.write			= aws_lws_cache_nscookiejar_write,
+	.tag_match		= aws_lws_cache_nscookiejar_tag_match,
+	.lookup			= aws_lws_cache_nscookiejar_lookup,
+	.invalidate		= aws_lws_cache_nscookiejar_invalidate,
+	.get			= aws_lws_cache_nscookiejar_get,
 #if defined(_DEBUG)
-	.debug_dump		= lws_cache_nscookiejar_debug_dump,
+	.debug_dump		= aws_lws_cache_nscookiejar_debug_dump,
 #endif
 };

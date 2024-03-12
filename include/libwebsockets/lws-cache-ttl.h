@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  */
 
-/** \defgroup lws_cache_ttl Cache supporting expiry
+/** \defgroup aws_lws_cache_ttl Cache supporting expiry
  * ##Cache supporting expiry
  *
  * These apis let you quickly and reliably implement caches of named objects,
@@ -50,10 +50,10 @@
 ///@{
 
 
-struct lws_cache_ttl_lru;
+struct aws_lws_cache_ttl_lru;
 
 /**
- * lws_cache_write_through() - add a new cache item object in all layers
+ * aws_lws_cache_write_through() - add a new cache item object in all layers
  *
  * \param cache: the existing cache to allocate the object in
  * \param specific_key: a key string that identifies the item in the cache
@@ -72,13 +72,13 @@ struct lws_cache_ttl_lru;
  * Adding or removing cache items may cause invalidation of cached queries.
  */
 LWS_VISIBLE LWS_EXTERN int /* only valid until return to event loop */
-lws_cache_write_through(struct lws_cache_ttl_lru *cache,
+aws_lws_cache_write_through(struct aws_lws_cache_ttl_lru *cache,
 			const char *specific_key, const uint8_t *source,
-			size_t size, lws_usec_t expiry, void **ppay);
+			size_t size, aws_lws_usec_t expiry, void **ppay);
 
-typedef struct lws_cache_match {
-	lws_dll2_t			list;
-	lws_usec_t			expiry;
+typedef struct aws_lws_cache_match {
+	aws_lws_dll2_t			list;
+	aws_lws_usec_t			expiry;
 	/* earliest expiry amongst results */
 	size_t				payload_size;
 	/**< the payload is not attached here.  This is a hint about what
@@ -87,10 +87,10 @@ typedef struct lws_cache_match {
 	size_t				tag_size;
 
 	/* tag name + NUL is overcommitted */
-} lws_cache_match_t;
+} aws_lws_cache_match_t;
 
 /**
- * lws_cache_heap_lookup() - get a list of matching items
+ * aws_lws_cache_heap_lookup() - get a list of matching items
  *
  * \param cache: the cache to search for the key
  * \param wildcard_key: the item key string, may contain wildcards
@@ -129,11 +129,11 @@ typedef struct lws_cache_match {
  * any partial results set has been deallocated cleanly before returning.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
+aws_lws_cache_lookup(struct aws_lws_cache_ttl_lru *cache, const char *wildcard_key,
 		 const void **pdata, size_t *psize);
 
 /**
- * lws_cache_item_get() - bring a specific item into L1 and get payload info
+ * aws_lws_cache_item_get() - bring a specific item into L1 and get payload info
  *
  * \param cache: the cache to search for the key
  * \param specific_key: the key string of the item to get
@@ -150,11 +150,11 @@ lws_cache_lookup(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
  * Returns 0 if successful.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cache_item_get(struct lws_cache_ttl_lru *cache, const char *specific_key,
+aws_lws_cache_item_get(struct aws_lws_cache_ttl_lru *cache, const char *specific_key,
 		   const void **pdata, size_t *psize);
 
 /**
- * lws_cache_item_remove() - remove item from all cache levels
+ * aws_lws_cache_item_remove() - remove item from all cache levels
  *
  * \param cache: the cache to search for the key
  * \param wildcard_key: the item key string
@@ -166,39 +166,39 @@ lws_cache_item_get(struct lws_cache_ttl_lru *cache, const char *specific_key,
  * that could refer to the removed item.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cache_item_remove(struct lws_cache_ttl_lru *cache, const char *wildcard_key);
+aws_lws_cache_item_remove(struct aws_lws_cache_ttl_lru *cache, const char *wildcard_key);
 
 /**
- * lws_cache_footprint() - query the amount of storage used by the cache layer
+ * aws_lws_cache_footprint() - query the amount of storage used by the cache layer
  *
  * \param cache: cache to query
  *
  * Returns number of payload bytes stored in cache currently
  */
 LWS_VISIBLE LWS_EXTERN uint64_t
-lws_cache_footprint(struct lws_cache_ttl_lru *cache);
+aws_lws_cache_footprint(struct aws_lws_cache_ttl_lru *cache);
 
 /**
- * lws_cache_debug_dump() - if built in debug mode dump cache contents to log
+ * aws_lws_cache_debug_dump() - if built in debug mode dump cache contents to log
  *
  * \param cache: cache to dump
  *
  * If lws was built in debug mode, dump cache to log, otherwise a NOP.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_cache_debug_dump(struct lws_cache_ttl_lru *cache);
+aws_lws_cache_debug_dump(struct aws_lws_cache_ttl_lru *cache);
 
-typedef struct lws_cache_results {
+typedef struct aws_lws_cache_results {
 	const uint8_t		*ptr; /* set before using walk api */
 	size_t			size; /* set before using walk api */
 
 	size_t			payload_len;
 	size_t			tag_len;
 	const uint8_t		*tag;
-} lws_cache_results_t;
+} aws_lws_cache_results_t;
 
 /**
- * lws_cache_results_walk() - parse next result
+ * aws_lws_cache_results_walk() - parse next result
  *
  * \param walk_ctx: the context of the results blob to walk
  *
@@ -214,19 +214,19 @@ typedef struct lws_cache_results {
  * to the result tag name, with a terminating NUL.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cache_results_walk(lws_cache_results_t *walk_ctx);
+aws_lws_cache_results_walk(aws_lws_cache_results_t *walk_ctx);
 
-typedef void (*lws_cache_item_destroy_cb)(void *item, size_t size);
-struct lws_cache_creation_info {
-	struct lws_context		*cx;
-	/**< Mandatory: the lws_context */
+typedef void (*aws_lws_cache_item_destroy_cb)(void *item, size_t size);
+struct aws_lws_cache_creation_info {
+	struct aws_lws_context		*cx;
+	/**< Mandatory: the aws_lws_context */
 	const char			*name;
 	/**< Mandatory: short cache name */
-	lws_cache_item_destroy_cb	cb;
+	aws_lws_cache_item_destroy_cb	cb;
 	/**< NULL, or a callback that can hook cache item destory */
-	struct lws_cache_ttl_lru	*parent;
+	struct aws_lws_cache_ttl_lru	*parent;
 	/**< NULL, or next cache level */
-	const struct lws_cache_ops	*ops;
+	const struct aws_lws_cache_ops	*ops;
 	/**< NULL for default, heap-based ops, else custom cache storage and
 	 * query implementation */
 
@@ -250,55 +250,55 @@ struct lws_cache_creation_info {
 	/**< 0 unless using SMP, then tsi to bind sul to */
 };
 
-struct lws_cache_ops {
-	struct lws_cache_ttl_lru *
-	(*create)(const struct lws_cache_creation_info *info);
+struct aws_lws_cache_ops {
+	struct aws_lws_cache_ttl_lru *
+	(*create)(const struct aws_lws_cache_creation_info *info);
 	/**< create an instance of the cache type specified in info */
 
 	void
-	(*destroy)(struct lws_cache_ttl_lru **_cache);
+	(*destroy)(struct aws_lws_cache_ttl_lru **_cache);
 	/**< destroy the logical cache instance pointed to by *_cache, doesn't
 	 * affect any NV backing storage */
 
 	int
-	(*expunge)(struct lws_cache_ttl_lru *cache);
+	(*expunge)(struct aws_lws_cache_ttl_lru *cache);
 	/**< completely delete any backing storage related to the cache
 	 * instance, eg, delete the backing file */
 
 	int
-	(*write)(struct lws_cache_ttl_lru *cache, const char *specific_key,
-		 const uint8_t *source, size_t size, lws_usec_t expiry,
+	(*write)(struct aws_lws_cache_ttl_lru *cache, const char *specific_key,
+		 const uint8_t *source, size_t size, aws_lws_usec_t expiry,
 		 void **ppvoid);
 	/**< create an entry in the cache level according to the given info */
 	int
-	(*tag_match)(struct lws_cache_ttl_lru *cache, const char *wc,
+	(*tag_match)(struct aws_lws_cache_ttl_lru *cache, const char *wc,
 		     const char *tag, char lookup_rules);
 	/**< Just tell us if tag would match wildcard, using whatever special
 	 * rules the backing store might use for tag matching.  0 indicates
 	 * it is a match on wildcard, nonzero means does not match.
 	 */
 	int
-	(*lookup)(struct lws_cache_ttl_lru *cache, const char *wildcard_key,
-		      lws_dll2_owner_t *results_owner);
+	(*lookup)(struct aws_lws_cache_ttl_lru *cache, const char *wildcard_key,
+		      aws_lws_dll2_owner_t *results_owner);
 	/**+ add keys for search_key matches not already listed in the results
 	 * owner */
 	int
-	(*invalidate)(struct lws_cache_ttl_lru *cache, const char *wildcard_key);
+	(*invalidate)(struct aws_lws_cache_ttl_lru *cache, const char *wildcard_key);
 	/**< remove matching item(s) from cache level */
 
 	int
-	(*get)(struct lws_cache_ttl_lru *cache, const char *specific_key,
+	(*get)(struct aws_lws_cache_ttl_lru *cache, const char *specific_key,
 	       const void **pdata, size_t *psize);
 	/**< if it has the item, fills L1 with item. updates LRU, and returns
 	 * pointer to payload in L1 */
 
 	void
-	(*debug_dump)(struct lws_cache_ttl_lru *cache);
+	(*debug_dump)(struct aws_lws_cache_ttl_lru *cache);
 	/**< Helper to dump the whole cache contents to log, useful for debug */
 };
 
 /**
- * lws_cache_create() - create an empty cache you can allocate items in
+ * aws_lws_cache_create() - create an empty cache you can allocate items in
  *
  * \param info: a struct describing the cache to create
  *
@@ -314,11 +314,11 @@ struct lws_cache_ops {
  *
  * context and tsi are used when scheduling expiry callbacks
  */
-LWS_VISIBLE LWS_EXTERN struct lws_cache_ttl_lru *
-lws_cache_create(const struct lws_cache_creation_info *info);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_cache_ttl_lru *
+aws_lws_cache_create(const struct aws_lws_cache_creation_info *info);
 
 /**
- * lws_cache_destroy() - destroy a previously created cache
+ * aws_lws_cache_destroy() - destroy a previously created cache
  *
  * \param cache: pointer to the cache
  *
@@ -326,10 +326,10 @@ lws_cache_create(const struct lws_cache_creation_info *info);
  * and *cache set to NULL.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_cache_destroy(struct lws_cache_ttl_lru **cache);
+aws_lws_cache_destroy(struct aws_lws_cache_ttl_lru **cache);
 
 /**
- * lws_cache_expunge() - destroy all items in cache and parents
+ * aws_lws_cache_expunge() - destroy all items in cache and parents
  *
  * \param cache: pointer to the cache
  *
@@ -339,10 +339,10 @@ lws_cache_destroy(struct lws_cache_ttl_lru **cache);
  * Returns 0 if no problems reported at any cache layer, else nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cache_expunge(struct lws_cache_ttl_lru *cache);
+aws_lws_cache_expunge(struct aws_lws_cache_ttl_lru *cache);
 
-LWS_VISIBLE extern const struct lws_cache_ops lws_cache_ops_heap,
-					      lws_cache_ops_nscookiejar;
+LWS_VISIBLE extern const struct aws_lws_cache_ops aws_lws_cache_ops_heap,
+					      aws_lws_cache_ops_nscookiejar;
 
 ///@}
 

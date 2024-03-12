@@ -20,12 +20,12 @@ static int interrupted, bad = 1, status;
 static struct lws *client_wsi;
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	uint8_t buf[1280];
-	union lws_tls_cert_info_results *ci =
-		(union lws_tls_cert_info_results *)buf;
+	union aws_lws_tls_cert_info_results *ci =
+		(union aws_lws_tls_cert_info_results *)buf;
 #if defined(LWS_HAVE_CTIME_R)
 	char date[32];
 #endif
@@ -34,77 +34,77 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		client_wsi = NULL;
 		break;
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
-		status = (int)lws_http_client_http_response(wsi);
-		lwsl_notice("lws_http_client_http_response %d\n", status);
+		status = (int)aws_lws_http_client_http_response(wsi);
+		aws_lwsl_notice("aws_lws_http_client_http_response %d\n", status);
 
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_COMMON_NAME,
 					    ci, sizeof(buf) - sizeof(*ci)))
-			lwsl_notice(" Peer Cert CN        : %s\n", ci->ns.name);
+			aws_lwsl_notice(" Peer Cert CN        : %s\n", ci->ns.name);
 
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_ISSUER_NAME,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_ISSUER_NAME,
 					    ci, sizeof(ci->ns.name)))
-			lwsl_notice(" Peer Cert issuer    : %s\n", ci->ns.name);
+			aws_lwsl_notice(" Peer Cert issuer    : %s\n", ci->ns.name);
 
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_FROM,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_FROM,
 					    ci, 0))
 #if defined(LWS_HAVE_CTIME_R)
-			lwsl_notice(" Peer Cert Valid from: %s", 
+			aws_lwsl_notice(" Peer Cert Valid from: %s", 
 						ctime_r(&ci->time, date));
 #else
-			lwsl_notice(" Peer Cert Valid from: %s", 
+			aws_lwsl_notice(" Peer Cert Valid from: %s", 
 						ctime(&ci->time));
 #endif
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_TO,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_VALIDITY_TO,
 					    ci, 0))
 #if defined(LWS_HAVE_CTIME_R)
-			lwsl_notice(" Peer Cert Valid to  : %s",
+			aws_lwsl_notice(" Peer Cert Valid to  : %s",
 						ctime_r(&ci->time, date));
 #else
-			lwsl_notice(" Peer Cert Valid to  : %s",
+			aws_lwsl_notice(" Peer Cert Valid to  : %s",
 						ctime(&ci->time));
 #endif
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_USAGE,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_USAGE,
 					    ci, 0))
-			lwsl_notice(" Peer Cert usage bits: 0x%x\n", ci->usage);
-		if (!lws_tls_peer_cert_info(wsi,
+			aws_lwsl_notice(" Peer Cert usage bits: 0x%x\n", ci->usage);
+		if (!aws_lws_tls_peer_cert_info(wsi,
 					    LWS_TLS_CERT_INFO_OPAQUE_PUBLIC_KEY,
 					    ci, sizeof(buf) - sizeof(*ci))) {
-			lwsl_notice(" Peer Cert public key:\n");
-			lwsl_hexdump_notice(ci->ns.name, (unsigned int)ci->ns.len);
+			aws_lwsl_notice(" Peer Cert public key:\n");
+			aws_lwsl_hexdump_notice(ci->ns.name, (unsigned int)ci->ns.len);
 		}
 
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_AUTHORITY_KEY_ID,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_AUTHORITY_KEY_ID,
 					    ci, 0)) {
-			lwsl_notice(" AUTHORITY_KEY_ID\n");
-			lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
+			aws_lwsl_notice(" AUTHORITY_KEY_ID\n");
+			aws_lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
 		}
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_AUTHORITY_KEY_ID_ISSUER,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_AUTHORITY_KEY_ID_ISSUER,
 					    ci, 0)) {
-			lwsl_notice(" AUTHORITY_KEY_ID ISSUER\n");
-			lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
+			aws_lwsl_notice(" AUTHORITY_KEY_ID ISSUER\n");
+			aws_lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
 		}
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_AUTHORITY_KEY_ID_SERIAL,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_AUTHORITY_KEY_ID_SERIAL,
 					    ci, 0)) {
-			lwsl_notice(" AUTHORITY_KEY_ID SERIAL\n");
-			lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
+			aws_lwsl_notice(" AUTHORITY_KEY_ID SERIAL\n");
+			aws_lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
 		}
-		if (!lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_SUBJECT_KEY_ID,
+		if (!aws_lws_tls_peer_cert_info(wsi, LWS_TLS_CERT_INFO_SUBJECT_KEY_ID,
 					    ci, 0)) {
-			lwsl_notice(" AUTHORITY_KEY_ID SUBJECT_KEY_ID\n");
-			lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
+			aws_lwsl_notice(" AUTHORITY_KEY_ID SUBJECT_KEY_ID\n");
+			aws_lwsl_hexdump_notice(ci->ns.name, (size_t)ci->ns.len);
 		}
 
 		break;
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: read %d\n", (int)len);
 #if 0  /* enable to dump the html */
 		{
 			const char *p = in;
@@ -125,32 +125,32 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
+		aws_lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n");
 		client_wsi = NULL;
 		bad = status != 200;
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
 		client_wsi = NULL;
 		bad = status != 200;
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{
 		"http",
 		callback_http,
@@ -167,9 +167,9 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_client_connect_info i;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_client_connect_info i;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 		   /*
@@ -183,11 +183,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http client [<-d <verbosity>] [-l] [--h1]\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http client [<-d <verbosity>] [-l] [--h1]\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
@@ -210,9 +210,9 @@ int main(int argc, const char **argv)
 	info.client_ssl_ca_filepath = "./warmcat.com.cer";
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -220,7 +220,7 @@ int main(int argc, const char **argv)
 	i.context = context;
 	i.ssl_connection = LCCSCF_USE_SSL;
 
-	if (lws_cmdline_option(argc, argv, "-l")) {
+	if (aws_lws_cmdline_option(argc, argv, "-l")) {
 		i.port = 7681;
 		i.address = "localhost";
 		i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
@@ -229,7 +229,7 @@ int main(int argc, const char **argv)
 		i.address = "warmcat.com";
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "-s")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-s")))
 		i.address = p;
 
 	i.path = "/";
@@ -237,20 +237,20 @@ int main(int argc, const char **argv)
 	i.origin = i.address;
 
 	/* force h1 even if h2 available */
-	if (lws_cmdline_option(argc, argv, "--h1"))
+	if (aws_lws_cmdline_option(argc, argv, "--h1"))
 		i.alpn = "http/1.1";
 
 	i.method = "GET";
 
 	i.protocol = protocols[0].name;
 	i.pwsi = &client_wsi;
-	lws_client_connect_via_info(&i);
+	aws_lws_client_connect_via_info(&i);
 
 	while (n >= 0 && client_wsi && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lws_context_destroy(context);
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

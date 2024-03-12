@@ -43,10 +43,10 @@ $ ./bin/lws-minimal-ws-client-binance
 [2021/08/15 06:42:40:8411] N:  ++ [495958|vh|0|netlink] (1)
 [2021/08/15 06:42:40:8433] N:  ++ [495958|vh|1|digicert||-1] (2)
 [2021/08/15 06:42:40:8471] N:  ++ [495958|wsiSScli|0|binance] (1)
-[2021/08/15 06:42:40:8471] N: [495958|wsiSScli|0|binance]: lws_ss_check_next_state_ss: (unset) -> LWSSSCS_CREATING
-[2021/08/15 06:42:40:8472] N: [495958|wsiSScli|0|binance]: lws_ss_check_next_state_ss: LWSSSCS_CREATING -> LWSSSCS_CONNECTING
+[2021/08/15 06:42:40:8471] N: [495958|wsiSScli|0|binance]: aws_lws_ss_check_next_state_ss: (unset) -> LWSSSCS_CREATING
+[2021/08/15 06:42:40:8472] N: [495958|wsiSScli|0|binance]: aws_lws_ss_check_next_state_ss: LWSSSCS_CREATING -> LWSSSCS_CONNECTING
 [2021/08/15 06:42:40:8472] N:  ++ [495958|wsicli|0|WS/h1/fstream.binance.com/([495958|wsiSScli|0|binance])] (1)
-[2021/08/15 06:42:41:8802] N: [495958|wsiSScli|0|binance]: lws_ss_check_next_state_ss: LWSSSCS_CONNECTING -> LWSSSCS_CONNECTED
+[2021/08/15 06:42:41:8802] N: [495958|wsiSScli|0|binance]: aws_lws_ss_check_next_state_ss: LWSSSCS_CONNECTING -> LWSSSCS_CONNECTED
 [2021/08/15 06:42:42:8803] N: sul_hz_cb: price: min: 4669185¢, max: 4672159¢, avg: 4670061¢, (53 prices/s)
 [2021/08/15 06:42:42:8803] N: sul_hz_cb: elatency: min: 131ms, max: 292ms, avg: 154ms, (53 msg/s)
 [2021/08/15 06:42:43:8803] N: sul_hz_cb: price: min: 4669646¢, max: 4672159¢, avg: 4669953¢, (34 prices/s)

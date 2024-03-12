@@ -24,7 +24,7 @@
 
 /** \defgroup lecp CBOR parser
  * ##CBOR parsing related functions
- * \ingroup lwsapi
+ * \ingroup aws_lwsapi
  *
  * LECP is an extremely lightweight CBOR stream parser included in lws.  It
  * is aligned in approach with the LEJP JSON stream parser, with some additional
@@ -300,7 +300,7 @@ struct lecp_ctx {
 	char buf[LECP_STRING_CHUNK + 1];
 };
 
-enum lws_lec_pctx_ret {
+enum aws_lws_lec_pctx_ret {
 	LWS_LECPCTX_RET_FINISHED		= 0,
 	LWS_LECPCTX_RET_AGAIN, /* call again to continue writing buffer */
 	LWS_LECPCTX_RET_FAIL /* something broken, eg, format string */
@@ -321,7 +321,7 @@ enum cbp_state {
 	CBPS_CONTYPE,
 };
 
-typedef struct lws_lec_pctx {
+typedef struct aws_lws_lec_pctx {
 	uint8_t			stack[16];
 	uint8_t			vaa[16];
 	uint8_t			indet[16];
@@ -348,16 +348,16 @@ typedef struct lws_lec_pctx {
 	uint8_t			_long;
 	uint8_t			vaa_pos;
 	uint8_t			dotstar;
-} lws_lec_pctx_t;
+} aws_lws_lec_pctx_t;
 
 LWS_VISIBLE LWS_EXTERN void
-lws_lec_int(lws_lec_pctx_t *ctx, uint8_t opcode, uint8_t indet, uint64_t num);
+aws_lws_lec_int(aws_lws_lec_pctx_t *ctx, uint8_t opcode, uint8_t indet, uint64_t num);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_lec_scratch(lws_lec_pctx_t *ctx);
+aws_lws_lec_scratch(aws_lws_lec_pctx_t *ctx);
 
 /*
- * lws_lec_init() - prepare a cbor writing context
+ * aws_lws_lec_init() - prepare a cbor writing context
  *
  * \param ctx: the cbor writing context to prepare
  * \param buf: the output buffer start
@@ -367,10 +367,10 @@ lws_lec_scratch(lws_lec_pctx_t *ctx);
  * write into it.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_lec_init(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len);
+aws_lws_lec_init(aws_lws_lec_pctx_t *ctx, uint8_t *buf, size_t len);
 
 /*
- * lws_lec_setbuf() - update the output buffer for an initialized cbor writing ctx
+ * aws_lws_lec_setbuf() - update the output buffer for an initialized cbor writing ctx
  *
  * \param ctx: the cbor writing context to prepare
  * \param buf: the output buffer start
@@ -380,24 +380,24 @@ lws_lec_init(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len);
  * it writes into as given in \p buf and \p len
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_lec_setbuf(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len);
+aws_lws_lec_setbuf(aws_lws_lec_pctx_t *ctx, uint8_t *buf, size_t len);
 
 /*
- * lws_lec_vsprintf() - write into a cbor writing context
+ * aws_lws_lec_vsprintf() - write into a cbor writing context
  *
  * \param ctx: the cbor writing context to prepare
  * \param format: a printf style argument map
  * \param args: the va args
  *
  * CBOR-aware vsprintf which pauses output when it fills the output buffer.  You
- * can call it again with the same args and same lws_lex_pctx to resume filling
+ * can call it again with the same args and same aws_lws_lex_pctx to resume filling
  *
  * Returns either LWS_LECPCTX_RET_FINISHED if we have nothing left over that we
  * want to put in the buffer, or LWS_LECPCTX_RET_AGAIN if the function should
  * be called again with the same arguments (perhaps into a different output
  * buffer) to continue emitting output from where it left off.
  *
- * If LWS_LECPCTX_RET_AGAIN is returned, lws_lec_setbuf() must be used on the
+ * If LWS_LECPCTX_RET_AGAIN is returned, aws_lws_lec_setbuf() must be used on the
  * context to reset or change the output buffer before calling again.
  *
  * The number of bytes placed in the output buffer is available in ctx->used.
@@ -431,23 +431,23 @@ lws_lec_setbuf(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len);
  *
  * See READMEs/README.cbor-lecp.md for more details.
  */
-LWS_VISIBLE LWS_EXTERN enum lws_lec_pctx_ret
-lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *format, va_list args);
+LWS_VISIBLE LWS_EXTERN enum aws_lws_lec_pctx_ret
+aws_lws_lec_vsprintf(aws_lws_lec_pctx_t *ctx, const char *format, va_list args);
 
 /*
- * lws_lec_printf() - write into a cbor writing context
+ * aws_lws_lec_printf() - write into a cbor writing context
  *
  * \param ctx: the cbor writing context to prepare
  * \param format: a printf style argument map
  * \param ...: format args
  *
- * See lws_lec_vsprintf() for format details.  This is the most common way
+ * See aws_lws_lec_vsprintf() for format details.  This is the most common way
  * to format the CBOR output.
  *
  * See READMEs/README.cbor-lecp.md for more details.
  */
-LWS_VISIBLE LWS_EXTERN enum lws_lec_pctx_ret
-lws_lec_printf(lws_lec_pctx_t *ctx, const char *format, ...);
+LWS_VISIBLE LWS_EXTERN enum aws_lws_lec_pctx_ret
+aws_lws_lec_printf(aws_lws_lec_pctx_t *ctx, const char *format, ...);
 
 /**
  * lecp_construct() - Construct an LECP parser context
@@ -531,9 +531,9 @@ lecp_parse_subtree(struct lecp_ctx *ctx, const uint8_t *in, size_t len);
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_singles2halfp(uint16_t *hp, uint32_t x);
+aws_lws_singles2halfp(uint16_t *hp, uint32_t x);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_halfp2singles(uint32_t *xp, uint16_t h);
+aws_lws_halfp2singles(uint32_t *xp, uint16_t h);
 
 //@}

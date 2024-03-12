@@ -30,7 +30,7 @@ static const char * const plugin_dirs[] = {
 };
 #endif
 
-static const struct lws_http_mount
+static const struct aws_lws_http_mount
 #if defined(LWS_WITH_SYS_METRICS)
 	mount_metrics = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
@@ -80,7 +80,7 @@ static const struct lws_http_mount
 void sigint_handler(int sig, siginfo_t *siginfo, void *context)
 {
 	pid_t sender_pid = siginfo->si_pid;
-	lwsl_err("%s: sig %d from pid %lu\n", __func__, sig, (unsigned long)sender_pid);
+	aws_lwsl_err("%s: sig %d from pid %lu\n", __func__, sig, (unsigned long)sender_pid);
 	interrupted = 1;
 }
 #else
@@ -92,8 +92,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 #if !defined(WIN32)
 	struct sigaction siga;
 #endif
@@ -114,11 +114,11 @@ int main(int argc, const char **argv)
 	signal(SIGINT, sigint_handler);
 #endif
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
-	lwsl_user("LWS minimal http server TLS | visit https://localhost:7681\n");
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lwsl_user("LWS minimal http server TLS | visit https://localhost:7681\n");
 
 	info.port = 7681;
-	if ((p = lws_cmdline_option(argc, argv, "--port")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--port")))
 		info.port = atoi(p);
 	info.mounts = &mount;
 	info.error_document_404 = "/404.html";
@@ -132,19 +132,19 @@ int main(int argc, const char **argv)
 	info.plugin_dirs = plugin_dirs;
 #endif
 
-	if (lws_cmdline_option(argc, argv, "-h"))
+	if (aws_lws_cmdline_option(argc, argv, "-h"))
 		info.options |= LWS_SERVER_OPTION_VHOST_UPG_STRICT_HOST_CHECK;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

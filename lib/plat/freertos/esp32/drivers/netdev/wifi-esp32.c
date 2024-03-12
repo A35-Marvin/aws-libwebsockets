@@ -1,5 +1,5 @@
 /*
- * libwebsockets - esp32 wifi -> lws_netdev_wifi
+ * libwebsockets - esp32 wifi -> aws_lws_netdev_wifi
  *
  * Copyright (C) 2010 - 2020 Andy Green <andy@warmcat.com>
  *
@@ -25,16 +25,16 @@
  * These are the esp platform wifi-specific netdev pieces.  Nothing else should
  * know any esp-specific apis.
  *
- * Operations happen via the generic lws_detdev instantiation for the platform
+ * Operations happen via the generic aws_lws_detdev instantiation for the platform
  * wifi device, which point in here for operations.  We also set up native OS
- * event hooks per device for wifi and IP stack events, and post them as lws_smd
+ * event hooks per device for wifi and IP stack events, and post them as aws_lws_smd
  * NETWORK events on the if in the "platform private" namespace.  We then
  * service the events in the lws event loop thread context, which may again
- * generate lws_smd NETWORK events in the public namespace depending on what
+ * generate aws_lws_smd NETWORK events in the public namespace depending on what
  * happened.
  *
  * Scan requests go through a sul to make sure we don't get "piling on" from
- * scheduled, timed scans.  Scan results go through the lws_smd "washing" and
+ * scheduled, timed scans.  Scan results go through the aws_lws_smd "washing" and
  * are actually parsed in lws thread context, where they are converted to lws
  * netdev scan results and processed by generic code.
  */
@@ -48,17 +48,17 @@
 #include <esp_netif.h>
 
 /*
- * lws_netdev_instance_t:
- *   lws_netdev_instance_wifi_t:
- *     lws_netdev_instance_wifi_esp32_t
+ * aws_lws_netdev_instance_t:
+ *   aws_lws_netdev_instance_wifi_t:
+ *     aws_lws_netdev_instance_wifi_esp32_t
  */
 
-typedef struct lws_netdev_instance_wifi_esp32 {
-	lws_netdev_instance_wifi_t		wnd;
+typedef struct aws_lws_netdev_instance_wifi_esp32 {
+	aws_lws_netdev_instance_wifi_t		wnd;
 	esp_event_handler_instance_t		instance_any_id;
 	esp_event_handler_instance_t		instance_got_ip;
 	wifi_config_t				sta_config;
-} lws_netdev_instance_wifi_esp32_t;
+} aws_lws_netdev_instance_wifi_esp32_t;
 
 /*
 static wifi_config_t config = {
@@ -74,11 +74,11 @@ static wifi_config_t config = {
  */
 
 int
-lws_netdev_wifi_connect_plat(lws_netdev_instance_t *nd, const char *ssid,
+aws_lws_netdev_wifi_connect_plat(aws_lws_netdev_instance_t *nd, const char *ssid,
 			     const char *passphrase, uint8_t *bssid)
 {
-	lws_netdev_instance_wifi_esp32_t *wnde32 =
-					(lws_netdev_instance_wifi_esp32_t *)nd;
+	aws_lws_netdev_instance_wifi_esp32_t *wnde32 =
+					(aws_lws_netdev_instance_wifi_esp32_t *)nd;
 
 	wnde32->wnd.inst.ops->up(&wnde32->wnd.inst);
 
@@ -90,9 +90,9 @@ lws_netdev_wifi_connect_plat(lws_netdev_instance_t *nd, const char *ssid,
 	tcpip_adapter_dhcpc_stop(TCPIP_ADAPTER_IF_STA);
 #endif
 
-	lws_strncpy((char *)wnde32->sta_config.sta.ssid, ssid,
+	aws_lws_strncpy((char *)wnde32->sta_config.sta.ssid, ssid,
 		    sizeof(wnde32->sta_config.sta.ssid));
-	lws_strncpy((char *)wnde32->sta_config.sta.password, passphrase,
+	aws_lws_strncpy((char *)wnde32->sta_config.sta.password, passphrase,
 		    sizeof(wnde32->sta_config.sta.password));
 
 	esp_wifi_set_config(WIFI_IF_STA, &wnde32->sta_config);
@@ -107,17 +107,17 @@ lws_netdev_wifi_connect_plat(lws_netdev_instance_t *nd, const char *ssid,
  */
 
 static void
-lws_esp32_scan_update(lws_netdev_instance_wifi_t *wnd)
+aws_lws_esp32_scan_update(aws_lws_netdev_instance_wifi_t *wnd)
 {
-//	lws_netdevs_t *netdevs = lws_netdevs_from_ndi(&wnd->inst);
+//	aws_lws_netdevs_t *netdevs = aws_lws_netdevs_from_ndi(&wnd->inst);
 	wifi_ap_record_t ap_records[LWS_WIFI_MAX_SCAN_TRACK], *ar;
-	uint32_t now = lws_now_secs();
+	uint32_t now = aws_lws_now_secs();
 	uint16_t count_ap_records;
 	int n;
 
 	count_ap_records = LWS_ARRAY_SIZE(ap_records);
 	if (esp_wifi_scan_get_ap_records(&count_ap_records, ap_records)) {
-		lwsl_err("%s: failed\n", __func__);
+		aws_lwsl_err("%s: failed\n", __func__);
 		return;
 	}
 
@@ -129,14 +129,14 @@ lws_esp32_scan_update(lws_netdev_instance_wifi_t *wnd)
 
 	/*
 	 * ... let's collect the OS-specific scan results, and convert then to
-	 * lws_netdev sorted by rssi.  If we already have it in the scan list,
+	 * aws_lws_netdev sorted by rssi.  If we already have it in the scan list,
 	 * keep it and keep a little ringbuffer of its rssi along with an
 	 * averaging.  If it's new, add it into the linked-list sorted by rssi.
 	 */
 
 	ar = &ap_records[0];
 	for (n = 0; n < count_ap_records; n++) {
-		lws_wifi_sta_t *w;
+		aws_lws_wifi_sta_t *w;
 		int m;
 
 		m = strlen((const char *)ar->ssid);
@@ -147,10 +147,10 @@ lws_esp32_scan_update(lws_netdev_instance_wifi_t *wnd)
 		 * We know this guy from before?
 		 */
 
-		w = lws_netdev_wifi_scan_find(wnd, (const char *)ar->ssid,
+		w = aws_lws_netdev_wifi_scan_find(wnd, (const char *)ar->ssid,
 						ar->bssid);
 		if (!w) {
-			w = lws_zalloc(sizeof(*w) + m + 1, __func__);
+			w = aws_lws_zalloc(sizeof(*w) + m + 1, __func__);
 			if (!w)
 				goto next;
 
@@ -160,8 +160,8 @@ lws_esp32_scan_update(lws_netdev_instance_wifi_t *wnd)
 
 			memcpy(w->bssid, ar->bssid, 6);
 
-			lws_dll2_add_sorted(&w->list, &wnd->scan,
-					    lws_netdev_wifi_rssi_sort_compare);
+			aws_lws_dll2_add_sorted(&w->list, &wnd->scan,
+					    aws_lws_netdev_wifi_rssi_sort_compare);
 		}
 
 		if (w->rssi_count == LWS_ARRAY_SIZE(w->rssi))
@@ -184,7 +184,7 @@ next:
 	 * We can do the rest of it using the generic scan list and credentials
 	 */
 
-	lws_netdev_wifi_scan_select(wnd);
+	aws_lws_netdev_wifi_scan_select(wnd);
 }
 
 static wifi_scan_config_t scan_config = {
@@ -195,46 +195,46 @@ static wifi_scan_config_t scan_config = {
 };
 
 void
-lws_netdev_wifi_scan_plat(lws_netdev_instance_t *nd)
+aws_lws_netdev_wifi_scan_plat(aws_lws_netdev_instance_t *nd)
 {
-	lws_netdev_instance_wifi_t *wnd = (lws_netdev_instance_wifi_t *)nd;
+	aws_lws_netdev_instance_wifi_t *wnd = (aws_lws_netdev_instance_wifi_t *)nd;
 
 	if (esp_wifi_scan_start(&scan_config, false))
-		lwsl_err("%s: %s scan failed\n", __func__, wnd->inst.name);
+		aws_lwsl_err("%s: %s scan failed\n", __func__, wnd->inst.name);
 }
 
 /*
  * Platform-private interface events turn up here after going through SMD and
- * passed down by matching network interface name via generic lws_netdev.  All
+ * passed down by matching network interface name via generic aws_lws_netdev.  All
  * that messing around gets us from an OS-specific thread with an event to back
  * here in lws event loop thread context, with the same event bound to a the
  * netdev it belongs to.
  */
 
 int
-lws_netdev_wifi_event_plat(struct lws_netdev_instance *nd, lws_usec_t timestamp,
+aws_lws_netdev_wifi_event_plat(struct aws_lws_netdev_instance *nd, aws_lws_usec_t timestamp,
 			   void *buf, size_t len)
 {
-	lws_netdev_instance_wifi_t *wnd = (lws_netdev_instance_wifi_t *)nd;
-	struct lws_context *ctx = netdev_instance_to_ctx(&wnd->inst);
+	aws_lws_netdev_instance_wifi_t *wnd = (aws_lws_netdev_instance_wifi_t *)nd;
+	struct aws_lws_context *ctx = netdev_instance_to_ctx(&wnd->inst);
 	size_t al;
 
 	/*
 	 * netdev-private sync messages?
 	 */
 
-	if (!lws_json_simple_strcmp(buf, len, "\"type\":", "priv")) {
-		const char *ev = lws_json_simple_find(buf, len, "\"ev\":", &al);
+	if (!aws_lws_json_simple_strcmp(buf, len, "\"type\":", "priv")) {
+		const char *ev = aws_lws_json_simple_find(buf, len, "\"ev\":", &al);
 
 		if (!ev)
 			return 0;
 
-		lwsl_notice("%s: smd priv ev %.*s\n", __func__, (int)al, ev);
+		aws_lwsl_notice("%s: smd priv ev %.*s\n", __func__, (int)al, ev);
 
 		switch (atoi(ev)) {
 		case WIFI_EVENT_STA_START:
 			wnd->state = LWSNDVWIFI_STATE_INITIAL;
-			if (!lws_netdev_wifi_redo_last(wnd))
+			if (!aws_lws_netdev_wifi_redo_last(wnd))
 				break;
 
 			/*
@@ -243,7 +243,7 @@ lws_netdev_wifi_event_plat(struct lws_netdev_instance *nd, lws_usec_t timestamp,
 			 */
 
 		case WIFI_EVENT_STA_DISCONNECTED:
-			lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
+			aws_lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
 					   "{\"type\":\"linkdown\","
 					   "\"if\":\"%s\"}", wnd->inst.name);
 			wnd->state = LWSNDVWIFI_STATE_SCAN;
@@ -251,18 +251,18 @@ lws_netdev_wifi_event_plat(struct lws_netdev_instance *nd, lws_usec_t timestamp,
 			 * We do it via the sul so we don't get timed scans
 			 * on top of each other
 			 */
-			lws_sul_schedule(ctx, 0, &wnd->sul_scan,
-					 lws_netdev_wifi_scan, 1);
+			aws_lws_sul_schedule(ctx, 0, &wnd->sul_scan,
+					 aws_lws_netdev_wifi_scan, 1);
 			break;
 
 		case WIFI_EVENT_STA_CONNECTED:
-			lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
+			aws_lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
 					   "{\"type\":\"linkup\","
 					   "\"if\":\"%s\"}", wnd->inst.name);
 			break;
 
 		case WIFI_EVENT_SCAN_DONE:
-			lws_esp32_scan_update(wnd);
+			aws_lws_esp32_scan_update(wnd);
 			break;
 		default:
 			return 0;
@@ -276,7 +276,7 @@ lws_netdev_wifi_event_plat(struct lws_netdev_instance *nd, lws_usec_t timestamp,
 
 /*
  * This is coming from a thread context unrelated to lws... the first order is
- * to turn these into lws_smd events synchronized on lws thread, since we want
+ * to turn these into aws_lws_smd events synchronized on lws thread, since we want
  * to change correspsonding lws netdev object states without locking.
  */
 
@@ -284,8 +284,8 @@ static void
 _event_handler_wifi(void *arg, esp_event_base_t event_base, int32_t event_id,
 		   void *event_data)
 {
-	lws_netdev_instance_wifi_t *wnd = (lws_netdev_instance_wifi_t *)arg;
-	struct lws_context *ctx = netdev_instance_to_ctx(&wnd->inst);
+	aws_lws_netdev_instance_wifi_t *wnd = (aws_lws_netdev_instance_wifi_t *)arg;
+	struct aws_lws_context *ctx = netdev_instance_to_ctx(&wnd->inst);
 
 	switch (event_id) {
 	case WIFI_EVENT_STA_START:
@@ -294,12 +294,12 @@ _event_handler_wifi(void *arg, esp_event_base_t event_base, int32_t event_id,
 	case WIFI_EVENT_STA_CONNECTED:
 		/*
 		 * These are events in the platform's private namespace,
-		 * interpreted only by the lws_smd handler above, ** in the lws
+		 * interpreted only by the aws_lws_smd handler above, ** in the lws
 		 * event thread context **.  The point of this is to requeue the
 		 * event in the lws thread context like a bottom-half.
 		 *
 		 * To save on registrations, the context's NETWORK smd
-		 * participant passes messages to lws_netdev, who passes ones
+		 * participant passes messages to aws_lws_netdev, who passes ones
 		 * that have if matching the netdev name to that netdev's
 		 * (*event) handler.
 		 *
@@ -307,7 +307,7 @@ _event_handler_wifi(void *arg, esp_event_base_t event_base, int32_t event_id,
 		 * for other things to consume.
 		 */
 
-		lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
+		aws_lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
 				   "{\"type\":\"priv\",\"if\":\"%s\",\"ev\":%d}",
 				   wnd->inst.name, (int)event_id);
 		break;
@@ -318,7 +318,7 @@ _event_handler_wifi(void *arg, esp_event_base_t event_base, int32_t event_id,
 
 #if 0
 static int
-espip_to_sa46(lws_sockaddr46 *sa46, esp_ip_addr_t *eip)
+espip_to_sa46(aws_lws_sockaddr46 *sa46, esp_ip_addr_t *eip)
 {
 	memset(sa46, 0, sizeof(sa46));
 
@@ -340,9 +340,9 @@ static void
 _event_handler_ip(void *arg, esp_event_base_t event_base, int32_t event_id,
 	      void *event_data)
 {
-	lws_netdev_instance_wifi_t *wnd = (lws_netdev_instance_wifi_t *)arg;
-	lws_netdevs_t *netdevs = lws_netdevs_from_ndi(&wnd->inst);
-	struct lws_context *ctx = lws_context_from_netdevs(netdevs);
+	aws_lws_netdev_instance_wifi_t *wnd = (aws_lws_netdev_instance_wifi_t *)arg;
+	aws_lws_netdevs_t *netdevs = aws_lws_netdevs_from_ndi(&wnd->inst);
+	struct aws_lws_context *ctx = aws_lws_context_from_netdevs(netdevs);
 
 	if (event_id == IP_EVENT_STA_GOT_IP) {
 		ip_event_got_ip_t *e = (ip_event_got_ip_t *)event_data;
@@ -359,7 +359,7 @@ _event_handler_ip(void *arg, esp_event_base_t event_base, int32_t event_id,
 					   TCPIP_ADAPTER_DNS_MAIN,
 					   /* also _BACKUP, _FALLBACK */
 					   &e32ip)) {
-			lwsl_err("%s: there's no dns server set\n", __func__);
+			aws_lwsl_err("%s: there's no dns server set\n", __func__);
 			e32ip.ip.u_addr.ipv4 = 0x08080808;
 			e32ip.ip.type = ESP_IPADDR_TYPE_V4;
 		}
@@ -367,9 +367,9 @@ _event_handler_ip(void *arg, esp_event_base_t event_base, int32_t event_id,
 		netdevs->sa46_dns_resolver.
 #endif
 
-		lws_write_numeric_address((void *)&e->ip_info.ip, 4, ip,
+		aws_lws_write_numeric_address((void *)&e->ip_info.ip, 4, ip,
 				sizeof(ip));
-		lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
+		aws_lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
 				   "{\"type\":\"ipacq\",\"if\":\"%s\","
 				   "\"ipv4\":\"%s\"}", wnd->inst.name, ip);
 	}
@@ -380,7 +380,7 @@ _event_handler_ip(void *arg, esp_event_base_t event_base, int32_t event_id,
  * available at all
  */
 int
-lws_netdev_plat_init(void)
+aws_lws_netdev_plat_init(void)
 {
         nvs_flash_init();
 	esp_netif_init();
@@ -393,7 +393,7 @@ lws_netdev_plat_init(void)
  * This is the platform (esp-idf) init for any wifi to be available at all
  */
 int
-lws_netdev_plat_wifi_init(void)
+aws_lws_netdev_plat_wifi_init(void)
 {
 	wifi_init_config_t wic = WIFI_INIT_CONFIG_DEFAULT();
 	int n;
@@ -402,7 +402,7 @@ lws_netdev_plat_wifi_init(void)
 
 	n = esp_wifi_init(&wic);
 	if (n) {
-		lwsl_err("%s: wifi init fail: %d\n", __func__, n);
+		aws_lwsl_err("%s: wifi init fail: %d\n", __func__, n);
 		return 1;
 	}
 
@@ -410,36 +410,36 @@ lws_netdev_plat_wifi_init(void)
 }
 
 
-struct lws_netdev_instance *
-lws_netdev_wifi_create_plat(struct lws_context *ctx,
-			    const lws_netdev_ops_t *ops,
+struct aws_lws_netdev_instance *
+aws_lws_netdev_wifi_create_plat(struct aws_lws_context *ctx,
+			    const aws_lws_netdev_ops_t *ops,
 			    const char *name, void *platinfo)
 {
-	lws_netdev_instance_wifi_esp32_t *wnde32 = lws_zalloc(
+	aws_lws_netdev_instance_wifi_esp32_t *wnde32 = aws_lws_zalloc(
 						sizeof(*wnde32), __func__);
 
 	if (!wnde32)
 		return NULL;
 
 	wnde32->wnd.inst.type = LWSNDTYP_WIFI;
-	lws_netdev_instance_create(&wnde32->wnd.inst, ctx, ops, name, platinfo);
+	aws_lws_netdev_instance_create(&wnde32->wnd.inst, ctx, ops, name, platinfo);
 
 	return &wnde32->wnd.inst;
 }
 
 int
-lws_netdev_wifi_configure_plat(struct lws_netdev_instance *nd,
-			       lws_netdev_config_t *config)
+aws_lws_netdev_wifi_configure_plat(struct aws_lws_netdev_instance *nd,
+			       aws_lws_netdev_config_t *config)
 {
 	return 0;
 }
 
 int
-lws_netdev_wifi_up_plat(struct lws_netdev_instance *nd)
+aws_lws_netdev_wifi_up_plat(struct aws_lws_netdev_instance *nd)
 {
-	lws_netdev_instance_wifi_esp32_t *wnde32 =
-					(lws_netdev_instance_wifi_esp32_t *)nd;
-	struct lws_context *ctx = netdev_instance_to_ctx(&wnde32->wnd.inst);
+	aws_lws_netdev_instance_wifi_esp32_t *wnde32 =
+					(aws_lws_netdev_instance_wifi_esp32_t *)nd;
+	struct aws_lws_context *ctx = netdev_instance_to_ctx(&wnde32->wnd.inst);
 
 	if (wnde32->wnd.flags & LNDIW_UP)
 		return 0;
@@ -455,7 +455,7 @@ lws_netdev_wifi_up_plat(struct lws_netdev_instance *nd)
 	esp_wifi_start();
 	wnde32->wnd.flags |= LNDIW_UP;
 
-	lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
+	aws_lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
 			   "{\"type\":\"up\",\"if\":\"%s\"}",
 			   wnde32->wnd.inst.name);
 
@@ -463,16 +463,16 @@ lws_netdev_wifi_up_plat(struct lws_netdev_instance *nd)
 }
 
 int
-lws_netdev_wifi_down_plat(struct lws_netdev_instance *nd)
+aws_lws_netdev_wifi_down_plat(struct aws_lws_netdev_instance *nd)
 {
-	lws_netdev_instance_wifi_esp32_t *wnde32 =
-					(lws_netdev_instance_wifi_esp32_t *)nd;
-	struct lws_context *ctx = netdev_instance_to_ctx(&wnde32->wnd.inst);
+	aws_lws_netdev_instance_wifi_esp32_t *wnde32 =
+					(aws_lws_netdev_instance_wifi_esp32_t *)nd;
+	struct aws_lws_context *ctx = netdev_instance_to_ctx(&wnde32->wnd.inst);
 
 	if (!(wnde32->wnd.flags & LNDIW_UP))
 		return 0;
 
-	lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
+	aws_lws_smd_msg_printf(ctx, LWSSMDCL_NETWORK,
 			   "{\"type\":\"down\",\"if\":\"%s\"}",
 			   wnde32->wnd.inst.name);
 
@@ -489,8 +489,8 @@ lws_netdev_wifi_down_plat(struct lws_netdev_instance *nd)
 }
 
 void
-lws_netdev_wifi_destroy_plat(struct lws_netdev_instance **pnd)
+aws_lws_netdev_wifi_destroy_plat(struct aws_lws_netdev_instance **pnd)
 {
-	lws_free(*pnd);
+	aws_lws_free(*pnd);
 	*pnd = NULL;
 }

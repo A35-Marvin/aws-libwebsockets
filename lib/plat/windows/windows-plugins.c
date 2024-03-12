@@ -33,13 +33,13 @@
 
 #if defined(LWS_WITH_PLUGINS_API) && (UV_VERSION_MAJOR > 0)
 
-const lws_plugin_header_t *
-lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
+const aws_lws_plugin_header_t *
+aws_lws_plat_dlopen(struct aws_lws_plugin **pplugin, const char *libpath,
 		const char *sofilename, const char *_class,
 		each_plugin_cb_t each, void *each_user)
 {
-	const lws_plugin_header_t *hdr;
-	struct lws_plugin *pin;
+	const aws_lws_plugin_header_t *hdr;
+	struct aws_lws_plugin *pin;
 	char sym[96], *dot;
 	uv_lib_t lib;
 	void *v;
@@ -50,13 +50,13 @@ lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
 
 	if (uv_dlopen(libpath, &lib)) {
 		uv_dlerror(&lib);
-		lwsl_err("Error loading DSO: %s\n", lib.errmsg);
+		aws_lwsl_err("Error loading DSO: %s\n", lib.errmsg);
 		uv_dlclose(&lib);
 		return NULL;
 	}
 
 	/* we could open it... can we get his export struct? */
-	m = lws_snprintf(sym, sizeof(sym) - 1, "%s", sofilename);
+	m = aws_lws_snprintf(sym, sizeof(sym) - 1, "%s", sofilename);
 	if (m < 4)
 		goto bail;
 	dot = strchr(sym, '.');
@@ -65,20 +65,20 @@ lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
 
 	if (uv_dlsym(&lib, sym, &v)) {
 		uv_dlerror(&lib);
-		lwsl_err("%s: Failed to get '%s' on %s: %s\n",
+		aws_lwsl_err("%s: Failed to get '%s' on %s: %s\n",
 			 __func__, path, dent.name, lib.errmsg);
 		goto bail;
 	}
 
-	hdr = (const lws_plugin_header_t *)v;
+	hdr = (const aws_lws_plugin_header_t *)v;
 	if (hdr->api_magic != LWS_PLUGIN_API_MAGIC) {
-		lwsl_info("%s: plugin %s has outdated api %d (vs %d)\n",
+		aws_lwsl_info("%s: plugin %s has outdated api %d (vs %d)\n",
 			 __func__, libpath, hdr->api_magic,
 			 LWS_PLUGIN_API_MAGIC);
 		goto bail;
 	}
 
-	if (strcmp(hdr->lws_build_hash, LWS_BUILD_HASH))
+	if (strcmp(hdr->aws_lws_build_hash, LWS_BUILD_HASH))
 		goto bail;
 
 	if (strcmp(hdr->_class, _class))
@@ -99,7 +99,7 @@ lws_plat_dlopen(struct lws_plugin **pplugin, const char *libpath,
 	 * OK let's bring it in
 	 */
 
-	pin = lws_malloc(sizeof(*pin), __func__);
+	pin = aws_lws_malloc(sizeof(*pin), __func__);
 	if (!pin)
 		goto bail;
 
@@ -121,7 +121,7 @@ bail:
 }
 
 int
-lws_plat_destroy_dl(struct lws_plugin *p)
+aws_lws_plat_destroy_dl(struct aws_lws_plugin *p)
 {
 	return uv_dlclose(&p->u.lib);
 }
@@ -135,11 +135,11 @@ lws_plat_destroy_dl(struct lws_plugin *p)
 #if defined(LWS_WITH_PLUGINS) && (UV_VERSION_MAJOR > 0)
 
 static int
-protocol_plugin_cb(struct lws_plugin *pin, void *each_user)
+protocol_plugin_cb(struct aws_lws_plugin *pin, void *each_user)
 {
-	struct lws_context *context = (struct lws_context *)each_user;
-	const lws_plugin_protocol_t *plpr =
-				(const lws_plugin_protocol_t *)pin->hdr;
+	struct aws_lws_context *context = (struct aws_lws_context *)each_user;
+	const aws_lws_plugin_protocol_t *plpr =
+				(const aws_lws_plugin_protocol_t *)pin->hdr;
 
 	context->plugin_protocol_count += plpr->count_protocols;
 	context->plugin_extension_count += plpr->count_extensions;
@@ -149,13 +149,13 @@ protocol_plugin_cb(struct lws_plugin *pin, void *each_user)
 #endif
 
 int
-lws_plat_plugins_init(struct lws_context *context, const char * const *d)
+aws_lws_plat_plugins_init(struct aws_lws_context *context, const char * const *d)
 {
 #if defined(LWS_WITH_PLUGINS) && (UV_VERSION_MAJOR > 0)
 	if (info->plugin_dirs) {
 		uv_loop_init(&context->uv.loop);
-		lws_plugins_init(&context->plugin_list, info->plugin_dirs,
-				 "lws_protocol_plugin", NULL,
+		aws_lws_plugins_init(&context->plugin_list, info->plugin_dirs,
+				 "aws_lws_protocol_plugin", NULL,
 				 protocol_plugin_cb, context);
 	}
 #endif
@@ -164,12 +164,12 @@ lws_plat_plugins_init(struct lws_context *context, const char * const *d)
 }
 
 int
-lws_plat_plugins_destroy(struct lws_context * context)
+aws_lws_plat_plugins_destroy(struct aws_lws_context * context)
 {
 #if defined(LWS_WITH_PLUGINS) && (UV_VERSION_MAJOR > 0)
-	if (lws_check_opt(context->options, LWS_SERVER_OPTION_LIBUV) &&
+	if (aws_lws_check_opt(context->options, LWS_SERVER_OPTION_LIBUV) &&
 	    context->plugin_list) {
-		lws_plugins_destroy(&context->plugin_list, NULL, NULL);
+		aws_lws_plugins_destroy(&context->plugin_list, NULL, NULL);
 		while (uv_loop_close(&context->uv.loop))
 			;
 	}

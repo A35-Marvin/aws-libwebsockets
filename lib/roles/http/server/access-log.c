@@ -41,7 +41,7 @@ static const char * const hver[] = {
 };
 
 void
-lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int meth)
+aws_lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int meth)
 {
 	char da[64], uri[256], ta[64];
 	time_t t = time(NULL);
@@ -61,9 +61,9 @@ lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int met
 		return;
 
 	if (wsi->access_log_pending)
-		lws_access_log(wsi);
+		aws_lws_access_log(wsi);
 
-	wsi->http.access_log.header_log = lws_malloc((unsigned int)l, "access log");
+	wsi->http.access_log.header_log = aws_lws_malloc((unsigned int)l, "access log");
 	if (!wsi->http.access_log.header_log)
 		return;
 
@@ -79,7 +79,7 @@ lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int met
 
 #if defined(LWS_ROLE_H2)
 	if (wsi->mux_substream)
-		me = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COLON_METHOD);
+		me = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COLON_METHOD);
 	else
 #endif
 		me = method_names[meth];
@@ -94,47 +94,47 @@ lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int met
 	strncpy(uri, uri_ptr, (unsigned int)m);
 	uri[m] = '\0';
 
-	nwsi = lws_get_network_wsi(wsi);
+	nwsi = aws_lws_get_network_wsi(wsi);
 
 	if (wsi->sa46_peer.sa4.sin_family)
-		lws_sa46_write_numeric_address(&nwsi->sa46_peer, ta, sizeof(ta));
+		aws_lws_sa46_write_numeric_address(&nwsi->sa46_peer, ta, sizeof(ta));
 	else
 		strncpy(ta, "unknown", sizeof(ta));
 
-	lws_snprintf(wsi->http.access_log.header_log, (size_t)l,
+	aws_lws_snprintf(wsi->http.access_log.header_log, (size_t)l,
 		     "%s - - [%s] \"%s %s %s\"",
 		     ta, da, me, uri, hver[wsi->http.request_version]);
 
-	//lwsl_notice("%s\n", wsi->http.access_log.header_log);
+	//aws_lwsl_notice("%s\n", wsi->http.access_log.header_log);
 
-	l = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_USER_AGENT);
+	l = aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_USER_AGENT);
 	if (l) {
 		wsi->http.access_log.user_agent =
-				lws_malloc((unsigned int)l + 5, "access log");
+				aws_lws_malloc((unsigned int)l + 5, "access log");
 		if (!wsi->http.access_log.user_agent) {
-			lwsl_err("OOM getting user agent\n");
-			lws_free_set_NULL(wsi->http.access_log.header_log);
+			aws_lwsl_err("OOM getting user agent\n");
+			aws_lws_free_set_NULL(wsi->http.access_log.header_log);
 			return;
 		}
 		wsi->http.access_log.user_agent[0] = '\0';
 
-		if (lws_hdr_copy(wsi, wsi->http.access_log.user_agent, l + 4,
+		if (aws_lws_hdr_copy(wsi, wsi->http.access_log.user_agent, l + 4,
 				 WSI_TOKEN_HTTP_USER_AGENT) >= 0)
 			for (m = 0; m < l; m++)
 				if (wsi->http.access_log.user_agent[m] == '\"')
 					wsi->http.access_log.user_agent[m] = '\'';
 	}
-	l = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_REFERER);
+	l = aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_REFERER);
 	if (l) {
-		wsi->http.access_log.referrer = lws_malloc((unsigned int)l + 5, "referrer");
+		wsi->http.access_log.referrer = aws_lws_malloc((unsigned int)l + 5, "referrer");
 		if (!wsi->http.access_log.referrer) {
-			lwsl_err("OOM getting referrer\n");
-			lws_free_set_NULL(wsi->http.access_log.user_agent);
-			lws_free_set_NULL(wsi->http.access_log.header_log);
+			aws_lwsl_err("OOM getting referrer\n");
+			aws_lws_free_set_NULL(wsi->http.access_log.user_agent);
+			aws_lws_free_set_NULL(wsi->http.access_log.header_log);
 			return;
 		}
 		wsi->http.access_log.referrer[0] = '\0';
-		if (lws_hdr_copy(wsi, wsi->http.access_log.referrer,
+		if (aws_lws_hdr_copy(wsi, wsi->http.access_log.referrer,
 				l + 4, WSI_TOKEN_HTTP_REFERER) >= 0)
 
 			for (m = 0; m < l; m++)
@@ -146,7 +146,7 @@ lws_prepare_access_log_info(struct lws *wsi, char *uri_ptr, int uri_len, int met
 
 
 int
-lws_access_log(struct lws *wsi)
+aws_lws_access_log(struct lws *wsi)
 {
 	char *p = wsi->http.access_log.user_agent, ass[512],
 	     *p1 = wsi->http.access_log.referrer;
@@ -175,7 +175,7 @@ lws_access_log(struct lws *wsi)
 	 * we will always have space left to append an empty useragent, while
 	 * maintaining the structure of the log text
 	 */
-	l = lws_snprintf(ass, sizeof(ass) - 7, "%s %d %lu \"%s",
+	l = aws_lws_snprintf(ass, sizeof(ass) - 7, "%s %d %lu \"%s",
 			 wsi->http.access_log.header_log,
 			 wsi->http.access_log.response,
 			 wsi->http.access_log.sent, p1);
@@ -183,23 +183,23 @@ lws_access_log(struct lws *wsi)
 		p[sizeof(ass) - 6 - (unsigned int)l] = '\0';
 		l--;
 	}
-	l += lws_snprintf(ass + (unsigned int)l, sizeof(ass) - 1 - (unsigned int)l, "\" \"%s\"\n", p);
+	l += aws_lws_snprintf(ass + (unsigned int)l, sizeof(ass) - 1 - (unsigned int)l, "\" \"%s\"\n", p);
 
 	ass[sizeof(ass) - 1] = '\0';
 
 	if ((int)write(wsi->a.vhost->log_fd, ass, (size_t)l) != l)
-		lwsl_err("Failed to write log\n");
+		aws_lwsl_err("Failed to write log\n");
 
 	if (wsi->http.access_log.header_log) {
-		lws_free(wsi->http.access_log.header_log);
+		aws_lws_free(wsi->http.access_log.header_log);
 		wsi->http.access_log.header_log = NULL;
 	}
 	if (wsi->http.access_log.user_agent) {
-		lws_free(wsi->http.access_log.user_agent);
+		aws_lws_free(wsi->http.access_log.user_agent);
 		wsi->http.access_log.user_agent = NULL;
 	}
 	if (wsi->http.access_log.referrer) {
-		lws_free(wsi->http.access_log.referrer);
+		aws_lws_free(wsi->http.access_log.referrer);
 		wsi->http.access_log.referrer = NULL;
 	}
 	wsi->access_log_pending = 0;

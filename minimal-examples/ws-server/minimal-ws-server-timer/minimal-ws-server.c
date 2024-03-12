@@ -19,25 +19,25 @@
 #include <signal.h>
 
 static int
-callback_protocol(struct lws *wsi, enum lws_callback_reasons reason,
+callback_protocol(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	switch (reason) {
 
 	case LWS_CALLBACK_ESTABLISHED:
-		lwsl_user("LWS_CALLBACK_ESTABLISHED\n");
-		lws_set_timer_usecs(wsi, 20 * LWS_USEC_PER_SEC);
-		lws_set_timeout(wsi, 1, 60);
+		aws_lwsl_user("LWS_CALLBACK_ESTABLISHED\n");
+		aws_lws_set_timer_usecs(wsi, 20 * LWS_USEC_PER_SEC);
+		aws_lws_set_timeout(wsi, 1, 60);
 		break;
 
 	case LWS_CALLBACK_TIMER:
-		lwsl_user("LWS_CALLBACK_TIMER\n");
-		lws_set_timer_usecs(wsi, 20 * LWS_USEC_PER_SEC);
-		lws_set_timeout(wsi, 1, 60);
+		aws_lwsl_user("LWS_CALLBACK_TIMER\n");
+		aws_lws_set_timer_usecs(wsi, 20 * LWS_USEC_PER_SEC);
+		aws_lws_set_timeout(wsi, 1, 60);
 		break;
 
 	case LWS_CALLBACK_CLOSED:
-		lwsl_user("LWS_CALLBACK_CLOSED\n");
+		aws_lwsl_user("LWS_CALLBACK_CLOSED\n");
 		break;
 
 	default:
@@ -47,20 +47,20 @@ callback_protocol(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-static struct lws_protocols protocols[] = {
-	{ "http", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+static struct aws_lws_protocols protocols[] = {
+	{ "http", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	{ "timer", callback_protocol, 0, 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static const lws_retry_bo_t retry = {
+static const aws_lws_retry_bo_t retry = {
 	.secs_since_valid_ping = 3,
 	.secs_since_valid_hangup = 10,
 };
 
 static int interrupted;
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin",  /* serve from dir */
@@ -87,8 +87,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -100,11 +100,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws server | visit http://localhost:7681 (-s = use TLS / https)\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws server | visit http://localhost:7681 (-s = use TLS / https)\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -115,30 +115,30 @@ int main(int argc, const char **argv)
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
 #if defined(LWS_WITH_TLS)
-	if (lws_cmdline_option(argc, argv, "-s")) {
-		lwsl_user("Server using TLS\n");
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
+		aws_lwsl_user("Server using TLS\n");
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 		info.ssl_cert_filepath = "localhost-100y.cert";
 		info.ssl_private_key_filepath = "localhost-100y.key";
 	}
 #endif
 
-	if (lws_cmdline_option(argc, argv, "-h"))
+	if (aws_lws_cmdline_option(argc, argv, "-h"))
 		info.options |= LWS_SERVER_OPTION_VHOST_UPG_STRICT_HOST_CHECK;
 
-	if (lws_cmdline_option(argc, argv, "-v"))
+	if (aws_lws_cmdline_option(argc, argv, "-v"))
 		info.retry_and_idle_policy = &retry;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

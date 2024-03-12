@@ -1,15 +1,15 @@
-project(lws-api-test-lws_tokenize C)
+project(lws-api-test-aws_lws_tokenize C)
 cmake_minimum_required(VERSION 2.8.12)
 find_package(libwebsockets CONFIG REQUIRED)
 list(APPEND CMAKE_MODULE_PATH ${LWS_CMAKE_DIR})
 include(CheckCSourceCompiles)
 include(LwsCheckRequirements)
 
-set(SAMP lws-api-test-lws_tokenize)
+set(SAMP lws-api-test-aws_lws_tokenize)
 set(SRCS main.c)
 
 	add_executable(${SAMP} ${SRCS})
-	add_test(NAME api-test-lws_tokenize COMMAND lws-api-test-lws_tokenize)
+	add_test(NAME api-test-aws_lws_tokenize COMMAND lws-api-test-aws_lws_tokenize)
 
 	if (websockets_shared)
 		target_link_libraries(${SAMP} websockets_shared ${LIBWEBSOCKETS_DEP_LIBS})

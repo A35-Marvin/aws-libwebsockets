@@ -24,12 +24,12 @@
 
 #include "private-lib-core.h"
 
-lws_async_dns_server_check_t
-lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
+aws_lws_async_dns_server_check_t
+aws_lws_plat_asyncdns_init(struct aws_lws_context *context, aws_lws_sockaddr46 *sa46)
 {
-	lws_async_dns_server_check_t s = LADNS_CONF_SERVER_CHANGED;
-	lws_sockaddr46 sa46t;
-	lws_tokenize_t ts;
+	aws_lws_async_dns_server_check_t s = LADNS_CONF_SERVER_CHANGED;
+	aws_lws_sockaddr46 sa46t;
+	aws_lws_tokenize_t ts;
 	char ads[48], *r;
 	int fd, ns = 0;
 	ssize_t n;
@@ -48,13 +48,13 @@ lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
 		return LADNS_CONF_SERVER_UNKNOWN;
 
 	r[n] = '\0';
-	lws_tokenize_init(&ts, r, LWS_TOKENIZE_F_DOT_NONTERM |
+	aws_lws_tokenize_init(&ts, r, LWS_TOKENIZE_F_DOT_NONTERM |
 				  LWS_TOKENIZE_F_NO_FLOATS |
 				  LWS_TOKENIZE_F_NO_INTEGERS |
 				  LWS_TOKENIZE_F_MINUS_NONTERM |
 				  LWS_TOKENIZE_F_HASH_COMMENT);
 	do {
-		ts.e = (int8_t)lws_tokenize(&ts);
+		ts.e = (int8_t)aws_lws_tokenize(&ts);
 		if (ts.e != LWS_TOKZE_TOKEN) {
 			ns = 0;
 			continue;
@@ -75,10 +75,10 @@ lws_plat_asyncdns_init(struct lws_context *context, lws_sockaddr46 *sa46)
 
 		memcpy(ads, ts.token, ts.token_len);
 		ads[ts.token_len] = '\0';
-		if (lws_sa46_parse_numeric_address(ads, &sa46t) < 0)
+		if (aws_lws_sa46_parse_numeric_address(ads, &sa46t) < 0)
 			continue;
 
-		if (!lws_sa46_compare_ads(sa46, &sa46t))
+		if (!aws_lws_sa46_compare_ads(sa46, &sa46t))
 			s = LADNS_CONF_SERVER_SAME;
 
 		*sa46 = sa46t;

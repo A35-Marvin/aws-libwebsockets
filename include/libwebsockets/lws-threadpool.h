@@ -24,7 +24,7 @@
 
 /** \defgroup threadpool Threadpool related functions
  * ##Threadpool
- * \ingroup lwsapi
+ * \ingroup aws_lwsapi
  *
  * This allows you to create one or more pool of threads which can run tasks
  * associated with a wsi.  If the pool is busy, tasks wait on a queue.
@@ -35,19 +35,19 @@
  */
 //@{
 
-struct lws_threadpool;
-struct lws_threadpool_task;
+struct aws_lws_threadpool;
+struct aws_lws_threadpool_task;
 
-enum lws_threadpool_task_status {
+enum aws_lws_threadpool_task_status {
 	LWS_TP_STATUS_QUEUED,
 	LWS_TP_STATUS_RUNNING,
 	LWS_TP_STATUS_SYNCING,
 	LWS_TP_STATUS_STOPPING,
-	LWS_TP_STATUS_FINISHED, /* lws_threadpool_task_status() frees task */
-	LWS_TP_STATUS_STOPPED, /* lws_threadpool_task_status() frees task */
+	LWS_TP_STATUS_FINISHED, /* aws_lws_threadpool_task_status() frees task */
+	LWS_TP_STATUS_STOPPED, /* aws_lws_threadpool_task_status() frees task */
 };
 
-enum lws_threadpool_task_return {
+enum aws_lws_threadpool_task_return {
 	/** Still work to do, just confirming not being stopped */
 	LWS_TP_RETURN_CHECKING_IN,
 	/** Still work to do, enter cond_wait until service thread syncs.  This
@@ -65,14 +65,14 @@ enum lws_threadpool_task_return {
 	LWS_TP_RETURN_FLAG_OUTLIVE = 64
 };
 
-struct lws_threadpool_create_args {
+struct aws_lws_threadpool_create_args {
 	int threads;
 	int max_queue_depth;
 };
 
-struct lws_threadpool_task_args {
+struct aws_lws_threadpool_task_args {
 #if defined(LWS_WITH_SECURE_STREAMS)
-	struct lws_ss_handle *ss; /**< either wsi or ss must be set */
+	struct aws_lws_ss_handle *ss; /**< either wsi or ss must be set */
 #endif
 	struct lws *wsi;	/**< either wsi or ss must be set */
 
@@ -81,8 +81,8 @@ struct lws_threadpool_task_args {
 	char async_task;	/**< set to allow the task to shrug off the loss
 				     of the associated wsi and continue to
 				     completion */
-	enum lws_threadpool_task_return (*task)(void *user,
-					enum lws_threadpool_task_status s);
+	enum aws_lws_threadpool_task_return (*task)(void *user,
+					enum aws_lws_threadpool_task_status s);
 	/**< user must set to actual task function */
 	void (*cleanup)(struct lws *wsi, void *user);
 	/**< socket lifecycle may end while task is not stoppable, so the task
@@ -96,9 +96,9 @@ struct lws_threadpool_task_args {
 };
 
 /**
- * lws_threadpool_create() - create a pool of worker threads
+ * aws_lws_threadpool_create() - create a pool of worker threads
  *
- * \param context: the lws_context the threadpool will exist inside
+ * \param context: the aws_lws_context the threadpool will exist inside
  * \param args: argument struct prepared by caller
  * \param format: printf-type format for the task name
  * \param ...: printf type args for the task name format
@@ -106,16 +106,16 @@ struct lws_threadpool_task_args {
  * Creates a pool of worker threads with \p threads and a queue of up to
  * \p max_queue_depth waiting tasks if all the threads are busy.
  *
- * Returns NULL if OOM, or a struct lws_threadpool pointer that must be
- * destroyed by lws_threadpool_destroy().
+ * Returns NULL if OOM, or a struct aws_lws_threadpool pointer that must be
+ * destroyed by aws_lws_threadpool_destroy().
  */
-LWS_VISIBLE LWS_EXTERN struct lws_threadpool *
-lws_threadpool_create(struct lws_context *context,
-		      const struct lws_threadpool_create_args *args,
+LWS_VISIBLE LWS_EXTERN struct aws_lws_threadpool *
+aws_lws_threadpool_create(struct aws_lws_context *context,
+		      const struct aws_lws_threadpool_create_args *args,
 		      const char *format, ...) LWS_FORMAT(3);
 
 /**
- * lws_threadpool_finish() - Stop all pending and running tasks
+ * aws_lws_threadpool_finish() - Stop all pending and running tasks
  *
  * \param tp: the threadpool object
  *
@@ -126,23 +126,23 @@ lws_threadpool_create(struct lws_context *context,
  * "resurface".
  *
  * This doesn't reap tasks or free the threadpool, the reaping is done by the
- * lws_threadpool_task_status() on the done task.
+ * aws_lws_threadpool_task_status() on the done task.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_threadpool_finish(struct lws_threadpool *tp);
+aws_lws_threadpool_finish(struct aws_lws_threadpool *tp);
 
 /**
- * lws_threadpool_destroy() - Destroy a threadpool
+ * aws_lws_threadpool_destroy() - Destroy a threadpool
  *
  * \param tp: the threadpool object
  *
  * Waits for all worker threads to stop, ends the threads and frees the tp.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_threadpool_destroy(struct lws_threadpool *tp);
+aws_lws_threadpool_destroy(struct aws_lws_threadpool *tp);
 
 /**
- * lws_threadpool_enqueue() - Queue the task and run it on a worker thread when possible
+ * aws_lws_threadpool_enqueue() - Queue the task and run it on a worker thread when possible
  *
  * \param tp: the threadpool to queue / run on
  * \param args: information about what to run
@@ -158,16 +158,16 @@ lws_threadpool_destroy(struct lws_threadpool *tp);
  * task.
  *
  * Once a task is created and enqueued, it can only be destroyed by calling
- * lws_threadpool_task_status() on it after it has reached the state
+ * aws_lws_threadpool_task_status() on it after it has reached the state
  * LWS_TP_STATUS_FINISHED or LWS_TP_STATUS_STOPPED.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_threadpool_task *
-lws_threadpool_enqueue(struct lws_threadpool *tp,
-		       const struct lws_threadpool_task_args *args,
+LWS_VISIBLE LWS_EXTERN struct aws_lws_threadpool_task *
+aws_lws_threadpool_enqueue(struct aws_lws_threadpool *tp,
+		       const struct aws_lws_threadpool_task_args *args,
 		       const char *format, ...) LWS_FORMAT(3);
 
 /**
- * lws_threadpool_dequeue() - Dequeue or try to stop a running task
+ * aws_lws_threadpool_dequeue() - Dequeue or try to stop a running task
  *
  * \param wsi: the wsi whose current task we want to eliminate
  *
@@ -175,23 +175,23 @@ lws_threadpool_enqueue(struct lws_threadpool *tp,
  * has been asked to stop asynchronously.
  *
  * This doesn't free the task.  It only shortcuts it to state
- * LWS_TP_STATUS_STOPPED.  lws_threadpool_task_status() must be performed on
+ * LWS_TP_STATUS_STOPPED.  aws_lws_threadpool_task_status() must be performed on
  * the task separately once it is in LWS_TP_STATUS_STOPPED to free the task.
  *
- * DEPRECATED: You should use lws_threadpool_dequeue_task() with
- * lws_threadpool_get_task_wsi() / _ss() if you know there can only be one task
- * per connection, or call it via lws_threadpool_foreach_task_wsi() / _ss() to
+ * DEPRECATED: You should use aws_lws_threadpool_dequeue_task() with
+ * aws_lws_threadpool_get_task_wsi() / _ss() if you know there can only be one task
+ * per connection, or call it via aws_lws_threadpool_foreach_task_wsi() / _ss() to
  * get the tasks bound to the connection.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_threadpool_dequeue(struct lws *wsi) LWS_WARN_DEPRECATED;
+aws_lws_threadpool_dequeue(struct lws *wsi) LWS_WARN_DEPRECATED;
 
 LWS_VISIBLE LWS_EXTERN int
-lws_threadpool_dequeue_task(struct lws_threadpool_task *task);
+aws_lws_threadpool_dequeue_task(struct aws_lws_threadpool_task *task);
 
 
 /**
- * lws_threadpool_task_status() - reap completed tasks
+ * aws_lws_threadpool_task_status() - reap completed tasks
  *
  * \param wsi: the wsi to query the current task of
  * \param task: receives a pointer to the opaque task
@@ -207,23 +207,23 @@ lws_threadpool_dequeue_task(struct lws_threadpool_task *task);
  * Its use is to make sure the service thread has seen the state of the task
  * before deleting it.
  *
- * DEPRECATED... use lws_threadpool_task_status() instead and get the task
- * pointer from lws_threadpool_get_task_wsi() / _ss() if you know there can only
- * be one, else call it via lws_threadpool_foreach_task_wsi() / _ss()
+ * DEPRECATED... use aws_lws_threadpool_task_status() instead and get the task
+ * pointer from aws_lws_threadpool_get_task_wsi() / _ss() if you know there can only
+ * be one, else call it via aws_lws_threadpool_foreach_task_wsi() / _ss()
  */
-LWS_VISIBLE LWS_EXTERN enum lws_threadpool_task_status
-lws_threadpool_task_status_wsi(struct lws *wsi,
-			       struct lws_threadpool_task **task, void **user)
+LWS_VISIBLE LWS_EXTERN enum aws_lws_threadpool_task_status
+aws_lws_threadpool_task_status_wsi(struct lws *wsi,
+			       struct aws_lws_threadpool_task **task, void **user)
 				LWS_WARN_DEPRECATED;
 
-LWS_VISIBLE LWS_EXTERN enum lws_threadpool_task_status
-lws_threadpool_task_status(struct lws_threadpool_task *task, void **user);
+LWS_VISIBLE LWS_EXTERN enum aws_lws_threadpool_task_status
+aws_lws_threadpool_task_status(struct aws_lws_threadpool_task *task, void **user);
 
-LWS_VISIBLE LWS_EXTERN enum lws_threadpool_task_status
-lws_threadpool_task_status_noreap(struct lws_threadpool_task *task);
+LWS_VISIBLE LWS_EXTERN enum aws_lws_threadpool_task_status
+aws_lws_threadpool_task_status_noreap(struct aws_lws_threadpool_task *task);
 
 /**
- * lws_threadpool_task_sync() - Indicate to a stalled task it may continue
+ * aws_lws_threadpool_task_sync() - Indicate to a stalled task it may continue
  *
  * \param task: the task to unblock
  * \param stop: 0 = run after unblock, 1 = when he unblocks, stop him
@@ -235,10 +235,10 @@ lws_threadpool_task_status_noreap(struct lws_threadpool_task *task);
  * should still call this but with stop = 1, causing the task to finish.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_threadpool_task_sync(struct lws_threadpool_task *task, int stop);
+aws_lws_threadpool_task_sync(struct aws_lws_threadpool_task *task, int stop);
 
 /**
- * lws_threadpool_dump() - dump the state of a threadpool to the log
+ * aws_lws_threadpool_dump() - dump the state of a threadpool to the log
  *
  * \param tp: The threadpool to dump
  *
@@ -252,28 +252,28 @@ lws_threadpool_task_sync(struct lws_threadpool_task *task, int stop);
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_threadpool_dump(struct lws_threadpool *tp);
+aws_lws_threadpool_dump(struct aws_lws_threadpool *tp);
 
 
 
-LWS_VISIBLE LWS_EXTERN struct lws_threadpool_task *
-lws_threadpool_get_task_wsi(struct lws *wsi);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_threadpool_task *
+aws_lws_threadpool_get_task_wsi(struct lws *wsi);
 
 #if defined(LWS_WITH_SECURE_STREAMS)
-LWS_VISIBLE LWS_EXTERN struct lws_threadpool_task *
-lws_threadpool_get_task_ss(struct lws_ss_handle *ss);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_threadpool_task *
+aws_lws_threadpool_get_task_ss(struct aws_lws_ss_handle *ss);
 #endif
 
 
 LWS_VISIBLE LWS_EXTERN int
-lws_threadpool_foreach_task_wsi(struct lws *wsi, void *user,
-				int (*cb)(struct lws_threadpool_task *task,
+aws_lws_threadpool_foreach_task_wsi(struct lws *wsi, void *user,
+				int (*cb)(struct aws_lws_threadpool_task *task,
 					  void *user));
 
 #if defined(LWS_WITH_SECURE_STREAMS)
 LWS_VISIBLE LWS_EXTERN int
-lws_threadpool_foreach_task_ss(struct lws_ss_handle *ss, void *user,
-		int (*cb)(struct lws_threadpool_task *task, void *user));
+aws_lws_threadpool_foreach_task_ss(struct aws_lws_ss_handle *ss, void *user,
+		int (*cb)(struct aws_lws_threadpool_task *task, void *user));
 #endif
 
 

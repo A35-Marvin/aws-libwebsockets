@@ -27,30 +27,30 @@
 #include <private-lib-core.h>
 
 typedef struct ss_fetch_policy {
-	struct lws_ss_handle 	*ss;
+	struct aws_lws_ss_handle 	*ss;
 	void			*opaque_data;
 	/* ... application specific state ... */
 
-	lws_sorted_usec_list_t	sul;
+	aws_lws_sorted_usec_list_t	sul;
 
 	uint8_t			partway;
 } ss_fetch_policy_t;
 
 /* secure streams payload interface */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 ss_fetch_policy_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 	ss_fetch_policy_t *m = (ss_fetch_policy_t *)userobj;
-	struct lws_context *context = (struct lws_context *)m->opaque_data;
+	struct aws_lws_context *context = (struct aws_lws_context *)m->opaque_data;
 
 	if (flags & LWSSS_FLAG_SOM) {
-		if (lws_ss_policy_parse_begin(context, 0))
+		if (aws_lws_ss_policy_parse_begin(context, 0))
 			return LWSSSSRET_OK;
 		m->partway = 1;
 	}
 
-	if (len && lws_ss_policy_parse(context, buf, len) < 0)
+	if (len && aws_lws_ss_policy_parse(context, buf, len) < 0)
 		return LWSSSSRET_OK;
 
 	if (flags & LWSSS_FLAG_EOM)
@@ -59,50 +59,50 @@ ss_fetch_policy_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	return LWSSSSRET_OK;
 }
 
-static lws_ss_state_return_t
-ss_fetch_policy_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf,
+static aws_lws_ss_state_return_t
+ss_fetch_policy_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 		   size_t *len, int *flags)
 {
 	return LWSSSSRET_TX_DONT_SEND;
 }
 
 static void
-policy_set(lws_sorted_usec_list_t *sul)
+policy_set(aws_lws_sorted_usec_list_t *sul)
 {
-	ss_fetch_policy_t *m = lws_container_of(sul, ss_fetch_policy_t, sul);
-	struct lws_context *context = (struct lws_context *)m->opaque_data;
+	ss_fetch_policy_t *m = aws_lws_container_of(sul, ss_fetch_policy_t, sul);
+	struct aws_lws_context *context = (struct aws_lws_context *)m->opaque_data;
 
 	/*
 	 * We get called if the policy parse was successful, just after the
 	 * ss connection close that was using the vhost from the old policy
 	 */
 
-	lws_ss_destroy(&m->ss);
+	aws_lws_ss_destroy(&m->ss);
 
-	if (lws_ss_policy_set(context, "updated"))
-		lwsl_err("%s: policy set failed\n", __func__);
+	if (aws_lws_ss_policy_set(context, "updated"))
+		aws_lwsl_err("%s: policy set failed\n", __func__);
 	else {
 		context->policy_updated = 1;
 #if defined(LWS_WITH_SYS_STATE)
-		lws_state_transition_steps(&context->mgr_system,
+		aws_lws_state_transition_steps(&context->mgr_system,
 					   LWS_SYSTATE_OPERATIONAL);
 #endif
 	}
 }
 
-static lws_ss_state_return_t
-ss_fetch_policy_state(void *userobj, void *sh, lws_ss_constate_t state,
-		      lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+ss_fetch_policy_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+		      aws_lws_ss_tx_ordinal_t ack)
 {
 	ss_fetch_policy_t *m = (ss_fetch_policy_t *)userobj;
-	struct lws_context *context = (struct lws_context *)m->opaque_data;
+	struct aws_lws_context *context = (struct aws_lws_context *)m->opaque_data;
 
-	lwsl_info("%s: %s, ord 0x%x\n", __func__, lws_ss_state_name((int)state),
+	aws_lwsl_info("%s: %s, ord 0x%x\n", __func__, aws_lws_ss_state_name((int)state),
 		  (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_CREATING:
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	case LWSSSCS_CONNECTING:
 		break;
@@ -110,7 +110,7 @@ ss_fetch_policy_state(void *userobj, void *sh, lws_ss_constate_t state,
 	case LWSSSCS_QOS_ACK_REMOTE:
 		switch (m->partway) {
 		case 2:
-			lws_sul_schedule(context, 0, &m->sul, policy_set, 1);
+			aws_lws_sul_schedule(context, 0, &m->sul, policy_set, 1);
 			m->partway = 0;
 			break;
 		}
@@ -118,7 +118,7 @@ ss_fetch_policy_state(void *userobj, void *sh, lws_ss_constate_t state,
 
 	case LWSSSCS_DISCONNECTED:
 		if (m->partway == 1) {
-			lws_ss_policy_parse_abandon(context);
+			aws_lws_ss_policy_parse_abandon(context);
 			break;
 		}
 		m->partway = 0;
@@ -132,9 +132,9 @@ ss_fetch_policy_state(void *userobj, void *sh, lws_ss_constate_t state,
 }
 
 int
-lws_ss_sys_fetch_policy(struct lws_context *context)
+aws_lws_ss_sys_fetch_policy(struct aws_lws_context *context)
 {
-	lws_ss_info_t ssi;
+	aws_lws_ss_info_t ssi;
 
 	if (context->hss_fetch_policy) /* already exists */
 		return 0;
@@ -150,19 +150,19 @@ lws_ss_sys_fetch_policy(struct lws_context *context)
 	ssi.user_alloc		    = sizeof(ss_fetch_policy_t);
 	ssi.streamtype		    = "fetch_policy";
 
-	if (lws_ss_create(context, 0, &ssi, context, &context->hss_fetch_policy,
+	if (aws_lws_ss_create(context, 0, &ssi, context, &context->hss_fetch_policy,
 			  NULL, NULL)) {
 		/*
 		 * If there's no fetch_policy streamtype, it can just be we're
 		 * running on a proxied client with no policy of its own,
 		 * it's OK.
 		 */
-		lwsl_info("%s: Policy fetch ss failed (stub policy?)\n", __func__);
+		aws_lwsl_info("%s: Policy fetch ss failed (stub policy?)\n", __func__);
 
 		return 0;
 	}
 
-	lwsl_info("%s: policy fetching ongoing\n", __func__);
+	aws_lwsl_info("%s: policy fetching ongoing\n", __func__);
 
 	/* fetching it is ongoing */
 

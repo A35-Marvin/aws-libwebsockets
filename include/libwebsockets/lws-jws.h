@@ -58,17 +58,17 @@ enum enum_jws_sig_elements {
 	LWS_JWS_MAX_COMPACT_BLOCKS
 };
 
-struct lws_jws_map {
+struct aws_lws_jws_map {
 	const char *buf[LWS_JWS_MAX_COMPACT_BLOCKS];
 	uint32_t len[LWS_JWS_MAX_COMPACT_BLOCKS];
 };
 
 #define LWS_JWS_MAX_SIGS 3
 
-struct lws_jws {
-	struct lws_jwk *jwk; /* the struct lws_jwk containing the signing key */
-	struct lws_context *context; /* the lws context (used to get random) */
-	struct lws_jws_map map, map_b64;
+struct aws_lws_jws {
+	struct aws_lws_jwk *jwk; /* the struct aws_lws_jwk containing the signing key */
+	struct aws_lws_context *context; /* the lws context (used to get random) */
+	struct aws_lws_jws_map map, map_b64;
 };
 
 /* jws EC signatures do not have ASN.1 in them, meaning they're incompatible
@@ -76,18 +76,18 @@ struct lws_jws {
  */
 
 /**
- * lws_jws_init() - initialize a jws for use
+ * aws_lws_jws_init() - initialize a jws for use
  *
  * \param jws: pointer to the jws to initialize
  * \param jwk: the jwk to use with this jws
- * \param context: the lws_context to use
+ * \param context: the aws_lws_context to use
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_jws_init(struct lws_jws *jws, struct lws_jwk *jwk,
-	     struct lws_context *context);
+aws_lws_jws_init(struct aws_lws_jws *jws, struct aws_lws_jwk *jwk,
+	     struct aws_lws_context *context);
 
 /**
- * lws_jws_destroy() - scrub a jws
+ * aws_lws_jws_destroy() - scrub a jws
  *
  * \param jws: pointer to the jws to destroy
  *
@@ -96,14 +96,14 @@ lws_jws_init(struct lws_jws *jws, struct lws_jwk *jwk,
  * Elements defined in the jws are zeroed.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_jws_destroy(struct lws_jws *jws);
+aws_lws_jws_destroy(struct aws_lws_jws *jws);
 
 /**
- * lws_jws_sig_confirm_compact() - check signature
+ * aws_lws_jws_sig_confirm_compact() - check signature
  *
  * \param map: pointers and lengths for each of the unencoded JWS elements
  * \param jwk: public key
- * \param context: lws_context
+ * \param context: aws_lws_context
  * \param temp: scratchpad
  * \param temp_len: length of scratchpad
  *
@@ -114,24 +114,24 @@ lws_jws_destroy(struct lws_jws *jws);
  * Returns 0 on match, else nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_sig_confirm_compact(struct lws_jws_map *map, struct lws_jwk *jwk,
-			    struct lws_context *context,
+aws_lws_jws_sig_confirm_compact(struct aws_lws_jws_map *map, struct aws_lws_jwk *jwk,
+			    struct aws_lws_context *context,
 			    char *temp, int *temp_len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_sig_confirm_compact_b64_map(struct lws_jws_map *map_b64,
-				    struct lws_jwk *jwk,
-			            struct lws_context *context,
+aws_lws_jws_sig_confirm_compact_b64_map(struct aws_lws_jws_map *map_b64,
+				    struct aws_lws_jwk *jwk,
+			            struct aws_lws_context *context,
 			            char *temp, int *temp_len);
 
 /**
- * lws_jws_sig_confirm_compact_b64() - check signature on b64 compact JWS
+ * aws_lws_jws_sig_confirm_compact_b64() - check signature on b64 compact JWS
  *
  * \param in: pointer to b64 jose.payload[.hdr].sig
  * \param len: bytes available at \p in
  * \param map: map to take decoded non-b64 content
  * \param jwk: public key
- * \param context: lws_context
+ * \param context: aws_lws_context
  * \param temp: scratchpad
  * \param temp_len: size of scratchpad
  *
@@ -142,36 +142,36 @@ lws_jws_sig_confirm_compact_b64_map(struct lws_jws_map *map_b64,
  * Returns 0 on match, else nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_sig_confirm_compact_b64(const char *in, size_t len,
-				struct lws_jws_map *map,
-				struct lws_jwk *jwk,
-				struct lws_context *context,
+aws_lws_jws_sig_confirm_compact_b64(const char *in, size_t len,
+				struct aws_lws_jws_map *map,
+				struct aws_lws_jwk *jwk,
+				struct aws_lws_context *context,
 				char *temp, int *temp_len);
 
 /**
- * lws_jws_sig_confirm() - check signature on plain + b64 JWS elements
+ * aws_lws_jws_sig_confirm() - check signature on plain + b64 JWS elements
  *
  * \param map_b64: pointers and lengths for each of the b64-encoded JWS elements
  * \param map: pointers and lengths for each of the unencoded JWS elements
  * \param jwk: public key
- * \param context: lws_context
+ * \param context: aws_lws_context
  *
  * Confirms the signature on a JWS.  Use if you have you already have both b64
  * compact layout (jose.payload.hdr.sig) and decoded JWS elements in maps.
  *
- * If you had the b64 string and called lws_jws_compact_decode() on it, you
+ * If you had the b64 string and called aws_lws_jws_compact_decode() on it, you
  * will end up with both maps, and can use this api version, saving needlessly
  * regenerating any temp map.
  *
  * Returns 0 on match, else nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_sig_confirm(struct lws_jws_map *map_b64, /* b64-encoded */
-		    struct lws_jws_map *map,	/* non-b64 */
-		    struct lws_jwk *jwk, struct lws_context *context);
+aws_lws_jws_sig_confirm(struct aws_lws_jws_map *map_b64, /* b64-encoded */
+		    struct aws_lws_jws_map *map,	/* non-b64 */
+		    struct aws_lws_jwk *jwk, struct aws_lws_context *context);
 
 /**
- * lws_jws_sign_from_b64() - add b64 sig to b64 hdr + payload
+ * aws_lws_jws_sign_from_b64() - add b64 sig to b64 hdr + payload
  *
  * \param jose: jose header information
  * \param jws: information to include in the signature
@@ -192,11 +192,11 @@ lws_jws_sig_confirm(struct lws_jws_map *map_b64, /* b64-encoded */
  * -1 indicates failure.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_sign_from_b64(struct lws_jose *jose, struct lws_jws *jws, char *b64_sig,
+aws_lws_jws_sign_from_b64(struct aws_lws_jose *jose, struct aws_lws_jws *jws, char *b64_sig,
 			size_t sig_len);
 
 /**
- * lws_jws_compact_decode() - converts and maps compact serialization b64 sections
+ * aws_lws_jws_compact_decode() - converts and maps compact serialization b64 sections
  *
  * \param in: the incoming compact serialized b64
  * \param len: the length of the incoming compact serialized b64
@@ -213,22 +213,22 @@ lws_jws_sign_from_b64(struct lws_jose *jose, struct lws_jws *jws, char *b64_sig,
  * blocks.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_compact_decode(const char *in, int len, struct lws_jws_map *map,
-		struct lws_jws_map *map_b64, char *out, int *out_len);
+aws_lws_jws_compact_decode(const char *in, int len, struct aws_lws_jws_map *map,
+		struct aws_lws_jws_map *map_b64, char *out, int *out_len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_compact_encode(struct lws_jws_map *map_b64, /* b64-encoded */
-		       const struct lws_jws_map *map,	/* non-b64 */
+aws_lws_jws_compact_encode(struct aws_lws_jws_map *map_b64, /* b64-encoded */
+		       const struct aws_lws_jws_map *map,	/* non-b64 */
 		       char *buf, int *out_len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_sig_confirm_json(const char *in, size_t len,
-			 struct lws_jws *jws, struct lws_jwk *jwk,
-			 struct lws_context *context,
+aws_lws_jws_sig_confirm_json(const char *in, size_t len,
+			 struct aws_lws_jws *jws, struct aws_lws_jwk *jwk,
+			 struct aws_lws_context *context,
 			 char *temp, int *temp_len);
 
 /**
- * lws_jws_write_flattened_json() - create flattened JSON sig
+ * aws_lws_jws_write_flattened_json() - create flattened JSON sig
  *
  * \param jws: information to include in the signature
  * \param flattened: output buffer for JSON
@@ -236,10 +236,10 @@ lws_jws_sig_confirm_json(const char *in, size_t len,
  *
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_write_flattened_json(struct lws_jws *jws, char *flattened, size_t len);
+aws_lws_jws_write_flattened_json(struct aws_lws_jws *jws, char *flattened, size_t len);
 
 /**
- * lws_jws_write_compact() - create flattened JSON sig
+ * aws_lws_jws_write_compact() - create flattened JSON sig
  *
  * \param jws: information to include in the signature
  * \param compact: output buffer for compact format
@@ -247,7 +247,7 @@ lws_jws_write_flattened_json(struct lws_jws *jws, char *flattened, size_t len);
  *
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_write_compact(struct lws_jws *jws, char *compact, size_t len);
+aws_lws_jws_write_compact(struct aws_lws_jws *jws, char *compact, size_t len);
 
 
 
@@ -258,7 +258,7 @@ lws_jws_write_compact(struct lws_jws *jws, char *compact, size_t len);
 
 
 /**
- * lws_jws_dup_element() - allocate space for an element and copy data into it
+ * aws_lws_jws_dup_element() - allocate space for an element and copy data into it
  *
  * \param map: map to create the element in
  * \param idx: index of element in the map to create
@@ -278,14 +278,14 @@ lws_jws_write_compact(struct lws_jws *jws, char *compact, size_t len);
  * *temp_len is reduced by actual_alloc if successful.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_dup_element(struct lws_jws_map *map, int idx,
+aws_lws_jws_dup_element(struct aws_lws_jws_map *map, int idx,
 		    char *temp, int *temp_len, const void *in, size_t in_len,
 		    size_t actual_alloc);
 
 /**
- * lws_jws_randomize_element() - create an element and fill with random
+ * aws_lws_jws_randomize_element() - create an element and fill with random
  *
- * \param context: lws_context used for random
+ * \param context: aws_lws_context used for random
  * \param map: map to create the element in
  * \param idx: index of element in the map to create
  * \param temp: space to allocate in
@@ -303,13 +303,13 @@ lws_jws_dup_element(struct lws_jws_map *map, int idx,
  * *temp_len is reduced by actual_alloc if successful.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_randomize_element(struct lws_context *context,
-			  struct lws_jws_map *map,
+aws_lws_jws_randomize_element(struct aws_lws_context *context,
+			  struct aws_lws_jws_map *map,
 			  int idx, char *temp, int *temp_len, size_t random_len,
 			  size_t actual_alloc);
 
 /**
- * lws_jws_alloc_element() - create an element and reserve space for content
+ * aws_lws_jws_alloc_element() - create an element and reserve space for content
  *
  * \param map: map to create the element in
  * \param idx: index of element in the map to create
@@ -328,11 +328,11 @@ lws_jws_randomize_element(struct lws_context *context,
  * *temp_len is reduced by actual_alloc if successful.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_alloc_element(struct lws_jws_map *map, int idx, char *temp,
+aws_lws_jws_alloc_element(struct aws_lws_jws_map *map, int idx, char *temp,
 		      int *temp_len, size_t len, size_t actual_alloc);
 
 /**
- * lws_jws_encode_b64_element() - create an b64-encoded element
+ * aws_lws_jws_encode_b64_element() - create an b64-encoded element
  *
  * \param map: map to create the element in
  * \param idx: index of element in the map to create
@@ -351,13 +351,13 @@ lws_jws_alloc_element(struct lws_jws_map *map, int idx, char *temp,
  * *temp_len is reduced by actual_alloc if successful.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_encode_b64_element(struct lws_jws_map *map, int idx,
+aws_lws_jws_encode_b64_element(struct aws_lws_jws_map *map, int idx,
 			   char *temp, int *temp_len, const void *in,
 			   size_t in_len);
 
 
 /**
- * lws_jws_b64_compact_map() - find block starts and lengths in compact b64
+ * aws_lws_jws_b64_compact_map() - find block starts and lengths in compact b64
  *
  * \param in: pointer to b64 jose.payload[.hdr].sig
  * \param len: bytes available at \p in
@@ -371,11 +371,11 @@ lws_jws_encode_b64_element(struct lws_jws_map *map, int idx,
  */
 
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_b64_compact_map(const char *in, int len, struct lws_jws_map *map);
+aws_lws_jws_b64_compact_map(const char *in, int len, struct aws_lws_jws_map *map);
 
 
 /**
- * lws_jws_base64_enc() - encode input data into b64url data
+ * aws_lws_jws_base64_enc() - encode input data into b64url data
  *
  * \param in: the incoming plaintext
  * \param in_len: the length of the incoming plaintext in bytes
@@ -385,10 +385,10 @@ lws_jws_b64_compact_map(const char *in, int len, struct lws_jws_map *map);
  * Returns either -1 if problems, or the number of bytes written to \p out.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_base64_enc(const char *in, size_t in_len, char *out, size_t out_max);
+aws_lws_jws_base64_enc(const char *in, size_t in_len, char *out, size_t out_max);
 
 /**
- * lws_jws_encode_section() - encode input data into b64url data,
+ * aws_lws_jws_encode_section() - encode input data into b64url data,
  *				prepending . if not first
  *
  * \param in: the incoming plaintext
@@ -401,13 +401,13 @@ lws_jws_base64_enc(const char *in, size_t in_len, char *out, size_t out_max);
  * If the section is not the first one, '.' is prepended.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_encode_section(const char *in, size_t in_len, int first, char **p,
+aws_lws_jws_encode_section(const char *in, size_t in_len, int first, char **p,
 		       char *end);
 
 /**
- * lws_jwt_signed_validate() - check a compact JWT against a key and alg
+ * aws_lws_jwt_signed_validate() - check a compact JWT against a key and alg
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param jwk: the key for checking the signature
  * \param alg_list: the expected alg name, like "ES512"
  * \param com: the compact JWT
@@ -428,14 +428,14 @@ lws_jws_encode_section(const char *in, size_t in_len, int first, char **p,
  * transformations of the B64 JWS in the JWT.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwt_signed_validate(struct lws_context *ctx, struct lws_jwk *jwk,
+aws_lws_jwt_signed_validate(struct aws_lws_context *ctx, struct aws_lws_jwk *jwk,
 			const char *alg_list, const char *com, size_t len,
 			char *temp, int tl, char *out, size_t *out_len);
 
 /**
- * lws_jwt_sign_compact() - generate a compact JWT using a key and alg
+ * aws_lws_jwt_sign_compact() - generate a compact JWT using a key and alg
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param jwk: the signing key
  * \param alg: the signing alg name, like "ES512"
  * \param out: the output buffer to hold the signed JWT in compact form
@@ -453,11 +453,11 @@ lws_jwt_signed_validate(struct lws_context *ctx, struct lws_jwk *jwk,
  * representations.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwt_sign_compact(struct lws_context *ctx, struct lws_jwk *jwk,
+aws_lws_jwt_sign_compact(struct aws_lws_context *ctx, struct aws_lws_jwk *jwk,
 		     const char *alg, char *out, size_t *out_len, char *temp,
 		     int tl, const char *format, ...) LWS_FORMAT(8);
 
-struct lws_jwt_sign_info {
+struct aws_lws_jwt_sign_info {
 	const char *alg;
 	/**< entry: signing alg name, like "RS256" */
 	const char *jose_hdr;
@@ -477,9 +477,9 @@ struct lws_jwt_sign_info {
 };
 
 /**
- * lws_jwt_sign_compact() - generate a compact JWT using a key and JOSE header
+ * aws_lws_jwt_sign_compact() - generate a compact JWT using a key and JOSE header
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param jwk: the signing key
  * \param info: info describing the JWT's content and output/temp buffers
  * \param format: a printf style format specification of the claims object
@@ -494,11 +494,11 @@ struct lws_jwt_sign_info {
  * representations.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwt_sign_via_info(struct lws_context *ctx, struct lws_jwk *jwk,
-         const struct lws_jwt_sign_info *info, const char *format, ...) LWS_FORMAT(4);
+aws_lws_jwt_sign_via_info(struct aws_lws_context *ctx, struct aws_lws_jwk *jwk,
+         const struct aws_lws_jwt_sign_info *info, const char *format, ...) LWS_FORMAT(4);
 
 /**
- * lws_jwt_token_sanity() - check a validated jwt payload for sanity
+ * aws_lws_jwt_token_sanity() - check a validated jwt payload for sanity
  *
  * \param in: the JWT payload
  * \param in_len: the length of the JWT payload
@@ -524,14 +524,14 @@ lws_jwt_sign_via_info(struct lws_context *ctx, struct lws_jwk *jwk,
  * Returns 0 if no inconsistency, else nonzero.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwt_token_sanity(const char *in, size_t in_len,
+aws_lws_jwt_token_sanity(const char *in, size_t in_len,
 		     const char *iss, const char *aud, const char *csrf_in,
 		     char *sub, size_t sub_len, unsigned long *exp_unix_time);
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 
-struct lws_jwt_sign_set_cookie {
-	struct lws_jwk			*jwk;
+struct aws_lws_jwt_sign_set_cookie {
+	struct aws_lws_jwk			*jwk;
 	/**< entry: required signing key */
 	const char			*alg;
 	/**< entry: required signing alg, eg, "ES512" */
@@ -558,7 +558,7 @@ struct lws_jwt_sign_set_cookie {
 };
 
 /**
- * lws_jwt_sign_token_set_http_cookie() - creates sets a JWT in a wsi cookie
+ * aws_lws_jwt_sign_token_set_http_cookie() - creates sets a JWT in a wsi cookie
  *
  * \param wsi: the wsi to create the cookie header on
  * \param i: structure describing what should be in the JWT
@@ -589,12 +589,12 @@ struct lws_jwt_sign_set_cookie {
  * if both LWS_WITH_JOSE and one of the http-related roles enabled.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
-				   const struct lws_jwt_sign_set_cookie *i,
+aws_lws_jwt_sign_token_set_http_cookie(struct lws *wsi,
+				   const struct aws_lws_jwt_sign_set_cookie *i,
 				   uint8_t **p, uint8_t *end);
 LWS_VISIBLE LWS_EXTERN int
-lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
-				     struct lws_jwt_sign_set_cookie *i,
+aws_lws_jwt_get_http_cookie_validate_jwt(struct lws *wsi,
+				     struct aws_lws_jwt_sign_set_cookie *i,
 				     char *out, size_t *out_len);
 #endif
 

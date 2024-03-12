@@ -46,11 +46,11 @@ static const char *html =
 
 
 typedef struct myss {
-	struct lws_ss_handle 		*ss;
+	struct aws_lws_ss_handle 		*ss;
 	void				*opaque_data;
 	/* ... application specific state ... */
 
-	lws_sorted_usec_list_t		sul;
+	aws_lws_sorted_usec_list_t		sul;
 	int				count;
 	char				upgraded;
 
@@ -60,13 +60,13 @@ typedef struct myss {
  * This is the Secure Streams Server RX and TX for HTTP(S)
  */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 myss_srv_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 //	myss_srv_t *m = (myss_srv_t *)userobj;
 
-	lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
-	lwsl_hexdump_info(buf, len);
+	aws_lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
+	aws_lwsl_hexdump_info(buf, len);
 
 	/*
 	 * If we received the whole message, for our example it means
@@ -80,8 +80,8 @@ myss_srv_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_srv_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+myss_srv_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	int *flags)
 {
 	myss_srv_t *m = (myss_srv_t *)userobj;
@@ -95,7 +95,7 @@ myss_srv_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 
 	*flags = LWSSS_FLAG_SOM | LWSSS_FLAG_EOM;
 
-	lws_strncpy((char *)buf, send, *len);
+	aws_lws_strncpy((char *)buf, send, *len);
 	*len = strlen(send);
 
 	return 0;
@@ -107,13 +107,13 @@ myss_srv_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
  * rx and tx handlers to here.
  */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 myss_ws_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 //	myss_srv_t *m = (myss_srv_t *)userobj;
 
-	lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
-	lwsl_hexdump_info(buf, len);
+	aws_lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
+	aws_lwsl_hexdump_info(buf, len);
 
 	/*
 	 * If we received the whole message, for our example it means
@@ -130,46 +130,46 @@ myss_ws_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 /* this is the callback that mediates sending the incrementing number */
 
 static void
-spam_sul_cb(struct lws_sorted_usec_list *sul)
+spam_sul_cb(struct aws_lws_sorted_usec_list *sul)
 {
-	myss_srv_t *m = lws_container_of(sul, myss_srv_t, sul);
+	myss_srv_t *m = aws_lws_container_of(sul, myss_srv_t, sul);
 
-	if (!lws_ss_request_tx(m->ss))
-		lws_sul_schedule(lws_ss_get_context(m->ss), 0, &m->sul, spam_sul_cb,
+	if (!aws_lws_ss_request_tx(m->ss))
+		aws_lws_sul_schedule(aws_lws_ss_get_context(m->ss), 0, &m->sul, spam_sul_cb,
 			 100 * LWS_US_PER_MS);
 }
 
-static lws_ss_state_return_t
-myss_ws_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+myss_ws_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	int *flags)
 {
 	myss_srv_t *m = (myss_srv_t *)userobj;
 
 	*flags = LWSSS_FLAG_SOM | LWSSS_FLAG_EOM;
 
-	*len = (unsigned int)lws_snprintf((char *)buf, *len, "hello from ws %d", m->count++);
+	*len = (unsigned int)aws_lws_snprintf((char *)buf, *len, "hello from ws %d", m->count++);
 
-	lws_sul_schedule(lws_ss_get_context(m->ss), 0, &m->sul, spam_sul_cb,
+	aws_lws_sul_schedule(aws_lws_ss_get_context(m->ss), 0, &m->sul, spam_sul_cb,
 			 100 * LWS_US_PER_MS);
 
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_srv_state(void *userobj, void *sh, lws_ss_constate_t state,
-	   lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+myss_srv_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+	   aws_lws_ss_tx_ordinal_t ack)
 {
 	myss_srv_t *m = (myss_srv_t *)userobj;
 
-	lwsl_user("%s: %p %s, ord 0x%x\n", __func__, m->ss,
-		  lws_ss_state_name((int)state), (unsigned int)ack);
+	aws_lwsl_user("%s: %p %s, ord 0x%x\n", __func__, m->ss,
+		  aws_lws_ss_state_name((int)state), (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_DISCONNECTED:
-		lws_sul_cancel(&m->sul);
+		aws_lws_sul_cancel(&m->sul);
 		break;
 	case LWSSSCS_CREATING:
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	case LWSSSCS_ALL_RETRIES_FAILED:
 		/* if we're out of retries, we want to close the app and FAIL */
@@ -186,21 +186,21 @@ myss_srv_state(void *userobj, void *sh, lws_ss_constate_t state,
 		 *
 		 * We do want to ack the transaction...
 		 */
-		lws_ss_server_ack(m->ss, 0);
+		aws_lws_ss_server_ack(m->ss, 0);
 		/*
 		 * ... it's going to be either text/html or multipart ...
 		 */
 		if (multipart) {
-			if (lws_ss_set_metadata(m->ss, "mime",
+			if (aws_lws_ss_set_metadata(m->ss, "mime",
 			   "multipart/form-data; boundary=aBoundaryString", 45))
 				return LWSSSSRET_DISCONNECT_ME;
 		} else
-			if (lws_ss_set_metadata(m->ss, "mime", "text/html", 9))
+			if (aws_lws_ss_set_metadata(m->ss, "mime", "text/html", 9))
 				return LWSSSSRET_DISCONNECT_ME;
 		/*
 		 * ...it's going to be whatever size it is (and request tx)
 		 */
-		return lws_ss_request_tx_len(m->ss, (unsigned long)
+		return aws_lws_ss_request_tx_len(m->ss, (unsigned long)
 				(multipart ? strlen(multipart_html) :
 							 strlen(html)));
 
@@ -214,8 +214,8 @@ myss_srv_state(void *userobj, void *sh, lws_ss_constate_t state,
 		 */
 
 		m->upgraded = 1;
-		lws_ss_change_handlers(m->ss, myss_ws_rx, myss_ws_tx, NULL);
-		return lws_ss_request_tx(m->ss); /* we want to start sending numbers */
+		aws_lws_ss_change_handlers(m->ss, myss_ws_rx, myss_ws_tx, NULL);
+		return aws_lws_ss_request_tx(m->ss); /* we want to start sending numbers */
 
 	default:
 		break;
@@ -224,7 +224,7 @@ myss_srv_state(void *userobj, void *sh, lws_ss_constate_t state,
 	return 0;
 }
 
-const lws_ss_info_t ssi_server = {
+const aws_lws_ss_info_t ssi_server = {
 	.handle_offset			= offsetof(myss_srv_t, ss),
 	.opaque_user_data_offset	= offsetof(myss_srv_t, opaque_data),
 	.streamtype			= "myserver",

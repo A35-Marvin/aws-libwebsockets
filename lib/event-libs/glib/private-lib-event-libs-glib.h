@@ -24,22 +24,22 @@
 
 #include <glib.h>
 
-typedef struct lws_glib_tag {
+typedef struct aws_lws_glib_tag {
 	GSource			*gs;
 	guint			tag;
-} lws_glib_tag_t;
+} aws_lws_glib_tag_t;
 
-struct lws_pt_eventlibs_glib {
+struct aws_lws_pt_eventlibs_glib {
 	GMainLoop		*loop;
 
-	lws_glib_tag_t		hrtimer;
-	lws_glib_tag_t		sigint;
-	lws_glib_tag_t		idle;
+	aws_lws_glib_tag_t		hrtimer;
+	aws_lws_glib_tag_t		sigint;
+	aws_lws_glib_tag_t		idle;
 
-	//struct lws_signal_watcher_libuv w_sigint;
+	//struct aws_lws_signal_watcher_libuv w_sigint;
 };
 
-struct lws_io_watcher_glib_subclass {
+struct aws_lws_io_watcher_glib_subclass {
 	GSource		base;
 	struct lws	*wsi;
 	gpointer	tag;
@@ -49,13 +49,13 @@ struct lws_io_watcher_glib_subclass {
  * One of these is embedded in each wsi
  */
 
-struct lws_io_watcher_glib {
-	struct lws_io_watcher_glib_subclass *source;	/* these are created and destroyed by glib */
-	struct lws_context *context;
+struct aws_lws_io_watcher_glib {
+	struct aws_lws_io_watcher_glib_subclass *source;	/* these are created and destroyed by glib */
+	struct aws_lws_context *context;
 	uint8_t actual_events;
 };
 
-struct lws_wsi_eventlibs_glib {
-	struct lws_io_watcher_glib w_read;
+struct aws_lws_wsi_eventlibs_glib {
+	struct aws_lws_io_watcher_glib w_read;
 };
 

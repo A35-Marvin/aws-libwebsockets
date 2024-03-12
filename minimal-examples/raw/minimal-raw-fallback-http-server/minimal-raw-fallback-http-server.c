@@ -27,7 +27,7 @@ struct pss__raw_echo {
 
 static int interrupted;
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -48,41 +48,41 @@ static const struct lws_http_mount mount = {
 };
 
 static int
-callback_raw_echo(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+callback_raw_echo(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 		  void *in, size_t len)
 {
 	struct pss__raw_echo *pss = (struct pss__raw_echo *)user;
 
 	switch (reason) {
 	case LWS_CALLBACK_RAW_ADOPT:
-		lwsl_notice("LWS_CALLBACK_RAW_ADOPT\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_ADOPT\n");
 		break;
 
 	case LWS_CALLBACK_RAW_RX:
-		lwsl_notice("LWS_CALLBACK_RAW_RX %ld\n", (long)len);
+		aws_lwsl_notice("LWS_CALLBACK_RAW_RX %ld\n", (long)len);
 		if (len > sizeof(pss->buf))
 			len = sizeof(pss->buf);
 		memcpy(pss->buf, in, len);
 		pss->len = (int)len;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_RAW_CLOSE:
-		lwsl_notice("LWS_CALLBACK_RAW_CLOSE\n");
+		aws_lwsl_notice("LWS_CALLBACK_RAW_CLOSE\n");
 		break;
 
 	case LWS_CALLBACK_RAW_WRITEABLE:
-		lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE\n");
-		lws_write(wsi, pss->buf, (unsigned int)pss->len, LWS_WRITE_HTTP);
+		aws_lwsl_notice("LWS_CALLBACK_RAW_WRITEABLE\n");
+		aws_lws_write(wsi, pss->buf, (unsigned int)pss->len, LWS_WRITE_HTTP);
 		break;
 	default:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{ "raw-echo", callback_raw_echo, sizeof(struct pss__raw_echo), 2048, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -94,18 +94,18 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal raw fallback http server | "
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal raw fallback http server | "
 		  "visit http://localhost:7681\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
@@ -120,30 +120,30 @@ int main(int argc, const char **argv)
 	info.listen_accept_protocol = "raw-echo";
 
 #if defined(LWS_WITH_TLS)
-	if (lws_cmdline_option(argc, argv, "-s")) {
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
 				LWS_SERVER_OPTION_ALLOW_NON_SSL_ON_SSL_PORT;
 		info.ssl_cert_filepath = "localhost-100y.cert";
 		info.ssl_private_key_filepath = "localhost-100y.key";
 
-		if (lws_cmdline_option(argc, argv, "-u"))
+		if (aws_lws_cmdline_option(argc, argv, "-u"))
 			info.options |= LWS_SERVER_OPTION_REDIRECT_HTTP_TO_HTTPS;
 
-		if (lws_cmdline_option(argc, argv, "-h"))
+		if (aws_lws_cmdline_option(argc, argv, "-h"))
 			info.options |= LWS_SERVER_OPTION_ALLOW_HTTP_ON_HTTPS_LISTENER;
 	}
 #endif
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

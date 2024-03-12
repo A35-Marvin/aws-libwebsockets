@@ -8,7 +8,7 @@
  *
  * This version holds a single message at a time, which may be lost if a new
  * message comes.  See the minimal-ws-server-ring sample for the same thing
- * but using an lws_ring ringbuffer to hold up to 8 messages at a time.
+ * but using an aws_lws_ring ringbuffer to hold up to 8 messages at a time.
  */
 
 #if !defined (LWS_PLUGIN_STATIC)
@@ -37,9 +37,9 @@ struct per_session_data__minimal {
 /* one of these is created for each vhost our protocol is used with */
 
 struct per_vhost_data__minimal {
-	struct lws_context *context;
-	struct lws_vhost *vhost;
-	const struct lws_protocols *protocol;
+	struct aws_lws_context *context;
+	struct aws_lws_vhost *vhost;
+	const struct aws_lws_protocols *protocol;
 
 	struct per_session_data__minimal *pss_list; /* linked-list of live pss*/
 
@@ -60,25 +60,25 @@ __minimal_destroy_message(void *_msg)
 }
 
 static int
-callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal *pss =
 			(struct per_session_data__minimal *)user;
 	struct per_vhost_data__minimal *vhd =
 			(struct per_vhost_data__minimal *)
-			lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-					lws_get_protocol(wsi));
+			aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+					aws_lws_get_protocol(wsi));
 	int m;
 
 	switch (reason) {
 	case LWS_CALLBACK_PROTOCOL_INIT:
-		vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-				lws_get_protocol(wsi),
+		vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+				aws_lws_get_protocol(wsi),
 				sizeof(struct per_vhost_data__minimal));
-		vhd->context = lws_get_context(wsi);
-		vhd->protocol = lws_get_protocol(wsi);
-		vhd->vhost = lws_get_vhost(wsi);
+		vhd->context = aws_lws_get_context(wsi);
+		vhd->protocol = aws_lws_get_protocol(wsi);
+		vhd->vhost = aws_lws_get_vhost(wsi);
 		break;
 
 	case LWS_CALLBACK_ESTABLISHED:
@@ -91,13 +91,13 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 
 	case LWS_CALLBACK_CLOSED:
 		/* remove our closing pss from the list of live pss */
-		lws_start_foreach_llp(struct per_session_data__minimal **,
+		aws_lws_start_foreach_llp(struct per_session_data__minimal **,
 				      ppss, vhd->pss_list) {
 			if (*ppss == pss) {
 				*ppss = pss->pss_list;
 				break;
 			}
-		} lws_end_foreach_llp(ppss, pss_list);
+		} aws_lws_end_foreach_llp(ppss, pss_list);
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
@@ -108,10 +108,10 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 			break;
 
 		/* notice we allowed for LWS_PRE in the payload already */
-		m = lws_write(wsi, ((unsigned char *)vhd->amsg.payload) +
+		m = aws_lws_write(wsi, ((unsigned char *)vhd->amsg.payload) +
 			      LWS_PRE, vhd->amsg.len, LWS_WRITE_TEXT);
 		if (m < (int)vhd->amsg.len) {
-			lwsl_err("ERROR %d writing to ws socket\n", m);
+			aws_lwsl_err("ERROR %d writing to ws socket\n", m);
 			return -1;
 		}
 
@@ -126,7 +126,7 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		/* notice we over-allocate by LWS_PRE */
 		vhd->amsg.payload = malloc(LWS_PRE + len);
 		if (!vhd->amsg.payload) {
-			lwsl_user("OOM: dropping\n");
+			aws_lwsl_user("OOM: dropping\n");
 			break;
 		}
 
@@ -137,10 +137,10 @@ callback_minimal(struct lws *wsi, enum lws_callback_reasons reason,
 		 * let everybody know we want to write something on them
 		 * as soon as they are ready
 		 */
-		lws_start_foreach_llp(struct per_session_data__minimal **,
+		aws_lws_start_foreach_llp(struct per_session_data__minimal **,
 				      ppss, vhd->pss_list) {
-			lws_callback_on_writable((*ppss)->wsi);
-		} lws_end_foreach_llp(ppss, pss_list);
+			aws_lws_callback_on_writable((*ppss)->wsi);
+		} aws_lws_end_foreach_llp(ppss, pss_list);
 		break;
 
 	default:

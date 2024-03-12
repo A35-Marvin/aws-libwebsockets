@@ -31,7 +31,7 @@
 
 #define LWS_SESSION_TAG_LEN 96
 
-struct lws_tls_session_dump
+struct aws_lws_tls_session_dump
 {
 	char			tag[LWS_SESSION_TAG_LEN];
 	void			*blob;
@@ -39,11 +39,11 @@ struct lws_tls_session_dump
 	size_t			blob_len;
 };
 
-typedef int (*lws_tls_sess_cb_t)(struct lws_context *cx,
-				 struct lws_tls_session_dump *info);
+typedef int (*aws_lws_tls_sess_cb_t)(struct aws_lws_context *cx,
+				 struct aws_lws_tls_session_dump *info);
 
 /**
- * lws_tls_session_dump_save() - serialize a tls session via a callback
+ * aws_lws_tls_session_dump_save() - serialize a tls session via a callback
  *
  * \param vh: the vhost to load into the session cache
  * \param host: the name of the host the session relates to
@@ -57,11 +57,11 @@ typedef int (*lws_tls_sess_cb_t)(struct lws_context *cx,
  * \p opq is passed to the callback without being used by lws at all.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_session_dump_save(struct lws_vhost *vh, const char *host, uint16_t port,
-			  lws_tls_sess_cb_t cb_save, void *opq);
+aws_lws_tls_session_dump_save(struct aws_lws_vhost *vh, const char *host, uint16_t port,
+			  aws_lws_tls_sess_cb_t cb_save, void *opq);
 
 /**
- * lws_tls_session_dump_load() - deserialize a tls session via a callback
+ * aws_lws_tls_session_dump_load() - deserialize a tls session via a callback
  *
  * \param vh: the vhost to load into the session cache
  * \param host: the name of the host the session relates to
@@ -75,7 +75,7 @@ lws_tls_session_dump_save(struct lws_vhost *vh, const char *host, uint16_t port,
  * \p opq is passed to the callback without being used by lws at all.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_tls_session_dump_load(struct lws_vhost *vh, const char *host, uint16_t port,
-			  lws_tls_sess_cb_t cb_load, void *opq);
+aws_lws_tls_session_dump_load(struct aws_lws_vhost *vh, const char *host, uint16_t port,
+			  aws_lws_tls_sess_cb_t cb_load, void *opq);
 
 ///@}

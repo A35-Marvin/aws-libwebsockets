@@ -21,26 +21,26 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- * lws_test_sequencer manages running an array of unit tests.
+ * aws_lws_test_sequencer manages running an array of unit tests.
  */
 
-typedef void (*lws_test_sequence_cb)(const void *cb_user);
+typedef void (*aws_lws_test_sequence_cb)(const void *cb_user);
 
-typedef struct lws_test_sequencer_args {
-	lws_abs_t		*abs; /* abstract protocol + unit test txport */
-	lws_unit_test_t	*tests; /* array of lws_unit_test_t */
+typedef struct aws_lws_test_sequencer_args {
+	aws_lws_abs_t		*abs; /* abstract protocol + unit test txport */
+	aws_lws_unit_test_t	*tests; /* array of aws_lws_unit_test_t */
 	int			*results; /* takes result dispositions */
 	int			results_max; /* max space usable in results */
 	int			*count_tests; /* count of done tests */
 	int			*count_passes; /* count of passed tests */
-	lws_test_sequence_cb	cb; /* completion callback */
+	aws_lws_test_sequence_cb	cb; /* completion callback */
 	void			*cb_user; /* opaque user ptr given to cb */
-} lws_test_sequencer_args_t;
+} aws_lws_test_sequencer_args_t;
 
 /**
- * lws_abs_unit_test_sequencer() - helper to sequence multiple unit tests
+ * aws_lws_abs_unit_test_sequencer() - helper to sequence multiple unit tests
  *
- * \param args: lws_test_sequencer_args_t prepared with arguments for the tests
+ * \param args: aws_lws_test_sequencer_args_t prepared with arguments for the tests
  *
  * This helper sequences one or more unit tests to run and collects the results.
  *
@@ -58,4 +58,4 @@ typedef struct lws_test_sequencer_args {
  * The callback args->cb is called when the tests have been done.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_abs_unit_test_sequencer(const lws_test_sequencer_args_t *args);
+aws_lws_abs_unit_test_sequencer(const aws_lws_test_sequencer_args_t *args);

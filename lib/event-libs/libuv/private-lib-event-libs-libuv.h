@@ -41,50 +41,50 @@
 		{ uv_handle_t *_uht = (uv_handle_t *)(_x); _uht->data = _pt; \
 		_pt->count_event_loop_static_asset_handles++; }
 #define LWS_UV_REFCOUNT_STATIC_HANDLE_TO_PT(_x) \
-		((struct lws_context_per_thread *)((uv_handle_t *)((_x)->data)))
+		((struct aws_lws_context_per_thread *)((uv_handle_t *)((_x)->data)))
 #define LWS_UV_REFCOUNT_STATIC_HANDLE_DESTROYED(_x) \
 		(--(LWS_UV_REFCOUNT_STATIC_HANDLE_TO_PT(_x)-> \
 				count_event_loop_static_asset_handles))
 
-struct lws_signal_watcher_libuv {
+struct aws_lws_signal_watcher_libuv {
 	uv_signal_t watcher;
-	struct lws_context *context;
+	struct aws_lws_context *context;
 };
 
-struct lws_pt_eventlibs_libuv {
+struct aws_lws_pt_eventlibs_libuv {
 	uv_loop_t			*io_loop;
-	struct lws_context_per_thread	*pt;
+	struct aws_lws_context_per_thread	*pt;
 	uv_signal_t			signals[8];
 	uv_timer_t			sultimer;
 	uv_idle_t			idle;
 
 	uv_thread_t			uv_thread;
 
-	struct lws_signal_watcher_libuv w_sigint;
+	struct aws_lws_signal_watcher_libuv w_sigint;
 	int				extant_handles;
 
 	char				thread_valid;
 };
 
-struct lws_context_eventlibs_libuv {
+struct aws_lws_context_eventlibs_libuv {
 	uv_loop_t			loop;
 };
 
-struct lws_io_watcher_libuv {
+struct aws_lws_io_watcher_libuv {
 	uv_poll_t			*pwatcher;
-	struct lws_context		*context;
+	struct aws_lws_context		*context;
 	uint8_t				actual_events;
 };
 
-struct lws_wsi_eventlibs_libuv {
-	struct lws_io_watcher_libuv	w_read;
+struct aws_lws_wsi_eventlibs_libuv {
+	struct aws_lws_io_watcher_libuv	w_read;
 };
 
 uv_loop_t *
-lws_uv_getloop(struct lws_context *context, int tsi);
+aws_lws_uv_getloop(struct aws_lws_context *context, int tsi);
 
 int
-lws_uv_plugins_init(struct lws_context *context, const char * const *d);
+aws_lws_uv_plugins_init(struct aws_lws_context *context, const char * const *d);
 
 int
-lws_uv_plugins_destroy(struct lws_context *context);
+aws_lws_uv_plugins_destroy(struct aws_lws_context *context);

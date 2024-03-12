@@ -47,11 +47,11 @@ static const uint16_t pcols_port[] = {
 	80, 443, 443, 443, 80, 443, 1883, 8883, 80, 443
 };
 
-lss::lss(lws_ctx_t _ctx, std::string _uri, lsscomp_t _comp, bool _psh,
-	 lws_sscb_rx rx, lws_sscb_tx tx, lws_sscb_state state)
+lss::lss(aws_lws_ctx_t _ctx, std::string _uri, lsscomp_t _comp, bool _psh,
+	 aws_lws_sscb_rx rx, aws_lws_sscb_tx tx, aws_lws_sscb_state state)
 {
 	const char *p, *urlpath;
-	lws_ss_info_t ssi;
+	aws_lws_ss_info_t ssi;
 	int n, port;
 
 	memset(&ssi, 0, sizeof(ssi));
@@ -97,7 +97,7 @@ lss::lss(lws_ctx_t _ctx, std::string _uri, lsscomp_t _comp, bool _psh,
 
 	n = pcols_port[n];
 
-	if (lws_parse_uri(uri, &p, &pol.endpoint, &n, &urlpath))
+	if (aws_lws_parse_uri(uri, &p, &pol.endpoint, &n, &urlpath))
 		throw lssException("unable to parse uri://");
 
 	pol.port = (uint16_t)n;
@@ -117,13 +117,13 @@ lss::lss(lws_ctx_t _ctx, std::string _uri, lsscomp_t _comp, bool _psh,
 			pol.u.http.method = _psh ? "POST" : "GET";
 	}
 
-	us_start = lws_now_usecs();
+	us_start = aws_lws_now_usecs();
 
-	if (lws_ss_create(ctx, 0, &ssi, (void *)this, &m_ss, NULL, NULL))
+	if (aws_lws_ss_create(ctx, 0, &ssi, (void *)this, &m_ss, NULL, NULL))
 		goto blow;
 
 	if (pol.protocol <= LWSSSP_WS)
-		lws_ss_client_connect(m_ss);
+		aws_lws_ss_client_connect(m_ss);
 
 	return;
 
@@ -138,10 +138,10 @@ lss::~lss()
 	if (uri)
 		free(uri);
 	if (m_ss)
-		lws_ss_destroy(&m_ss);
+		aws_lws_ss_destroy(&m_ss);
 }
 
-int lss::call_completion(lws_ss_constate_t state)
+int lss::call_completion(aws_lws_ss_constate_t state)
 {
 	if (comp_done)
 		return 0;

@@ -20,8 +20,8 @@
 #include <libwebsockets.h>
 #include <libwebsockets/lws-dbus.h>
 
-static struct lws_dbus_ctx *dbus_ctx;
-static struct lws_context *context;
+static struct aws_lws_dbus_ctx *dbus_ctx;
+static struct aws_lws_context *context;
 static int interrupted;
 
 #define THIS_INTERFACE	 "org.libwebsockets.test"
@@ -36,7 +36,7 @@ client_message_handler(DBusConnection *conn, DBusMessage *message, void *data)
 {
 	const char *str;
 
-	lwsl_info("%s: Got D-Bus request: %s.%s on %s\n", __func__,
+	aws_lwsl_info("%s: Got D-Bus request: %s.%s on %s\n", __func__,
 		  dbus_message_get_interface(message),
 		  dbus_message_get_member(message),
 		  dbus_message_get_path(message));
@@ -46,18 +46,18 @@ client_message_handler(DBusConnection *conn, DBusMessage *message, void *data)
 				   DBUS_TYPE_INVALID))
 		return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 
-	lwsl_notice("%s: '%s'\n", __func__, str);
+	aws_lwsl_notice("%s: '%s'\n", __func__, str);
 
 	return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
 }
 
 static void
-destroy_dbus_client_conn(struct lws_dbus_ctx *ctx)
+destroy_dbus_client_conn(struct aws_lws_dbus_ctx *ctx)
 {
 	if (!ctx || !ctx->conn)
 		return;
 
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 
 	dbus_connection_remove_filter(ctx->conn, client_message_handler, ctx);
 	dbus_connection_close(ctx->conn);
@@ -73,9 +73,9 @@ destroy_dbus_client_conn(struct lws_dbus_ctx *ctx)
  */
 
 static void
-cb_closing(struct lws_dbus_ctx *ctx)
+cb_closing(struct aws_lws_dbus_ctx *ctx)
 {
-	lwsl_err("%s: closing\n", __func__);
+	aws_lwsl_err("%s: closing\n", __func__);
 
 	if (ctx == dbus_ctx)
 		dbus_ctx = NULL;
@@ -83,10 +83,10 @@ cb_closing(struct lws_dbus_ctx *ctx)
 	destroy_dbus_client_conn(ctx);
 }
 
-static struct lws_dbus_ctx *
-create_dbus_client_conn(struct lws_vhost *vh, int tsi, const char *ads)
+static struct aws_lws_dbus_ctx *
+create_dbus_client_conn(struct aws_lws_vhost *vh, int tsi, const char *ads)
 {
-	struct lws_dbus_ctx *ctx;
+	struct aws_lws_dbus_ctx *ctx;
 	DBusError err;
 
 	ctx = malloc(sizeof(*ctx));
@@ -103,7 +103,7 @@ create_dbus_client_conn(struct lws_vhost *vh, int tsi, const char *ads)
 	/* connect to the daemon bus */
 	ctx->conn = dbus_connection_open_private(ads, &err);
 	if (!ctx->conn) {
-		lwsl_err("%s: Failed to connect: %s\n",
+		aws_lwsl_err("%s: Failed to connect: %s\n",
 			 __func__, err.message);
 		goto fail;
 	}
@@ -112,7 +112,7 @@ create_dbus_client_conn(struct lws_vhost *vh, int tsi, const char *ads)
 
 	if (!dbus_connection_add_filter(ctx->conn, client_message_handler,
 					ctx, NULL)) {
-		lwsl_err("%s: Failed to add filter\n", __func__);
+		aws_lwsl_err("%s: Failed to add filter\n", __func__);
 		goto fail;
 	}
 
@@ -121,12 +121,12 @@ create_dbus_client_conn(struct lws_vhost *vh, int tsi, const char *ads)
 	 * timeout handling provided by lws
 	 */
 
-	if (lws_dbus_connection_setup(ctx, ctx->conn, cb_closing)) {
-		lwsl_err("%s: connection bind to lws failed\n", __func__);
+	if (aws_lws_dbus_connection_setup(ctx, ctx->conn, cb_closing)) {
+		aws_lwsl_err("%s: connection bind to lws failed\n", __func__);
 		goto fail;
 	}
 
-	lwsl_notice("%s: created OK\n", __func__);
+	aws_lwsl_notice("%s: created OK\n", __func__);
 
 	return ctx;
 
@@ -152,12 +152,12 @@ void sigint_handler(int sig)
 static void
 pending_call_notify(DBusPendingCall *pending, void *data)
 {
-	// struct lws_dbus_ctx *ctx = (struct lws_dbus_ctx *)data;
+	// struct aws_lws_dbus_ctx *ctx = (struct aws_lws_dbus_ctx *)data;
 	const char *payload;
 	DBusMessage *msg;
 
 	if (!dbus_pending_call_get_completed(pending)) {
-		lwsl_err("%s: timed out waiting for reply\n", __func__);
+		aws_lwsl_err("%s: timed out waiting for reply\n", __func__);
 
 		goto bail;
 	}
@@ -171,7 +171,7 @@ pending_call_notify(DBusPendingCall *pending, void *data)
 		goto bail1;
 	}
 
-	lwsl_user("%s: received '%s'\n", __func__, payload);
+	aws_lwsl_user("%s: received '%s'\n", __func__, payload);
 
 bail1:
 	dbus_message_unref(msg);
@@ -180,7 +180,7 @@ bail:
 }
 
 static int
-remote_method_call(struct lws_dbus_ctx *ctx)
+remote_method_call(struct aws_lws_dbus_ctx *ctx)
 {
 	DBusMessage *msg;
 	const char *payload = "Hello!";
@@ -201,7 +201,7 @@ remote_method_call(struct lws_dbus_ctx *ctx)
 	if (!dbus_connection_send_with_reply(ctx->conn, msg,
 					     &ctx->pc,
 					     DBUS_TIMEOUT_USE_DEFAULT)) {
-		lwsl_err("%s: unable to send\n", __func__);
+		aws_lwsl_err("%s: unable to send\n", __func__);
 
 		goto bail;
 	}
@@ -218,8 +218,8 @@ bail:
 
 int main(int argc, const char **argv)
 {
-	struct lws_vhost *vh;
-	struct lws_context_creation_info info;
+	struct aws_lws_vhost *vh;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -231,21 +231,21 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal DBUS client\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal DBUS client\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	vh = lws_create_vhost(context, &info);
+	vh = aws_lws_create_vhost(context, &info);
 	if (!vh)
 		goto bail;
 
@@ -259,7 +259,7 @@ int main(int argc, const char **argv)
 	/* lws event loop (default poll one) */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 bail2:
 	destroy_dbus_client_conn(dbus_ctx);
@@ -267,15 +267,15 @@ bail2:
 bail1:
 	/* this is required for valgrind-cleanliness */
 	dbus_shutdown();
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_notice("Exiting cleanly\n");
+	aws_lwsl_notice("Exiting cleanly\n");
 
 	return 0;
 
 bail:
-	lwsl_err("%s: failed to start\n", __func__);
-	lws_context_destroy(context);
+	aws_lwsl_err("%s: failed to start\n", __func__);
+	aws_lws_context_destroy(context);
 
 	return 1;
 }

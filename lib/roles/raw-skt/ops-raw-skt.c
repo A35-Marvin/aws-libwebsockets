@@ -25,23 +25,23 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_raw_skt(struct lws_context_per_thread *pt, struct lws *wsi,
-			   struct lws_pollfd *pollfd)
+rops_handle_POLLIN_raw_skt(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+			   struct aws_lws_pollfd *pollfd)
 {
 #if defined(LWS_WITH_SOCKS5)
 	const char *cce = NULL;
 #endif
-	struct lws_tokens ebuf;
+	struct aws_lws_tokens ebuf;
 	int n = 0, buffered = 0;
 
 	/* pending truncated sends have uber priority */
 
-	if (lws_has_buffered_out(wsi)) {
+	if (aws_lws_has_buffered_out(wsi)) {
 		if (!(pollfd->revents & LWS_POLLOUT))
 			return LWS_HPI_RET_HANDLED;
 
 		/* drain the output buflist */
-		if (lws_issue_raw(wsi, NULL, 0) < 0)
+		if (aws_lws_issue_raw(wsi, NULL, 0) < 0)
 			goto fail;
 		/*
 		 * we can't afford to allow input processing to send
@@ -53,12 +53,12 @@ rops_handle_POLLIN_raw_skt(struct lws_context_per_thread *pt, struct lws *wsi,
 
 
 #if defined(LWS_WITH_SERVER)
-	if (!lwsi_role_client(wsi) &&  lwsi_state(wsi) != LRS_ESTABLISHED) {
+	if (!aws_lwsi_role_client(wsi) &&  aws_lwsi_state(wsi) != LRS_ESTABLISHED) {
 
-		lwsl_wsi_debug(wsi, "wsistate 0x%x\n", (int)wsi->wsistate);
+		aws_lwsl_wsi_debug(wsi, "wsistate 0x%x\n", (int)wsi->wsistate);
 
-		if (lwsi_state(wsi) != LRS_SSL_INIT)
-			if (lws_server_socket_service_ssl(wsi,
+		if (aws_lwsi_state(wsi) != LRS_SSL_INIT)
+			if (aws_lws_server_socket_service_ssl(wsi,
 							  LWS_SOCK_INVALID,
 				!!(pollfd->revents & pollfd->events & LWS_POLLIN)))
 				return LWS_HPI_RET_PLEASE_CLOSE_ME;
@@ -71,9 +71,9 @@ rops_handle_POLLIN_raw_skt(struct lws_context_per_thread *pt, struct lws *wsi,
 	    !(wsi->favoured_pollin &&
 	      (pollfd->revents & pollfd->events & LWS_POLLOUT))) {
 
-		lwsl_wsi_debug(wsi, "POLLIN: state 0x%x", lwsi_state(wsi));
+		aws_lwsl_wsi_debug(wsi, "POLLIN: state 0x%x", aws_lwsi_state(wsi));
 
-		switch (lwsi_state(wsi)) {
+		switch (aws_lwsi_state(wsi)) {
 
 		    /* any tunnel has to have been established... */
 		case LRS_SSL_ACK_PENDING:
@@ -89,15 +89,15 @@ rops_handle_POLLIN_raw_skt(struct lws_context_per_thread *pt, struct lws *wsi,
 		case LRS_WAITING_SOCKS_AUTH_REPLY:
 		case LRS_WAITING_SOCKS_CONNECT_REPLY:
 
-			switch (lws_socks5c_handle_state(wsi, pollfd, &cce)) {
+			switch (aws_lws_socks5c_handle_state(wsi, pollfd, &cce)) {
 			case LW5CHS_RET_RET0:
 				goto nope;
 			case LW5CHS_RET_BAIL3:
-				lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
+				aws_lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
 				goto fail;
 			case LW5CHS_RET_STARTHS:
-				lwsi_set_state(wsi, LRS_ESTABLISHED);
-				lws_client_connect_4_established(wsi, NULL, 0);
+				aws_lwsi_set_state(wsi, LRS_ESTABLISHED);
+				aws_lws_client_connect_4_established(wsi, NULL, 0);
 
 				/*
 				 * Now we got the socks5 connection, we need to
@@ -115,14 +115,14 @@ rops_handle_POLLIN_raw_skt(struct lws_context_per_thread *pt, struct lws *wsi,
 			ebuf.token = NULL;
 			ebuf.len = 0;
 
-			buffered = lws_buflist_aware_read(pt, wsi, &ebuf, 1, __func__);
+			buffered = aws_lws_buflist_aware_read(pt, wsi, &ebuf, 1, __func__);
 			switch (ebuf.len) {
 			case 0:
 				if (wsi->unix_skt)
 					break;
-				lwsl_wsi_info(wsi, "read 0 len");
+				aws_lwsl_wsi_info(wsi, "read 0 len");
 				wsi->seen_zero_length_recv = 1;
-				if (lws_change_pollfd(wsi, LWS_POLLIN, 0))
+				if (aws_lws_change_pollfd(wsi, LWS_POLLIN, 0))
 					goto fail;
 
 				/*
@@ -140,7 +140,7 @@ rops_handle_POLLIN_raw_skt(struct lws_context_per_thread *pt, struct lws *wsi,
 			}
 
 #if defined(LWS_WITH_UDP)
-			if (lws_fi(&wsi->fic, "udp_rx_loss")) {
+			if (aws_lws_fi(&wsi->fic, "udp_rx_loss")) {
 				n = ebuf.len;
 				goto post_rx;
 			}
@@ -154,11 +154,11 @@ rops_handle_POLLIN_raw_skt(struct lws_context_per_thread *pt, struct lws *wsi,
 post_rx:
 #endif
 			if (n < 0) {
-				lwsl_wsi_info(wsi, "LWS_CALLBACK_RAW_RX_fail");
+				aws_lwsl_wsi_info(wsi, "LWS_CALLBACK_RAW_RX_fail");
 				goto fail;
 			}
 
-			if (lws_buflist_aware_finished_consuming(wsi, &ebuf, ebuf.len,
+			if (aws_lws_buflist_aware_finished_consuming(wsi, &ebuf, ebuf.len,
 								 buffered, __func__))
 				return LWS_HPI_RET_PLEASE_CLOSE_ME;
 
@@ -177,14 +177,14 @@ try_pollout:
 		return LWS_HPI_RET_HANDLED;
 
 #if defined(LWS_WITH_CLIENT)
-	if (lwsi_state(wsi) == LRS_WAITING_CONNECT &&
-	    !lws_client_connect_3_connect(wsi, NULL, NULL, 0, NULL))
+	if (aws_lwsi_state(wsi) == LRS_WAITING_CONNECT &&
+	    !aws_lws_client_connect_3_connect(wsi, NULL, NULL, 0, NULL))
 		return LWS_HPI_RET_WSI_ALREADY_DIED;
 #endif
 
 	/* one shot */
-	if (lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
-		lwsl_notice("%s a\n", __func__);
+	if (aws_lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
+		aws_lwsl_notice("%s a\n", __func__);
 		goto fail;
 	}
 
@@ -195,14 +195,14 @@ try_pollout:
 			wsi, LWS_CALLBACK_RAW_WRITEABLE,
 			wsi->user_space, NULL, 0);
 	if (n < 0) {
-		lwsl_info("writeable_fail\n");
+		aws_lwsl_info("writeable_fail\n");
 		goto fail;
 	}
 
 	return LWS_HPI_RET_HANDLED;
 
 fail:
-	lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "raw svc fail");
+	aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "raw svc fail");
 
 	return LWS_HPI_RET_WSI_ALREADY_DIED;
 }
@@ -212,7 +212,7 @@ static int
 rops_adoption_bind_raw_skt(struct lws *wsi, int type, const char *vh_prot_name)
 {
 
-	// lwsl_notice("%s: bind type %d\n", __func__, type);
+	// aws_lwsl_notice("%s: bind type %d\n", __func__, type);
 
 	/* no http but socket... must be raw skt */
 	if ((type & LWS_ADOPT_HTTP) || !(type & LWS_ADOPT_SOCKET) ||
@@ -224,21 +224,21 @@ rops_adoption_bind_raw_skt(struct lws *wsi, int type, const char *vh_prot_name)
 		/*
 		 * these can be >128 bytes, so just alloc for UDP
 		 */
-		wsi->udp = lws_malloc(sizeof(*wsi->udp), "udp struct");
+		wsi->udp = aws_lws_malloc(sizeof(*wsi->udp), "udp struct");
 		if (!wsi->udp)
 			return 0;
 		memset(wsi->udp, 0, sizeof(*wsi->udp));
 	}
 #endif
 
-	lws_role_transition(wsi, 0, (type & LWS_ADOPT_ALLOW_SSL) ? LRS_SSL_INIT :
+	aws_lws_role_transition(wsi, 0, (type & LWS_ADOPT_ALLOW_SSL) ? LRS_SSL_INIT :
 				LRS_ESTABLISHED, &role_ops_raw_skt);
 
 	if (vh_prot_name)
-		lws_bind_protocol(wsi, wsi->a.protocol, __func__);
+		aws_lws_bind_protocol(wsi, wsi->a.protocol, __func__);
 	else
 		/* this is the only time he will transition */
-		lws_bind_protocol(wsi,
+		aws_lws_bind_protocol(wsi,
 			&wsi->a.vhost->protocols[wsi->a.vhost->raw_protocol_index],
 			__func__);
 
@@ -249,14 +249,14 @@ rops_adoption_bind_raw_skt(struct lws *wsi, int type, const char *vh_prot_name)
 #if defined(LWS_WITH_CLIENT)
 static int
 rops_client_bind_raw_skt(struct lws *wsi,
-			 const struct lws_client_connect_info *i)
+			 const struct aws_lws_client_connect_info *i)
 {
 	if (!i) {
 
 		/* finalize */
 
 		if (!wsi->user_space && wsi->stash->cis[CIS_METHOD])
-			if (lws_ensure_user_space(wsi))
+			if (aws_lws_ensure_user_space(wsi))
 				return 1;
 
 		return 0;
@@ -266,14 +266,14 @@ rops_client_bind_raw_skt(struct lws *wsi,
 
 	if (!i->local_protocol_name ||
 	    strcmp(i->local_protocol_name, "raw-proxy"))
-		lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED,
+		aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_UNCONNECTED,
 			    &role_ops_raw_skt);
 
 	return 1; /* matched */
 }
 #endif
 
-static const lws_rops_t rops_table_raw_skt[] = {
+static const aws_lws_rops_t rops_table_raw_skt[] = {
 	/*  1 */ { .handle_POLLIN	  = rops_handle_POLLIN_raw_skt },
 #if defined(LWS_WITH_SERVER)
 	/*  2 */ { .adoption_bind	  = rops_adoption_bind_raw_skt },
@@ -285,7 +285,7 @@ static const lws_rops_t rops_table_raw_skt[] = {
 #endif
 };
 
-const struct lws_role_ops role_ops_raw_skt = {
+const struct aws_lws_role_ops role_ops_raw_skt = {
 	/* role name */			"raw-skt",
 	/* alpn id */			NULL,
 

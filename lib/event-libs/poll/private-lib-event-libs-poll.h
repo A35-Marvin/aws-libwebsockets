@@ -22,4 +22,4 @@
  * IN THE SOFTWARE.
  */
 
-extern struct lws_event_loop_ops event_loop_ops_poll;
+extern struct aws_lws_event_loop_ops event_loop_ops_poll;

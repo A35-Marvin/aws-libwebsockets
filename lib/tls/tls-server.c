@@ -27,28 +27,28 @@
 #if defined(LWS_WITH_SERVER)
 
 static void
-lws_sul_tls_cb(lws_sorted_usec_list_t *sul)
+aws_lws_sul_tls_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context_per_thread *pt = lws_container_of(sul,
-			struct lws_context_per_thread, sul_tls);
+	struct aws_lws_context_per_thread *pt = aws_lws_container_of(sul,
+			struct aws_lws_context_per_thread, sul_tls);
 
-	lws_tls_check_all_cert_lifetimes(pt->context);
+	aws_lws_tls_check_all_cert_lifetimes(pt->context);
 
 	__lws_sul_insert_us(&pt->pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &pt->sul_tls,
-			    (lws_usec_t)24 * 3600 * LWS_US_PER_SEC);
+			    (aws_lws_usec_t)24 * 3600 * LWS_US_PER_SEC);
 }
 
 int
-lws_context_init_server_ssl(const struct lws_context_creation_info *info,
-			    struct lws_vhost *vhost)
+aws_lws_context_init_server_ssl(const struct aws_lws_context_creation_info *info,
+			    struct aws_lws_vhost *vhost)
 {
-	struct lws_context *context = vhost->context;
-	lws_fakewsi_def_plwsa(&vhost->context->pt[0]);
+	struct aws_lws_context *context = vhost->context;
+	aws_lws_fakewsi_def_plwsa(&vhost->context->pt[0]);
 
-	lws_fakewsi_prep_plwsa_ctx(vhost->context);
+	aws_lws_fakewsi_prep_plwsa_ctx(vhost->context);
 
-	if (!lws_check_opt(info->options,
+	if (!aws_lws_check_opt(info->options,
 			   LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT)) {
 		vhost->tls.use_ssl = 0;
 
@@ -68,20 +68,20 @@ lws_context_init_server_ssl(const struct lws_context_creation_info *info,
 
 	if (info->port != CONTEXT_PORT_NO_LISTEN) {
 
-		vhost->tls.use_ssl = lws_check_opt(vhost->options,
+		vhost->tls.use_ssl = aws_lws_check_opt(vhost->options,
 					LWS_SERVER_OPTION_CREATE_VHOST_SSL_CTX);
 
 		if (vhost->tls.use_ssl && info->ssl_cipher_list)
-			lwsl_notice(" SSL ciphers: '%s'\n",
+			aws_lwsl_notice(" SSL ciphers: '%s'\n",
 						info->ssl_cipher_list);
 
-		lwsl_notice(" Vhost '%s' using %sTLS mode\n",
+		aws_lwsl_notice(" Vhost '%s' using %sTLS mode\n",
 			    vhost->name, vhost->tls.use_ssl ? "" : "non-");
 	}
 
 	/*
 	 * give him a fake wsi with context + vhost set, so he can use
-	 * lws_get_context() in the callback
+	 * aws_lws_get_context() in the callback
 	 */
 	plwsa->vhost = vhost; /* not a real bound wsi */
 
@@ -89,7 +89,7 @@ lws_context_init_server_ssl(const struct lws_context_creation_info *info,
 	 * as a server, if we are requiring clients to identify themselves
 	 * then set the backend up for it
 	 */
-	if (lws_check_opt(info->options,
+	if (aws_lws_check_opt(info->options,
 			  LWS_SERVER_OPTION_ALLOW_NON_SSL_ON_SSL_PORT))
 		/* Normally SSL listener rejects non-ssl, optionally allow */
 		vhost->tls.allow_non_ssl_on_ssl_port = 1;
@@ -99,10 +99,10 @@ lws_context_init_server_ssl(const struct lws_context_creation_info *info,
 	 * allowing it to verify incoming client certs
 	 */
 	if (vhost->tls.use_ssl) {
-		if (lws_tls_server_vhost_backend_init(info, vhost, (struct lws *)plwsa))
+		if (aws_lws_tls_server_vhost_backend_init(info, vhost, (struct lws *)plwsa))
 			return -1;
 
-		lws_tls_server_client_cert_verify_config(vhost);
+		aws_lws_tls_server_client_cert_verify_config(vhost);
 
 		if (vhost->protocols[0].callback((struct lws *)plwsa,
 			    LWS_CALLBACK_OPENSSL_LOAD_EXTRA_SERVER_VERIFY_CERTS,
@@ -111,49 +111,49 @@ lws_context_init_server_ssl(const struct lws_context_creation_info *info,
 	}
 
 	if (vhost->tls.use_ssl)
-		lws_context_init_alpn(vhost);
+		aws_lws_context_init_alpn(vhost);
 
 	/* check certs once a day */
 
-	context->pt[0].sul_tls.cb = lws_sul_tls_cb;
+	context->pt[0].sul_tls.cb = aws_lws_sul_tls_cb;
 	__lws_sul_insert_us(&context->pt[0].pt_sul_owner[LWSSULLI_MISS_IF_SUSPENDED],
 			    &context->pt[0].sul_tls,
-			    (lws_usec_t)24 * 3600 * LWS_US_PER_SEC);
+			    (aws_lws_usec_t)24 * 3600 * LWS_US_PER_SEC);
 
 	return 0;
 }
 #endif
 
 int
-lws_server_socket_service_ssl(struct lws *wsi, lws_sockfd_type accept_fd, char from_pollin)
+aws_lws_server_socket_service_ssl(struct lws *wsi, aws_lws_sockfd_type accept_fd, char from_pollin)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
-	struct lws_vhost *vh;
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_vhost *vh;
 	ssize_t s;
 	int n;
 
 	if (!LWS_SSL_ENABLED(wsi->a.vhost))
 		return 0;
 
-	switch (lwsi_state(wsi)) {
+	switch (aws_lwsi_state(wsi)) {
 	case LRS_SSL_INIT:
 
 		if (wsi->tls.ssl)
-			lwsl_err("%s: leaking ssl\n", __func__);
+			aws_lwsl_err("%s: leaking ssl\n", __func__);
 		if (accept_fd == LWS_SOCK_INVALID)
 			assert(0);
 
-		if (lws_tls_restrict_borrow(wsi)) {
-			lwsl_err("%s: failed on ssl restriction\n", __func__);
+		if (aws_lws_tls_restrict_borrow(wsi)) {
+			aws_lwsl_err("%s: failed on ssl restriction\n", __func__);
 			return 1;
 		}
 
-		if (lws_tls_server_new_nonblocking(wsi, accept_fd)) {
-			lwsl_err("%s: failed on lws_tls_server_new_nonblocking\n", __func__);
+		if (aws_lws_tls_server_new_nonblocking(wsi, accept_fd)) {
+			aws_lwsl_err("%s: failed on lws_tls_server_new_nonblocking\n", __func__);
 			if (accept_fd != LWS_SOCK_INVALID)
 				compatible_close(accept_fd);
-			lws_tls_restrict_return(wsi);
+			aws_lws_tls_restrict_return(wsi);
 			goto fail;
 		}
 
@@ -162,26 +162,26 @@ lws_server_socket_service_ssl(struct lws *wsi, lws_sockfd_type accept_fd, char f
 		 * as a live connection.  That way we can retry when more
 		 * pieces come if we're not sorted yet
 		 */
-		lwsi_set_state(wsi, LRS_SSL_ACK_PENDING);
+		aws_lwsi_set_state(wsi, LRS_SSL_ACK_PENDING);
 
-		lws_pt_lock(pt, __func__);
+		aws_lws_pt_lock(pt, __func__);
 		if (__insert_wsi_socket_into_fds(context, wsi)) {
-			lwsl_err("%s: failed to insert into fds\n", __func__);
+			aws_lwsl_err("%s: failed to insert into fds\n", __func__);
 			goto fail;
 		}
-		lws_pt_unlock(pt);
+		aws_lws_pt_unlock(pt);
 
-		lws_set_timeout(wsi, PENDING_TIMEOUT_SSL_ACCEPT,
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_SSL_ACCEPT,
 				(int)context->timeout_secs);
 
-		lwsl_debug("inserted SSL accept into fds, trying SSL_accept\n");
+		aws_lwsl_debug("inserted SSL accept into fds, trying SSL_accept\n");
 
 		/* fallthru */
 
 	case LRS_SSL_ACK_PENDING:
 
-		if (lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
-			lwsl_err("%s: lws_change_pollfd failed\n", __func__);
+		if (aws_lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
+			aws_lwsl_err("%s: aws_lws_change_pollfd failed\n", __func__);
 			goto fail;
 		}
 
@@ -231,39 +231,39 @@ lws_server_socket_service_ssl(struct lws *wsi, lws_sockfd_type accept_fd, char f
 				*/
 				wsi->tls.use_ssl = 0;
 
-				lws_tls_server_abort_connection(wsi);
+				aws_lws_tls_server_abort_connection(wsi);
 				/*
 				 * care... this creates wsi with no ssl when ssl
 				 * is enabled and normally mandatory
 				 */
 				wsi->tls.ssl = NULL;
 
-				if (lws_check_opt(wsi->a.vhost->options,
+				if (aws_lws_check_opt(wsi->a.vhost->options,
 				    LWS_SERVER_OPTION_REDIRECT_HTTP_TO_HTTPS)) {
-					lwsl_info("%s: redirecting from http "
+					aws_lwsl_info("%s: redirecting from http "
 						  "to https\n", __func__);
 					wsi->tls.redirect_to_https = 1;
 					goto notls_accepted;
 				}
 
-				if (lws_check_opt(wsi->a.vhost->options,
+				if (aws_lws_check_opt(wsi->a.vhost->options,
 				LWS_SERVER_OPTION_ALLOW_HTTP_ON_HTTPS_LISTENER)) {
-					lwsl_info("%s: allowing unencrypted "
+					aws_lwsl_info("%s: allowing unencrypted "
 						  "http service on tls port\n",
 						  __func__);
 					goto notls_accepted;
 				}
 
-				if (lws_check_opt(wsi->a.vhost->options,
+				if (aws_lws_check_opt(wsi->a.vhost->options,
 		    LWS_SERVER_OPTION_FALLBACK_TO_APPLY_LISTEN_ACCEPT_CONFIG)) {
-					if (lws_http_to_fallback(wsi, NULL, 0))
+					if (aws_lws_http_to_fallback(wsi, NULL, 0))
 						goto fail;
-					lwsl_info("%s: allowing non-tls "
+					aws_lwsl_info("%s: allowing non-tls "
 						  "fallback\n", __func__);
 					goto notls_accepted;
 				}
 
-				lwsl_notice("%s: client did not send a valid "
+				aws_lwsl_notice("%s: client did not send a valid "
 					    "tls hello (default vhost %s)\n",
 					    __func__, wsi->a.vhost->name);
 				goto fail;
@@ -275,7 +275,7 @@ lws_server_socket_service_ssl(struct lws *wsi, lws_sockfd_type accept_fd, char f
 				 * fail out...
 				 *
 				 */
-				lwsl_debug("%s: PEEKed 0 (from_pollin %d)\n",
+				aws_lwsl_debug("%s: PEEKed 0 (from_pollin %d)\n",
 					  __func__, from_pollin);
 				if (!from_pollin)
 					/*
@@ -302,13 +302,13 @@ punt:
 				 * to come and give us a hint, or timeout the
 				 * connection.
 				 */
-				if (lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
-					lwsl_err("%s: change_pollfd failed\n",
+				if (aws_lws_change_pollfd(wsi, 0, LWS_POLLIN)) {
+					aws_lwsl_err("%s: change_pollfd failed\n",
 						  __func__);
 					return -1;
 				}
 
-				lwsl_info("SSL_ERROR_WANT_READ\n");
+				aws_lwsl_info("SSL_ERROR_WANT_READ\n");
 				return 0;
 			}
 		}
@@ -316,15 +316,15 @@ punt:
 		/* normal SSL connection processing path */
 
 		errno = 0;
-		n = lws_tls_server_accept(wsi);
-		lwsl_info("SSL_accept says %d\n", n);
+		n = aws_lws_tls_server_accept(wsi);
+		aws_lwsl_info("SSL_accept says %d\n", n);
 		switch (n) {
 		case LWS_SSL_CAPABLE_DONE:
-			lws_tls_restrict_return_handshake(wsi);
+			aws_lws_tls_restrict_return_handshake(wsi);
 			break;
 		case LWS_SSL_CAPABLE_ERROR:
-			lws_tls_restrict_return_handshake(wsi);
-	                lwsl_info("%s: SSL_accept failed socket %u: %d\n",
+			aws_lws_tls_restrict_return_handshake(wsi);
+	                aws_lwsl_info("%s: SSL_accept failed socket %u: %d\n",
 	                		__func__, wsi->desc.sockfd, n);
 			wsi->socket_is_permanently_unusable = 1;
 			goto fail;
@@ -337,24 +337,24 @@ punt:
 		vh = context->vhost_list;
 		while (vh) {
 			if (!vh->being_destroyed && wsi->tls.ssl &&
-			    vh->tls.ssl_ctx == lws_tls_ctx_from_wsi(wsi)) {
-				lwsl_info("setting wsi to vh %s\n", vh->name);
-				lws_vhost_bind_wsi(vh, wsi);
+			    vh->tls.ssl_ctx == aws_lws_tls_ctx_from_wsi(wsi)) {
+				aws_lwsl_info("setting wsi to vh %s\n", vh->name);
+				aws_lws_vhost_bind_wsi(vh, wsi);
 				break;
 			}
 			vh = vh->vhost_next;
 		}
 
 		/* OK, we are accepted... give him some time to negotiate */
-		lws_set_timeout(wsi, PENDING_TIMEOUT_ESTABLISH_WITH_SERVER,
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_ESTABLISH_WITH_SERVER,
 				(int)context->timeout_secs);
 
-		lwsi_set_state(wsi, LRS_ESTABLISHED);
-		if (lws_tls_server_conn_alpn(wsi)) {
-			lwsl_warn("%s: fail on alpn\n", __func__);
+		aws_lwsi_set_state(wsi, LRS_ESTABLISHED);
+		if (aws_lws_tls_server_conn_alpn(wsi)) {
+			aws_lwsl_warn("%s: fail on alpn\n", __func__);
 			goto fail;
 		}
-		lwsl_debug("accepted new SSL conn\n");
+		aws_lwsl_debug("accepted new SSL conn\n");
 		break;
 
 	default:
@@ -364,7 +364,7 @@ punt:
 	return 0;
 
 notls_accepted:
-	lwsi_set_state(wsi, LRS_ESTABLISHED);
+	aws_lwsi_set_state(wsi, LRS_ESTABLISHED);
 
 	return 0;
 

@@ -23,7 +23,7 @@
  */
 #include "private-lib-core.h"
 
-static const lws_led_intensity_t sineq16[] = {
+static const aws_lws_led_intensity_t sineq16[] = {
 
 	/*
 	 * Quadrant at sin(270) in 16 samples, normalized so
@@ -42,7 +42,7 @@ static const lws_led_intensity_t sineq16[] = {
  * 16th sample again
  */
 
-static lws_led_intensity_t
+static aws_lws_led_intensity_t
 sine_lu(int n, int next)
 {
         switch ((n >> 4) & 3) {
@@ -73,8 +73,8 @@ sine_lu(int n, int next)
  * enough.
  */
 
-lws_led_intensity_t
-lws_led_func_sine(lws_led_seq_phase_t n)
+aws_lws_led_intensity_t
+aws_lws_led_func_sine(aws_lws_led_seq_phase_t n)
 {
         /*
          * 2: quadrant
@@ -86,70 +86,70 @@ lws_led_func_sine(lws_led_seq_phase_t n)
         	sine_lu(n >> 10, 1) * (n & 0x3ff)) / 0x3ff;
 }
 
-lws_led_intensity_t
-lws_led_func_linear(lws_led_seq_phase_t n)
+aws_lws_led_intensity_t
+aws_lws_led_func_linear(aws_lws_led_seq_phase_t n)
 {
-	return (lws_led_intensity_t)n;
+	return (aws_lws_led_intensity_t)n;
 }
 
 
-static lws_led_intensity_t
-lws_led_func_static(lws_led_seq_phase_t n)
+static aws_lws_led_intensity_t
+aws_lws_led_func_static(aws_lws_led_seq_phase_t n)
 {
 	return ((int)n * LWS_LED_MAX_INTENSITY) / 2;
 }
 
-const lws_led_sequence_def_t lws_pwmseq_static_off = {
-	.func			= lws_led_func_static,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_static_off = {
+	.func			= aws_lws_led_func_static,
 	.ledphase_offset	= 0,
 	.ledphase_total		= 0,
 	.ms			= 0
 };
 
-const lws_led_sequence_def_t lws_pwmseq_static_half = {
-	.func			= lws_led_func_static,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_static_half = {
+	.func			= aws_lws_led_func_static,
 	.ledphase_offset	= 1,
 	.ledphase_total		= 0,
 	.ms			= 0
 };
 
-const lws_led_sequence_def_t lws_pwmseq_static_on = {
-	.func			= lws_led_func_static,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_static_on = {
+	.func			= aws_lws_led_func_static,
 	.ledphase_offset	= 2,
 	.ledphase_total		= 0,
 	.ms			= 0
 };
 
-const lws_led_sequence_def_t lws_pwmseq_sine_up = {
-	.func			= lws_led_func_sine,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_sine_up = {
+	.func			= aws_lws_led_func_sine,
 	.ledphase_offset	= 0, /* already at 0 amp at 0 phase */
 	.ledphase_total		= LWS_LED_FUNC_PHASE / 2, /* 180 degree ./^ */
 	.ms			= 300
 };
 
-const lws_led_sequence_def_t lws_pwmseq_sine_down = {
-	.func			= lws_led_func_sine,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_sine_down = {
+	.func			= aws_lws_led_func_sine,
 	.ledphase_offset	= LWS_LED_FUNC_PHASE / 2, /* start at peak */
 	.ledphase_total		= LWS_LED_FUNC_PHASE / 2, /* 180 degree ./^ */
 	.ms			= 300
 };
 
-const lws_led_sequence_def_t lws_pwmseq_linear_wipe = {
-	.func			= lws_led_func_linear,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_linear_wipe = {
+	.func			= aws_lws_led_func_linear,
 	.ledphase_offset	= 0,
 	.ledphase_total		= LWS_LED_FUNC_PHASE - 1,
 	.ms			= 300
 };
 
-const lws_led_sequence_def_t lws_pwmseq_sine_endless_slow = {
-	.func			= lws_led_func_sine,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_sine_endless_slow = {
+	.func			= aws_lws_led_func_sine,
 	.ledphase_offset	= 0, /* already at 0 amp at 0 phase */
 	.ledphase_total		= LWS_SEQ_LEDPHASE_TOTAL_ENDLESS,
 	.ms			= 1500
 };
 
-const lws_led_sequence_def_t lws_pwmseq_sine_endless_fast = {
-	.func			= lws_led_func_sine,
+const aws_lws_led_sequence_def_t aws_lws_pwmseq_sine_endless_fast = {
+	.func			= aws_lws_led_func_sine,
 	.ledphase_offset	= 0, /* already at 0 amp at 0 phase */
 	.ledphase_total		= LWS_SEQ_LEDPHASE_TOTAL_ENDLESS,
 	.ms			= 750

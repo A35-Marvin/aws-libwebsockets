@@ -21,7 +21,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
  * IN THE SOFTWARE.
  *
- *  lws_genec provides an EC abstraction api in lws that works the
+ *  aws_lws_genec provides an EC abstraction api in lws that works the
  *  same whether you are using openssl or mbedtls crypto functions underneath.
  */
 #include "private-lib-core.h"
@@ -36,7 +36,7 @@
 #define ECDSACTX(_c, _ins) _c->u.ctx_ecdsa->_ins
 #endif
 
-const struct lws_ec_curves lws_ec_curves[] = {
+const struct aws_lws_ec_curves aws_lws_ec_curves[] = {
 	/*
 	 * These are the curves we are willing to use by default...
 	 *
@@ -52,15 +52,15 @@ const struct lws_ec_curves lws_ec_curves[] = {
 };
 
 static int
-lws_genec_keypair_import(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
-			 const struct lws_gencrypto_keyelem *el)
+aws_lws_genec_keypair_import(struct aws_lws_genec_ctx *ctx, enum enum_lws_dh_side side,
+			 const struct aws_lws_gencrypto_keyelem *el)
 {
-	const struct lws_ec_curves *curve;
+	const struct aws_lws_ec_curves *curve;
 	mbedtls_ecp_keypair kp;
 	int ret = -1;
 
 	if (el[LWS_GENCRYPTO_EC_KEYEL_CRV].len < 4) {
-		lwsl_notice("%s: crv '%s' (%d)\n", __func__,
+		aws_lwsl_notice("%s: crv '%s' (%d)\n", __func__,
 			    el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf ?
 				    (char *)el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf :
 					    "null",
@@ -68,7 +68,7 @@ lws_genec_keypair_import(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 		return -21;
 	}
 
-	curve = lws_genec_curve(ctx->curve_table,
+	curve = aws_lws_genec_curve(ctx->curve_table,
 				(char *)el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf);
 	if (!curve)
 		return -22;
@@ -152,8 +152,8 @@ bail1:
 }
 
 int
-lws_genecdh_create(struct lws_genec_ctx *ctx, struct lws_context *context,
-		   const struct lws_ec_curves *curve_table)
+aws_lws_genecdh_create(struct aws_lws_genec_ctx *ctx, struct aws_lws_context *context,
+		   const struct aws_lws_ec_curves *curve_table)
 {
 	memset(ctx, 0, sizeof(*ctx));
 
@@ -161,7 +161,7 @@ lws_genecdh_create(struct lws_genec_ctx *ctx, struct lws_context *context,
 	ctx->curve_table = curve_table;
 	ctx->genec_alg = LEGENEC_ECDH;
 
-	ctx->u.ctx_ecdh = lws_zalloc(sizeof(*ctx->u.ctx_ecdh), "genecdh");
+	ctx->u.ctx_ecdh = aws_lws_zalloc(sizeof(*ctx->u.ctx_ecdh), "genecdh");
 	if (!ctx->u.ctx_ecdh)
 		return 1;
 
@@ -171,8 +171,8 @@ lws_genecdh_create(struct lws_genec_ctx *ctx, struct lws_context *context,
 }
 
 int
-lws_genecdsa_create(struct lws_genec_ctx *ctx, struct lws_context *context,
-		    const struct lws_ec_curves *curve_table)
+aws_lws_genecdsa_create(struct aws_lws_genec_ctx *ctx, struct aws_lws_context *context,
+		    const struct aws_lws_ec_curves *curve_table)
 {
 	memset(ctx, 0, sizeof(*ctx));
 
@@ -180,7 +180,7 @@ lws_genecdsa_create(struct lws_genec_ctx *ctx, struct lws_context *context,
 	ctx->curve_table = curve_table;
 	ctx->genec_alg = LEGENEC_ECDSA;
 
-	ctx->u.ctx_ecdsa = lws_zalloc(sizeof(*ctx->u.ctx_ecdsa), "genecdsa");
+	ctx->u.ctx_ecdsa = aws_lws_zalloc(sizeof(*ctx->u.ctx_ecdsa), "genecdsa");
 	if (!ctx->u.ctx_ecdsa)
 		return 1;
 
@@ -191,40 +191,40 @@ lws_genecdsa_create(struct lws_genec_ctx *ctx, struct lws_context *context,
 
 
 int
-lws_genecdh_set_key(struct lws_genec_ctx *ctx, struct lws_gencrypto_keyelem *el,
+aws_lws_genecdh_set_key(struct aws_lws_genec_ctx *ctx, struct aws_lws_gencrypto_keyelem *el,
 		    enum enum_lws_dh_side side)
 {
 	if (ctx->genec_alg != LEGENEC_ECDH)
 		return -1;
 
-	return lws_genec_keypair_import(ctx, side, el);
+	return aws_lws_genec_keypair_import(ctx, side, el);
 }
 
 int
-lws_genecdsa_set_key(struct lws_genec_ctx *ctx,
-		     const struct lws_gencrypto_keyelem *el)
+aws_lws_genecdsa_set_key(struct aws_lws_genec_ctx *ctx,
+		     const struct aws_lws_gencrypto_keyelem *el)
 {
 	if (ctx->genec_alg != LEGENEC_ECDSA)
 		return -1;
 
-	return lws_genec_keypair_import(ctx, 0, el);
+	return aws_lws_genec_keypair_import(ctx, 0, el);
 }
 
 void
-lws_genec_destroy(struct lws_genec_ctx *ctx)
+aws_lws_genec_destroy(struct aws_lws_genec_ctx *ctx)
 {
 	switch (ctx->genec_alg) {
 	case LEGENEC_ECDH:
 		if (ctx->u.ctx_ecdh) {
 			mbedtls_ecdh_free(ctx->u.ctx_ecdh);
-			lws_free(ctx->u.ctx_ecdh);
+			aws_lws_free(ctx->u.ctx_ecdh);
 			ctx->u.ctx_ecdh = NULL;
 		}
 		break;
 	case LEGENEC_ECDSA:
 		if (ctx->u.ctx_ecdsa) {
 			mbedtls_ecdsa_free(ctx->u.ctx_ecdsa);
-			lws_free(ctx->u.ctx_ecdsa);
+			aws_lws_free(ctx->u.ctx_ecdsa);
 			ctx->u.ctx_ecdsa = NULL;
 		}
 		break;
@@ -234,11 +234,11 @@ lws_genec_destroy(struct lws_genec_ctx *ctx)
 }
 
 int
-lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
+aws_lws_genecdh_new_keypair(struct aws_lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 			const char *curve_name,
-			struct lws_gencrypto_keyelem *el)
+			struct aws_lws_gencrypto_keyelem *el)
 {
-	const struct lws_ec_curves *curve;
+	const struct aws_lws_ec_curves *curve;
 	mbedtls_ecdsa_context ecdsa;
 	mbedtls_ecp_keypair *kp;
 	mbedtls_mpi *mpi[3];
@@ -247,9 +247,9 @@ lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 	if (ctx->genec_alg != LEGENEC_ECDH)
 		return -1;
 
-	curve = lws_genec_curve(ctx->curve_table, curve_name);
+	curve = aws_lws_genec_curve(ctx->curve_table, curve_name);
 	if (!curve) {
-		lwsl_err("%s: curve '%s' not supported\n",
+		aws_lwsl_err("%s: curve '%s' not supported\n",
 			 __func__, curve_name);
 
 		return -22;
@@ -257,10 +257,10 @@ lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 
 	mbedtls_ecdsa_init(&ecdsa);
 	n = mbedtls_ecdsa_genkey(&ecdsa, (mbedtls_ecp_group_id)curve->tls_lib_nid,
-				 lws_gencrypto_mbedtls_rngf,
+				 aws_lws_gencrypto_mbedtls_rngf,
 				 ctx->context);
 	if (n) {
-		lwsl_err("mbedtls_ecdsa_genkey failed 0x%x\n", -n);
+		aws_lwsl_err("mbedtls_ecdsa_genkey failed 0x%x\n", -n);
 		goto bail1;
 	}
 
@@ -269,13 +269,13 @@ lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 	n = mbedtls_ecdh_get_params(ctx->u.ctx_ecdh, kp,
 				    (mbedtls_ecdh_side)side);
 	if (n) {
-		lwsl_err("mbedtls_ecdh_get_params failed 0x%x\n", -n);
+		aws_lwsl_err("mbedtls_ecdh_get_params failed 0x%x\n", -n);
 		goto bail1;
 	}
 
 	/*
 	 * we need to capture the individual element BIGNUMs into
-	 * lws_gencrypto_keyelem, so they can be serialized, used in jwk etc
+	 * aws_lws_gencrypto_keyelem, so they can be serialized, used in jwk etc
 	 */
 
 	mpi[0] = &kp->MBEDTLS_PRIVATE(Q).MBEDTLS_PRIVATE(X);
@@ -284,7 +284,7 @@ lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 
 	el[LWS_GENCRYPTO_EC_KEYEL_CRV].len = (uint32_t)strlen(curve_name) + 1;
 	el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf =
-			lws_malloc(el[LWS_GENCRYPTO_EC_KEYEL_CRV].len, "ec");
+			aws_lws_malloc(el[LWS_GENCRYPTO_EC_KEYEL_CRV].len, "ec");
 	if (!el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf)
 		goto bail1;
 	strcpy((char *)el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf, curve_name);
@@ -292,7 +292,7 @@ lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 	for (n = LWS_GENCRYPTO_EC_KEYEL_X; n < LWS_GENCRYPTO_EC_KEYEL_COUNT;
 	     n++) {
 		el[n].len = curve->key_bytes;
-		el[n].buf = lws_malloc(curve->key_bytes, "ec");
+		el[n].buf = aws_lws_malloc(curve->key_bytes, "ec");
 		if (!el[n].buf)
 			goto bail2;
 
@@ -308,20 +308,20 @@ lws_genecdh_new_keypair(struct lws_genec_ctx *ctx, enum enum_lws_dh_side side,
 bail2:
 	for (n = 0; n < LWS_GENCRYPTO_EC_KEYEL_COUNT; n++)
 		if (el[n].buf)
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_free_set_NULL(el[n].buf);
 bail1:
 	mbedtls_ecdsa_free(&ecdsa);
 
-	lws_free_set_NULL(ctx->u.ctx_ecdh);
+	aws_lws_free_set_NULL(ctx->u.ctx_ecdh);
 
 	return -1;
 }
 
 int
-lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
-			 struct lws_gencrypto_keyelem *el)
+aws_lws_genecdsa_new_keypair(struct aws_lws_genec_ctx *ctx, const char *curve_name,
+			 struct aws_lws_gencrypto_keyelem *el)
 {
-	const struct lws_ec_curves *curve;
+	const struct aws_lws_ec_curves *curve;
 	mbedtls_ecp_keypair *kp;
 	mbedtls_mpi *mpi[3];
 	int n;
@@ -329,9 +329,9 @@ lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
 	if (ctx->genec_alg != LEGENEC_ECDSA)
 		return -1;
 
-	curve = lws_genec_curve(ctx->curve_table, curve_name);
+	curve = aws_lws_genec_curve(ctx->curve_table, curve_name);
 	if (!curve) {
-		lwsl_err("%s: curve '%s' not supported\n",
+		aws_lwsl_err("%s: curve '%s' not supported\n",
 			 __func__, curve_name);
 
 		return -22;
@@ -339,15 +339,15 @@ lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
 
 	//mbedtls_ecdsa_init(ctx->u.ctx_ecdsa);
 	n = mbedtls_ecdsa_genkey(ctx->u.ctx_ecdsa, (mbedtls_ecp_group_id)curve->tls_lib_nid,
-				 lws_gencrypto_mbedtls_rngf, ctx->context);
+				 aws_lws_gencrypto_mbedtls_rngf, ctx->context);
 	if (n) {
-		lwsl_err("mbedtls_ecdsa_genkey failed 0x%x\n", -n);
+		aws_lwsl_err("mbedtls_ecdsa_genkey failed 0x%x\n", -n);
 		goto bail1;
 	}
 
 	/*
 	 * we need to capture the individual element BIGNUMs into
-	 * lws_gencrypto_keyelems, so they can be serialized, used in jwk etc
+	 * aws_lws_gencrypto_keyelems, so they can be serialized, used in jwk etc
 	 */
 
 	kp = (mbedtls_ecp_keypair *)ctx->u.ctx_ecdsa;
@@ -358,7 +358,7 @@ lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
 
 	el[LWS_GENCRYPTO_EC_KEYEL_CRV].len = (uint32_t)strlen(curve_name) + 1;
 	el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf =
-			lws_malloc(el[LWS_GENCRYPTO_EC_KEYEL_CRV].len, "ec");
+			aws_lws_malloc(el[LWS_GENCRYPTO_EC_KEYEL_CRV].len, "ec");
 	if (!el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf)
 		goto bail1;
 	strcpy((char *)el[LWS_GENCRYPTO_EC_KEYEL_CRV].buf, curve_name);
@@ -366,13 +366,13 @@ lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
 	for (n = LWS_GENCRYPTO_EC_KEYEL_X; n < LWS_GENCRYPTO_EC_KEYEL_COUNT;
 	     n++) {
 		el[n].len = curve->key_bytes;
-		el[n].buf = lws_malloc(curve->key_bytes, "ec");
+		el[n].buf = aws_lws_malloc(curve->key_bytes, "ec");
 		if (!el[n].buf)
 			goto bail2;
 
 
 		if (mbedtls_mpi_write_binary(mpi[n - 1], el[n].buf, el[n].len)) {
-			lwsl_err("%s: mbedtls_mpi_write_binary failed\n", __func__);
+			aws_lwsl_err("%s: mbedtls_mpi_write_binary failed\n", __func__);
 			goto bail2;
 		}
 	}
@@ -382,21 +382,21 @@ lws_genecdsa_new_keypair(struct lws_genec_ctx *ctx, const char *curve_name,
 bail2:
 	for (n = 0; n < LWS_GENCRYPTO_EC_KEYEL_COUNT; n++)
 		if (el[n].buf)
-			lws_free_set_NULL(el[n].buf);
+			aws_lws_free_set_NULL(el[n].buf);
 bail1:
 
-	lws_free_set_NULL(ctx->u.ctx_ecdsa);
+	aws_lws_free_set_NULL(ctx->u.ctx_ecdsa);
 
 	return -1;
 }
 
 int
-lws_genecdsa_hash_sign_jws(struct lws_genec_ctx *ctx, const uint8_t *in,
-			   enum lws_genhash_types hash_type, int keybits,
+aws_lws_genecdsa_hash_sign_jws(struct aws_lws_genec_ctx *ctx, const uint8_t *in,
+			   enum aws_lws_genhash_types hash_type, int keybits,
 			   uint8_t *sig, size_t sig_len)
 {
-	int n, keybytes = lws_gencrypto_bits_to_bytes(keybits);
-	size_t hlen = lws_genhash_size(hash_type);
+	int n, keybytes = aws_lws_gencrypto_bits_to_bytes(keybits);
+	size_t hlen = aws_lws_genhash_size(hash_type);
 	mbedtls_mpi mpi_r, mpi_s;
 	size_t slen = sig_len;
 
@@ -427,9 +427,9 @@ lws_genecdsa_hash_sign_jws(struct lws_genec_ctx *ctx, const uint8_t *in,
 
 	n = mbedtls_ecdsa_sign(&ECDSACTX(ctx, grp), &mpi_r, &mpi_s,
 			       &ECDSACTX(ctx, d), in, hlen,
-			lws_gencrypto_mbedtls_rngf, ctx->context);
+			aws_lws_gencrypto_mbedtls_rngf, ctx->context);
 	if (n) {
-		lwsl_err("%s: mbedtls_ecdsa_sign failed: -0x%x\n",
+		aws_lwsl_err("%s: mbedtls_ecdsa_sign failed: -0x%x\n",
 			 __func__, -n);
 
 		goto bail2;
@@ -453,12 +453,12 @@ bail1:
 }
 
 int
-lws_genecdsa_hash_sig_verify_jws(struct lws_genec_ctx *ctx, const uint8_t *in,
-				 enum lws_genhash_types hash_type, int keybits,
+aws_lws_genecdsa_hash_sig_verify_jws(struct aws_lws_genec_ctx *ctx, const uint8_t *in,
+				 enum aws_lws_genhash_types hash_type, int keybits,
 				 const uint8_t *sig, size_t sig_len)
 {
-	int n, keybytes = lws_gencrypto_bits_to_bytes(keybits);
-	size_t hlen = lws_genhash_size(hash_type);
+	int n, keybytes = aws_lws_gencrypto_bits_to_bytes(keybits);
+	size_t hlen = aws_lws_genhash_size(hash_type);
 	mbedtls_mpi mpi_r, mpi_s;
 
 	if (ctx->genec_alg != LEGENEC_ECDSA)
@@ -496,7 +496,7 @@ lws_genecdsa_hash_sig_verify_jws(struct lws_genec_ctx *ctx, const uint8_t *in,
 	mbedtls_mpi_free(&mpi_r);
 
 	if (n) {
-		lwsl_err("%s: mbedtls_ecdsa_verify failed: -0x%x\n",
+		aws_lwsl_err("%s: mbedtls_ecdsa_verify failed: -0x%x\n",
 			 __func__, -n);
 
 		goto bail;
@@ -512,20 +512,20 @@ bail:
 }
 
 int
-lws_genecdh_compute_shared_secret(struct lws_genec_ctx *ctx, uint8_t *ss,
+aws_lws_genecdh_compute_shared_secret(struct aws_lws_genec_ctx *ctx, uint8_t *ss,
 				  int *ss_len)
 {
 	int n;
 	size_t st;
 	if (mbedtls_ecp_check_pubkey(&ECDHCTX(ctx, grp), &ECDHCTX(ctx, Q)) ||
 	    mbedtls_ecp_check_pubkey(&ECDHCTX(ctx, grp), &ECDHCTX(ctx, Qp))) {
-		lwsl_err("%s: both sides must be set up\n", __func__);
+		aws_lwsl_err("%s: both sides must be set up\n", __func__);
 
 		return -1;
 	}
 
 	n = mbedtls_ecdh_calc_secret(ctx->u.ctx_ecdh, &st, ss, (size_t)*ss_len,
-			lws_gencrypto_mbedtls_rngf, ctx->context);
+			aws_lws_gencrypto_mbedtls_rngf, ctx->context);
 	if (n)
 		return -1;
 

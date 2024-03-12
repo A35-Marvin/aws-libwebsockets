@@ -45,7 +45,7 @@ time_t mktime(struct tm *t)
 #endif
 
 static time_t
-lws_tls_mbedtls_time_to_unix(mbedtls_x509_time *xtime)
+aws_lws_tls_mbedtls_time_to_unix(mbedtls_x509_time *xtime)
 {
 	struct tm t;
 
@@ -66,8 +66,8 @@ lws_tls_mbedtls_time_to_unix(mbedtls_x509_time *xtime)
 }
 
 static int
-lws_tls_mbedtls_get_x509_name(mbedtls_x509_name *name,
-			      union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_tls_mbedtls_get_x509_name(mbedtls_x509_name *name,
+			      union aws_lws_tls_cert_info_results *buf, size_t len)
 {
 	int r = -1;
 
@@ -80,7 +80,7 @@ lws_tls_mbedtls_get_x509_name(mbedtls_x509_name *name,
 			continue;
 		}
 */
-		lws_strnncpy(&buf->ns.name[buf->ns.len],
+		aws_lws_strnncpy(&buf->ns.name[buf->ns.len],
 			     (const char *)name->MBEDTLS_PRIVATE(val).MBEDTLS_PRIVATE(p),
 			     name->MBEDTLS_PRIVATE(val).MBEDTLS_PRIVATE(len),
 			     len - (size_t)buf->ns.len);
@@ -95,11 +95,11 @@ lws_tls_mbedtls_get_x509_name(mbedtls_x509_name *name,
 
 
 int
-lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
-			  union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum aws_lws_tls_cert_info type,
+			  union aws_lws_tls_cert_info_results *buf, size_t len)
 {
 	mbedtls_x509_buf skid;
-	lws_mbedtls_x509_authority akid;
+	aws_lws_mbedtls_x509_authority akid;
 
 	if (!x509)
 		return -1;
@@ -109,22 +109,22 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 
 	switch (type) {
 	case LWS_TLS_CERT_INFO_VALIDITY_FROM:
-		buf->time = lws_tls_mbedtls_time_to_unix(&x509->MBEDTLS_PRIVATE(valid_from));
+		buf->time = aws_lws_tls_mbedtls_time_to_unix(&x509->MBEDTLS_PRIVATE(valid_from));
 		if (buf->time == (time_t)(long long)-1)
 			return -1;
 		break;
 
 	case LWS_TLS_CERT_INFO_VALIDITY_TO:
-		buf->time = lws_tls_mbedtls_time_to_unix(&x509->MBEDTLS_PRIVATE(valid_to));
+		buf->time = aws_lws_tls_mbedtls_time_to_unix(&x509->MBEDTLS_PRIVATE(valid_to));
 		if (buf->time == (time_t)(long long)-1)
 			return -1;
 		break;
 
 	case LWS_TLS_CERT_INFO_COMMON_NAME:
-		return lws_tls_mbedtls_get_x509_name(&x509->MBEDTLS_PRIVATE(subject), buf, len);
+		return aws_lws_tls_mbedtls_get_x509_name(&x509->MBEDTLS_PRIVATE(subject), buf, len);
 
 	case LWS_TLS_CERT_INFO_ISSUER_NAME:
-		return lws_tls_mbedtls_get_x509_name(&x509->MBEDTLS_PRIVATE(issuer), buf, len);
+		return aws_lws_tls_mbedtls_get_x509_name(&x509->MBEDTLS_PRIVATE(issuer), buf, len);
 
 	case LWS_TLS_CERT_INFO_USAGE:
 		buf->usage = x509->MBEDTLS_PRIVATE(key_usage);
@@ -148,7 +148,7 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 				return -1;
 
 			p += u;
-			buf->ns.len = lws_ptr_diff(p, buf->ns.name);
+			buf->ns.len = aws_lws_ptr_diff(p, buf->ns.name);
 			break;
 		}
 		case MBEDTLS_PK_ECKEY:
@@ -166,11 +166,11 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 			if (mbedtls_mpi_write_string(&ecp->MBEDTLS_PRIVATE(Q).MBEDTLS_PRIVATE(Z), 16, p, r, &u))
 				 return -1;
 			p += u;
-			buf->ns.len = lws_ptr_diff(p, buf->ns.name);
+			buf->ns.len = aws_lws_ptr_diff(p, buf->ns.name);
 			break;
 		}
 		default:
-			lwsl_notice("%s: x509 has unsupported pubkey type %d\n",
+			aws_lwsl_notice("%s: x509 has unsupported pubkey type %d\n",
 				    __func__,
 				    mbedtls_pk_get_type(&x509->MBEDTLS_PRIVATE(pk)));
 
@@ -198,7 +198,7 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 		memset(&akid, 0, sizeof(akid));
 		memset(&skid, 0, sizeof(skid));
 
-		lws_x509_get_crt_ext(x509, &skid, &akid);
+		aws_lws_x509_get_crt_ext(x509, &skid, &akid);
 		if (akid.keyIdentifier.MBEDTLS_PRIVATE(tag) != MBEDTLS_ASN1_OCTET_STRING)
 			return 1;
 		buf->ns.len = (int)akid.keyIdentifier.MBEDTLS_PRIVATE(len);
@@ -214,7 +214,7 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 		memset(&akid, 0, sizeof(akid));
 		memset(&skid, 0, sizeof(skid));
 
-		lws_x509_get_crt_ext(x509, &skid, &akid);
+		aws_lws_x509_get_crt_ext(x509, &skid, &akid);
 
 		ip = &akid.authorityCertIssuer;
 
@@ -240,7 +240,7 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 		memset(&akid, 0, sizeof(akid));
 		memset(&skid, 0, sizeof(skid));
 
-		lws_x509_get_crt_ext(x509, &skid, &akid);
+		aws_lws_x509_get_crt_ext(x509, &skid, &akid);
 
 		if (akid.authorityCertSerialNumber.MBEDTLS_PRIVATE(tag) != MBEDTLS_ASN1_OCTET_STRING)
 			return 1;
@@ -257,7 +257,7 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 		memset(&akid, 0, sizeof(akid));
 		memset(&skid, 0, sizeof(skid));
 
-		lws_x509_get_crt_ext(x509, &skid, &akid);
+		aws_lws_x509_get_crt_ext(x509, &skid, &akid);
 
 		if (skid.MBEDTLS_PRIVATE(tag) != MBEDTLS_ASN1_OCTET_STRING)
 			return 1;
@@ -275,23 +275,23 @@ lws_tls_mbedtls_cert_info(mbedtls_x509_crt *x509, enum lws_tls_cert_info type,
 
 #if defined(LWS_WITH_NETWORK)
 int
-lws_tls_vhost_cert_info(struct lws_vhost *vhost, enum lws_tls_cert_info type,
-		        union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_tls_vhost_cert_info(struct aws_lws_vhost *vhost, enum aws_lws_tls_cert_info type,
+		        union aws_lws_tls_cert_info_results *buf, size_t len)
 {
 	mbedtls_x509_crt *x509;
 
 	x509 = ssl_ctx_get_mbedtls_x509_crt(vhost->tls.ssl_ctx);
 
-	return lws_tls_mbedtls_cert_info(x509, type, buf, len);
+	return aws_lws_tls_mbedtls_cert_info(x509, type, buf, len);
 }
 
 int
-lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
-		       union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_tls_peer_cert_info(struct lws *wsi, enum aws_lws_tls_cert_info type,
+		       union aws_lws_tls_cert_info_results *buf, size_t len)
 {
 	mbedtls_x509_crt *x509;
 
-	wsi = lws_get_network_wsi(wsi);
+	wsi = aws_lws_get_network_wsi(wsi);
 
 	x509 = ssl_get_peer_mbedtls_x509_crt(wsi->tls.ssl);
 
@@ -303,7 +303,7 @@ lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
 		buf->verified = SSL_get_verify_result(wsi->tls.ssl) == X509_V_OK;
 		return 0;
 	default:
-		return lws_tls_mbedtls_cert_info(x509, type, buf, len);
+		return aws_lws_tls_mbedtls_cert_info(x509, type, buf, len);
 	}
 
 	return -1;
@@ -311,16 +311,16 @@ lws_tls_peer_cert_info(struct lws *wsi, enum lws_tls_cert_info type,
 #endif
 
 int
-lws_x509_info(struct lws_x509_cert *x509, enum lws_tls_cert_info type,
-	      union lws_tls_cert_info_results *buf, size_t len)
+aws_lws_x509_info(struct aws_lws_x509_cert *x509, enum aws_lws_tls_cert_info type,
+	      union aws_lws_tls_cert_info_results *buf, size_t len)
 {
-	return lws_tls_mbedtls_cert_info(&x509->cert, type, buf, len);
+	return aws_lws_tls_mbedtls_cert_info(&x509->cert, type, buf, len);
 }
 
 int
-lws_x509_create(struct lws_x509_cert **x509)
+aws_lws_x509_create(struct aws_lws_x509_cert **x509)
 {
-	*x509 = lws_malloc(sizeof(**x509), __func__);
+	*x509 = aws_lws_malloc(sizeof(**x509), __func__);
 
 	return !(*x509);
 }
@@ -331,7 +331,7 @@ lws_x509_create(struct lws_x509_cert **x509)
  */
 
 int
-lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len)
+aws_lws_x509_parse_from_pem(struct aws_lws_x509_cert *x509, const void *pem, size_t len)
 {
 	int ret;
 
@@ -341,7 +341,7 @@ lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len)
 	if (ret) {
 		if (ret > 0)
 			mbedtls_x509_crt_free(&x509->cert);
-		lwsl_err("%s: unable to parse PEM cert: -0x%x\n",
+		aws_lwsl_err("%s: unable to parse PEM cert: -0x%x\n",
 			 __func__, -ret);
 
 		return -1;
@@ -351,7 +351,7 @@ lws_x509_parse_from_pem(struct lws_x509_cert *x509, const void *pem, size_t len)
 }
 
 int
-lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
+aws_lws_x509_verify(struct aws_lws_x509_cert *x509, struct aws_lws_x509_cert *trusted,
 		const char *common_name)
 {
 	uint32_t flags = 0;
@@ -364,7 +364,7 @@ lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
 						   NULL);
 
 	if (ret) {
-		lwsl_err("%s: unable to parse PEM cert: -0x%x\n",
+		aws_lwsl_err("%s: unable to parse PEM cert: -0x%x\n",
 			 __func__, -ret);
 
 		return -1;
@@ -376,7 +376,7 @@ lws_x509_verify(struct lws_x509_cert *x509, struct lws_x509_cert *trusted,
 #if defined(LWS_WITH_JOSE)
 
 int
-lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
+aws_lws_x509_public_to_jwk(struct aws_lws_jwk *jwk, struct aws_lws_x509_cert *x509,
 		       const char *curves, int rsa_min_bits)
 {
 	int kt = (int)mbedtls_pk_get_type(&x509->cert.MBEDTLS_PRIVATE(pk)),
@@ -389,7 +389,7 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 
 	switch (kt) {
 	case MBEDTLS_PK_RSA:
-		lwsl_notice("%s: RSA key\n", __func__);
+		aws_lwsl_notice("%s: RSA key\n", __func__);
 		jwk->kty = LWS_GENCRYPTO_KTY_RSA;
 		rsactx = mbedtls_pk_rsa(x509->cert.MBEDTLS_PRIVATE(pk));
 
@@ -407,14 +407,14 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 		break;
 
 	case MBEDTLS_PK_ECKEY:
-		lwsl_notice("%s: EC key\n", __func__);
+		aws_lwsl_notice("%s: EC key\n", __func__);
 		jwk->kty = LWS_GENCRYPTO_KTY_EC;
 		ecpctx = mbedtls_pk_ec(x509->cert.MBEDTLS_PRIVATE(pk));
 		mpi[LWS_GENCRYPTO_EC_KEYEL_X] = &ecpctx->MBEDTLS_PRIVATE(Q).MBEDTLS_PRIVATE(X);
 		mpi[LWS_GENCRYPTO_EC_KEYEL_D] = &ecpctx->MBEDTLS_PRIVATE(d);
 		mpi[LWS_GENCRYPTO_EC_KEYEL_Y] = &ecpctx->MBEDTLS_PRIVATE(Q).MBEDTLS_PRIVATE(Y);
 
-		if (lws_genec_confirm_curve_allowed_by_tls_id(curves,
+		if (aws_lws_genec_confirm_curve_allowed_by_tls_id(curves,
 				(int)ecpctx->MBEDTLS_PRIVATE(grp).id, jwk))
 			/* already logged */
 			goto bail;
@@ -423,7 +423,7 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 		n = LWS_GENCRYPTO_EC_KEYEL_X;
 		break;
 	default:
-		lwsl_err("%s: key type %d not supported\n", __func__, kt);
+		aws_lwsl_err("%s: key type %d not supported\n", __func__, kt);
 
 		return -1;
 	}
@@ -432,7 +432,7 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 		if (!mbedtls_mpi_size(mpi[n]))
 			continue;
 
-		jwk->e[n].buf = lws_malloc(mbedtls_mpi_size(mpi[n]), "certjwk");
+		jwk->e[n].buf = aws_lws_malloc(mbedtls_mpi_size(mpi[n]), "certjwk");
 		if (!jwk->e[n].buf)
 			goto bail;
 		jwk->e[n].len = (uint32_t)mbedtls_mpi_size(mpi[n]);
@@ -444,13 +444,13 @@ lws_x509_public_to_jwk(struct lws_jwk *jwk, struct lws_x509_cert *x509,
 bail:
 	/* jwk destroy will clean up partials */
 	if (ret)
-		lws_jwk_destroy(jwk);
+		aws_lws_jwk_destroy(jwk);
 
 	return ret;
 }
 
 int
-lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
+aws_lws_x509_jwk_privkey_pem(struct aws_lws_context *cx, struct aws_lws_jwk *jwk,
 			 void *pem, size_t len, const char *passphrase)
 {
 	mbedtls_rsa_context *rsactx;
@@ -470,7 +470,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 #endif
 			);
 	if (n) {
-		lwsl_err("%s: parse PEM key failed: -0x%x\n", __func__, -n);
+		aws_lwsl_err("%s: parse PEM key failed: -0x%x\n", __func__, -n);
 
 		return -1;
 	}
@@ -479,7 +479,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 	switch (mbedtls_pk_get_type(&pk)) {
 	case MBEDTLS_PK_RSA:
 		if (jwk->kty != LWS_GENCRYPTO_KTY_RSA) {
-			lwsl_err("%s: RSA privkey, non-RSA jwk\n", __func__);
+			aws_lwsl_err("%s: RSA privkey, non-RSA jwk\n", __func__);
 			goto bail;
 		}
 		rsactx = mbedtls_pk_rsa(pk);
@@ -491,7 +491,7 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 		break;
 	case MBEDTLS_PK_ECKEY:
 		if (jwk->kty != LWS_GENCRYPTO_KTY_EC) {
-			lwsl_err("%s: EC privkey, non-EC jwk\n", __func__);
+			aws_lwsl_err("%s: EC privkey, non-EC jwk\n", __func__);
 			goto bail;
 		}
 		ecpctx = mbedtls_pk_ec(pk);
@@ -500,18 +500,18 @@ lws_x509_jwk_privkey_pem(struct lws_context *cx, struct lws_jwk *jwk,
 		count = n + 1;
 		break;
 	default:
-		lwsl_err("%s: unusable key type %d\n", __func__,
+		aws_lwsl_err("%s: unusable key type %d\n", __func__,
 				mbedtls_pk_get_type(&pk));
 		goto bail;
 	}
 
 	for (; n < count; n++) {
 		if (!mbedtls_mpi_size(mpi[n])) {
-			lwsl_err("%s: empty privkey\n", __func__);
+			aws_lwsl_err("%s: empty privkey\n", __func__);
 			goto bail;
 		}
 
-		jwk->e[n].buf = lws_malloc(mbedtls_mpi_size(mpi[n]), "certjwk");
+		jwk->e[n].buf = aws_lws_malloc(mbedtls_mpi_size(mpi[n]), "certjwk");
 		if (!jwk->e[n].buf)
 			goto bail;
 		jwk->e[n].len = (uint32_t)mbedtls_mpi_size(mpi[n]);
@@ -528,12 +528,12 @@ bail:
 #endif
 
 void
-lws_x509_destroy(struct lws_x509_cert **x509)
+aws_lws_x509_destroy(struct aws_lws_x509_cert **x509)
 {
 	if (!*x509)
 		return;
 
 	mbedtls_x509_crt_free(&(*x509)->cert);
 
-	lws_free_set_NULL(*x509);
+	aws_lws_free_set_NULL(*x509);
 }

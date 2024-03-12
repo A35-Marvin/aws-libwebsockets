@@ -42,19 +42,19 @@
  * One of these per chunk
  */
 
-struct lwsac {
-	struct lwsac *next;
-	struct lwsac *head; /* pointer back to the first chunk */
+struct aws_lwsac {
+	struct aws_lwsac *next;
+	struct aws_lwsac *head; /* pointer back to the first chunk */
 	size_t alloc_size; /* alloc size of the whole chunk */
 	size_t ofs; /* next writeable position inside chunk */
 };
 
 /*
- * One of these per lwsac, at start of first chunk
+ * One of these per aws_lwsac, at start of first chunk
  */
 
-struct lwsac_head {
-	struct lwsac *curr;
+struct aws_lwsac_head {
+	struct aws_lwsac *curr;
 	size_t total_alloc_size;
 	int refcount;
 	int total_blocks;

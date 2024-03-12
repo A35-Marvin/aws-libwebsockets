@@ -21,7 +21,7 @@ output.
 ```
  $ ./lws-minimal-http-server-cgi
 [2019/11/18 16:31:29:5481] U: LWS minimal http server | visit http://localhost:7681
-[2019/11/18 16:31:40:2176] N: CGI-stderr: lwstest script stderr: REQUEST_METHOD was GET
+[2019/11/18 16:31:40:2176] N: CGI-stderr: aws_lwstest script stderr: REQUEST_METHOD was GET
 ```
 
 Visit http://localhost:7681

@@ -37,38 +37,38 @@ typedef enum {
 	SSSEQ_RECONNECT_WAIT,
 	SSSEQ_DO_RETRY,
 	SSSEQ_CONNECTED,
-} lws_ss_seq_state_t;
+} aws_lws_ss_seq_state_t;
 
 struct conn;
 
 /**
- * lws_ss_handle_t: publicly-opaque secure stream object implementation
+ * aws_lws_ss_handle_t: publicly-opaque secure stream object implementation
  */
 
-typedef struct lws_ss_handle {
-	lws_ss_info_t		info;	  /**< copy of stream creation info */
+typedef struct aws_lws_ss_handle {
+	aws_lws_ss_info_t		info;	  /**< copy of stream creation info */
 
-	lws_lifecycle_t		lc;
+	aws_lws_lifecycle_t		lc;
 
 #if defined(LWS_WITH_SYS_METRICS)
-	lws_metrics_caliper_compose(cal_txn)
+	aws_lws_metrics_caliper_compose(cal_txn)
 #endif
 
-	struct lws_dll2		list;	  /**< pt lists active ss */
-	struct lws_dll2		to_list;  /**< pt lists ss with pending to-s */
+	struct aws_lws_dll2		list;	  /**< pt lists active ss */
+	struct aws_lws_dll2		to_list;  /**< pt lists ss with pending to-s */
 #if defined(LWS_WITH_SERVER)
-	struct lws_dll2		cli_list;  /**< same server clients list */
+	struct aws_lws_dll2		cli_list;  /**< same server clients list */
 #endif
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	lws_fi_ctx_t		fic;	/**< Fault Injection context */
+	aws_lws_fi_ctx_t		fic;	/**< Fault Injection context */
 #endif
 
-	struct lws_dll2_owner	src_list; /**< sink's list of bound sources */
+	struct aws_lws_dll2_owner	src_list; /**< sink's list of bound sources */
 
-	struct lws_context      *context; /**< lws context we are created on */
-	const lws_ss_policy_t	*policy;  /**< system policy for stream */
+	struct aws_lws_context      *context; /**< lws context we are created on */
+	const aws_lws_ss_policy_t	*policy;  /**< system policy for stream */
 
-	struct lws_sequencer	*seq;	  /**< owning sequencer if any */
+	struct aws_lws_sequencer	*seq;	  /**< owning sequencer if any */
 	struct lws		*wsi;	  /**< the stream wsi if any */
 
 	struct conn		*conn_if_sspc_onw;
@@ -78,24 +78,24 @@ typedef struct lws_ss_handle {
 	void			*sauthi;  /**< the sauth plugin instance data */
 #endif
 
-	lws_ss_metadata_t	*metadata;
+	aws_lws_ss_metadata_t	*metadata;
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
-	lws_ss_metadata_t	*instant_metadata; /**< for set instant metadata */
-	struct lwsac            *imd_ac;           /**< for get custom header */
+	aws_lws_ss_metadata_t	*instant_metadata; /**< for set instant metadata */
+	struct aws_lwsac            *imd_ac;           /**< for get custom header */
 #endif
-	const lws_ss_policy_t	*rideshare;
-	struct lws_ss_handle	*h_in_svc;
+	const aws_lws_ss_policy_t	*rideshare;
+	struct aws_lws_ss_handle	*h_in_svc;
 
 #if defined(LWS_WITH_CONMON)
 	char			*conmon_json;
 #endif
 
-	//struct lws_ss_handle	*h_sink;  /**< sink we are bound to, or NULL */
+	//struct aws_lws_ss_handle	*h_sink;  /**< sink we are bound to, or NULL */
 	//void 			*sink_obj;/**< sink's private object representing us */
 
-	lws_sorted_usec_list_t	sul_timeout;
-	lws_sorted_usec_list_t	sul;
-	lws_ss_tx_ordinal_t	txord;
+	aws_lws_sorted_usec_list_t	sul_timeout;
+	aws_lws_sorted_usec_list_t	sul;
+	aws_lws_ss_tx_ordinal_t	txord;
 
 	/* protocol-specific connection helpers */
 
@@ -144,9 +144,9 @@ typedef struct lws_ss_handle {
 		/* details for non-http related protocols... */
 #if defined(LWS_ROLE_MQTT)
 		struct {
-			lws_mqtt_topic_elem_t		topic_qos;
-			lws_mqtt_topic_elem_t		sub_top;
-			lws_mqtt_subscribe_param_t 	sub_info;
+			aws_lws_mqtt_topic_elem_t		topic_qos;
+			aws_lws_mqtt_topic_elem_t		sub_top;
+			aws_lws_mqtt_subscribe_param_t 	sub_info;
 			/* allocation that must be destroyed with conn */
 			void				*heap_baggage;
 			const char			*subscribe_to;
@@ -155,17 +155,17 @@ typedef struct lws_ss_handle {
 #endif
 #if defined(LWS_WITH_SYS_SMD)
 		struct {
-			struct lws_smd_peer		*smd_peer;
-			lws_sorted_usec_list_t		sul_write;
+			struct aws_lws_smd_peer		*smd_peer;
+			aws_lws_sorted_usec_list_t		sul_write;
 		} smd;
 #endif
 	} u;
 
 	unsigned long		writeable_len;
 
-	lws_ss_constate_t	connstate;/**< public connection state */
-	lws_ss_seq_state_t	seqstate; /**< private connection state */
-	lws_ss_state_return_t	pending_ret; /**< holds desired disposition
+	aws_lws_ss_constate_t	connstate;/**< public connection state */
+	aws_lws_ss_seq_state_t	seqstate; /**< private connection state */
+	aws_lws_ss_state_return_t	pending_ret; /**< holds desired disposition
 						* for ss during CCE */
 
 #if defined(LWS_WITH_SERVER)
@@ -194,13 +194,13 @@ typedef struct lws_ss_handle {
 	uint8_t			inside_connect:1; /* set if we are currently
 						   * creating the onward
 						   * connect */
-} lws_ss_handle_t;
+} aws_lws_ss_handle_t;
 
 /* connection helper that doesn't need to hang around after connection starts */
 
-union lws_ss_contemp {
+union aws_lws_ss_contemp {
 #if defined(LWS_ROLE_MQTT)
-	lws_mqtt_client_connect_param_t ccp;
+	aws_lws_mqtt_client_connect_param_t ccp;
 #else
 #if defined(WIN32)
 	uint8_t	dummy;
@@ -232,14 +232,14 @@ enum {
 	KIND_SS_TO_P,
 };
 
-struct lws_ss_serialization_parser {
+struct aws_lws_ss_serialization_parser {
 	char			streamtype[32];
 	char			rideshare[32];
 	char			metadata_name[32];
 
 	uint64_t		ust_pwait;
 
-	lws_ss_metadata_t	*ssmd;
+	aws_lws_ss_metadata_t	*ssmd;
 	uint8_t			*rxmetaval;
 
 	int			ps;
@@ -276,14 +276,14 @@ struct lws_ss_serialization_parser {
  * This is also used to queue tx credit changes
  */
 
-typedef struct lws_sspc_metadata {
-	lws_dll2_t	list;
+typedef struct aws_lws_sspc_metadata {
+	aws_lws_dll2_t	list;
 	char		name[32];  /* empty string, then actually TCXR */
 	size_t		len;
 	int		tx_cr_adjust;
 
 	/* the value of length .len is overallocated after this */
-} lws_sspc_metadata_t;
+} aws_lws_sspc_metadata_t;
 
 /* state of the upstream proxy onward connection */
 
@@ -294,47 +294,47 @@ enum {
 	LWSSSPC_ONW_CONN,
 };
 
-typedef struct lws_sspc_handle {
+typedef struct aws_lws_sspc_handle {
 	char			rideshare_list[128];
 
-	lws_lifecycle_t		lc;
+	aws_lws_lifecycle_t		lc;
 
-	lws_ss_info_t		ssi;
-	lws_sorted_usec_list_t	sul_retry;
+	aws_lws_ss_info_t		ssi;
+	aws_lws_sorted_usec_list_t	sul_retry;
 
-	struct lws_ss_serialization_parser parser;
+	struct aws_lws_ss_serialization_parser parser;
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	lws_fi_ctx_t		fic;	/**< Fault Injection context */
+	aws_lws_fi_ctx_t		fic;	/**< Fault Injection context */
 #endif
 
-	lws_dll2_owner_t	metadata_owner;
-	lws_dll2_owner_t	metadata_owner_rx;
+	aws_lws_dll2_owner_t	metadata_owner;
+	aws_lws_dll2_owner_t	metadata_owner_rx;
 
-	struct lws_dll2		client_list;
-	struct lws_tx_credit	txc;
+	struct aws_lws_dll2		client_list;
+	struct aws_lws_tx_credit	txc;
 
 #if defined(LWS_WITH_SYS_METRICS)
-	lws_metrics_caliper_compose(cal_txn)
+	aws_lws_metrics_caliper_compose(cal_txn)
 #endif
 
 	struct lws		*cwsi;
 
-	struct lws_dsh		*dsh;
-	struct lws_context	*context;
+	struct aws_lws_dsh		*dsh;
+	struct aws_lws_context	*context;
 
-	struct lws_sspc_handle	*h_in_svc;
+	struct aws_lws_sspc_handle	*h_in_svc;
 	/*
-	 * Used to detect illegal lws_sspc_destroy() calls while still
+	 * Used to detect illegal aws_lws_sspc_destroy() calls while still
 	 * being serviced
 	 */
 
-	lws_usec_t		us_earliest_write_req;
-	lws_usec_t		us_start_upstream;
+	aws_lws_usec_t		us_earliest_write_req;
+	aws_lws_usec_t		us_start_upstream;
 
 	unsigned long		writeable_len;
 
-	lws_ss_conn_states_t	state;
+	aws_lws_ss_conn_states_t	state;
 
 	uint32_t		timeout_ms;
 	uint32_t		ord;
@@ -354,21 +354,21 @@ typedef struct lws_sspc_handle {
 	uint8_t			pending_writeable_len:1;
 	uint8_t			creating_cb_done:1;
 	uint8_t			ss_dangling_connected:1;
-} lws_sspc_handle_t;
+} aws_lws_sspc_handle_t;
 
 typedef struct backoffs {
 	struct backoffs *next;
 	const char *name;
-	lws_retry_bo_t r;
+	aws_lws_retry_bo_t r;
 } backoff_t;
 
 union u {
 	backoff_t		*b;
-	lws_ss_x509_t		*x;
-	lws_ss_trust_store_t	*t;
-	lws_ss_policy_t		*p;
-	lws_ss_auth_t		*a;
-	lws_metric_policy_t	*m;
+	aws_lws_ss_x509_t		*x;
+	aws_lws_ss_trust_store_t	*t;
+	aws_lws_ss_policy_t		*p;
+	aws_lws_ss_auth_t		*a;
+	aws_lws_metric_policy_t	*m;
 };
 
 enum {
@@ -385,14 +385,14 @@ enum {
 
 struct policy_cb_args {
 	struct lejp_ctx jctx;
-	struct lws_context *context;
-	struct lwsac *ac;
+	struct aws_lws_context *context;
+	struct aws_lwsac *ac;
 
 	const char *socks5_proxy;
 
-	struct lws_b64state b64;
+	struct aws_lws_b64state b64;
 
-	lws_ss_http_respmap_t respmap[16];
+	aws_lws_ss_http_respmap_t respmap[16];
 
 	union u heads[_LTY_COUNT];
 	union u curr[_LTY_COUNT];
@@ -406,7 +406,7 @@ struct policy_cb_args {
 };
 
 #if defined(LWS_WITH_SYS_SMD)
-extern const lws_ss_policy_t pol_smd;
+extern const aws_lws_ss_policy_t pol_smd;
 #endif
 
 
@@ -418,162 +418,162 @@ extern const lws_ss_policy_t pol_smd;
  *	LWSSSSRET_DESTROY_ME
  */
 int
-lws_ss_deserialize_parse(struct lws_ss_serialization_parser *par,
-			 struct lws_context *context,
-			 struct lws_dsh *dsh, const uint8_t *cp, size_t len,
-			 lws_ss_conn_states_t *state, void *parconn,
-			 lws_ss_handle_t **pss, lws_ss_info_t *ssi, char client);
+aws_lws_ss_deserialize_parse(struct aws_lws_ss_serialization_parser *par,
+			 struct aws_lws_context *context,
+			 struct aws_lws_dsh *dsh, const uint8_t *cp, size_t len,
+			 aws_lws_ss_conn_states_t *state, void *parconn,
+			 aws_lws_ss_handle_t **pss, aws_lws_ss_info_t *ssi, char client);
 int
-lws_ss_serialize_rx_payload(struct lws_dsh *dsh, const uint8_t *buf,
+aws_lws_ss_serialize_rx_payload(struct aws_lws_dsh *dsh, const uint8_t *buf,
 			    size_t len, int flags, const char *rsp);
 int
-lws_ss_deserialize_tx_payload(struct lws_dsh *dsh, struct lws *wsi,
-			      lws_ss_tx_ordinal_t ord, uint8_t *buf,
+aws_lws_ss_deserialize_tx_payload(struct aws_lws_dsh *dsh, struct lws *wsi,
+			      aws_lws_ss_tx_ordinal_t ord, uint8_t *buf,
 			      size_t *len, int *flags);
 int
-lws_ss_serialize_state(struct lws *wsi, struct lws_dsh *dsh, lws_ss_constate_t state,
-		       lws_ss_tx_ordinal_t ack);
+aws_lws_ss_serialize_state(struct lws *wsi, struct aws_lws_dsh *dsh, aws_lws_ss_constate_t state,
+		       aws_lws_ss_tx_ordinal_t ack);
 
-const lws_ss_policy_t *
-lws_ss_policy_lookup(const struct lws_context *context, const char *streamtype);
+const aws_lws_ss_policy_t *
+aws_lws_ss_policy_lookup(const struct aws_lws_context *context, const char *streamtype);
 
-/* can be used as a cb from lws_dll2_foreach_safe() to destroy ss */
+/* can be used as a cb from aws_lws_dll2_foreach_safe() to destroy ss */
 int
-lws_ss_destroy_dll(struct lws_dll2 *d, void *user);
+aws_lws_ss_destroy_dll(struct aws_lws_dll2 *d, void *user);
 
 int
-lws_sspc_destroy_dll(struct lws_dll2 *d, void *user);
+aws_lws_sspc_destroy_dll(struct aws_lws_dll2 *d, void *user);
 
 void
-lws_sspc_rxmetadata_destroy(lws_sspc_handle_t *h);
+aws_lws_sspc_rxmetadata_destroy(aws_lws_sspc_handle_t *h);
 
 int
-lws_ss_policy_set(struct lws_context *context, const char *name);
+aws_lws_ss_policy_set(struct aws_lws_context *context, const char *name);
 
 int
-lws_ss_sys_fetch_policy(struct lws_context *context);
+aws_lws_ss_sys_fetch_policy(struct aws_lws_context *context);
 
-lws_ss_state_return_t
-lws_ss_event_helper(lws_ss_handle_t *h, lws_ss_constate_t cs);
+aws_lws_ss_state_return_t
+aws_lws_ss_event_helper(aws_lws_ss_handle_t *h, aws_lws_ss_constate_t cs);
 
-lws_ss_state_return_t
-_lws_ss_backoff(lws_ss_handle_t *h, lws_usec_t us_override);
+aws_lws_ss_state_return_t
+_lws_ss_backoff(aws_lws_ss_handle_t *h, aws_lws_usec_t us_override);
 
-lws_ss_state_return_t
-lws_ss_backoff(lws_ss_handle_t *h);
-
-int
-_lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(lws_ss_state_return_t r, struct lws *wsi,
-			 lws_ss_handle_t **ph);
+aws_lws_ss_state_return_t
+aws_lws_ss_backoff(aws_lws_ss_handle_t *h);
 
 int
-lws_ss_set_timeout_us(lws_ss_handle_t *h, lws_usec_t us);
+_lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(aws_lws_ss_state_return_t r, struct lws *wsi,
+			 aws_lws_ss_handle_t **ph);
+
+int
+aws_lws_ss_set_timeout_us(aws_lws_ss_handle_t *h, aws_lws_usec_t us);
 
 void
 ss_proxy_onward_txcr(void *userobj, int bump);
 
 int
-lws_ss_serialize_txcr(struct lws_dsh *dsh, int txcr);
+aws_lws_ss_serialize_txcr(struct aws_lws_dsh *dsh, int txcr);
 
 int
-lws_ss_sys_auth_api_amazon_com(struct lws_context *context);
+aws_lws_ss_sys_auth_api_amazon_com(struct aws_lws_context *context);
 
-lws_ss_metadata_t *
-lws_ss_get_handle_metadata(struct lws_ss_handle *h, const char *name);
-lws_ss_metadata_t *
-lws_ss_policy_metadata_index(const lws_ss_policy_t *p, size_t index);
+aws_lws_ss_metadata_t *
+aws_lws_ss_get_handle_metadata(struct aws_lws_ss_handle *h, const char *name);
+aws_lws_ss_metadata_t *
+aws_lws_ss_policy_metadata_index(const aws_lws_ss_policy_t *p, size_t index);
 
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
-lws_ss_metadata_t *
-lws_ss_get_handle_instant_metadata(struct lws_ss_handle *h, const char *name);
+aws_lws_ss_metadata_t *
+aws_lws_ss_get_handle_instant_metadata(struct aws_lws_ss_handle *h, const char *name);
 #endif
 
-lws_ss_metadata_t *
-lws_ss_policy_metadata(const lws_ss_policy_t *p, const char *name);
+aws_lws_ss_metadata_t *
+aws_lws_ss_policy_metadata(const aws_lws_ss_policy_t *p, const char *name);
 
 int
-lws_ss_exp_cb_metadata(void *priv, const char *name, char *out, size_t *pos,
+aws_lws_ss_exp_cb_metadata(void *priv, const char *name, char *out, size_t *pos,
 			size_t olen, size_t *exp_ofs);
 
 int
-_lws_ss_set_metadata(lws_ss_metadata_t *omd, const char *name,
+_lws_ss_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 		     const void *value, size_t len);
 
 int
-_lws_ss_alloc_set_metadata(lws_ss_metadata_t *omd, const char *name,
+_lws_ss_alloc_set_metadata(aws_lws_ss_metadata_t *omd, const char *name,
 			   const void *value, size_t len);
 
-lws_ss_state_return_t
-_lws_ss_client_connect(lws_ss_handle_t *h, int is_retry, void *conn_if_sspc_onw);
+aws_lws_ss_state_return_t
+_lws_ss_client_connect(aws_lws_ss_handle_t *h, int is_retry, void *conn_if_sspc_onw);
 
-lws_ss_state_return_t
-_lws_ss_request_tx(lws_ss_handle_t *h);
+aws_lws_ss_state_return_t
+_lws_ss_request_tx(aws_lws_ss_handle_t *h);
 
 int
 __lws_ss_proxy_bind_ss_to_conn_wsi(void *parconn, size_t dsh_size);
 
-struct lws_vhost *
-lws_ss_policy_ref_trust_store(struct lws_context *context,
-			      const lws_ss_policy_t *pol, char doref);
+struct aws_lws_vhost *
+aws_lws_ss_policy_ref_trust_store(struct aws_lws_context *context,
+			      const aws_lws_ss_policy_t *pol, char doref);
 
-lws_ss_state_return_t
-lws_sspc_event_helper(lws_sspc_handle_t *h, lws_ss_constate_t cs,
-		      lws_ss_tx_ordinal_t flags);
-
-int
-lws_ss_check_next_state(lws_lifecycle_t *lc, uint8_t *prevstate,
-			lws_ss_constate_t cs);
+aws_lws_ss_state_return_t
+aws_lws_sspc_event_helper(aws_lws_sspc_handle_t *h, aws_lws_ss_constate_t cs,
+		      aws_lws_ss_tx_ordinal_t flags);
 
 int
-lws_ss_check_next_state_ss(lws_ss_handle_t *ss, uint8_t *prevstate,
-			   lws_ss_constate_t cs);
+aws_lws_ss_check_next_state(aws_lws_lifecycle_t *lc, uint8_t *prevstate,
+			aws_lws_ss_constate_t cs);
 
 int
-lws_ss_check_next_state_sspc(lws_sspc_handle_t *ss, uint8_t *prevstate,
-			     lws_ss_constate_t cs);
+aws_lws_ss_check_next_state_ss(aws_lws_ss_handle_t *ss, uint8_t *prevstate,
+			   aws_lws_ss_constate_t cs);
+
+int
+aws_lws_ss_check_next_state_sspc(aws_lws_sspc_handle_t *ss, uint8_t *prevstate,
+			     aws_lws_ss_constate_t cs);
 
 void
-lws_proxy_clean_conn_ss(struct lws *wsi);
+aws_lws_proxy_clean_conn_ss(struct lws *wsi);
 
 int
-lws_ss_cancel_notify_dll(struct lws_dll2 *d, void *user);
+aws_lws_ss_cancel_notify_dll(struct aws_lws_dll2 *d, void *user);
 
 int
-lws_sspc_cancel_notify_dll(struct lws_dll2 *d, void *user);
+aws_lws_sspc_cancel_notify_dll(struct aws_lws_dll2 *d, void *user);
 
 #if defined(LWS_WITH_SECURE_STREAMS_STATIC_POLICY_ONLY) || defined(LWS_WITH_SECURE_STREAMS_CPP)
 int
-lws_ss_policy_unref_trust_store(struct lws_context *context,
-				const lws_ss_policy_t *pol);
+aws_lws_ss_policy_unref_trust_store(struct aws_lws_context *context,
+				const aws_lws_ss_policy_t *pol);
 #endif
 
 int
-lws_ss_sys_cpd(struct lws_context *cx);
+aws_lws_ss_sys_cpd(struct aws_lws_context *cx);
 
 #if defined(LWS_WITH_SECURE_STREAMS_AUTH_SIGV4)
-int lws_ss_apply_sigv4(struct lws *wsi, struct lws_ss_handle *h,
+int aws_lws_ss_apply_sigv4(struct lws *wsi, struct aws_lws_ss_handle *h,
 		       unsigned char **p, unsigned char *end);
 #endif
 
 #if defined(_DEBUG)
 void
-lws_ss_assert_extant(struct lws_context *cx, int tsi, struct lws_ss_handle *h);
+aws_lws_ss_assert_extant(struct aws_lws_context *cx, int tsi, struct aws_lws_ss_handle *h);
 #else
-#define lws_ss_assert_extant(_a, _b, _c)
+#define aws_lws_ss_assert_extant(_a, _b, _c)
 #endif
 
-typedef int (* const secstream_protocol_connect_munge_t)(lws_ss_handle_t *h,
-		char *buf, size_t len, struct lws_client_connect_info *i,
-		union lws_ss_contemp *ct);
+typedef int (* const secstream_protocol_connect_munge_t)(aws_lws_ss_handle_t *h,
+		char *buf, size_t len, struct aws_lws_client_connect_info *i,
+		union aws_lws_ss_contemp *ct);
 
-typedef int (* const secstream_protocol_add_txcr_t)(lws_ss_handle_t *h, int add);
+typedef int (* const secstream_protocol_add_txcr_t)(aws_lws_ss_handle_t *h, int add);
 
-typedef int (* const secstream_protocol_get_txcr_t)(lws_ss_handle_t *h);
+typedef int (* const secstream_protocol_get_txcr_t)(aws_lws_ss_handle_t *h);
 
 struct ss_pcols {
 	const char					*name;
 	const char					*alpn;
-	const struct lws_protocols			*protocol;
+	const struct aws_lws_protocols			*protocol;
 	secstream_protocol_connect_munge_t		munge;
 	secstream_protocol_add_txcr_t			tx_cr_add;
 	secstream_protocol_get_txcr_t			tx_cr_est;
@@ -589,20 +589,20 @@ struct ss_pcols {
  * The last one of the accepted side and the onward side to close frees it.
  */
 
-lws_ss_state_return_t
-lws_conmon_ss_json(lws_ss_handle_t *h);
+aws_lws_ss_state_return_t
+aws_lws_conmon_ss_json(aws_lws_ss_handle_t *h);
 
 void
-ss_proxy_onward_link_req_writeable(lws_ss_handle_t *h_onward);
+ss_proxy_onward_link_req_writeable(aws_lws_ss_handle_t *h_onward);
 
 struct conn {
-	struct lws_ss_serialization_parser parser;
+	struct aws_lws_ss_serialization_parser parser;
 
-	lws_dsh_t		*dsh;	/* unified buffer for both sides */
+	aws_lws_dsh_t		*dsh;	/* unified buffer for both sides */
 	struct lws		*wsi;	/* the proxy's client side */
-	lws_ss_handle_t		*ss;	/* the onward, ss side */
+	aws_lws_ss_handle_t		*ss;	/* the onward, ss side */
 
-	lws_ss_conn_states_t	state;
+	aws_lws_ss_conn_states_t	state;
 
 	char			onward_in_flow_control;
 };
@@ -613,9 +613,9 @@ extern const struct ss_pcols ss_pcol_ws;
 extern const struct ss_pcols ss_pcol_mqtt;
 extern const struct ss_pcols ss_pcol_raw;
 
-extern const struct lws_protocols protocol_secstream_h1;
-extern const struct lws_protocols protocol_secstream_h2;
-extern const struct lws_protocols protocol_secstream_ws;
-extern const struct lws_protocols protocol_secstream_mqtt;
-extern const struct lws_protocols protocol_secstream_raw;
+extern const struct aws_lws_protocols protocol_secstream_h1;
+extern const struct aws_lws_protocols protocol_secstream_h2;
+extern const struct aws_lws_protocols protocol_secstream_ws;
+extern const struct aws_lws_protocols protocol_secstream_mqtt;
+extern const struct aws_lws_protocols protocol_secstream_raw;
 

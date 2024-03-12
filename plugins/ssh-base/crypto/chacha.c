@@ -227,26 +227,26 @@ chacha_encrypt_bytes(chacha_ctx *x,const u8 *m,u8 *c,u32 bytes)
   }
 }
 
-struct lws_cipher_chacha {
+struct aws_lws_cipher_chacha {
 	struct chacha_ctx ccctx[2];
 };
 
-#define K_1(_keys) &((struct lws_cipher_chacha *)_keys->cipher)->ccctx[0]
-#define K_2(_keys) &((struct lws_cipher_chacha *)_keys->cipher)->ccctx[1]
+#define K_1(_keys) &((struct aws_lws_cipher_chacha *)_keys->cipher)->ccctx[0]
+#define K_2(_keys) &((struct aws_lws_cipher_chacha *)_keys->cipher)->ccctx[1]
 
 int
-lws_chacha_activate(struct lws_ssh_keys *keys)
+aws_lws_chacha_activate(struct aws_lws_ssh_keys *keys)
 {
 	if (keys->cipher) {
 		free(keys->cipher);
 		keys->cipher = NULL;
 	}
 
-	keys->cipher = malloc(sizeof(struct lws_cipher_chacha));
+	keys->cipher = malloc(sizeof(struct aws_lws_cipher_chacha));
 	if (!keys->cipher)
 		return 1;
 
-	memset(keys->cipher, 0, sizeof(struct lws_cipher_chacha));
+	memset(keys->cipher, 0, sizeof(struct aws_lws_cipher_chacha));
 
 	/* uses 2 x 256-bit keys, so 512 bits (64 bytes) needed */
 	chacha_keysetup(K_2(keys), keys->key[SSH_KEYIDX_ENC], 256);
@@ -261,7 +261,7 @@ lws_chacha_activate(struct lws_ssh_keys *keys)
 }
 
 void
-lws_chacha_destroy(struct lws_ssh_keys *keys)
+aws_lws_chacha_destroy(struct aws_lws_ssh_keys *keys)
 {
 	if (keys->cipher) {
 		free(keys->cipher);
@@ -270,7 +270,7 @@ lws_chacha_destroy(struct lws_ssh_keys *keys)
 }
 
 uint32_t
-lws_chachapoly_get_length(struct lws_ssh_keys *keys, uint32_t seq,
+aws_lws_chachapoly_get_length(struct aws_lws_ssh_keys *keys, uint32_t seq,
 			  const uint8_t *in4)
 {
         uint8_t buf[4], seqbuf[8];
@@ -299,7 +299,7 @@ lws_chachapoly_get_length(struct lws_ssh_keys *keys, uint32_t seq,
  * tag. This tag is written on encryption and verified on decryption.
  */
 int
-chachapoly_crypt(struct lws_ssh_keys *keys, u_int seqnr, u_char *dest,
+chachapoly_crypt(struct aws_lws_ssh_keys *keys, u_int seqnr, u_char *dest,
     const u_char *src, u_int len, u_int aadlen, u_int authlen, int do_encrypt)
 {
         u_char seqbuf[8];
@@ -322,7 +322,7 @@ chachapoly_crypt(struct lws_ssh_keys *keys, u_int seqnr, u_char *dest,
                 const u_char *tag = src + aadlen + len;
 
                 poly1305_auth(expected_tag, src, aadlen + len, poly_key);
-                if (lws_timingsafe_bcmp(expected_tag, tag, POLY1305_TAGLEN)) {
+                if (aws_lws_timingsafe_bcmp(expected_tag, tag, POLY1305_TAGLEN)) {
                         r = 2;
                         goto out;
                 }
@@ -345,14 +345,14 @@ chachapoly_crypt(struct lws_ssh_keys *keys, u_int seqnr, u_char *dest,
         }
         r = 0;
  out:
-        lws_explicit_bzero(expected_tag, sizeof(expected_tag));
-        lws_explicit_bzero(seqbuf, sizeof(seqbuf));
-        lws_explicit_bzero(poly_key, sizeof(poly_key));
+        aws_lws_explicit_bzero(expected_tag, sizeof(expected_tag));
+        aws_lws_explicit_bzero(seqbuf, sizeof(seqbuf));
+        aws_lws_explicit_bzero(poly_key, sizeof(poly_key));
         return r;
 }
 
 int
-lws_chacha_decrypt(struct lws_ssh_keys *keys, uint32_t seq,
+aws_lws_chacha_decrypt(struct aws_lws_ssh_keys *keys, uint32_t seq,
 		   const uint8_t *ct, uint32_t len, uint8_t *pt)
 {
 	return chachapoly_crypt(keys, seq, pt, ct, len - POLY1305_TAGLEN - 4, 4,
@@ -360,7 +360,7 @@ lws_chacha_decrypt(struct lws_ssh_keys *keys, uint32_t seq,
 }
 
 int
-lws_chacha_encrypt(struct lws_ssh_keys *keys, uint32_t seq,
+aws_lws_chacha_encrypt(struct aws_lws_ssh_keys *keys, uint32_t seq,
 		   const uint8_t *ct, uint32_t len, uint8_t *pt)
 {
 	return chachapoly_crypt(keys, seq, pt, ct, len - 4, 4, 0, 1);

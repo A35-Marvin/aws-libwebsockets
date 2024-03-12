@@ -31,7 +31,7 @@ typedef enum {
 	LDHC_REBINDING,
 	LDHC_BOUND,
 	LDHC_RENEWING
-} lws_dhcpc_state_t;
+} aws_lws_dhcpc_state_t;
 
 enum {
 	LWSDHC4PDISCOVER		= 1,
@@ -79,34 +79,34 @@ enum {
 	LWSDHC4POPT_END_OPTIONS		= 255
 };
 
-typedef struct lws_dhcpc_req {
-	lws_dll2_t		list;
+typedef struct aws_lws_dhcpc_req {
+	aws_lws_dll2_t		list;
 
-	struct lws_context	*context;
-	lws_sorted_usec_list_t	sul_renew;
-	lws_sorted_usec_list_t 	sul_conn;
-	lws_sorted_usec_list_t 	sul_write;
+	struct aws_lws_context	*context;
+	aws_lws_sorted_usec_list_t	sul_renew;
+	aws_lws_sorted_usec_list_t 	sul_conn;
+	aws_lws_sorted_usec_list_t 	sul_write;
 	dhcpc_cb_t		cb;	    /* cb on completion / failure */
 	void			*opaque;    /* ignored by lws, give to cb */
 
 	/* these are separated so we can close the bcast one asynchronously */
 	struct lws		*wsi_raw;   /* for broadcast */
-	lws_dhcpc_state_t	state;
+	aws_lws_dhcpc_state_t	state;
 
-	lws_dhcpc_ifstate_t	is;
+	aws_lws_dhcpc_ifstate_t	is;
 
 	uint16_t		retry_count_conn;
 	uint16_t		retry_count_write;
 	uint8_t			xid[4];
 	uint8_t			af;	    /* address family */
-} lws_dhcpc_req_t;
+} aws_lws_dhcpc_req_t;
 /* interface name is overallocated here */
 
 void
-lws_dhcpc4_retry_conn(struct lws_sorted_usec_list *sul);
+aws_lws_dhcpc4_retry_conn(struct aws_lws_sorted_usec_list *sul);
 
 int
-lws_dhcpc4_parse(lws_dhcpc_req_t *r, void *in, size_t len);
+aws_lws_dhcpc4_parse(aws_lws_dhcpc_req_t *r, void *in, size_t len);
 
 void
-lws_dhcpc_retry_write(struct lws_sorted_usec_list *sul);
+aws_lws_dhcpc_retry_write(struct aws_lws_sorted_usec_list *sul);

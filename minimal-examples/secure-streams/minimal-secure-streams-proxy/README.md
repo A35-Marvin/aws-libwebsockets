@@ -22,12 +22,12 @@ Commandline option|Meaning
 
 ```
 [2020/02/26 15:41:27:5768] U: LWS secure streams Proxy [-d<verb>]
-[2020/02/26 15:41:27:5770] N: lws_ss_policy_set:     2.064KiB, pad 70%: hardcoded
-[2020/02/26 15:41:27:5771] N: lws_tls_client_create_vhost_context: using mem client CA cert 1391
-[2020/02/26 15:41:27:8681] N: lws_ss_policy_set:     4.512KiB, pad 15%: updated
-[2020/02/26 15:41:27:8682] N: lws_tls_client_create_vhost_context: using mem client CA cert 837
-[2020/02/26 15:41:27:8683] N: lws_tls_client_create_vhost_context: using mem client CA cert 1043
-[2020/02/26 15:41:27:8684] N: lws_tls_client_create_vhost_context: using mem client CA cert 1167
-[2020/02/26 15:41:27:8684] N: lws_tls_client_create_vhost_context: using mem client CA cert 1391
+[2020/02/26 15:41:27:5770] N: aws_lws_ss_policy_set:     2.064KiB, pad 70%: hardcoded
+[2020/02/26 15:41:27:5771] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 1391
+[2020/02/26 15:41:27:8681] N: aws_lws_ss_policy_set:     4.512KiB, pad 15%: updated
+[2020/02/26 15:41:27:8682] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 837
+[2020/02/26 15:41:27:8683] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 1043
+[2020/02/26 15:41:27:8684] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 1167
+[2020/02/26 15:41:27:8684] N: aws_lws_tls_client_create_vhost_context: using mem client CA cert 1391
 [2020/02/26 15:41:28:4226] N: ss_api_amazon_auth_rx: acquired 567-byte api.amazon.com auth token, exp 3600s
 ```

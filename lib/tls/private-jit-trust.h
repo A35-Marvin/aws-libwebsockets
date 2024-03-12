@@ -60,13 +60,13 @@ enum {
 typedef struct {
 	uint8_t				kid[20];
 	uint8_t				kid_len;
-} lws_tls_kid_t;
+} aws_lws_tls_kid_t;
 
 typedef struct {
-	lws_tls_kid_t			akid[4];
-	lws_tls_kid_t			skid[4];
+	aws_lws_tls_kid_t			akid[4];
+	aws_lws_tls_kid_t			skid[4];
 	uint8_t				count;
-} lws_tls_kid_chain_t;
+} aws_lws_tls_kid_chain_t;
 
 /*
  * This is used to manage ongoing jit trust lookups for a specific host.  It
@@ -85,9 +85,9 @@ typedef struct {
  */
 
 typedef struct {
-	lws_dll2_t			list;
+	aws_lws_dll2_t			list;
 
-	lws_tls_kid_t			kid[2];	/* SKID of the der if any */
+	aws_lws_tls_kid_t			kid[2];	/* SKID of the der if any */
 	uint8_t				*der[2]; /* temp allocated */
 
 	int				ders;
@@ -104,7 +104,7 @@ typedef struct {
 	char				refcount; /* expected results left */
 
 	/* hostname overcommitted */
-} lws_tls_jit_inflight_t;
+} aws_lws_tls_jit_inflight_t;
 
 /*
  * These are the items in the jit trust cache, the cache tag is the hostname
@@ -116,34 +116,34 @@ typedef struct {
  */
 
 typedef struct {
-	lws_tls_kid_t			skids[3];
+	aws_lws_tls_kid_t			skids[3];
 	int				count_skids;
 	uint32_t			xor_tag;
-} lws_tls_jit_cache_item_t;
+} aws_lws_tls_jit_cache_item_t;
 
-union lws_tls_cert_info_results;
+union aws_lws_tls_cert_info_results;
 
 void
-lws_tls_kid_copy(union lws_tls_cert_info_results *ci, lws_tls_kid_t *kid);
+aws_lws_tls_kid_copy(union aws_lws_tls_cert_info_results *ci, aws_lws_tls_kid_t *kid);
 
 int
-lws_tls_kid_cmp(const lws_tls_kid_t *a, const lws_tls_kid_t *b);
+aws_lws_tls_kid_cmp(const aws_lws_tls_kid_t *a, const aws_lws_tls_kid_t *b);
 
 int
-lws_tls_jit_trust_sort_kids(struct lws *wsi, lws_tls_kid_chain_t *ch);
+aws_lws_tls_jit_trust_sort_kids(struct lws *wsi, aws_lws_tls_kid_chain_t *ch);
 
 void
-lws_tls_jit_trust_inflight_destroy(lws_tls_jit_inflight_t *inf);
+aws_lws_tls_jit_trust_inflight_destroy(aws_lws_tls_jit_inflight_t *inf);
 
 void
-lws_tls_jit_trust_inflight_destroy_all(struct lws_context *cx);
+aws_lws_tls_jit_trust_inflight_destroy_all(struct aws_lws_context *cx);
 
 int
-lws_tls_jit_trust_vhost_bind(struct lws_context *cx, const char *address,
-			     struct lws_vhost **pvh);
+aws_lws_tls_jit_trust_vhost_bind(struct aws_lws_context *cx, const char *address,
+			     struct aws_lws_vhost **pvh);
 
 void
-lws_tls_jit_trust_vh_start_grace(struct lws_vhost *vh);
+aws_lws_tls_jit_trust_vh_start_grace(struct aws_lws_vhost *vh);
 
 #endif
 

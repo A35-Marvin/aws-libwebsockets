@@ -38,10 +38,10 @@ typedef struct range {
 } range_t;
 
 typedef struct binance {
-	struct lws_ss_handle 	*ss;
+	struct aws_lws_ss_handle 	*ss;
 	void			*opaque_data;
 
-	lws_sorted_usec_list_t	sul_hz;	     /* 1hz summary dump */
+	aws_lws_sorted_usec_list_t	sul_hz;	     /* 1hz summary dump */
 
 	range_t			e_lat_range;
 	range_t			price_range;
@@ -64,7 +64,7 @@ get_us_timeofday(void)
 
 	gettimeofday(&tv, NULL);
 
-	return (uint64_t)((lws_usec_t)tv.tv_sec * LWS_US_PER_SEC) +
+	return (uint64_t)((aws_lws_usec_t)tv.tv_sec * LWS_US_PER_SEC) +
 			  (uint64_t)tv.tv_usec;
 }
 
@@ -82,19 +82,19 @@ pennies(const char *s)
 }
 
 static void
-sul_hz_cb(lws_sorted_usec_list_t *sul)
+sul_hz_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	binance_t *bin = lws_container_of(sul, binance_t, sul_hz);
+	binance_t *bin = aws_lws_container_of(sul, binance_t, sul_hz);
 
 	/*
 	 * We are called once a second to dump statistics on the connection
 	 */
 
-	lws_sul_schedule(lws_ss_get_context(bin->ss), 0, &bin->sul_hz,
+	aws_lws_sul_schedule(aws_lws_ss_get_context(bin->ss), 0, &bin->sul_hz,
 			 sul_hz_cb, LWS_US_PER_SEC);
 
 	if (bin->price_range.samples)
-		lwsl_notice("%s: price: min: %llu¢, max: %llu¢, avg: %llu¢, "
+		aws_lwsl_notice("%s: price: min: %llu¢, max: %llu¢, avg: %llu¢, "
 			    "(%d prices/s)\n", __func__,
 			    (unsigned long long)bin->price_range.lowest,
 			    (unsigned long long)bin->price_range.highest,
@@ -102,7 +102,7 @@ sul_hz_cb(lws_sorted_usec_list_t *sul)
 						    bin->price_range.samples),
 			    bin->price_range.samples);
 	if (bin->e_lat_range.samples)
-		lwsl_notice("%s: elatency: min: %llums, max: %llums, "
+		aws_lwsl_notice("%s: elatency: min: %llums, max: %llums, "
 			    "avg: %llums, (%d msg/s)\n", __func__,
 			    (unsigned long long)bin->e_lat_range.lowest / 1000,
 			    (unsigned long long)bin->e_lat_range.highest / 1000,
@@ -116,7 +116,7 @@ sul_hz_cb(lws_sorted_usec_list_t *sul)
 
 /****** Part 2 / 3: communication */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 binance_rx(void *userobj, const uint8_t *in, size_t len, int flags)
 {
 	binance_t *bin = (binance_t *)userobj;
@@ -128,18 +128,18 @@ binance_rx(void *userobj, const uint8_t *in, size_t len, int flags)
 
 	now_us = (uint64_t)get_us_timeofday();
 
-	p = lws_json_simple_find((const char *)in, len, "\"depthUpdate\"",
+	p = aws_lws_json_simple_find((const char *)in, len, "\"depthUpdate\"",
 				 &alen);
 	if (!p)
 		return LWSSSSRET_OK;
 
-	p = lws_json_simple_find((const char *)in, len, "\"E\":", &alen);
+	p = aws_lws_json_simple_find((const char *)in, len, "\"E\":", &alen);
 	if (!p) {
-		lwsl_err("%s: no E JSON\n", __func__);
+		aws_lwsl_err("%s: no E JSON\n", __func__);
 		return LWSSSSRET_OK;
 	}
 
-	lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
+	aws_lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
 	latency_us = now_us - ((uint64_t)atoll(numbuf) * LWS_US_PER_MS);
 
 	if (latency_us < bin->e_lat_range.lowest)
@@ -150,11 +150,11 @@ binance_rx(void *userobj, const uint8_t *in, size_t len, int flags)
 	bin->e_lat_range.sum += latency_us;
 	bin->e_lat_range.samples++;
 
-	p = lws_json_simple_find((const char *)in, len, "\"a\":[[\"", &alen);
+	p = aws_lws_json_simple_find((const char *)in, len, "\"a\":[[\"", &alen);
 	if (!p)
 		return LWSSSSRET_OK;
 
-	lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
+	aws_lws_strnncpy(numbuf, p, alen, sizeof(numbuf));
 	price = pennies(numbuf);
 
 	if (price < bin->price_range.lowest)
@@ -168,19 +168,19 @@ binance_rx(void *userobj, const uint8_t *in, size_t len, int flags)
 	return LWSSSSRET_OK;
 }
 
-static lws_ss_state_return_t
-binance_state(void *userobj, void *h_src, lws_ss_constate_t state,
-	      lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+binance_state(void *userobj, void *h_src, aws_lws_ss_constate_t state,
+	      aws_lws_ss_tx_ordinal_t ack)
 {
 	binance_t *bin = (binance_t *)userobj;
 
-	lwsl_ss_info(bin->ss, "%s (%d), ord 0x%x",
-		     lws_ss_state_name((int)state), state, (unsigned int)ack);
+	aws_lwsl_ss_info(bin->ss, "%s (%d), ord 0x%x",
+		     aws_lws_ss_state_name((int)state), state, (unsigned int)ack);
 
 	switch (state) {
 
 	case LWSSSCS_CONNECTED:
-		lws_sul_schedule(lws_ss_get_context(bin->ss), 0, &bin->sul_hz,
+		aws_lws_sul_schedule(aws_lws_ss_get_context(bin->ss), 0, &bin->sul_hz,
 				 sul_hz_cb, LWS_US_PER_SEC);
 		range_reset(&bin->e_lat_range);
 		range_reset(&bin->price_range);
@@ -188,7 +188,7 @@ binance_state(void *userobj, void *h_src, lws_ss_constate_t state,
 		return LWSSSSRET_OK;
 
 	case LWSSSCS_DISCONNECTED:
-		lws_sul_cancel(&bin->sul_hz);
+		aws_lws_sul_cancel(&bin->sul_hz);
 		break;
 
 	default:
@@ -198,7 +198,7 @@ binance_state(void *userobj, void *h_src, lws_ss_constate_t state,
 	return LWSSSSRET_OK;
 }
 
-static const lws_ss_info_t ssi_binance = {
+static const aws_lws_ss_info_t ssi_binance = {
 	.handle_offset		  = offsetof(binance_t, ss),
 	.opaque_user_data_offset  = offsetof(binance_t, opaque_data),
 	.rx			  = binance_rx,
@@ -209,9 +209,9 @@ static const lws_ss_info_t ssi_binance = {
 
 /****** Part 3 / 3: init and event loop */
 
-static const struct lws_extension extensions[] = {
+static const struct aws_lws_extension extensions[] = {
 	{
-		"permessage-deflate", lws_extension_callback_pm_deflate,
+		"permessage-deflate", aws_lws_extension_callback_pm_deflate,
 		"permessage-deflate" "; client_no_context_takeover"
 		 "; client_max_window_bits"
 	},
@@ -226,16 +226,16 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *cx;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *cx;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS minimal Secure Streams binance client\n");
+	aws_lwsl_user("LWS minimal Secure Streams binance client\n");
 
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT |
 		       LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
@@ -244,23 +244,23 @@ int main(int argc, const char **argv)
 	info.extensions = extensions;
 	info.pss_policies_json = "policy.json"; /* literal JSON, or path */
 
-	cx = lws_create_context(&info);
+	cx = aws_lws_create_context(&info);
 	if (!cx) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	if (lws_ss_create(cx, 0, &ssi_binance, NULL, NULL, NULL, NULL)) {
-		lwsl_cx_err(cx, "failed to create secure stream");
+	if (aws_lws_ss_create(cx, 0, &ssi_binance, NULL, NULL, NULL, NULL)) {
+		aws_lwsl_cx_err(cx, "failed to create secure stream");
 		interrupted = 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(cx, 0);
+		n = aws_lws_service(cx, 0);
 
-	lws_context_destroy(cx);
+	aws_lws_context_destroy(cx);
 
-	lwsl_user("Completed\n");
+	aws_lwsl_user("Completed\n");
 
 	return 0;
 }

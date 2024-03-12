@@ -24,11 +24,11 @@
 
 #include "private-lib-core.h"
 
-struct lws_ring *
-lws_ring_create(size_t element_len, size_t count,
+struct aws_lws_ring *
+aws_lws_ring_create(size_t element_len, size_t count,
 		void (*destroy_element)(void *))
 {
-	struct lws_ring *ring = lws_malloc(sizeof(*ring), "ring create");
+	struct aws_lws_ring *ring = aws_lws_malloc(sizeof(*ring), "ring create");
 
 	if (!ring)
 		return NULL;
@@ -39,9 +39,9 @@ lws_ring_create(size_t element_len, size_t count,
 	ring->oldest_tail = 0;
 	ring->destroy_element = destroy_element;
 
-	ring->buf = lws_malloc(ring->buflen, "ring buf");
+	ring->buf = aws_lws_malloc(ring->buflen, "ring buf");
 	if (!ring->buf) {
-		lws_free(ring);
+		aws_lws_free(ring);
 
 		return NULL;
 	}
@@ -50,7 +50,7 @@ lws_ring_create(size_t element_len, size_t count,
 }
 
 void
-lws_ring_destroy(struct lws_ring *ring)
+aws_lws_ring_destroy(struct aws_lws_ring *ring)
 {
 	if (ring->destroy_element)
 		while (ring->oldest_tail != ring->head) {
@@ -61,13 +61,13 @@ lws_ring_destroy(struct lws_ring *ring)
 				ring->buflen;
 		}
 	if (ring->buf)
-		lws_free_set_NULL(ring->buf);
+		aws_lws_free_set_NULL(ring->buf);
 
-	lws_free(ring);
+	aws_lws_free(ring);
 }
 
 size_t
-lws_ring_get_count_free_elements(struct lws_ring *ring)
+aws_lws_ring_get_count_free_elements(struct aws_lws_ring *ring)
 {
 	int f;
 
@@ -97,7 +97,7 @@ lws_ring_get_count_free_elements(struct lws_ring *ring)
 }
 
 size_t
-lws_ring_get_count_waiting_elements(struct lws_ring *ring, uint32_t *tail)
+aws_lws_ring_get_count_waiting_elements(struct aws_lws_ring *ring, uint32_t *tail)
 {	int f;
 
 	if (!tail)
@@ -123,13 +123,13 @@ lws_ring_get_count_waiting_elements(struct lws_ring *ring, uint32_t *tail)
 }
 
 int
-lws_ring_next_linear_insert_range(struct lws_ring *ring, void **start,
+aws_lws_ring_next_linear_insert_range(struct aws_lws_ring *ring, void **start,
 				  size_t *bytes)
 {
 	int n;
 
 	/* n is how many bytes the whole fifo can take */
-	n = (int)(lws_ring_get_count_free_elements(ring) * ring->element_len);
+	n = (int)(aws_lws_ring_get_count_free_elements(ring) * ring->element_len);
 
 	if (!n)
 		return 1;
@@ -148,20 +148,20 @@ lws_ring_next_linear_insert_range(struct lws_ring *ring, void **start,
 }
 
 void
-lws_ring_bump_head(struct lws_ring *ring, size_t bytes)
+aws_lws_ring_bump_head(struct aws_lws_ring *ring, size_t bytes)
 {
 	ring->head = (ring->head + (uint32_t)bytes) % ring->buflen;
 }
 
 size_t
-lws_ring_insert(struct lws_ring *ring, const void *src, size_t max_count)
+aws_lws_ring_insert(struct aws_lws_ring *ring, const void *src, size_t max_count)
 {
 	const uint8_t *osrc = src;
 	size_t m;
 	int n;
 
 	/* n is how many bytes the whole fifo can take */
-	n = (int)(lws_ring_get_count_free_elements(ring) * ring->element_len);
+	n = (int)(aws_lws_ring_get_count_free_elements(ring) * ring->element_len);
 
 	/* restrict n to how much we want to insert */
 	if ((uint32_t)n > max_count * ring->element_len)
@@ -196,7 +196,7 @@ lws_ring_insert(struct lws_ring *ring, const void *src, size_t max_count)
 }
 
 size_t
-lws_ring_consume(struct lws_ring *ring, uint32_t *tail, void *dest,
+aws_lws_ring_consume(struct aws_lws_ring *ring, uint32_t *tail, void *dest,
 		 size_t max_count)
 {
 	uint8_t *odest = dest;
@@ -210,7 +210,7 @@ lws_ring_consume(struct lws_ring *ring, uint32_t *tail, void *dest,
 	}
 
 	/* n is how many bytes the whole fifo has for us */
-	n = (int)(lws_ring_get_count_waiting_elements(ring, tail) *
+	n = (int)(aws_lws_ring_get_count_waiting_elements(ring, tail) *
 							ring->element_len);
 
 	/* restrict n to how much we want to insert */
@@ -220,7 +220,7 @@ lws_ring_consume(struct lws_ring *ring, uint32_t *tail, void *dest,
 	if (!dest) {
 		*tail = ((*tail) + (unsigned int)n) % ring->buflen;
 		if (!orig_tail) /* single tail */
-			lws_ring_update_oldest_tail(ring, *tail);
+			aws_lws_ring_update_oldest_tail(ring, *tail);
 
 		return (unsigned int)n / ring->element_len;
 	}
@@ -246,13 +246,13 @@ lws_ring_consume(struct lws_ring *ring, uint32_t *tail, void *dest,
 
 	*tail = ((*tail) + (unsigned int)n) % ring->buflen;
 	if (!orig_tail) /* single tail */
-		lws_ring_update_oldest_tail(ring, *tail);
+		aws_lws_ring_update_oldest_tail(ring, *tail);
 
 	return (unsigned int)(((uint8_t *)dest + n) - odest) / (unsigned int)ring->element_len;
 }
 
 const void *
-lws_ring_get_element(struct lws_ring *ring, uint32_t *tail)
+aws_lws_ring_get_element(struct aws_lws_ring *ring, uint32_t *tail)
 {
 	if (!tail)
 		tail = &ring->oldest_tail;
@@ -264,7 +264,7 @@ lws_ring_get_element(struct lws_ring *ring, uint32_t *tail)
 }
 
 void
-lws_ring_update_oldest_tail(struct lws_ring *ring, uint32_t tail)
+aws_lws_ring_update_oldest_tail(struct aws_lws_ring *ring, uint32_t tail)
 {
 	if (!ring->destroy_element) {
 		ring->oldest_tail = tail;
@@ -279,20 +279,20 @@ lws_ring_update_oldest_tail(struct lws_ring *ring, uint32_t tail)
 }
 
 uint32_t
-lws_ring_get_oldest_tail(struct lws_ring *ring)
+aws_lws_ring_get_oldest_tail(struct aws_lws_ring *ring)
 {
 	return ring->oldest_tail;
 }
 
 void
-lws_ring_dump(struct lws_ring *ring, uint32_t *tail)
+aws_lws_ring_dump(struct aws_lws_ring *ring, uint32_t *tail)
 {
 	if (tail == NULL)
 		tail = &ring->oldest_tail;
-	lwsl_notice("ring %p: buflen %u, elem_len %u, head %u, oldest_tail %u\n"
+	aws_lwsl_notice("ring %p: buflen %u, elem_len %u, head %u, oldest_tail %u\n"
 		    "     free_elems: %u; for tail %u, waiting elements: %u\n",
 		    ring, (int)ring->buflen, (int)ring->element_len,
 		    (int)ring->head, (int)ring->oldest_tail,
-		    (int)lws_ring_get_count_free_elements(ring), (int)*tail,
-		    (int)lws_ring_get_count_waiting_elements(ring, tail));
+		    (int)aws_lws_ring_get_count_free_elements(ring), (int)*tail,
+		    (int)aws_lws_ring_get_count_waiting_elements(ring, tail));
 }

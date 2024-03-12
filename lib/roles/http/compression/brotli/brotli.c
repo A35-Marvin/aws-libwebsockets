@@ -25,7 +25,7 @@
 #include "private-lib-core.h"
 
 static int
-lcs_init_compression_brotli(lws_comp_ctx_t *ctx, int decomp)
+lcs_init_compression_brotli(aws_lws_comp_ctx_t *ctx, int decomp)
 {
 	ctx->is_decompression = (unsigned char)!!decomp;
 
@@ -45,7 +45,7 @@ lcs_init_compression_brotli(lws_comp_ctx_t *ctx, int decomp)
 }
 
 static int
-lcs_process_brotli(lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
+lcs_process_brotli(aws_lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
 		   void *out, size_t *olen_oused)
 {
 	size_t a_in, a_out, t_out;
@@ -74,7 +74,7 @@ lcs_process_brotli(lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
 		if (BrotliEncoderCompressStream(ctx->u.br_en, n, &a_in, &n_in,
 						&a_out, &n_out, &t_out) ==
 		    BROTLI_FALSE) {
-			lwsl_err("brotli encode failed\n");
+			aws_lwsl_err("brotli encode failed\n");
 
 			return -1;
 		}
@@ -87,7 +87,7 @@ lcs_process_brotli(lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
 
 		switch (n) {
 		case BROTLI_DECODER_RESULT_ERROR:
-			lwsl_err("brotli decoder error\n");
+			aws_lwsl_err("brotli decoder error\n");
 			return -1;
 		}
 	}
@@ -103,7 +103,7 @@ bail:
 }
 
 static void
-lcs_destroy_brotli(lws_comp_ctx_t *ctx)
+lcs_destroy_brotli(aws_lws_comp_ctx_t *ctx)
 {
 	if (!ctx)
 		return;
@@ -116,7 +116,7 @@ lcs_destroy_brotli(lws_comp_ctx_t *ctx)
 	(*ctx).u.generic_ctx_ptr = NULL;
 }
 
-struct lws_compression_support lcs_brotli = {
+struct aws_lws_compression_support lcs_brotli = {
 	/* .encoding_name */		"br",
 	/* .init_compression */		lcs_init_compression_brotli,
 	/* .process */			lcs_process_brotli,

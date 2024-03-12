@@ -27,7 +27,7 @@
 #if defined(LWS_CLIENT_HTTP_PROXYING)
 
 int
-lws_set_proxy(struct lws_vhost *vhost, const char *proxy)
+aws_lws_set_proxy(struct aws_lws_vhost *vhost, const char *proxy)
 {
 	char authstring[96];
 	int brackets = 0;
@@ -43,17 +43,17 @@ lws_set_proxy(struct lws_vhost *vhost, const char *proxy)
 	p = strrchr(proxy, '@');
 	if (p) { /* auth is around */
 
-		if (lws_ptr_diff_size_t(p, proxy) > sizeof(authstring) - 1)
+		if (aws_lws_ptr_diff_size_t(p, proxy) > sizeof(authstring) - 1)
 			goto auth_too_long;
 
-		lws_strncpy(authstring, proxy, lws_ptr_diff_size_t(p, proxy) + 1);
+		aws_lws_strncpy(authstring, proxy, aws_lws_ptr_diff_size_t(p, proxy) + 1);
 		// null termination not needed on input
-		if (lws_b64_encode_string(authstring, lws_ptr_diff(p, proxy),
+		if (aws_lws_b64_encode_string(authstring, aws_lws_ptr_diff(p, proxy),
 				vhost->proxy_basic_auth_token,
 		    sizeof vhost->proxy_basic_auth_token) < 0)
 			goto auth_too_long;
 
-		lwsl_vhost_info(vhost, " Proxy auth in use");
+		aws_lwsl_vhost_info(vhost, " Proxy auth in use");
 
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 		proxy = p + 1;
@@ -77,7 +77,7 @@ lws_set_proxy(struct lws_vhost *vhost, const char *proxy)
 		brackets = 1;
 #endif
 
-	lws_strncpy(vhost->http.http_proxy_address, proxy + brackets,
+	aws_lws_strncpy(vhost->http.http_proxy_address, proxy + brackets,
 		    sizeof(vhost->http.http_proxy_address));
 
 	p = vhost->http.http_proxy_address;
@@ -88,7 +88,7 @@ lws_set_proxy(struct lws_vhost *vhost, const char *proxy)
 
 		p = strchr(vhost->http.http_proxy_address, ']');
 		if (!p) {
-			lwsl_vhost_err(vhost, "malformed proxy '%s'", proxy);
+			aws_lwsl_vhost_err(vhost, "malformed proxy '%s'", proxy);
 
 			return -1;
 		}
@@ -98,7 +98,7 @@ lws_set_proxy(struct lws_vhost *vhost, const char *proxy)
 
 	p = strchr(p, ':');
 	if (!p && !vhost->http.http_proxy_port) {
-		lwsl_vhost_err(vhost, "http_proxy needs to be ads:port");
+		aws_lwsl_vhost_err(vhost, "http_proxy needs to be ads:port");
 
 		return -1;
 	}
@@ -107,14 +107,14 @@ lws_set_proxy(struct lws_vhost *vhost, const char *proxy)
 		vhost->http.http_proxy_port = (unsigned int)atoi(p + 1);
 	}
 
-	lwsl_vhost_info(vhost, " Proxy %s:%u", vhost->http.http_proxy_address,
+	aws_lwsl_vhost_info(vhost, " Proxy %s:%u", vhost->http.http_proxy_address,
 					    vhost->http.http_proxy_port);
 #endif
 
 	return 0;
 
 auth_too_long:
-	lwsl_vhost_err(vhost, "proxy auth too long");
+	aws_lwsl_vhost_err(vhost, "proxy auth too long");
 
 	return -1;
 }

@@ -24,22 +24,22 @@
 
 #include "private-lib-core.h"
 
-struct lws_dsh_search {
+struct aws_lws_dsh_search {
 	size_t		required;
 	int		kind;
-	lws_dsh_obj_t	*best;
-	lws_dsh_t	*dsh;
+	aws_lws_dsh_obj_t	*best;
+	aws_lws_dsh_t	*dsh;
 
-	lws_dsh_t	*already_checked;
-	lws_dsh_t	*this_dsh;
+	aws_lws_dsh_t	*already_checked;
+	aws_lws_dsh_t	*this_dsh;
 };
 
 static int
-_lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
-		    const void *src2, size_t size2, lws_dll2_t *replace);
+_lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
+		    const void *src2, size_t size2, aws_lws_dll2_t *replace);
 
 static size_t
-lws_dsh_align(size_t length)
+aws_lws_dsh_align(size_t length)
 {
 	size_t align = sizeof(int *);
 
@@ -49,26 +49,26 @@ lws_dsh_align(size_t length)
 	return length;
 }
 
-lws_dsh_t *
-lws_dsh_create(lws_dll2_owner_t *owner, size_t buf_len, int count_kinds)
+aws_lws_dsh_t *
+aws_lws_dsh_create(aws_lws_dll2_owner_t *owner, size_t buf_len, int count_kinds)
 {
-	size_t oha_len = sizeof(lws_dsh_obj_head_t) * (unsigned int)(++count_kinds);
-	lws_dsh_obj_t *obj;
-	lws_dsh_t *dsh;
+	size_t oha_len = sizeof(aws_lws_dsh_obj_head_t) * (unsigned int)(++count_kinds);
+	aws_lws_dsh_obj_t *obj;
+	aws_lws_dsh_t *dsh;
 	int n;
 
 	assert(buf_len);
 	assert(count_kinds > 1);
-	assert(buf_len > sizeof(lws_dsh_t) + oha_len);
+	assert(buf_len > sizeof(aws_lws_dsh_t) + oha_len);
 	buf_len += 64;
 
-	dsh = lws_malloc(sizeof(lws_dsh_t) + buf_len + oha_len, __func__);
+	dsh = aws_lws_malloc(sizeof(aws_lws_dsh_t) + buf_len + oha_len, __func__);
 	if (!dsh)
 		return NULL;
 
 	/* set convenience pointers to the overallocated parts */
 
-	dsh->oha = (lws_dsh_obj_head_t *)&dsh[1];
+	dsh->oha = (aws_lws_dsh_obj_head_t *)&dsh[1];
 	dsh->buf = ((uint8_t *)dsh->oha) + oha_len;
 	dsh->count_kinds = count_kinds;
 	dsh->buffer_size = buf_len;
@@ -84,31 +84,31 @@ lws_dsh_create(lws_dll2_owner_t *owner, size_t buf_len, int count_kinds)
 
 	/* initially the whole buffer is on the free kind (0) list */
 
-	obj = (lws_dsh_obj_t *)dsh->buf;
+	obj = (aws_lws_dsh_obj_t *)dsh->buf;
 	memset(obj, 0, sizeof(*obj));
 	obj->asize = buf_len - sizeof(*obj);
 
-	lws_dll2_add_head(&obj->list, &dsh->oha[0].owner);
+	aws_lws_dll2_add_head(&obj->list, &dsh->oha[0].owner);
 
 	dsh->locally_free = obj->asize;
 	dsh->locally_in_use = 0;
 
-	lws_dll2_clear(&dsh->list);
+	aws_lws_dll2_clear(&dsh->list);
 	if (owner)
-		lws_dll2_add_head(&dsh->list, owner);
+		aws_lws_dll2_add_head(&dsh->list, owner);
 
-	// lws_dsh_describe(dsh, "post-init");
+	// aws_lws_dsh_describe(dsh, "post-init");
 
 	return dsh;
 }
 
 static int
-search_best_free(struct lws_dll2 *d, void *user)
+search_best_free(struct aws_lws_dll2 *d, void *user)
 {
-	struct lws_dsh_search *s = (struct lws_dsh_search *)user;
-	lws_dsh_obj_t *obj = lws_container_of(d, lws_dsh_obj_t, list);
+	struct aws_lws_dsh_search *s = (struct aws_lws_dsh_search *)user;
+	aws_lws_dsh_obj_t *obj = aws_lws_container_of(d, aws_lws_dsh_obj_t, list);
 
-	lwsl_debug("%s: obj %p, asize %zu (req %zu)\n", __func__, obj,
+	aws_lwsl_debug("%s: obj %p, asize %zu (req %zu)\n", __func__, obj,
 			obj->asize, s->required);
 
 	if (obj->asize >= s->required &&
@@ -121,24 +121,24 @@ search_best_free(struct lws_dll2 *d, void *user)
 }
 
 void
-lws_dsh_destroy(lws_dsh_t **pdsh)
+aws_lws_dsh_destroy(aws_lws_dsh_t **pdsh)
 {
-	lws_dsh_t *dsh = *pdsh;
+	aws_lws_dsh_t *dsh = *pdsh;
 
 	if (!dsh)
 		return;
 
 	dsh->being_destroyed = 1;
 
-	lws_dll2_remove(&dsh->list);
+	aws_lws_dll2_remove(&dsh->list);
 
 	/* everything else is in one heap allocation */
 
-	lws_free_set_NULL(*pdsh);
+	aws_lws_free_set_NULL(*pdsh);
 }
 
 size_t
-lws_dsh_get_size(struct lws_dsh *dsh, int kind)
+aws_lws_dsh_get_size(struct aws_lws_dsh *dsh, int kind)
 {
 	kind++;
 	assert(kind < dsh->count_kinds);
@@ -147,11 +147,11 @@ lws_dsh_get_size(struct lws_dsh *dsh, int kind)
 }
 
 static int
-_lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
-		    const void *src2, size_t size2, lws_dll2_t *replace)
+_lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
+		    const void *src2, size_t size2, aws_lws_dll2_t *replace)
 {
-	size_t asize = sizeof(lws_dsh_obj_t) + lws_dsh_align(size1 + size2);
-	struct lws_dsh_search s;
+	size_t asize = sizeof(aws_lws_dsh_obj_t) + aws_lws_dsh_align(size1 + size2);
+	struct aws_lws_dsh_search s;
 
 	assert(kind >= 0);
 	kind++;
@@ -168,10 +168,10 @@ _lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 	s.this_dsh = dsh;
 
 	if (dsh && !dsh->being_destroyed)
-		lws_dll2_foreach_safe(&dsh->oha[0].owner, &s, search_best_free);
+		aws_lws_dll2_foreach_safe(&dsh->oha[0].owner, &s, search_best_free);
 
 	if (!s.best) {
-		lwsl_notice("%s: no buffer has space\n", __func__);
+		aws_lwsl_notice("%s: no buffer has space\n", __func__);
 
 		return 1;
 	}
@@ -187,7 +187,7 @@ _lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		 * Move the object from the free list to the oha of the
 		 * desired kind
 		 */
-		lws_dll2_remove(&s.best->list);
+		aws_lws_dll2_remove(&s.best->list);
 		s.best->dsh = s.dsh;
 		s.best->kind = kind;
 		s.best->size = size1 + size2;
@@ -206,7 +206,7 @@ _lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		} else
 			if (dsh) {
 				assert(!(((unsigned long)(intptr_t)(s.best)) & (sizeof(int *) - 1)));
-				lws_dll2_add_tail(&s.best->list, &dsh->oha[kind].owner);
+				aws_lws_dll2_add_tail(&s.best->list, &dsh->oha[kind].owner);
 			}
 
 		assert(s.dsh->locally_free >= s.best->asize);
@@ -215,7 +215,7 @@ _lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		dsh->oha[kind].total_size += s.best->asize;
 		assert(s.dsh->locally_in_use <= s.dsh->buffer_size);
 	} else {
-		lws_dsh_obj_t *obj;
+		aws_lws_dsh_obj_t *obj;
 
 		/*
 		 * Free area was oversize enough that we need to split it.
@@ -224,16 +224,16 @@ _lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		 * reduce its extent by our asize.  Use the latter part of
 		 * the original free area as the allocation.
 		 */
-		lwsl_debug("%s: splitting... free reduce %zu -> %zu\n",
+		aws_lwsl_debug("%s: splitting... free reduce %zu -> %zu\n",
 				__func__, s.best->asize, s.best->asize - asize);
 
 		s.best->asize -= asize;
 
 		/* latter part becomes new object */
 
-		obj = (lws_dsh_obj_t *)(((uint8_t *)s.best) + lws_dsh_align(s.best->asize));
+		obj = (aws_lws_dsh_obj_t *)(((uint8_t *)s.best) + aws_lws_dsh_align(s.best->asize));
 
-		lws_dll2_clear(&obj->list);
+		aws_lws_dll2_clear(&obj->list);
 		obj->dsh = s.dsh;
 		obj->kind = kind;
 		obj->size = size1 + size2;
@@ -254,7 +254,7 @@ _lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		} else
 			if (dsh) {
 				assert(!(((unsigned long)(intptr_t)(obj)) & (sizeof(int *) - 1)));
-				lws_dll2_add_tail(&obj->list, &dsh->oha[kind].owner);
+				aws_lws_dll2_add_tail(&obj->list, &dsh->oha[kind].owner);
 			}
 
 		assert(s.dsh->locally_free >= asize);
@@ -264,30 +264,30 @@ _lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		assert(s.dsh->locally_in_use <= s.dsh->buffer_size);
 	}
 
-	// lws_dsh_describe(dsh, "post-alloc");
+	// aws_lws_dsh_describe(dsh, "post-alloc");
 
 	return 0;
 }
 
 int
-lws_dsh_alloc_tail(lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
+aws_lws_dsh_alloc_tail(aws_lws_dsh_t *dsh, int kind, const void *src1, size_t size1,
 		   const void *src2, size_t size2)
 {
 	return _lws_dsh_alloc_tail(dsh, kind, src1, size1, src2, size2, NULL);
 }
 
 static int
-buf_compare(const lws_dll2_t *d, const lws_dll2_t *i)
+buf_compare(const aws_lws_dll2_t *d, const aws_lws_dll2_t *i)
 {
-	return (int)lws_ptr_diff(d, i);
+	return (int)aws_lws_ptr_diff(d, i);
 }
 
 void
-lws_dsh_free(void **pobj)
+aws_lws_dsh_free(void **pobj)
 {
-	lws_dsh_obj_t *_o = (lws_dsh_obj_t *)((uint8_t *)(*pobj) - sizeof(*_o)),
+	aws_lws_dsh_obj_t *_o = (aws_lws_dsh_obj_t *)((uint8_t *)(*pobj) - sizeof(*_o)),
 			*_o2;
-	lws_dsh_t *dsh = _o->dsh;
+	aws_lws_dsh_t *dsh = _o->dsh;
 
 	/* anything coming out of here must be aligned */
 	assert(!(((unsigned long)_o) & (sizeof(int *) - 1)));
@@ -297,7 +297,7 @@ lws_dsh_free(void **pobj)
 	 * dsh the buffer space belongs to
 	 */
 
-	lws_dll2_remove(&_o->list);
+	aws_lws_dll2_remove(&_o->list);
 	*pobj = NULL;
 
 	assert(dsh->locally_in_use >= _o->asize);
@@ -313,13 +313,13 @@ lws_dsh_free(void **pobj)
 	 * be expensive to maintain.
 	 */
 	_o->size = 0; /* not meaningful when on free list */
-	lws_dll2_add_sorted(&_o->list, &_o->dsh->oha[0].owner, buf_compare);
+	aws_lws_dll2_add_sorted(&_o->list, &_o->dsh->oha[0].owner, buf_compare);
 
 	/* First check for already-free block at the end we can subsume.
 	 * Because the free list is sorted, if there is such a guy he is
 	 * already our list.next */
 
-	_o2 = (lws_dsh_obj_t *)_o->list.next;
+	_o2 = (aws_lws_dsh_obj_t *)_o->list.next;
 	if (_o2 && (uint8_t *)_o + _o->asize == (uint8_t *)_o2) {
 		/*
 		 * since we are freeing _obj, we can coalesce with a
@@ -330,14 +330,14 @@ lws_dsh_free(void **pobj)
 		_o->asize += _o2->asize;
 
 		/* guy next to us was absorbed into us */
-		lws_dll2_remove(&_o2->list);
+		aws_lws_dll2_remove(&_o2->list);
 	}
 
 	/* Then check if we can be subsumed by a free block behind us.
 	 * Because the free list is sorted, if there is such a guy he is
 	 * already our list.prev */
 
-	_o2 = (lws_dsh_obj_t *)_o->list.prev;
+	_o2 = (aws_lws_dsh_obj_t *)_o->list.prev;
 	if (_o2 && (uint8_t *)_o2 + _o2->asize == (uint8_t *)_o) {
 		/*
 		 * since we are freeing obj, we can coalesce it with
@@ -348,21 +348,21 @@ lws_dsh_free(void **pobj)
 		_o2->asize += _o->asize;
 
 		/* we were absorbed! */
-		lws_dll2_remove(&_o->list);
+		aws_lws_dll2_remove(&_o->list);
 	}
 
-	// lws_dsh_describe(dsh, "post-alloc");
+	// aws_lws_dsh_describe(dsh, "post-alloc");
 }
 
 int
-lws_dsh_get_head(lws_dsh_t *dsh, int kind, void **obj, size_t *size)
+aws_lws_dsh_get_head(aws_lws_dsh_t *dsh, int kind, void **obj, size_t *size)
 {
-	lws_dsh_obj_t *_obj;
+	aws_lws_dsh_obj_t *_obj;
 
 	if (!dsh)
 		return 1;
 
-	_obj = (lws_dsh_obj_t *)lws_dll2_get_head(&dsh->oha[kind + 1].owner);
+	_obj = (aws_lws_dsh_obj_t *)aws_lws_dll2_get_head(&dsh->oha[kind + 1].owner);
 
 	if (!_obj) {
 		*obj = 0;
@@ -383,11 +383,11 @@ lws_dsh_get_head(lws_dsh_t *dsh, int kind, void **obj, size_t *size)
 #if defined(_DEBUG) && !defined(LWS_WITH_NO_LOGS)
 
 static int
-describe_kind(struct lws_dll2 *d, void *user)
+describe_kind(struct aws_lws_dll2 *d, void *user)
 {
-	lws_dsh_obj_t *obj = lws_container_of(d, lws_dsh_obj_t, list);
+	aws_lws_dsh_obj_t *obj = aws_lws_container_of(d, aws_lws_dsh_obj_t, list);
 
-	lwsl_info("    _obj %p - %p, dsh %p, size %zu, asize %zu\n",
+	aws_lwsl_info("    _obj %p - %p, dsh %p, size %zu, asize %zu\n",
 			obj, (uint8_t *)obj + obj->asize,
 			obj->dsh, obj->size, obj->asize);
 
@@ -395,17 +395,17 @@ describe_kind(struct lws_dll2 *d, void *user)
 }
 
 void
-lws_dsh_describe(lws_dsh_t *dsh, const char *desc)
+aws_lws_dsh_describe(aws_lws_dsh_t *dsh, const char *desc)
 {
 	int n = 0;
 
-	lwsl_info("%s: dsh %p, bufsize %zu, kinds %d, lf: %zu, liu: %zu, %s\n",
+	aws_lwsl_info("%s: dsh %p, bufsize %zu, kinds %d, lf: %zu, liu: %zu, %s\n",
 		    __func__, dsh, dsh->buffer_size, dsh->count_kinds,
 		    dsh->locally_free, dsh->locally_in_use, desc);
 
 	for (n = 0; n < dsh->count_kinds; n++) {
-		lwsl_info("  Kind %d:\n", n);
-		lws_dll2_foreach_safe(&dsh->oha[n].owner, dsh, describe_kind);
+		aws_lwsl_info("  Kind %d:\n", n);
+		aws_lws_dll2_foreach_safe(&dsh->oha[n].owner, dsh, describe_kind);
 	}
 }
 #endif

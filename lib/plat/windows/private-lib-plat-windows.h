@@ -52,7 +52,7 @@
 
  #define compatible_close(fd) closesocket(fd)
  #define compatible_file_close(fd) CloseHandle(fd)
- #define lws_set_blocking_send(wsi) wsi->sock_send_blocking = 1
+ #define aws_lws_set_blocking_send(wsi) wsi->sock_send_blocking = 1
 
  #include <winsock2.h>
  #include <ws2tcpip.h>
@@ -73,11 +73,11 @@
 #endif
 
 #if defined(LWS_HAVE_PTHREAD_H)
-#define lws_mutex_t		pthread_mutex_t
-#define lws_mutex_init(x)	pthread_mutex_init(&(x), NULL)
-#define lws_mutex_destroy(x)	pthread_mutex_destroy(&(x))
-#define lws_mutex_lock(x)	pthread_mutex_lock(&(x))
-#define lws_mutex_unlock(x)	pthread_mutex_unlock(&(x))
+#define aws_lws_mutex_t		pthread_mutex_t
+#define aws_lws_mutex_init(x)	pthread_mutex_init(&(x), NULL)
+#define aws_lws_mutex_destroy(x)	pthread_mutex_destroy(&(x))
+#define aws_lws_mutex_lock(x)	pthread_mutex_lock(&(x))
+#define aws_lws_mutex_unlock(x)	pthread_mutex_unlock(&(x))
 #endif
 
  #if !defined(LWS_HAVE_ATOLL)
@@ -131,13 +131,13 @@ int fork(void);
  #endif
 #endif
 
-#define lws_plat_socket_offset() (0)
+#define aws_lws_plat_socket_offset() (0)
 
 struct lws;
-struct lws_context;
+struct aws_lws_context;
 
 #define LWS_FD_HASH(fd) ((fd ^ (fd >> 8) ^ (fd >> 16)) % FD_HASHTABLE_MODULUS)
-struct lws_fd_hashtable {
+struct aws_lws_fd_hashtable {
 	struct lws **wsi;
 	int length;
 };
@@ -154,19 +154,19 @@ struct lws_fd_hashtable {
 #endif
 #endif
 
-typedef SOCKET lws_sockfd_type;
+typedef SOCKET aws_lws_sockfd_type;
 #if defined(__MINGW32__)
-typedef int lws_filefd_type;
+typedef int aws_lws_filefd_type;
 #else
-typedef HANDLE lws_filefd_type;
+typedef HANDLE aws_lws_filefd_type;
 #endif
 #define LWS_WIN32_HANDLE_TYPES
 
 LWS_EXTERN struct lws *
-wsi_from_fd(const struct lws_context *context, lws_sockfd_type fd);
+wsi_from_fd(const struct aws_lws_context *context, aws_lws_sockfd_type fd);
 
 LWS_EXTERN int
-insert_wsi(struct lws_context *context, struct lws *wsi);
+insert_wsi(struct aws_lws_context *context, struct lws *wsi);
 
 LWS_EXTERN int
-delete_from_fd(struct lws_context *context, lws_sockfd_type fd);
+delete_from_fd(struct aws_lws_context *context, aws_lws_sockfd_type fd);

@@ -47,38 +47,38 @@ enum {
 	LWS_AP_FLAG_MUXABLE_STREAM				= (1 << 1),
 };
 
-typedef struct lws_abs_protocol {
+typedef struct aws_lws_abs_protocol {
 	const char	*name;
 	int		alloc;
 	int		flags;
 
-	int		(*create)(const struct lws_abs *ai);
-	void		(*destroy)(lws_abs_protocol_inst_t **d);
-	int		(*compare)(lws_abs_t *abs1, lws_abs_t *abs2);
+	int		(*create)(const struct aws_lws_abs *ai);
+	void		(*destroy)(aws_lws_abs_protocol_inst_t **d);
+	int		(*compare)(aws_lws_abs_t *abs1, aws_lws_abs_t *abs2);
 
 	/* events the transport invokes (handled by abstract protocol) */
 
-	int		(*accept)(lws_abs_protocol_inst_t *d);
-	int		(*rx)(lws_abs_protocol_inst_t *d, const uint8_t *b, size_t l);
-	int		(*writeable)(lws_abs_protocol_inst_t *d, size_t budget);
-	int		(*closed)(lws_abs_protocol_inst_t *d);
-	int		(*heartbeat)(lws_abs_protocol_inst_t *d);
+	int		(*accept)(aws_lws_abs_protocol_inst_t *d);
+	int		(*rx)(aws_lws_abs_protocol_inst_t *d, const uint8_t *b, size_t l);
+	int		(*writeable)(aws_lws_abs_protocol_inst_t *d, size_t budget);
+	int		(*closed)(aws_lws_abs_protocol_inst_t *d);
+	int		(*heartbeat)(aws_lws_abs_protocol_inst_t *d);
 
 	/* as parent, we get a notification a new child / queue entry
-	 * bound to us... this is the parent lws_abs_t as arg */
-	int		(*child_bind)(lws_abs_t *abs);
-} lws_abs_protocol_t;
+	 * bound to us... this is the parent aws_lws_abs_t as arg */
+	int		(*child_bind)(aws_lws_abs_t *abs);
+} aws_lws_abs_protocol_t;
 
 /**
- * lws_abs_protocol_get_by_name() - returns a pointer to the named protocol ops
+ * aws_lws_abs_protocol_get_by_name() - returns a pointer to the named protocol ops
  *
  * \param name: the name of the abstract protocol
  *
  * Returns a pointer to the named protocol ops struct if available, otherwise
  * NULL.
  */
-LWS_VISIBLE LWS_EXTERN const lws_abs_protocol_t *
-lws_abs_protocol_get_by_name(const char *name);
+LWS_VISIBLE LWS_EXTERN const aws_lws_abs_protocol_t *
+aws_lws_abs_protocol_get_by_name(const char *name);
 
 /*
  * bring in public api pieces from protocols

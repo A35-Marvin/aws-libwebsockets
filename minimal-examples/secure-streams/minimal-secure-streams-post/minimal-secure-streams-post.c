@@ -41,7 +41,7 @@
 static int interrupted, bad = 1, force_cpd_fail_portal,
 	   force_cpd_fail_no_internet;
 static unsigned int timeout_ms = 3000;
-static lws_state_notify_link_t nl;
+static aws_lws_state_notify_link_t nl;
 
 static const char * const postbody =
 	"--boundary\r\n"
@@ -261,10 +261,10 @@ static const char * const default_ss_policy =
 #endif
 
 typedef struct myss {
-	struct lws_ss_handle 		*ss;
+	struct aws_lws_ss_handle 		*ss;
 	void				*opaque_data;
 	/* ... application specific state ... */
-	lws_sorted_usec_list_t		sul;
+	aws_lws_sorted_usec_list_t		sul;
 
 	size_t pos;
 	size_t len;
@@ -290,13 +290,13 @@ static const char *canned_root_token_payload =
 
 /* secure streams payload interface */
 
-static lws_ss_state_return_t
+static aws_lws_ss_state_return_t
 myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 {
 //	myss_t *m = (myss_t *)userobj;
 
-	lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
-	lwsl_hexdump_info(buf, len);
+	aws_lwsl_user("%s: len %d, flags: %d\n", __func__, (int)len, flags);
+	aws_lwsl_hexdump_info(buf, len);
 
 	/*
 	 * If we received the whole message, for our example it means
@@ -310,8 +310,8 @@ myss_rx(void *userobj, const uint8_t *buf, size_t len, int flags)
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
+static aws_lws_ss_state_return_t
+myss_tx(void *userobj, aws_lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	int *flags)
 {
 	myss_t *m = (myss_t *)userobj;
@@ -333,22 +333,22 @@ myss_tx(void *userobj, lws_ss_tx_ordinal_t ord, uint8_t *buf, size_t *len,
 	if (m->pos == m->len)
 		*flags |= LWSSS_FLAG_EOM;
 
-	lwsl_notice("%s: write %d flags %d\n", __func__, (int)*len, (int)*flags);
+	aws_lwsl_notice("%s: write %d flags %d\n", __func__, (int)*len, (int)*flags);
 
 	if (m->pos != m->len)
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	return 0;
 }
 
-static lws_ss_state_return_t
-myss_state(void *userobj, void *sh, lws_ss_constate_t state,
-	   lws_ss_tx_ordinal_t ack)
+static aws_lws_ss_state_return_t
+myss_state(void *userobj, void *sh, aws_lws_ss_constate_t state,
+	   aws_lws_ss_tx_ordinal_t ack)
 {
 	myss_t *m = (myss_t *)userobj;
 
-	lwsl_user("%s: h %p, %s, ord 0x%x\n", __func__, m->ss,
-			lws_ss_state_name((int)state), (unsigned int)ack);
+	aws_lwsl_user("%s: h %p, %s, ord 0x%x\n", __func__, m->ss,
+			aws_lws_ss_state_name((int)state), (unsigned int)ack);
 
 	switch (state) {
 	case LWSSSCS_CREATING:
@@ -358,7 +358,7 @@ myss_state(void *userobj, void *sh, lws_ss_constate_t state,
 		 * proxy to create the stream and it has been allowed.
 		 */
 
-		if (lws_ss_set_metadata(m->ss, "ctype",
+		if (aws_lws_ss_set_metadata(m->ss, "ctype",
 				    "multipart/form-data;boundary=\"boundary\"",
 				    39))
 			return LWSSSSRET_DISCONNECT_ME;
@@ -367,21 +367,21 @@ myss_state(void *userobj, void *sh, lws_ss_constate_t state,
 		m->pos = 0;
 		m->len = strlen(postbody);
 
-		return lws_ss_request_tx_len(m->ss, (unsigned long)strlen(postbody));
+		return aws_lws_ss_request_tx_len(m->ss, (unsigned long)strlen(postbody));
 
 	case LWSSSCS_CONNECTED:
-		return lws_ss_request_tx(m->ss);
+		return aws_lws_ss_request_tx(m->ss);
 
 	case LWSSSCS_ALL_RETRIES_FAILED:
 		/* if we're out of retries, we want to close the app and FAIL */
 		interrupted = 1;
 		break;
 	case LWSSSCS_QOS_ACK_REMOTE:
-		lwsl_notice("%s: LWSSSCS_QOS_ACK_REMOTE\n", __func__);
+		aws_lwsl_notice("%s: LWSSSCS_QOS_ACK_REMOTE\n", __func__);
 		break;
 
 	case LWSSSCS_TIMEOUT:
-		lwsl_notice("%s: LWSSSCS_TIMEOUT\n", __func__);
+		aws_lwsl_notice("%s: LWSSSCS_TIMEOUT\n", __func__);
 		break;
 	default:
 		break;
@@ -391,13 +391,13 @@ myss_state(void *userobj, void *sh, lws_ss_constate_t state,
 }
 
 static int
-app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+app_system_state_nf(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		    int current, int target)
 {
-	struct lws_context *context = lws_system_context_from_system_mgr(mgr);
+	struct aws_lws_context *context = aws_lws_system_context_from_system_mgr(mgr);
 #if !defined(LWS_SS_USE_SSPC)
 
-	lws_system_blob_t *ab = lws_system_get_blob(context,
+	aws_lws_system_blob_t *ab = aws_lws_system_get_blob(context,
 				LWS_SYSBLOB_TYPE_AUTH, 1 /* AUTH_IDX_ROOT */);
 	size_t size;
 #endif
@@ -412,12 +412,12 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 #if !defined(LWS_SS_USE_SSPC)
 
 	case LWS_SYSTATE_REGISTERED:
-		size = lws_system_blob_get_size(ab);
+		size = aws_lws_system_blob_get_size(ab);
 		if (size)
 			break;
 
 		/* let's register our canned root token so auth can use it */
-		lws_system_blob_direct_set(ab,
+		aws_lws_system_blob_direct_set(ab,
 				(const uint8_t *)canned_root_token_payload,
 				strlen(canned_root_token_payload));
 		break;
@@ -426,7 +426,7 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 
 	case LWS_SYSTATE_OPERATIONAL:
 		if (current == LWS_SYSTATE_OPERATIONAL) {
-			lws_ss_info_t ssi;
+			aws_lws_ss_info_t ssi;
 
 			/* We're making an outgoing secure stream ourselves */
 
@@ -440,9 +440,9 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 			ssi.user_alloc = sizeof(myss_t);
 			ssi.streamtype = "minpost";
 
-			if (lws_ss_create(context, 0, &ssi, NULL, NULL,
+			if (aws_lws_ss_create(context, 0, &ssi, NULL, NULL,
 					  NULL, NULL)) {
-				lwsl_err("%s: failed to create secure stream\n",
+				aws_lwsl_err("%s: failed to create secure stream\n",
 					 __func__);
 				return -1;
 			}
@@ -453,7 +453,7 @@ app_system_state_nf(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 	return 0;
 }
 
-static lws_state_notify_link_t * const app_notifier_list[] = {
+static aws_lws_state_notify_link_t * const app_notifier_list[] = {
 	&nl, NULL
 };
 
@@ -465,49 +465,49 @@ sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0;
 
 	signal(SIGINT, sigint_handler);
 
 	memset(&info, 0, sizeof info);
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
-	lwsl_user("LWS secure streams test client [-d<verb>]\n");
+	aws_lwsl_user("LWS secure streams test client [-d<verb>]\n");
 
 	/* these options are mutually exclusive if given */
 
-	if (lws_cmdline_option(argc, argv, "--force-portal"))
+	if (aws_lws_cmdline_option(argc, argv, "--force-portal"))
 		force_cpd_fail_portal = 1;
 
-	if (lws_cmdline_option(argc, argv, "--force-no-internet"))
+	if (aws_lws_cmdline_option(argc, argv, "--force-no-internet"))
 		force_cpd_fail_no_internet = 1;
 
-	if ((p = lws_cmdline_option(argc, argv, "--timeout_ms")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--timeout_ms")))
 		timeout_ms = (unsigned int)atoi(p);
 
 	info.fd_limit_per_thread = 1 + 6 + 1;
 	info.port = CONTEXT_PORT_NO_LISTEN;
 #if defined(LWS_SS_USE_SSPC)
-	info.protocols = lws_sspc_protocols;
+	info.protocols = aws_lws_sspc_protocols;
 	{
 		const char *p;
 
 		/* connect to ssproxy via UDS by default, else via
 		 * tcp connection to this port */
-		if ((p = lws_cmdline_option(argc, argv, "-p")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-p")))
 			info.ss_proxy_port = (uint16_t)atoi(p);
 
 		/* UDS "proxy.ss.lws" in abstract namespace, else this socket
 		 * path; when -p given this can specify the network interface
 		 * to bind to */
-		if ((p = lws_cmdline_option(argc, argv, "-i")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-i")))
 			info.ss_proxy_bind = p;
 
 		/* if -p given, -a specifies the proxy address to connect to */
-		if ((p = lws_cmdline_option(argc, argv, "-a")))
+		if ((p = aws_lws_cmdline_option(argc, argv, "-a")))
 			info.ss_proxy_address = p;
 	}
 #else
@@ -524,9 +524,9 @@ int main(int argc, const char **argv)
 
 	/* create the context */
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -536,17 +536,17 @@ int main(int argc, const char **argv)
 	 */
 
 	/*
-	 * Set the related lws_system blobs
+	 * Set the related aws_lws_system blobs
 	 *
 	 * ...direct_set() sets a pointer, so the thing pointed to has to have
 	 * a suitable lifetime, eg, something that already exists on the heap or
 	 * a const string in .rodata like this
 	 */
 
-	lws_system_blob_direct_set(lws_system_get_blob(context,
+	aws_lws_system_blob_direct_set(aws_lws_system_get_blob(context,
 				   LWS_SYSBLOB_TYPE_DEVICE_SERIAL, 0),
 				   (const uint8_t *)"SN12345678", 10);
-	lws_system_blob_direct_set(lws_system_get_blob(context,
+	aws_lws_system_blob_direct_set(aws_lws_system_get_blob(context,
 				   LWS_SYSBLOB_TYPE_DEVICE_FW_VERSION, 0),
 				   (const uint8_t *)"v0.01", 5);
 
@@ -560,7 +560,7 @@ int main(int argc, const char **argv)
 	 * Here we use _heap_append() just so it's tested as well as direct set.
 	 */
 
-	lws_system_blob_heap_append(lws_system_get_blob(context,
+	aws_lws_system_blob_heap_append(aws_lws_system_get_blob(context,
 				    LWS_SYSBLOB_TYPE_DEVICE_TYPE, 0),
 				   (const uint8_t *)"spacerocket", 11);
 #endif
@@ -568,11 +568,11 @@ int main(int argc, const char **argv)
 	/* the event loop */
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
+	aws_lwsl_user("Completed: %s\n", bad ? "failed" : "OK");
 
 	return bad;
 }

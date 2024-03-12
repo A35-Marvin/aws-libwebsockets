@@ -27,9 +27,9 @@
 #include <libwebsockets.h>
 
 int
-lws_bb_i2c_init(const lws_i2c_ops_t *octx)
+aws_lws_bb_i2c_init(const aws_lws_i2c_ops_t *octx)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 
 	ctx->gpio->mode(ctx->scl, LWSGGPIO_FL_WRITE | LWSGGPIO_FL_READ | LWSGGPIO_FL_PULLUP);
 	ctx->gpio->mode(ctx->sda, LWSGGPIO_FL_WRITE | LWSGGPIO_FL_READ | LWSGGPIO_FL_PULLUP);
@@ -38,9 +38,9 @@ lws_bb_i2c_init(const lws_i2c_ops_t *octx)
 }
 
 int
-lws_bb_i2c_start(const lws_i2c_ops_t *octx)
+aws_lws_bb_i2c_start(const aws_lws_i2c_ops_t *octx)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 
 	ctx->gpio->set(ctx->sda, 1);
 	ctx->gpio->set(ctx->scl, 1);
@@ -57,9 +57,9 @@ lws_bb_i2c_start(const lws_i2c_ops_t *octx)
 }
 
 void
-lws_bb_i2c_stop(const lws_i2c_ops_t *octx)
+aws_lws_bb_i2c_stop(const aws_lws_i2c_ops_t *octx)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 
 	ctx->gpio->set(ctx->sda, 0);
 	ctx->gpio->set(ctx->scl, 1);
@@ -73,9 +73,9 @@ lws_bb_i2c_stop(const lws_i2c_ops_t *octx)
 }
 
 int
-lws_bb_i2c_write(const lws_i2c_ops_t *octx, uint8_t data)
+aws_lws_bb_i2c_write(const aws_lws_i2c_ops_t *octx, uint8_t data)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 	int n;
 
 	for (n = 0; n < 8; n++) {
@@ -99,9 +99,9 @@ lws_bb_i2c_write(const lws_i2c_ops_t *octx, uint8_t data)
 }
 
 int
-lws_bb_i2c_read(const lws_i2c_ops_t *octx)
+aws_lws_bb_i2c_read(const aws_lws_i2c_ops_t *octx)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 	int n, r = 0;
 
 	ctx->gpio->set(ctx->sda, 1);
@@ -120,9 +120,9 @@ lws_bb_i2c_read(const lws_i2c_ops_t *octx)
 }
 
 void
-lws_bb_i2c_set_ack(const lws_i2c_ops_t *octx, int ack)
+aws_lws_bb_i2c_set_ack(const aws_lws_i2c_ops_t *octx, int ack)
 {
-	lws_bb_i2c_t *ctx = (lws_bb_i2c_t *)octx;
+	aws_lws_bb_i2c_t *ctx = (aws_lws_bb_i2c_t *)octx;
 
 	ctx->gpio->set(ctx->scl, 0);
 	ctx->gpio->set(ctx->sda, !!ack);

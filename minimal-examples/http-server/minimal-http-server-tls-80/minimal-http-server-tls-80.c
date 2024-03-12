@@ -25,7 +25,7 @@
 
 static int interrupted;
 
-static const struct lws_http_mount mount80 = {
+static const struct aws_lws_http_mount mount80 = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"localhost/",
@@ -45,7 +45,7 @@ static const struct lws_http_mount mount80 = {
 	/* .basic_auth_login_file */	NULL,
 };
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -72,8 +72,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -83,12 +83,12 @@ int main(int argc, const char **argv)
 			/* | LLL_EXT */ /* | LLL_CLIENT */ /* | LLL_LATENCY */
 			/* | LLL_DEBUG */;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server TLS + 80 | visit https://localhost\n");
-	lwsl_user(" Run as ROOT so can listen on 443\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server TLS + 80 | visit https://localhost\n");
+	aws_lwsl_user(" Run as ROOT so can listen on 443\n");
 
 	signal(SIGINT, sigint_handler);
 
@@ -98,9 +98,9 @@ int main(int argc, const char **argv)
 		       LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -109,8 +109,8 @@ int main(int argc, const char **argv)
 	info.mounts = &mount80;
 	info.vhost_name = "localhost80";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create tls vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create tls vhost\n");
 		goto bail;
 	}
 
@@ -121,16 +121,16 @@ int main(int argc, const char **argv)
 	info.ssl_private_key_filepath = "localhost-100y.key";
 	info.vhost_name = "localhost";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create tls vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create tls vhost\n");
 		goto bail;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 bail:
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

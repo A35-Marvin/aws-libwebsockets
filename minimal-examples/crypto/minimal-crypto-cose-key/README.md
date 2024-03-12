@@ -50,7 +50,7 @@ HEXSTRING above means a string like `1a2b3c`
 ```
 $ cat set1.cks | ./bin/lws-crypto-cose-key
 [2021/07/30 10:14:31:0420] U: LWS cose-key example tool -k keyset [-s alg-name kid ]
-[2021/07/30 10:14:31:0780] N: lws_create_context: LWS: 4.2.99-v4.2.0-134-g8433c8b459, NET CLI SRV H1 H2 WS ConMon IPV6-on
+[2021/07/30 10:14:31:0780] N: aws_lws_create_context: LWS: 4.2.99-v4.2.0-134-g8433c8b459, NET CLI SRV H1 H2 WS ConMon IPV6-on
 [2021/07/30 10:14:31:0892] N:  ++ [wsi|0|pipe] (1)
 [2021/07/30 10:14:31:0926] N:  ++ [vh|0|netlink] (1)
 [2021/07/30 10:14:31:0977] N:  ++ [vh|1|default||-1] (2)

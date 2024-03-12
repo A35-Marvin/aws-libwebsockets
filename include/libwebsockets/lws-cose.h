@@ -24,7 +24,7 @@
 
 /** \defgroup cose COSE apis
  * ##COSE related functions
- * \ingroup lwsaoi
+ * \ingroup aws_lwsaoi
  *
  * COSE RFC 8152 relates to signed and encrypted CBOR
  */
@@ -259,33 +259,33 @@ enum enum_cose_key_meta_tok {
 typedef int64_t cose_param_t;
 
 LWS_VISIBLE LWS_EXTERN const char *
-lws_cose_alg_to_name(cose_param_t alg);
+aws_lws_cose_alg_to_name(cose_param_t alg);
 
 LWS_VISIBLE LWS_EXTERN cose_param_t
-lws_cose_name_to_alg(const char *name);
+aws_lws_cose_name_to_alg(const char *name);
 
 /*
  * cose_key
  */
 
-typedef struct lws_cose_key {
+typedef struct aws_lws_cose_key {
 	/* key data elements */
-	struct lws_gencrypto_keyelem	e[LWS_GENCRYPTO_MAX_KEYEL_COUNT];
+	struct aws_lws_gencrypto_keyelem	e[LWS_GENCRYPTO_MAX_KEYEL_COUNT];
 	/* generic meta key elements, like KID */
-	struct lws_gencrypto_keyelem 	meta[LWS_COUNT_COSE_KEY_ELEMENTS];
-	lws_dll2_t			list; /* used when part of a set */
+	struct aws_lws_gencrypto_keyelem 	meta[LWS_COUNT_COSE_KEY_ELEMENTS];
+	aws_lws_dll2_t			list; /* used when part of a set */
 	int				gencrypto_kty;	/**< one of LWS_GENCRYPTO_KTY_ */
 	cose_param_t			kty;
 	cose_param_t			cose_alg;
 	cose_param_t			cose_curve;
 	char 				private_key; /* nonzero = has private key elements */
-} lws_cose_key_t;
+} aws_lws_cose_key_t;
 
-typedef int (*lws_cose_key_import_callback)(struct lws_cose_key *s, void *user);
+typedef int (*aws_lws_cose_key_import_callback)(struct aws_lws_cose_key *s, void *user);
 
-/** lws_cose_jwk_import() - Create an lws_cose_key_t object from cose_key CBOR
+/** aws_lws_cose_jwk_import() - Create an aws_lws_cose_key_t object from cose_key CBOR
  *
- * \param pkey_set: NULL, or a pointer to an lws_dll2_owner_t for a cose_key set
+ * \param pkey_set: NULL, or a pointer to an aws_lws_dll2_owner_t for a cose_key set
  * \param cb: callback for each jwk-processed key, or NULL if importing a single
  *	      key with no parent "keys" JSON
  * \param user: pointer to be passed to the callback, otherwise ignored by lws.
@@ -293,66 +293,66 @@ typedef int (*lws_cose_key_import_callback)(struct lws_cose_key *s, void *user);
  * \param in: a single cose_key
  * \param len: the length of the cose_key in bytes
  *
- * Creates a single lws_cose_key_t if \p pkey_set is NULL or if the incoming
+ * Creates a single aws_lws_cose_key_t if \p pkey_set is NULL or if the incoming
  * CBOR doesn't start with an array, otherwise expects a CBOR array containing
  * zero or more cose_key CBOR, and adds each to the \p pkey_set
- * lws_dll2_owner_t struct.  Created lws_cose_key_t are filled with data from
+ * aws_lws_dll2_owner_t struct.  Created aws_lws_cose_key_t are filled with data from
  * the COSE representation and can be used with other COSE crypto ops.
  */
-LWS_VISIBLE LWS_EXTERN lws_cose_key_t *
-lws_cose_key_import(lws_dll2_owner_t *pkey_set, lws_cose_key_import_callback cb,
+LWS_VISIBLE LWS_EXTERN aws_lws_cose_key_t *
+aws_lws_cose_key_import(aws_lws_dll2_owner_t *pkey_set, aws_lws_cose_key_import_callback cb,
 		    void *user, const uint8_t *in, size_t len);
 
-/** lws_cose_key_export() - Create cose_key CBOR from an lws_cose_key_t
+/** aws_lws_cose_key_export() - Create cose_key CBOR from an aws_lws_cose_key_t
  *
- * \param ck: the lws_cose_key_t to export to CBOR
- * \param ctx: the CBOR writing context (same as for lws_lec_printf())
+ * \param ck: the aws_lws_cose_key_t to export to CBOR
+ * \param ctx: the CBOR writing context (same as for aws_lws_lec_printf())
  * \param flags: 0 to export only public elements, or LWSJWKF_EXPORT_PRIVATE
  *
- * Creates an lws_jwk struct filled with data from the COSE representation.
+ * Creates an aws_lws_jwk struct filled with data from the COSE representation.
  */
-LWS_VISIBLE LWS_EXTERN enum lws_lec_pctx_ret
-lws_cose_key_export(lws_cose_key_t *ck, lws_lec_pctx_t *ctx, int flags);
+LWS_VISIBLE LWS_EXTERN enum aws_lws_lec_pctx_ret
+aws_lws_cose_key_export(aws_lws_cose_key_t *ck, aws_lws_lec_pctx_t *ctx, int flags);
 
 /**
- * lws_cose_key_generate() - generate a fresh key
+ * aws_lws_cose_key_generate() - generate a fresh key
  *
- * \param context: the lws_context used to get random
+ * \param context: the aws_lws_context used to get random
  * \param cose_kty: one of LWSCOSE_WKKTV_ indicating the well-known key type
  * \param use_mask: 0, or a bitfield where (1 << LWSCOSE_WKKO_...) set means valid for use
  * \param bits: key bits for RSA
  * \param curve: for EC keys, one of "P-256", "P-384" or "P-521" currently
  * \param kid: string describing the key, or NULL
  *
- * Create an lws_cose_key_t of the specified type and return it
+ * Create an aws_lws_cose_key_t of the specified type and return it
  */
-LWS_VISIBLE LWS_EXTERN lws_cose_key_t *
-lws_cose_key_generate(struct lws_context *context, cose_param_t cose_kty,
+LWS_VISIBLE LWS_EXTERN aws_lws_cose_key_t *
+aws_lws_cose_key_generate(struct aws_lws_context *context, cose_param_t cose_kty,
 		      int use_mask, int bits, const char *curve,
 		      const uint8_t *kid, size_t kl);
 
-LWS_VISIBLE LWS_EXTERN lws_cose_key_t *
-lws_cose_key_from_set(lws_dll2_owner_t *set, const uint8_t *kid, size_t kl);
+LWS_VISIBLE LWS_EXTERN aws_lws_cose_key_t *
+aws_lws_cose_key_from_set(aws_lws_dll2_owner_t *set, const uint8_t *kid, size_t kl);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_cose_key_destroy(lws_cose_key_t **ck);
+aws_lws_cose_key_destroy(aws_lws_cose_key_t **ck);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_cose_key_set_destroy(lws_dll2_owner_t *o);
+aws_lws_cose_key_set_destroy(aws_lws_dll2_owner_t *o);
 
 /* only available in _DEBUG build */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_cose_key_dump(const lws_cose_key_t *ck);
+aws_lws_cose_key_dump(const aws_lws_cose_key_t *ck);
 
 /*
  * cose_sign
  */
 
-struct lws_cose_validate_context;
+struct aws_lws_cose_validate_context;
 
 
-enum lws_cose_sig_types {
+enum aws_lws_cose_sig_types {
 	SIGTYPE_UNKNOWN,
 	SIGTYPE_MULTI,
 	SIGTYPE_SINGLE,
@@ -364,14 +364,14 @@ enum lws_cose_sig_types {
 /* a list of these result objects is the output of the validation process */
 
 typedef struct {
-	lws_dll2_t		list;
+	aws_lws_dll2_t		list;
 
-	const lws_cose_key_t	*cose_key;
+	const aws_lws_cose_key_t	*cose_key;
 	cose_param_t		cose_alg;
 
 	int			result; /* 0 = validated */
 
-} lws_cose_validate_res_t;
+} aws_lws_cose_validate_res_t;
 
 enum {
 	LCOSESIGEXTCB_RET_FINISHED,
@@ -380,55 +380,55 @@ enum {
 };
 
 typedef struct {
-	struct lws_cose_validate_context *cps;
+	struct aws_lws_cose_validate_context *cps;
 	const uint8_t			 *ext;
 	size_t				 xl;
-} lws_cose_sig_ext_pay_t;
+} aws_lws_cose_sig_ext_pay_t;
 
-typedef int (*lws_cose_sign_ext_pay_cb_t)(lws_cose_sig_ext_pay_t *x);
-typedef int (*lws_cose_validate_pay_cb_t)(struct lws_cose_validate_context *cps,
+typedef int (*aws_lws_cose_sign_ext_pay_cb_t)(aws_lws_cose_sig_ext_pay_t *x);
+typedef int (*aws_lws_cose_validate_pay_cb_t)(struct aws_lws_cose_validate_context *cps,
 					  void *opaque, const uint8_t *paychunk,
 					  size_t paychunk_len);
 
-typedef struct lws_cose_validate_create_info {
-	struct lws_context		*cx;
+typedef struct aws_lws_cose_validate_create_info {
+	struct aws_lws_context		*cx;
 	/**< REQUIRED: the lws context */
-	lws_dll2_owner_t		*keyset;
+	aws_lws_dll2_owner_t		*keyset;
 	/**< REQUIRED: one or more cose_keys */
 
-	enum lws_cose_sig_types		sigtype;
+	enum aws_lws_cose_sig_types		sigtype;
 	/**<  0 if a CBOR tag is in the sig, else one of SIGTYPE_MULTI,
 	 * SIGTYPE_SINGLE, etc*/
 
-	lws_cose_validate_pay_cb_t	pay_cb;
+	aws_lws_cose_validate_pay_cb_t	pay_cb;
 	/**< optional: called back with unvalidated payload pieces */
 	void				*pay_opaque;
 	/**< optional: passed into pay_cb callback along with payload chunk */
 
-	lws_cose_sign_ext_pay_cb_t	ext_cb;
+	aws_lws_cose_sign_ext_pay_cb_t	ext_cb;
 	/**< optional extra application data provision callback */
 	void				*ext_opaque;
 	/**< optional extra application data provision callback opaque */
 	size_t				ext_len;
 	/**< if we have extra app data, this must be set to the length of it */
-} lws_cose_validate_create_info_t;
+} aws_lws_cose_validate_create_info_t;
 
 /**
- * lws_cose_validate_create() - create a signature validation context
+ * aws_lws_cose_validate_create() - create a signature validation context
  *
  * \param info: struct describing the validation context to create
  *
  * Creates a signature validation context set up as described in \p info.
  *
  * You can then pass the signature cbor chunks to it using
- * lws_cose_validate_chunk(), finialize and get the results list using
- * lws_cose_validate_results() and destroy with lws_cose_validate_destroy().
+ * aws_lws_cose_validate_chunk(), finialize and get the results list using
+ * aws_lws_cose_validate_results() and destroy with aws_lws_cose_validate_destroy().
  */
-LWS_VISIBLE LWS_EXTERN struct lws_cose_validate_context *
-lws_cose_validate_create(const lws_cose_validate_create_info_t *info);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_cose_validate_context *
+aws_lws_cose_validate_create(const aws_lws_cose_validate_create_info_t *info);
 
 /**
- * lws_cose_validate_chunk() - passes chunks of CBOR into the signature validator
+ * aws_lws_cose_validate_chunk() - passes chunks of CBOR into the signature validator
  *
  * \param cps: the validation context
  * \param in: the chunk of CBOR (does not have to be logically complete)
@@ -439,31 +439,31 @@ lws_cose_validate_create(const lws_cose_validate_create_info_t *info);
  *
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_cose_validate_chunk(struct lws_cose_validate_context *cps,
+aws_lws_cose_validate_chunk(struct aws_lws_cose_validate_context *cps,
 			const uint8_t *in, size_t in_len, size_t *used_in);
 
-LWS_VISIBLE LWS_EXTERN lws_dll2_owner_t *
-lws_cose_validate_results(struct lws_cose_validate_context *cps);
+LWS_VISIBLE LWS_EXTERN aws_lws_dll2_owner_t *
+aws_lws_cose_validate_results(struct aws_lws_cose_validate_context *cps);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_cose_validate_destroy(struct lws_cose_validate_context **cps);
+aws_lws_cose_validate_destroy(struct aws_lws_cose_validate_context **cps);
 
-struct lws_cose_sign_context;
+struct aws_lws_cose_sign_context;
 
 #define LCSC_FL_ADD_CBOR_TAG		(1 << 0)
 #define LCSC_FL_ADD_CBOR_PREFER_MAC0	(1 << 1)
 
-typedef struct lws_cose_sign_create_info {
-	struct lws_context		*cx;
+typedef struct aws_lws_cose_sign_create_info {
+	struct aws_lws_context		*cx;
 	/**< REQUIRED: the lws context */
-	lws_dll2_owner_t		*keyset;
+	aws_lws_dll2_owner_t		*keyset;
 	/**< REQUIRED: one or more cose_keys */
 
-	lws_lec_pctx_t			*lec;
+	aws_lws_lec_pctx_t			*lec;
 	/**< REQUIRED: the cbor output context to emit to, user must
-	 * initialize with lws_lec_init() beforehand */
+	 * initialize with aws_lws_lec_init() beforehand */
 
-	lws_cose_sign_ext_pay_cb_t	ext_cb;
+	aws_lws_cose_sign_ext_pay_cb_t	ext_cb;
 	/**< optional extra application data provision callback */
 	void				*ext_opaque;
 	/**< optional extra application data provision callback opaque */
@@ -475,37 +475,37 @@ typedef struct lws_cose_sign_create_info {
 
 	int				flags;
 	/**< bitmap of  LCSC_FL_* */
-	enum lws_cose_sig_types		sigtype;
+	enum aws_lws_cose_sig_types		sigtype;
 	/**< 0, or sign type hint */
-} lws_cose_sign_create_info_t;
+} aws_lws_cose_sign_create_info_t;
 
 /**
- * lws_cose_sign_create() - Create a signing context
+ * aws_lws_cose_sign_create() - Create a signing context
  *
  * \param info: a structure describing the signing context you want to create
  *
  * This allocates and returns a signing context created according to what is in
  * the \p info parameter.
  *
- * \p info must be prepared with the lws_context, a keyset to use, a CBOR
+ * \p info must be prepared with the aws_lws_context, a keyset to use, a CBOR
  * output context, and the inline payload length.
  *
  * Returns NULL on failure or the created signing context ready to add alg(s)
  * to.
  */
 
-LWS_VISIBLE LWS_EXTERN struct lws_cose_sign_context *
-lws_cose_sign_create(const lws_cose_sign_create_info_t *info);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_cose_sign_context *
+aws_lws_cose_sign_create(const aws_lws_cose_sign_create_info_t *info);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_cose_sign_add(struct lws_cose_sign_context *csc, cose_param_t alg,
-		  const lws_cose_key_t *ck);
+aws_lws_cose_sign_add(struct aws_lws_cose_sign_context *csc, cose_param_t alg,
+		  const aws_lws_cose_key_t *ck);
 
-LWS_VISIBLE LWS_EXTERN enum lws_lec_pctx_ret
-lws_cose_sign_payload_chunk(struct lws_cose_sign_context *csc,
+LWS_VISIBLE LWS_EXTERN enum aws_lws_lec_pctx_ret
+aws_lws_cose_sign_payload_chunk(struct aws_lws_cose_sign_context *csc,
 			    const uint8_t *in, size_t in_len);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_cose_sign_destroy(struct lws_cose_sign_context **csc);
+aws_lws_cose_sign_destroy(struct aws_lws_cose_sign_context **csc);
 
 //@}

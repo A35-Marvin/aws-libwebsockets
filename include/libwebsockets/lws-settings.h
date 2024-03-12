@@ -36,26 +36,26 @@
 
 #define LSOOPEN_FLAG_WRITEABLE				(1 << 0)
 
-struct lws_settings_ops;
+struct aws_lws_settings_ops;
 
 typedef struct {
 	void						*handle_plat;
-	const struct lws_settings_ops			*so;
+	const struct aws_lws_settings_ops			*so;
 	uint8_t						refcount;
 	void						*opaque_plat;
-} lws_settings_instance_t;
+} aws_lws_settings_instance_t;
 
-typedef struct lws_settings_ops {
-	int (*get)(lws_settings_instance_t *si, const char *name,
+typedef struct aws_lws_settings_ops {
+	int (*get)(aws_lws_settings_instance_t *si, const char *name,
 		   uint8_t *dest, size_t *max_actual);
 	/**< if dest is NULL, max_actual is set to the actual length without
 	 * copying anything out */
-	int (*set)(lws_settings_instance_t *si, const char *name,
+	int (*set)(aws_lws_settings_instance_t *si, const char *name,
 		   const uint8_t *src, size_t len);
-} lws_settings_ops_t;
+} aws_lws_settings_ops_t;
 
 /**
- * lws_settings_plat_get() - read a named blob from a settings instance
+ * aws_lws_settings_plat_get() - read a named blob from a settings instance
  *
  * \param si: the settings instance
  * \param name: the name of the setting blob in the instance
@@ -68,11 +68,11 @@ typedef struct lws_settings_ops {
  * *max_actual on entry is copied to dest.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_settings_plat_get(lws_settings_instance_t *si, const char *name,
+aws_lws_settings_plat_get(aws_lws_settings_instance_t *si, const char *name,
 		      uint8_t *dest, size_t *max_actual);
 
 /**
- * lws_settings_plat_get() - read a named blob from a settings instance
+ * aws_lws_settings_plat_get() - read a named blob from a settings instance
  *
  * \param si: the settings instance
  * \param name: the name of the setting blob in the instance
@@ -83,11 +83,11 @@ lws_settings_plat_get(lws_settings_instance_t *si, const char *name,
  * bytes of data from \p src.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_settings_plat_set(lws_settings_instance_t *si, const char *name,
+aws_lws_settings_plat_set(aws_lws_settings_instance_t *si, const char *name,
 		      const uint8_t *src, size_t len);
 
 /**
- * lws_settings_plat_printf() - read a named blob from a settings instance
+ * aws_lws_settings_plat_printf() - read a named blob from a settings instance
  *
  * \param si: the settings instance
  * \param name: the name of the setting blob in the instance
@@ -98,15 +98,15 @@ lws_settings_plat_set(lws_settings_instance_t *si, const char *name,
  * the size is computed and then a temp heap buffer used.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_settings_plat_printf(lws_settings_instance_t *si, const char *name,
+aws_lws_settings_plat_printf(aws_lws_settings_instance_t *si, const char *name,
 		         const char *format, ...) LWS_FORMAT(3);
 
-#define lws_settings_ops_plat \
-	.get		= lws_settings_plat_get, \
-	.set		= lws_settings_plat_set,
+#define aws_lws_settings_ops_plat \
+	.get		= aws_lws_settings_plat_get, \
+	.set		= aws_lws_settings_plat_set,
 
-LWS_VISIBLE LWS_EXTERN lws_settings_instance_t *
-lws_settings_init(const lws_settings_ops_t *so, void *opaque_plat);
+LWS_VISIBLE LWS_EXTERN aws_lws_settings_instance_t *
+aws_lws_settings_init(const aws_lws_settings_ops_t *so, void *opaque_plat);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_settings_deinit(lws_settings_instance_t **si);
+aws_lws_settings_deinit(aws_lws_settings_instance_t **si);

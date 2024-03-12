@@ -31,13 +31,13 @@
  */
 
 int
-lws_tls_fake_POLLIN_for_buffered(struct lws_context_per_thread *pt)
+aws_lws_tls_fake_POLLIN_for_buffered(struct aws_lws_context_per_thread *pt)
 {
 	int ret = 0;
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, p, p1,
-			lws_dll2_get_head(&pt->tls.dll_pending_tls_owner)) {
-		struct lws *wsi = lws_container_of(p, struct lws,
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, p1,
+			aws_lws_dll2_get_head(&pt->tls.dll_pending_tls_owner)) {
+		struct lws *wsi = aws_lws_container_of(p, struct lws,
 						   tls.dll_pending_tls);
 
 		if (wsi->position_in_fds_table >= 0) {
@@ -48,7 +48,7 @@ lws_tls_fake_POLLIN_for_buffered(struct lws_context_per_thread *pt)
 			ret |= pt->fds[wsi->position_in_fds_table].revents & LWS_POLLIN;
 		}
 
-	} lws_end_foreach_dll_safe(p, p1);
+	} aws_lws_end_foreach_dll_safe(p, p1);
 
 	return !!ret;
 }
@@ -56,26 +56,26 @@ lws_tls_fake_POLLIN_for_buffered(struct lws_context_per_thread *pt)
 void
 __lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
 {
-	lws_dll2_remove(&wsi->tls.dll_pending_tls);
+	aws_lws_dll2_remove(&wsi->tls.dll_pending_tls);
 }
 
 void
-lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
+aws_lws_ssl_remove_wsi_from_buffered_list(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 	__lws_ssl_remove_wsi_from_buffered_list(wsi);
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 }
 
 #if defined(LWS_WITH_SERVER)
 int
-lws_tls_check_cert_lifetime(struct lws_vhost *v)
+aws_lws_tls_check_cert_lifetime(struct aws_lws_vhost *v)
 {
-	time_t now = (time_t)lws_now_secs(), life = 0;
-	struct lws_acme_cert_aging_args caa;
-	union lws_tls_cert_info_results ir;
+	time_t now = (time_t)aws_lws_now_secs(), life = 0;
+	struct aws_lws_acme_cert_aging_args caa;
+	union aws_lws_tls_cert_info_results ir;
 	int n;
 
 	if (v->tls.ssl_ctx && !v->tls.skipped_certs) {
@@ -84,32 +84,32 @@ lws_tls_check_cert_lifetime(struct lws_vhost *v)
 			/* our clock is wrong and we can't judge the certs */
 			return -1;
 
-		n = lws_tls_vhost_cert_info(v, LWS_TLS_CERT_INFO_VALIDITY_TO,
+		n = aws_lws_tls_vhost_cert_info(v, LWS_TLS_CERT_INFO_VALIDITY_TO,
 					    &ir, 0);
 		if (n)
 			return 1;
 
 		life = (ir.time - now) / (24 * 3600);
-		lwsl_vhost_notice(v, "   vhost %s: cert expiry: %dd", v->name,
+		aws_lwsl_vhost_notice(v, "   vhost %s: cert expiry: %dd", v->name,
 			    (int)life);
 	} else
-		lwsl_vhost_info(v, "   vhost %s: no cert", v->name);
+		aws_lwsl_vhost_info(v, "   vhost %s: no cert", v->name);
 
 	memset(&caa, 0, sizeof(caa));
 	caa.vh = v;
-	lws_broadcast(&v->context->pt[0], LWS_CALLBACK_VHOST_CERT_AGING, (void *)&caa,
+	aws_lws_broadcast(&v->context->pt[0], LWS_CALLBACK_VHOST_CERT_AGING, (void *)&caa,
 		      (size_t)(ssize_t)life);
 
 	return 0;
 }
 
 int
-lws_tls_check_all_cert_lifetimes(struct lws_context *context)
+aws_lws_tls_check_all_cert_lifetimes(struct aws_lws_context *context)
 {
-	struct lws_vhost *v = context->vhost_list;
+	struct aws_lws_vhost *v = context->vhost_list;
 
 	while (v) {
-		if (lws_tls_check_cert_lifetime(v) < 0)
+		if (aws_lws_tls_check_cert_lifetime(v) < 0)
 			return -1;
 		v = v->vhost_next;
 	}
@@ -122,8 +122,8 @@ lws_tls_check_all_cert_lifetimes(struct lws_context *context)
  * LWS_TLS_EXTANT_YES        : use the cert and private key paths normally
  * LWS_TLS_EXTANT_ALTERNATIVE: normal paths not usable, try alternate if poss
  */
-enum lws_tls_extant
-lws_tls_generic_cert_checks(struct lws_vhost *vhost, const char *cert,
+enum aws_lws_tls_extant
+aws_lws_tls_generic_cert_checks(struct aws_lws_vhost *vhost, const char *cert,
 			    const char *private_key)
 {
 	int n, m;
@@ -142,16 +142,16 @@ lws_tls_generic_cert_checks(struct lws_vhost *vhost, const char *cert,
 	if (!cert || !private_key)
 		return LWS_TLS_EXTANT_NO;
 
-	n = (int)lws_tls_use_any_upgrade_check_extant(cert);
+	n = (int)aws_lws_tls_use_any_upgrade_check_extant(cert);
 	if (n == LWS_TLS_EXTANT_ALTERNATIVE)
 		return LWS_TLS_EXTANT_ALTERNATIVE;
-	m = (int)lws_tls_use_any_upgrade_check_extant(private_key);
+	m = (int)aws_lws_tls_use_any_upgrade_check_extant(private_key);
 	if (m == LWS_TLS_EXTANT_ALTERNATIVE)
 		return LWS_TLS_EXTANT_ALTERNATIVE;
 
 	if ((n == LWS_TLS_EXTANT_NO || m == LWS_TLS_EXTANT_NO) &&
 	    (vhost->options & LWS_SERVER_OPTION_IGNORE_MISSING_CERT)) {
-		lwsl_vhost_notice(vhost, "Ignoring missing %s or %s", cert, private_key);
+		aws_lwsl_vhost_notice(vhost, "Ignoring missing %s or %s", cert, private_key);
 		vhost->tls.skipped_certs = 1;
 
 		return LWS_TLS_EXTANT_NO;
@@ -169,7 +169,7 @@ lws_tls_generic_cert_checks(struct lws_vhost *vhost, const char *cert,
  */
 
 int
-lws_tls_cert_updated(struct lws_context *context, const char *certpath,
+aws_lws_tls_cert_updated(struct aws_lws_context *context, const char *certpath,
 		     const char *keypath,
 		     const char *mem_cert, size_t len_mem_cert,
 		     const char *mem_privkey, size_t len_mem_privkey)
@@ -178,29 +178,29 @@ lws_tls_cert_updated(struct lws_context *context, const char *certpath,
 
 	wsi.a.context = context;
 
-	lws_start_foreach_ll(struct lws_vhost *, v, context->vhost_list) {
+	aws_lws_start_foreach_ll(struct aws_lws_vhost *, v, context->vhost_list) {
 		wsi.a.vhost = v; /* not a real bound wsi */
 		if (v->tls.alloc_cert_path && v->tls.key_path &&
 		    !strcmp(v->tls.alloc_cert_path, certpath) &&
 		    !strcmp(v->tls.key_path, keypath)) {
-			lws_tls_server_certs_load(v, &wsi, certpath, keypath,
+			aws_lws_tls_server_certs_load(v, &wsi, certpath, keypath,
 						  mem_cert, len_mem_cert,
 						  mem_privkey, len_mem_privkey);
 
 			if (v->tls.skipped_certs)
-				lwsl_vhost_notice(v, "vhost %s: cert unset", v->name);
+				aws_lwsl_vhost_notice(v, "vhost %s: cert unset", v->name);
 		}
-	} lws_end_foreach_ll(v, vhost_next);
+	} aws_lws_end_foreach_ll(v, vhost_next);
 
 	return 0;
 }
 
 int
-lws_gate_accepts(struct lws_context *context, int on)
+aws_lws_gate_accepts(struct aws_lws_context *context, int on)
 {
-	struct lws_vhost *v = context->vhost_list;
+	struct aws_lws_vhost *v = context->vhost_list;
 
-	lwsl_notice("%s: on = %d\n", __func__, on);
+	aws_lwsl_notice("%s: on = %d\n", __func__, on);
 
 	if (context->tls_gate_accepts == (char)on)
 		return 0;
@@ -208,16 +208,16 @@ lws_gate_accepts(struct lws_context *context, int on)
 	context->tls_gate_accepts = (char)on;
 
 	while (v) {
-		lws_start_foreach_dll(struct lws_dll2 *, d,
-				      lws_dll2_get_head(&v->listen_wsi)) {
-			struct lws *wsi = lws_container_of(d, struct lws,
+		aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d,
+				      aws_lws_dll2_get_head(&v->listen_wsi)) {
+			struct lws *wsi = aws_lws_container_of(d, struct lws,
 							   listen_list);
 
 			if (v->tls.use_ssl &&
-			    lws_change_pollfd(wsi, on ? LWS_POLLIN : 0,
+			    aws_lws_change_pollfd(wsi, on ? LWS_POLLIN : 0,
 						   on ? 0 : LWS_POLLIN))
-				lwsl_cx_notice(context, "Unable to set POLLIN %d", on);
-		} lws_end_foreach_dll(d);
+				aws_lwsl_cx_notice(context, "Unable to set POLLIN %d", on);
+		} aws_lws_end_foreach_dll(d);
 
 		v = v->vhost_next;
 	}
@@ -229,7 +229,7 @@ lws_gate_accepts(struct lws_context *context, int on)
 /* comma-separated alpn list, like "h2,http/1.1" to openssl alpn format */
 
 int
-lws_alpn_comma_to_openssl(const char *comma, uint8_t *os, int len)
+aws_lws_alpn_comma_to_openssl(const char *comma, uint8_t *os, int len)
 {
 	uint8_t *oos = os, *plen = NULL;
 
@@ -247,7 +247,7 @@ lws_alpn_comma_to_openssl(const char *comma, uint8_t *os, int len)
 		}
 
 		if (*comma == ',') {
-			*plen = (uint8_t)lws_ptr_diff(os, plen + 1);
+			*plen = (uint8_t)aws_lws_ptr_diff(os, plen + 1);
 			plen = NULL;
 			comma++;
 		} else {
@@ -257,11 +257,11 @@ lws_alpn_comma_to_openssl(const char *comma, uint8_t *os, int len)
 	}
 
 	if (plen)
-		*plen = (uint8_t)lws_ptr_diff(os, plen + 1);
+		*plen = (uint8_t)aws_lws_ptr_diff(os, plen + 1);
 
 	*os = 0;
 
-	return lws_ptr_diff(os, oos);
+	return aws_lws_ptr_diff(os, oos);
 }
 
 

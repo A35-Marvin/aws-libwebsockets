@@ -25,10 +25,10 @@
 #include <libwebsockets.h>
 #include <libwebsockets/lws-dbus.h>
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 static const char *version = "0.1";
 static int interrupted;
-static struct lws_dbus_ctx dbus_ctx, ctx_listener;
+static struct aws_lws_dbus_ctx dbus_ctx, ctx_listener;
 static char session;
 
 #define THIS_INTERFACE	 "org.libwebsockets.test"
@@ -195,10 +195,10 @@ dmh_emit_quit(DBusConnection *c, DBusMessage *m, DBusMessage **reply, void *d)
 	return DBUS_HANDLER_RESULT_HANDLED;
 }
 
-struct lws_dbus_methods {
+struct aws_lws_dbus_methods {
 	const char *inter;
 	const char *call;
-	lws_dbus_message_handler handler;
+	aws_lws_dbus_message_handler handler;
 } meths[] = {
 	{ DBUS_INTERFACE_INTROSPECTABLE, "Introspect",	dmh_introspect	},
 	{ DBUS_INTERFACE_PROPERTIES,	 "Get",		dmh_get		},
@@ -212,12 +212,12 @@ struct lws_dbus_methods {
 static DBusHandlerResult
 server_message_handler(DBusConnection *conn, DBusMessage *message, void *data)
 {
-	struct lws_dbus_methods *mp = meths;
+	struct aws_lws_dbus_methods *mp = meths;
 	DBusHandlerResult result;
         DBusMessage *reply = NULL;
 	size_t n;
 
-	lwsl_info("%s: Got D-Bus request: %s.%s on %s\n", __func__,
+	aws_lwsl_info("%s: Got D-Bus request: %s.%s on %s\n", __func__,
 		  dbus_message_get_interface(message),
 		  dbus_message_get_member(message),
 		  dbus_message_get_path(message));
@@ -250,22 +250,22 @@ static const DBusObjectPathVTable server_vtable = {
 };
 
 static void
-destroy_dbus_server_conn(struct lws_dbus_ctx *ctx)
+destroy_dbus_server_conn(struct aws_lws_dbus_ctx *ctx)
 {
 	if (!ctx->conn)
 		return;
 
-	lwsl_notice("%s\n", __func__);
+	aws_lwsl_notice("%s\n", __func__);
 
 	dbus_connection_unregister_object_path(ctx->conn, THIS_OBJECT);
-	lws_dll2_remove(&ctx->next);
+	aws_lws_dll2_remove(&ctx->next);
 	dbus_connection_unref(ctx->conn);
 }
 
 static void
-cb_closing(struct lws_dbus_ctx *ctx)
+cb_closing(struct aws_lws_dbus_ctx *ctx)
 {
-	lwsl_err("%s: closing\n", __func__);
+	aws_lwsl_err("%s: closing\n", __func__);
 	destroy_dbus_server_conn(ctx);
 
 	free(ctx);
@@ -275,9 +275,9 @@ cb_closing(struct lws_dbus_ctx *ctx)
 static void
 new_conn(DBusServer *server, DBusConnection *conn, void *data)
 {
-	struct lws_dbus_ctx *conn_ctx, *ctx = (struct lws_dbus_ctx *)data;
+	struct aws_lws_dbus_ctx *conn_ctx, *ctx = (struct aws_lws_dbus_ctx *)data;
 
-	lwsl_notice("%s: vh %s\n", __func__, lws_get_vhost_name(ctx->vh));
+	aws_lwsl_notice("%s: vh %s\n", __func__, aws_lws_get_vhost_name(ctx->vh));
 
 	conn_ctx = malloc(sizeof(*conn_ctx));
 	if (!conn_ctx)
@@ -289,18 +289,18 @@ new_conn(DBusServer *server, DBusConnection *conn, void *data)
 	conn_ctx->vh = ctx->vh;
 	conn_ctx->conn = conn;
 
-	if (lws_dbus_connection_setup(conn_ctx, conn, cb_closing)) {
-		lwsl_err("%s: connection bind to lws failed\n", __func__);
+	if (aws_lws_dbus_connection_setup(conn_ctx, conn, cb_closing)) {
+		aws_lwsl_err("%s: connection bind to lws failed\n", __func__);
 		goto bail;
 	}
 
 	if (!dbus_connection_register_object_path(conn, THIS_OBJECT,
 						  &server_vtable, conn_ctx)) {
-		lwsl_err("%s: Failed to register object path\n", __func__);
+		aws_lwsl_err("%s: Failed to register object path\n", __func__);
 		goto bail;
 	}
 
-	lws_dll2_add_head(&conn_ctx->next, &ctx->owner);
+	aws_lws_dll2_add_head(&conn_ctx->next, &ctx->owner);
 
 	/* we take on responsibility for explicit close / unref with this... */
 	dbus_connection_ref(conn);
@@ -318,8 +318,8 @@ create_dbus_listener(const char *ads)
 
         dbus_error_init(&e);
 
-	if (!lws_dbus_server_listen(&ctx_listener, ads, &e, new_conn)) {
-		lwsl_err("%s: failed\n", __func__);
+	if (!aws_lws_dbus_server_listen(&ctx_listener, ads, &e, new_conn)) {
+		aws_lwsl_err("%s: failed\n", __func__);
 		dbus_error_free(&e);
 
 		return 1;
@@ -329,7 +329,7 @@ create_dbus_listener(const char *ads)
 }
 
 static int
-create_dbus_server_conn(struct lws_dbus_ctx *ctx, DBusBusType type)
+create_dbus_server_conn(struct aws_lws_dbus_ctx *ctx, DBusBusType type)
 {
 	DBusError err;
 	int rv;
@@ -339,7 +339,7 @@ create_dbus_server_conn(struct lws_dbus_ctx *ctx, DBusBusType type)
 	/* connect to the daemon bus */
 	ctx->conn = dbus_bus_get(type, &err);
 	if (!ctx->conn) {
-		lwsl_err("%s: Failed to get a session DBus connection: %s\n",
+		aws_lwsl_err("%s: Failed to get a session DBus connection: %s\n",
 			 __func__, err.message);
 		goto fail;
 	}
@@ -353,14 +353,14 @@ create_dbus_server_conn(struct lws_dbus_ctx *ctx, DBusBusType type)
 	rv = dbus_bus_request_name(ctx->conn, THIS_BUSNAME,
 				   DBUS_NAME_FLAG_REPLACE_EXISTING, &err);
 	if (rv != DBUS_REQUEST_NAME_REPLY_PRIMARY_OWNER) {
-		lwsl_err("%s: Failed to request name on bus: %s\n",
+		aws_lwsl_err("%s: Failed to request name on bus: %s\n",
 			 __func__, err.message);
 		goto fail;
 	}
 
 	if (!dbus_connection_register_object_path(ctx->conn, THIS_OBJECT,
 						  &server_vtable, NULL)) {
-		lwsl_err("%s: Failed to register object path for TestObject\n",
+		aws_lwsl_err("%s: Failed to register object path for TestObject\n",
 			 __func__);
 		dbus_bus_release_name(ctx->conn, THIS_BUSNAME, &err);
 		goto fail;
@@ -371,12 +371,12 @@ create_dbus_server_conn(struct lws_dbus_ctx *ctx, DBusBusType type)
 	 * timeout handling provided by lws
 	 */
 
-	if (lws_dbus_connection_setup(ctx, ctx->conn, cb_closing)) {
-		lwsl_err("%s: connection bind to lws failed\n", __func__);
+	if (aws_lws_dbus_connection_setup(ctx, ctx->conn, cb_closing)) {
+		aws_lwsl_err("%s: connection bind to lws failed\n", __func__);
 		goto fail;
 	}
 
-	lwsl_notice("%s: created OK\n", __func__);
+	aws_lwsl_notice("%s: created OK\n", __func__);
 
 	return 0;
 
@@ -391,19 +391,19 @@ fail:
  */
 
 static void
-destroy_dbus_server_listener(struct lws_dbus_ctx *ctx)
+destroy_dbus_server_listener(struct aws_lws_dbus_ctx *ctx)
 {
 	dbus_server_disconnect(ctx->dbs);
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, rdt, nx,
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, rdt, nx,
 				   ctx->owner.head) {
-		struct lws_dbus_ctx *r =
-			lws_container_of(rdt, struct lws_dbus_ctx, next);
+		struct aws_lws_dbus_ctx *r =
+			aws_lws_container_of(rdt, struct aws_lws_dbus_ctx, next);
 
 		dbus_connection_close(r->conn);
 		dbus_connection_unref(r->conn);
 		free(r);
-	} lws_end_foreach_dll_safe(rdt, nx);
+	} aws_lws_end_foreach_dll_safe(rdt, nx);
 
 	dbus_server_unref(ctx->dbs);
 }
@@ -415,15 +415,15 @@ destroy_dbus_server_listener(struct lws_dbus_ctx *ctx)
  */
 
 static void
-spam_connected_clients(struct lws_dbus_ctx *ctx)
+spam_connected_clients(struct aws_lws_dbus_ctx *ctx)
 {
 
 	/* send connected clients an unsolicited message */
 
-	lws_start_foreach_dll_safe(struct lws_dll2 *, rdt, nx,
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, rdt, nx,
 				   ctx->owner.head) {
-		struct lws_dbus_ctx *r =
-			lws_container_of(rdt, struct lws_dbus_ctx, next);
+		struct aws_lws_dbus_ctx *r =
+			aws_lws_container_of(rdt, struct aws_lws_dbus_ctx, next);
 
 
 		DBusMessage *msg;
@@ -431,20 +431,20 @@ spam_connected_clients(struct lws_dbus_ctx *ctx)
 
 		msg = dbus_message_new(DBUS_NUM_MESSAGE_TYPES + 1);
 		if (!msg) {
-			lwsl_err("%s: new message failed\n", __func__);
+			aws_lwsl_err("%s: new message failed\n", __func__);
 		}
 
 		dbus_message_append_args(msg, DBUS_TYPE_STRING, &payload,
 						 DBUS_TYPE_INVALID);
 		if (!dbus_connection_send(r->conn, msg, NULL)) {
-			lwsl_err("%s: unable to send\n", __func__);
+			aws_lwsl_err("%s: unable to send\n", __func__);
 		}
 
-		lwsl_notice("%s\n", __func__);
+		aws_lwsl_notice("%s\n", __func__);
 
 		dbus_message_unref(msg);
 
-	} lws_end_foreach_dll_safe(rdt, nx);
+	} aws_lws_end_foreach_dll_safe(rdt, nx);
 
 }
 
@@ -456,7 +456,7 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -468,17 +468,17 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal DBUS server\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal DBUS server\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.options = LWS_SERVER_OPTION_EXPLICIT_VHOSTS;
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -487,11 +487,11 @@ int main(int argc, const char **argv)
 
 	dbus_ctx.tsi = 0;
 	ctx_listener.tsi = 0;
-	ctx_listener.vh = dbus_ctx.vh = lws_create_vhost(context, &info);
+	ctx_listener.vh = dbus_ctx.vh = aws_lws_create_vhost(context, &info);
 	if (!dbus_ctx.vh)
 		goto bail;
 
-	session = !!lws_cmdline_option(argc, argv, "--session");
+	session = !!aws_lws_cmdline_option(argc, argv, "--session");
 
 	if (session) {
 		/* create the dbus connection, loosely bound to our lws vhost */
@@ -500,7 +500,7 @@ int main(int argc, const char **argv)
 			goto bail;
 	} else {
 		if (create_dbus_listener(THIS_LISTEN_PATH)) {
-			lwsl_err("%s: create_dbus_listener failed\n", __func__);
+			aws_lwsl_err("%s: create_dbus_listener failed\n", __func__);
 			goto bail;
 		}
 	}
@@ -510,7 +510,7 @@ int main(int argc, const char **argv)
 	while (n >= 0 && !interrupted) {
 		if (!session)
 			spam_connected_clients(&ctx_listener);
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 	}
 
 	if (session)
@@ -520,16 +520,16 @@ int main(int argc, const char **argv)
 
 	/* this is required for valgrind-cleanliness */
 	dbus_shutdown();
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
-	lwsl_notice("Exiting cleanly\n");
+	aws_lwsl_notice("Exiting cleanly\n");
 
 	return 0;
 
 bail:
-	lwsl_err("%s: failed to start\n", __func__);
+	aws_lwsl_err("%s: failed to start\n", __func__);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 1;
 }

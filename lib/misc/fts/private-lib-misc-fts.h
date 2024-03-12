@@ -4,7 +4,7 @@
 //typedef off_t jg2_file_offset;
 typedef uint32_t jg2_file_offset;
 
-struct lws_fts_file {
+struct aws_lws_fts_file {
 	int fd;
 	jg2_file_offset root, flen, filepath_table;
 	int max_direct_hits;

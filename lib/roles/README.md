@@ -34,7 +34,7 @@ You inherit all the well-maintained lws core functionality around:
 
  - direct compatibility with all other lws roles + protocols in the same event loop
 
- - compatibility with higher-level stuff like lwsws as the server application
+ - compatibility with higher-level stuff like aws_lwsws as the server application
 
 ### Code placement
 
@@ -54,7 +54,7 @@ If the role is disabled in cmake, nothing in its directory is built.
 
 ### Role ops struct
 
-The role is defined by `struct lws_role_ops` in `lib/roles/private-lib-roles.h`,
+The role is defined by `struct aws_lws_role_ops` in `lib/roles/private-lib-roles.h`,
 each role instantiates one of these and fills in the appropriate ops
 callbacks to perform its job.  By convention that lives in
 `./lib/roles/**role name**/ops-**role_name**.c`.
@@ -74,7 +74,7 @@ eg,
 #if defined(LWS_ROLE_WS)
  #include "roles/ws/private-lib-roles-ws.h"
 #else
- #define lwsi_role_ws(wsi) (0)
+ #define aws_lwsi_role_ws(wsi) (0)
 #endif
 ```
 
@@ -86,12 +86,12 @@ If your role needs special storage in lws objects, that's no problem.  But to ke
 things sane, there are some rules.
 
  - declare a "container struct" in your private.h for everything, eg, the ws role wants
-   to add storage in lws_vhost for enabled extensions, it declares in its private.h
+   to add storage in aws_lws_vhost for enabled extensions, it declares in its private.h
 
 ```
-struct lws_vhost_role_ws {
+struct aws_lws_vhost_role_ws {
 #if !defined(LWS_WITHOUT_EXTENSIONS)
-	const struct lws_extension *extensions;
+	const struct aws_lws_extension *extensions;
 #endif
 };
 ```
@@ -100,12 +100,12 @@ struct lws_vhost_role_ws {
    eg, again for LWS_ROLE_WS
 
 ```
-	struct lws_vhost {
+	struct aws_lws_vhost {
 
 ...
 
 #if defined(LWS_ROLE_WS)
-	struct lws_vhost_role_ws ws;
+	struct aws_lws_vhost_role_ws ws;
 #endif
 
 ...
@@ -117,7 +117,7 @@ Edit the NULL-terminated array `available_roles` at the top of `./lib/core/conte
 a pointer to your new role's ops struct, following the style already there.
 
 ```
-const struct lws_role_ops * available_roles[] = {
+const struct aws_lws_role_ops * available_roles[] = {
 #if defined(LWS_ROLE_H2)
 	&role_ops_h2,
 #endif
@@ -130,8 +130,8 @@ ALPN lists, and call your role ops callbacks for things like hooking vhost creat
 ### Enabling role adoption
 
 The primary way wsi get bound to a specific role is via the lws adoption api
-`lws_adopt_descriptor_vhost()`.  Add flags as necessary in `./include/libwebsockets/lws-adopt.h`
-`enum lws_adoption_type` and follow the existing code in `lws_adopt_descriptor_vhost()`
+`aws_lws_adopt_descriptor_vhost()`.  Add flags as necessary in `./include/libwebsockets/lws-adopt.h`
+`enum aws_lws_adoption_type` and follow the existing code in `aws_lws_adopt_descriptor_vhost()`
 to bind a wsi with suitable flags to your role ops.
 
 ### Implementation of the role
@@ -147,17 +147,17 @@ The core support for wsis in lws has some generic concepts
  - the wsi holds a generic uint32 `wsistate` that contains role flags and wsi state
 
  - role flags are provided (LWSIFR_CLIENT, LWSIFR_SERVER) to differentiate between
-   client and server connections inside a wsi, along with helpers `lwsi_role_client(wsi)`
-   and `lwsi_role_server(wsi)`.
+   client and server connections inside a wsi, along with helpers `aws_lwsi_role_client(wsi)`
+   and `aws_lwsi_role_server(wsi)`.
 
  - lws provides around 30 generic states for the wsi starting from 'unconnected' through
    various proxy or tunnel states, to 'established', and then various states shutting
    down until 'dead socket'.  The states have testable flags and helpers to discover if
-   the wsi state is before establishment `lwsi_state_est(wsi)` and if in the state it is
-   in, it can handle pollout `lwsi_state_can_handle_POLLOUT(wsi)`.
+   the wsi state is before establishment `aws_lwsi_state_est(wsi)` and if in the state it is
+   in, it can handle pollout `aws_lwsi_state_can_handle_POLLOUT(wsi)`.
 
- - You set the initial binding, role flags and state using `lws_role_transition()`.  Afterwards
-   you can adjust the state using `lwsi_set_state()`.
+ - You set the initial binding, role flags and state using `aws_lws_role_transition()`.  Afterwards
+   you can adjust the state using `aws_lwsi_set_state()`.
 
 ### Role ops compression
 

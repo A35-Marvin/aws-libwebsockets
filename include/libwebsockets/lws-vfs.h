@@ -39,7 +39,7 @@
  */
 //@{
 
-/** struct lws_plat_file_ops - Platform-specific file operations
+/** struct aws_lws_plat_file_ops - Platform-specific file operations
  *
  * These provide platform-agnostic ways to deal with filesystem access in the
  * library and in the user code.
@@ -66,36 +66,36 @@
 #define LWS_FOP_FLAG_MOD_TIME_VALID	   (1 << 26)
 #define LWS_FOP_FLAG_VIRTUAL		   (1 << 27)
 
-struct lws_plat_file_ops;
+struct aws_lws_plat_file_ops;
 
-struct lws_fop_fd {
-	lws_filefd_type			fd;
+struct aws_lws_fop_fd {
+	aws_lws_filefd_type			fd;
 	/**< real file descriptor related to the file... */
-	const struct lws_plat_file_ops	*fops;
+	const struct aws_lws_plat_file_ops	*fops;
 	/**< fops that apply to this fop_fd */
 	void				*filesystem_priv;
 	/**< ignored by lws; owned by the fops handlers */
-	lws_filepos_t			pos;
+	aws_lws_filepos_t			pos;
 	/**< generic "position in file" */
-	lws_filepos_t			len;
+	aws_lws_filepos_t			len;
 	/**< generic "length of file" */
-	lws_fop_flags_t			flags;
+	aws_lws_fop_flags_t			flags;
 	/**< copy of the returned flags */
 	uint32_t			mod_time;
 	/**< optional "modification time of file", only valid if .open()
 	 * set the LWS_FOP_FLAG_MOD_TIME_VALID flag */
 };
-typedef struct lws_fop_fd *lws_fop_fd_t;
+typedef struct aws_lws_fop_fd *aws_lws_fop_fd_t;
 
-struct lws_fops_index {
+struct aws_lws_fops_index {
 	const char *sig;	/* NULL or vfs signature, eg, ".zip/" */
 	uint8_t len;		/* length of above string */
 };
 
-struct lws_plat_file_ops {
-	lws_fop_fd_t (*LWS_FOP_OPEN)(const struct lws_plat_file_ops *fops,
+struct aws_lws_plat_file_ops {
+	aws_lws_fop_fd_t (*LWS_FOP_OPEN)(const struct aws_lws_plat_file_ops *fops,
 				     const char *filename, const char *vpath,
-				     lws_fop_flags_t *flags);
+				     aws_lws_fop_flags_t *flags);
 	/**< Open file (always binary access if plat supports it)
 	 * vpath may be NULL, or if the fops understands it, the point at which
 	 * the filename's virtual part starts.
@@ -105,22 +105,22 @@ struct lws_plat_file_ops {
 	 * gzip-compressed, then the open handler should OR
 	 * LWS_FOP_FLAG_COMPR_IS_GZIP on to *flags before returning.
 	 */
-	int (*LWS_FOP_CLOSE)(lws_fop_fd_t *fop_fd);
+	int (*LWS_FOP_CLOSE)(aws_lws_fop_fd_t *fop_fd);
 	/**< close file AND set the pointer to NULL */
-	lws_fileofs_t (*LWS_FOP_SEEK_CUR)(lws_fop_fd_t fop_fd,
-					  lws_fileofs_t offset_from_cur_pos);
+	aws_lws_fileofs_t (*LWS_FOP_SEEK_CUR)(aws_lws_fop_fd_t fop_fd,
+					  aws_lws_fileofs_t offset_from_cur_pos);
 	/**< seek from current position */
-	int (*LWS_FOP_READ)(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-			    uint8_t *buf, lws_filepos_t len);
+	int (*LWS_FOP_READ)(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+			    uint8_t *buf, aws_lws_filepos_t len);
 	/**< Read from file, on exit *amount is set to amount actually read */
-	int (*LWS_FOP_WRITE)(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-			     uint8_t *buf, lws_filepos_t len);
+	int (*LWS_FOP_WRITE)(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+			     uint8_t *buf, aws_lws_filepos_t len);
 	/**< Write to file, on exit *amount is set to amount actually written */
 
-	struct lws_fops_index fi[3];
+	struct aws_lws_fops_index fi[3];
 	/**< vfs path signatures implying use of this fops */
 
-	const struct lws_plat_file_ops *next;
+	const struct aws_lws_plat_file_ops *next;
 	/**< NULL or next fops in list */
 
 	/* Add new things just above here ---^
@@ -128,56 +128,56 @@ struct lws_plat_file_ops {
 };
 
 /**
- * lws_get_fops() - get current file ops
+ * aws_lws_get_fops() - get current file ops
  *
  * \param context: context
  */
-LWS_VISIBLE LWS_EXTERN struct lws_plat_file_ops * LWS_WARN_UNUSED_RESULT
-lws_get_fops(struct lws_context *context);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_plat_file_ops * LWS_WARN_UNUSED_RESULT
+aws_lws_get_fops(struct aws_lws_context *context);
 LWS_VISIBLE LWS_EXTERN void
-lws_set_fops(struct lws_context *context, const struct lws_plat_file_ops *fops);
+aws_lws_set_fops(struct aws_lws_context *context, const struct aws_lws_plat_file_ops *fops);
 /**
- * lws_vfs_tell() - get current file position
+ * aws_lws_vfs_tell() - get current file position
  *
  * \param fop_fd: fop_fd we are asking about
  */
-LWS_VISIBLE LWS_EXTERN lws_filepos_t LWS_WARN_UNUSED_RESULT
-lws_vfs_tell(lws_fop_fd_t fop_fd);
+LWS_VISIBLE LWS_EXTERN aws_lws_filepos_t LWS_WARN_UNUSED_RESULT
+aws_lws_vfs_tell(aws_lws_fop_fd_t fop_fd);
 /**
- * lws_vfs_get_length() - get current file total length in bytes
+ * aws_lws_vfs_get_length() - get current file total length in bytes
  *
  * \param fop_fd: fop_fd we are asking about
  */
-LWS_VISIBLE LWS_EXTERN lws_filepos_t LWS_WARN_UNUSED_RESULT
-lws_vfs_get_length(lws_fop_fd_t fop_fd);
+LWS_VISIBLE LWS_EXTERN aws_lws_filepos_t LWS_WARN_UNUSED_RESULT
+aws_lws_vfs_get_length(aws_lws_fop_fd_t fop_fd);
 /**
- * lws_vfs_get_mod_time() - get time file last modified
+ * aws_lws_vfs_get_mod_time() - get time file last modified
  *
  * \param fop_fd: fop_fd we are asking about
  */
 LWS_VISIBLE LWS_EXTERN uint32_t LWS_WARN_UNUSED_RESULT
-lws_vfs_get_mod_time(lws_fop_fd_t fop_fd);
+aws_lws_vfs_get_mod_time(aws_lws_fop_fd_t fop_fd);
 /**
- * lws_vfs_file_seek_set() - seek relative to start of file
+ * aws_lws_vfs_file_seek_set() - seek relative to start of file
  *
  * \param fop_fd: fop_fd we are seeking in
  * \param offset: offset from start of file
  */
-LWS_VISIBLE LWS_EXTERN lws_fileofs_t
-lws_vfs_file_seek_set(lws_fop_fd_t fop_fd, lws_fileofs_t offset);
+LWS_VISIBLE LWS_EXTERN aws_lws_fileofs_t
+aws_lws_vfs_file_seek_set(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset);
 /**
- * lws_vfs_file_seek_end() - seek relative to end of file
+ * aws_lws_vfs_file_seek_end() - seek relative to end of file
  *
  * \param fop_fd: fop_fd we are seeking in
  * \param offset: offset from start of file
  */
-LWS_VISIBLE LWS_EXTERN lws_fileofs_t
-lws_vfs_file_seek_end(lws_fop_fd_t fop_fd, lws_fileofs_t offset);
+LWS_VISIBLE LWS_EXTERN aws_lws_fileofs_t
+aws_lws_vfs_file_seek_end(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset);
 
-extern struct lws_plat_file_ops fops_zip;
+extern struct aws_lws_plat_file_ops fops_zip;
 
 /**
- * lws_plat_file_open() - open vfs filepath
+ * aws_lws_plat_file_open() - open vfs filepath
  *
  * \param fops: file ops struct that applies to this descriptor
  * \param vfs_path: filename to open
@@ -190,17 +190,17 @@ extern struct lws_plat_file_ops fops_zip;
  *
  * returns semi-opaque handle
  */
-LWS_VISIBLE LWS_EXTERN lws_fop_fd_t LWS_WARN_UNUSED_RESULT
-lws_vfs_file_open(const struct lws_plat_file_ops *fops, const char *vfs_path,
-		  lws_fop_flags_t *flags);
+LWS_VISIBLE LWS_EXTERN aws_lws_fop_fd_t LWS_WARN_UNUSED_RESULT
+aws_lws_vfs_file_open(const struct aws_lws_plat_file_ops *fops, const char *vfs_path,
+		  aws_lws_fop_flags_t *flags);
 
 /**
- * lws_plat_file_close() - close file
+ * aws_lws_plat_file_close() - close file
  *
  * \param fop_fd: file handle to close
  */
 static LWS_INLINE int
-lws_vfs_file_close(lws_fop_fd_t *fop_fd)
+aws_lws_vfs_file_close(aws_lws_fop_fd_t *fop_fd)
 {
 	if (*fop_fd && (*fop_fd)->fops)
 		return (*fop_fd)->fops->LWS_FOP_CLOSE(fop_fd);
@@ -209,19 +209,19 @@ lws_vfs_file_close(lws_fop_fd_t *fop_fd)
 }
 
 /**
- * lws_plat_file_seek_cur() - close file
+ * aws_lws_plat_file_seek_cur() - close file
  *
  *
  * \param fop_fd: file handle
  * \param offset: position to seek to
  */
-static LWS_INLINE lws_fileofs_t
-lws_vfs_file_seek_cur(lws_fop_fd_t fop_fd, lws_fileofs_t offset)
+static LWS_INLINE aws_lws_fileofs_t
+aws_lws_vfs_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
 {
 	return fop_fd->fops->LWS_FOP_SEEK_CUR(fop_fd, offset);
 }
 /**
- * lws_plat_file_read() - read from file
+ * aws_lws_plat_file_read() - read from file
  *
  * \param fop_fd: file handle
  * \param amount: how much to read (rewritten by call)
@@ -229,13 +229,13 @@ lws_vfs_file_seek_cur(lws_fop_fd_t fop_fd, lws_fileofs_t offset)
  * \param len: max length
  */
 static LWS_INLINE int LWS_WARN_UNUSED_RESULT
-lws_vfs_file_read(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		   uint8_t *buf, lws_filepos_t len)
+aws_lws_vfs_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		   uint8_t *buf, aws_lws_filepos_t len)
 {
 	return fop_fd->fops->LWS_FOP_READ(fop_fd, amount, buf, len);
 }
 /**
- * lws_plat_file_write() - write from file
+ * aws_lws_plat_file_write() - write from file
  *
  * \param fop_fd: file handle
  * \param amount: how much to write (rewritten by call)
@@ -243,8 +243,8 @@ lws_vfs_file_read(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
  * \param len: max length
  */
 static LWS_INLINE int LWS_WARN_UNUSED_RESULT
-lws_vfs_file_write(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		    uint8_t *buf, lws_filepos_t len)
+aws_lws_vfs_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		    uint8_t *buf, aws_lws_filepos_t len)
 {
 	return fop_fd->fops->LWS_FOP_WRITE(fop_fd, amount, buf, len);
 }
@@ -253,21 +253,21 @@ lws_vfs_file_write(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
  * be called directly and used in fops arrays
  */
 
-LWS_VISIBLE LWS_EXTERN lws_fop_fd_t
-_lws_plat_file_open(const struct lws_plat_file_ops *fops, const char *filename,
-		    const char *vpath, lws_fop_flags_t *flags);
+LWS_VISIBLE LWS_EXTERN aws_lws_fop_fd_t
+_lws_plat_file_open(const struct aws_lws_plat_file_ops *fops, const char *filename,
+		    const char *vpath, aws_lws_fop_flags_t *flags);
 LWS_VISIBLE LWS_EXTERN int
-_lws_plat_file_close(lws_fop_fd_t *fop_fd);
-LWS_VISIBLE LWS_EXTERN lws_fileofs_t
-_lws_plat_file_seek_cur(lws_fop_fd_t fop_fd, lws_fileofs_t offset);
+_lws_plat_file_close(aws_lws_fop_fd_t *fop_fd);
+LWS_VISIBLE LWS_EXTERN aws_lws_fileofs_t
+_lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset);
 LWS_VISIBLE LWS_EXTERN int
-_lws_plat_file_read(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		    uint8_t *buf, lws_filepos_t len);
+_lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		    uint8_t *buf, aws_lws_filepos_t len);
 LWS_VISIBLE LWS_EXTERN int
-_lws_plat_file_write(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		     uint8_t *buf, lws_filepos_t len);
+_lws_plat_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		     uint8_t *buf, aws_lws_filepos_t len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_alloc_vfs_file(struct lws_context *context, const char *filename,
-		   uint8_t **buf, lws_filepos_t *amount);
+aws_lws_alloc_vfs_file(struct aws_lws_context *context, const char *filename,
+		   uint8_t **buf, aws_lws_filepos_t *amount);
 //@}

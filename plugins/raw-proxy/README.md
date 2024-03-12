@@ -31,7 +31,7 @@ packets easily, you should create the context used with this plugin with
 	info.pt_serv_buf_size = 8192;
 ```
 
-lwsws already does this.
+aws_lwsws already does this.
 
 ## Using with C
 
@@ -40,7 +40,7 @@ a working example of a vhost that accepts connections and then
 proxies them using this plugin.  The example is almost all boilerplate
 for setting up the context and the pvo.
 
-## Using with lwsws
+## Using with aws_lwsws
 
 For a usage where the plugin "owns" the whole vhost, you should enable the
 plugin protocol on the vhost as usual, and specify the "onward" pvo with:

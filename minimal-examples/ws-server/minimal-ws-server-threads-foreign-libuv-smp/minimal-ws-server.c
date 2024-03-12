@@ -35,18 +35,18 @@
 #define LWS_PLUGIN_STATIC
 #include "protocol_lws_minimal.c"
 
-static struct lws_protocols protocols[] = {
-	{ "http", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+static struct aws_lws_protocols protocols[] = {
+	{ "http", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	LWS_PLUGIN_PROTOCOL_MINIMAL,
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static struct lws_context *context;
+static struct aws_lws_context *context;
 static int interrupted;
 static uv_loop_t loop[COUNT_THREADS];
 static uv_signal_t *s, signal_outer[COUNT_THREADS];
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -75,14 +75,14 @@ static const struct lws_http_mount mount = {
  * protocol instance.
  */
 
-static const struct lws_protocol_vhost_options pvo_ops = {
+static const struct aws_lws_protocol_vhost_options pvo_ops = {
 	NULL,
 	NULL,
 	"config",		/* pvo name */
 	(void *)"myconfig"	/* pvo value */
 };
 
-static const struct lws_protocol_vhost_options pvo = {
+static const struct aws_lws_protocol_vhost_options pvo = {
 	NULL,		/* "next" pvo linked-list */
 	&pvo_ops,	/* "child" pvo linked-list */
 	"lws-minimal",	/* protocol name we belong to on this vhost */
@@ -100,14 +100,14 @@ void *thread_service(void *threadid)
 	 * lws from the loop and destroyed the context we can as the "foreign
 	 * app" take care of stopping the foreign loop and cloing this thread.
 	 *
-	 * The call to lws_service_tsi just starts the related event loop
+	 * The call to aws_lws_service_tsi just starts the related event loop
 	 */
-	while (lws_service_tsi(context, 0,
-			       (int)(lws_intptr_t)threadid) >= 0 &&
+	while (aws_lws_service_tsi(context, 0,
+			       (int)(aws_lws_intptr_t)threadid) >= 0 &&
 	       !interrupted)
-		lwsl_notice("%s\n", __func__);
+		aws_lwsl_notice("%s\n", __func__);
 
-	lwsl_info("%s: thr %d: exiting\n", __func__, (int)(lws_intptr_t)threadid);
+	aws_lwsl_info("%s: thr %d: exiting\n", __func__, (int)(aws_lws_intptr_t)threadid);
 
 	pthread_exit(NULL);
 
@@ -121,14 +121,14 @@ signal_cb(uv_signal_t *watcher, int signum)
 
 	n = (int)(watcher - signal_outer);
 
-	lwsl_notice("%s: thr %d: signal %d caught\n", __func__, n,
+	aws_lwsl_notice("%s: thr %d: signal %d caught\n", __func__, n,
 			watcher->signum);
 
 	uv_signal_stop(watcher);
 	uv_close((uv_handle_t *)&signal_outer[n], NULL);
 	if (!interrupted) {
 		interrupted = 1;
-		lws_context_destroy(context);
+		aws_lws_context_destroy(context);
 	}
 }
 
@@ -136,17 +136,17 @@ int main(int argc, const char **argv)
 {
 	int n, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
 	pthread_t pthread_service[COUNT_THREADS];
-	struct lws_context_creation_info info;
+	struct aws_lws_context_creation_info info;
 	void *foreign_loops[COUNT_THREADS];
 	int actual_threads;
 	const char *p;
 	void *retval;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws server + threads + smp | visit http://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws server + threads + smp | visit http://localhost:7681\n");
 
 	for (n = 0; n < COUNT_THREADS; n++) {
 		uv_loop_init(&loop[n]);
@@ -169,35 +169,35 @@ int main(int argc, const char **argv)
 	info.options = LWS_SERVER_OPTION_LIBUV |
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	actual_threads = lws_get_count_threads(context);
-	lwsl_notice("  Service threads: %d\n", actual_threads);
+	actual_threads = aws_lws_get_count_threads(context);
+	aws_lwsl_notice("  Service threads: %d\n", actual_threads);
 
 	/* start all the service threads */
 
 	for (n = 0; n < actual_threads; n++)
 		if (pthread_create(&pthread_service[n], NULL, thread_service,
-				   (void *)(lws_intptr_t)n))
-			lwsl_err("Failed to start service thread\n");
+				   (void *)(aws_lws_intptr_t)n))
+			aws_lwsl_err("Failed to start service thread\n");
 
 	/* wait for all the service threads to exit */
 
 	while ((--n) >= 0)
 		pthread_join(pthread_service[n], &retval);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	for (n = 0; n < COUNT_THREADS; n++) {
 		int m;
 
 		m = uv_loop_close(&loop[n]);
 		if (m)
-			lwsl_notice("%s: uv_close_loop %d: %d\n", __func__, n, m);
+			aws_lwsl_notice("%s: uv_close_loop %d: %d\n", __func__, n, m);
 	}
 
 	return 0;

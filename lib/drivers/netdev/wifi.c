@@ -1,5 +1,5 @@
 /*
- * libwebsockets - lws_netdev_wifi generic state handling
+ * libwebsockets - aws_lws_netdev_wifi generic state handling
  *
  * Copyright (C) 2010 - 2020 Andy Green <andy@warmcat.com>
  *
@@ -27,60 +27,60 @@
 #include "private-lib-core.h"
 
 int
-lws_netdev_wifi_rssi_sort_compare(const lws_dll2_t *d, const lws_dll2_t *i)
+aws_lws_netdev_wifi_rssi_sort_compare(const aws_lws_dll2_t *d, const aws_lws_dll2_t *i)
 {
-	const lws_wifi_sta_t *wsd = (const lws_wifi_sta_t *)d,
-			     *wsi = (const lws_wifi_sta_t *)i;
+	const aws_lws_wifi_sta_t *wsd = (const aws_lws_wifi_sta_t *)d,
+			     *wsi = (const aws_lws_wifi_sta_t *)i;
 	return rssi_averaged(wsd) > rssi_averaged(wsi);
 }
 
 void
-lws_netdev_wifi_scan_empty(lws_netdev_instance_wifi_t *wnd)
+aws_lws_netdev_wifi_scan_empty(aws_lws_netdev_instance_wifi_t *wnd)
 {
-	lws_start_foreach_dll_safe(struct lws_dll2 *, p, p1, lws_dll2_get_head(
+	aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *, p, p1, aws_lws_dll2_get_head(
 	                                                       &wnd->scan)) {
-		lws_wifi_sta_t *s = lws_container_of(p, lws_wifi_sta_t, list);
+		aws_lws_wifi_sta_t *s = aws_lws_container_of(p, aws_lws_wifi_sta_t, list);
 
-		lws_dll2_remove(p);
-		lws_free(s);
+		aws_lws_dll2_remove(p);
+		aws_lws_free(s);
 
-	} lws_end_foreach_dll_safe(p, p1);
+	} aws_lws_end_foreach_dll_safe(p, p1);
 }
 
 void
-lws_netdev_wifi_scan(lws_sorted_usec_list_t *sul)
+aws_lws_netdev_wifi_scan(aws_lws_sorted_usec_list_t *sul)
 {
-	lws_netdev_instance_wifi_t *wnd = lws_container_of(sul,
-					lws_netdev_instance_wifi_t, sul_scan);
+	aws_lws_netdev_instance_wifi_t *wnd = aws_lws_container_of(sul,
+					aws_lws_netdev_instance_wifi_t, sul_scan);
 
 	wnd->inst.ops->scan(&wnd->inst);
 }
 
-lws_wifi_sta_t *
-lws_netdev_wifi_scan_find(lws_netdev_instance_wifi_t *wnd, const char *ssid,
+aws_lws_wifi_sta_t *
+aws_lws_netdev_wifi_scan_find(aws_lws_netdev_instance_wifi_t *wnd, const char *ssid,
 			  const uint8_t *bssid)
 {
-	lws_start_foreach_dll(struct lws_dll2 *, p, lws_dll2_get_head(
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, aws_lws_dll2_get_head(
 	                                                       &wnd->scan)) {
-		lws_wifi_sta_t *w = lws_container_of(p, lws_wifi_sta_t, list);
+		aws_lws_wifi_sta_t *w = aws_lws_container_of(p, aws_lws_wifi_sta_t, list);
 
 		if (!strcmp(ssid, (const char *)&w[1]) &&
 		    !memcmp(bssid, w->bssid, 6))
 			return w;
 
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	return NULL;
 }
 
 int
-lws_netdev_wifi_scan_select(lws_netdev_instance_wifi_t *wnd)
+aws_lws_netdev_wifi_scan_select(aws_lws_netdev_instance_wifi_t *wnd)
 {
-	lws_netdevs_t *netdevs = lws_netdevs_from_ndi(&wnd->inst);
-	struct lws_context *cx = lws_context_from_netdevs(netdevs);
+	aws_lws_netdevs_t *netdevs = aws_lws_netdevs_from_ndi(&wnd->inst);
+	struct aws_lws_context *cx = aws_lws_context_from_netdevs(netdevs);
 	uint32_t least_recent = 0xffffffff;
-	lws_wifi_creds_t *pc = NULL;
-	lws_wifi_sta_t *pw = NULL;
+	aws_lws_wifi_creds_t *pc = NULL;
+	aws_lws_wifi_sta_t *pw = NULL;
 
 	/*
 	 * Trim enough of the lowest RSSI guys in order to get us below the
@@ -88,34 +88,34 @@ lws_netdev_wifi_scan_select(lws_netdev_instance_wifi_t *wnd)
 	 */
 
 	while (wnd->scan.count > LWS_WIFI_MAX_SCAN_TRACK) {
-		struct lws_dll2 *p = lws_dll2_get_tail(&wnd->scan);
-		lws_wifi_sta_t *w = lws_container_of(p, lws_wifi_sta_t, list);
+		struct aws_lws_dll2 *p = aws_lws_dll2_get_tail(&wnd->scan);
+		aws_lws_wifi_sta_t *w = aws_lws_container_of(p, aws_lws_wifi_sta_t, list);
 
-		lws_dll2_remove(p);
-		lws_free(w);
+		aws_lws_dll2_remove(p);
+		aws_lws_free(w);
 	}
 
 	/*
 	 * ... let's dump what's left
 	 */
 
-	lws_start_foreach_dll(struct lws_dll2 *, p, lws_dll2_get_head(
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p, aws_lws_dll2_get_head(
 	                                                       &wnd->scan)) {
-		lws_wifi_sta_t *w = lws_container_of(p, lws_wifi_sta_t, list);
+		aws_lws_wifi_sta_t *w = aws_lws_container_of(p, aws_lws_wifi_sta_t, list);
 
-		lwsl_notice("%s: %s, %02X:%02X:%02X:%02X:%02X:%02X, ch %d, rssi %d\n",
+		aws_lwsl_notice("%s: %s, %02X:%02X:%02X:%02X:%02X:%02X, ch %d, rssi %d\n",
 			    __func__, (const char *)&w[1], w->bssid[0],
 			    w->bssid[1], w->bssid[2], w->bssid[3], w->bssid[4],
 			    w->bssid[5], w->ch, rssi_averaged(w));
 
-	} lws_end_foreach_dll(p);
+	} aws_lws_end_foreach_dll(p);
 
 	/*
 	 * make sure we have our device's connection credentials at hand
 	 */
 
 	if (!netdevs->ac_creds &&
-	    lws_netdev_credentials_settings_get(netdevs))
+	    aws_lws_netdev_credentials_settings_get(netdevs))
 		return 0;
 	netdevs->refcount_creds++;
 
@@ -124,13 +124,13 @@ lws_netdev_wifi_scan_select(lws_netdev_instance_wifi_t *wnd)
 	 * have credentials... if we do, pick the one we least-recently tried
 	 */
 
-	lws_start_foreach_dll(struct lws_dll2 *, p1, wnd->scan.head) {
-		lws_wifi_sta_t *w = lws_container_of(p1, lws_wifi_sta_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, p1, wnd->scan.head) {
+		aws_lws_wifi_sta_t *w = aws_lws_container_of(p1, aws_lws_wifi_sta_t, list);
 
-		lws_start_foreach_dll(struct lws_dll2 *, q,
+		aws_lws_start_foreach_dll(struct aws_lws_dll2 *, q,
 				      netdevs->owner_creds.head) {
-			lws_wifi_creds_t *c = lws_container_of(q,
-							       lws_wifi_creds_t,
+			aws_lws_wifi_creds_t *c = aws_lws_container_of(q,
+							       aws_lws_wifi_creds_t,
 							       list);
 
 			if (!strcmp((const char *)&w[1], c->ssid) &&
@@ -144,9 +144,9 @@ lws_netdev_wifi_scan_select(lws_netdev_instance_wifi_t *wnd)
 				least_recent = w->last_seen;
 			}
 
-		} lws_end_foreach_dll(q);
+		} aws_lws_end_foreach_dll(q);
 
-	} lws_end_foreach_dll(p1);
+	} aws_lws_end_foreach_dll(p1);
 
 
 	if (least_recent != 0xffffffff) {
@@ -154,7 +154,7 @@ lws_netdev_wifi_scan_select(lws_netdev_instance_wifi_t *wnd)
 		 * We picked one to try... note what we're trying so we can
 		 * record it in settings as last successful
 		 */
-		lws_strncpy(wnd->current_attempt_ssid, (const char *)&pw[1],
+		aws_lws_strncpy(wnd->current_attempt_ssid, (const char *)&pw[1],
 			    sizeof(wnd->current_attempt_ssid));
 		memcpy(wnd->current_attempt_bssid, pw->bssid, LWS_ETH_ALEN);
 		wnd->inst.ops->connect(&wnd->inst, pc->ssid, pc->passphrase,
@@ -165,14 +165,14 @@ lws_netdev_wifi_scan_select(lws_netdev_instance_wifi_t *wnd)
 		 * rescan in a bit
 		 */
 
-		lwsl_notice("%s: nothing usable in scan, redoing in 3s\n", __func__);
-		lws_sul_schedule(cx, 0, &wnd->sul_scan, lws_netdev_wifi_scan,
+		aws_lwsl_notice("%s: nothing usable in scan, redoing in 3s\n", __func__);
+		aws_lws_sul_schedule(cx, 0, &wnd->sul_scan, aws_lws_netdev_wifi_scan,
 				 3 * LWS_US_PER_SEC);
 	}
 
 	if (!--netdevs->refcount_creds) {
-		lws_dll2_owner_clear(&netdevs->owner_creds);
-		lwsac_free(&netdevs->ac_creds);
+		aws_lws_dll2_owner_clear(&netdevs->owner_creds);
+		aws_lwsac_free(&netdevs->ac_creds);
 	}
 
 	return 0;
@@ -184,59 +184,59 @@ lws_netdev_wifi_scan_select(lws_netdev_instance_wifi_t *wnd)
  */
 
 int
-lws_netdev_wifi_redo_last(lws_netdev_instance_wifi_t *wnd)
+aws_lws_netdev_wifi_redo_last(aws_lws_netdev_instance_wifi_t *wnd)
 {
-	lws_netdevs_t *netdevs = lws_netdevs_from_ndi(&wnd->inst);
+	aws_lws_netdevs_t *netdevs = aws_lws_netdevs_from_ndi(&wnd->inst);
 	uint8_t buf[256], bssid[LWS_ETH_ALEN];
 	const char *ssid, *pp = "", *pb;
 	char setname[16], ssid_copy[33];
 	size_t l = sizeof(buf), al;
-	lws_wifi_creds_t *cred;
+	aws_lws_wifi_creds_t *cred;
 
 	/*
 	 * Let's try to retreive the last successful connect info for this
 	 * netdev
 	 */
 
-	lws_snprintf(setname, sizeof(setname), "netdev.last.%s", wnd->inst.name);
-	if (lws_settings_plat_get(netdevs->si, setname, buf, &l))
+	aws_lws_snprintf(setname, sizeof(setname), "netdev.last.%s", wnd->inst.name);
+	if (aws_lws_settings_plat_get(netdevs->si, setname, buf, &l))
 		return 1;
 
-	lwsl_notice("%s: last successful %s\n", __func__, buf);
+	aws_lwsl_notice("%s: last successful %s\n", __func__, buf);
 
-	ssid = lws_json_simple_find((const char *)buf, l, "\"ssid\":", &al);
+	ssid = aws_lws_json_simple_find((const char *)buf, l, "\"ssid\":", &al);
 	if (!ssid || al > 32)
 		return 1;
 
 	memcpy(ssid_copy, ssid, al);
 	ssid_copy[al + 1] = '\0';
 
-	pb = lws_json_simple_find((const char *)buf, l, "\"bssid\":", &al);
+	pb = aws_lws_json_simple_find((const char *)buf, l, "\"bssid\":", &al);
 	if (!pb)
 		return 1;
-	lws_hex_to_byte_array(pb, bssid, sizeof(bssid));
+	aws_lws_hex_to_byte_array(pb, bssid, sizeof(bssid));
 
 	/*
 	 * make sure we have our device's connection credentials at hand
 	 */
 
 	if (!netdevs->ac_creds &&
-	    lws_netdev_credentials_settings_get(netdevs))
+	    aws_lws_netdev_credentials_settings_get(netdevs))
 		return 1;
 	netdevs->refcount_creds++;
 
-	cred = lws_netdev_credentials_find(netdevs, ssid_copy, bssid);
+	cred = aws_lws_netdev_credentials_find(netdevs, ssid_copy, bssid);
 	if (cred)
 		pp = cred->passphrase;
 
-	lws_strncpy(wnd->current_attempt_ssid, ssid_copy,
+	aws_lws_strncpy(wnd->current_attempt_ssid, ssid_copy,
 		    sizeof(wnd->current_attempt_ssid));
 	memcpy(wnd->current_attempt_bssid, bssid, LWS_ETH_ALEN);
 	wnd->inst.ops->connect(&wnd->inst, ssid_copy, pp, bssid);
 
 	if (!--netdevs->refcount_creds) {
-		lws_dll2_owner_clear(&netdevs->owner_creds);
-		lwsac_free(&netdevs->ac_creds);
+		aws_lws_dll2_owner_clear(&netdevs->owner_creds);
+		aws_lwsac_free(&netdevs->ac_creds);
 	}
 
 	return 0;

@@ -25,18 +25,18 @@
 #include "private-lib-core.h"
 
 struct lws *
-lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
+aws_lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 				 ssize_t plen)
 {
 #if defined(LWS_CLIENT_HTTP_PROXYING)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 #endif
 	const char *meth;
-	struct lws_pollfd pfd;
+	struct aws_lws_pollfd pfd;
 	const char *cce = "";
 	int n, m, rawish = 0;
 
-	meth = lws_wsi_client_stash_item(wsi, CIS_METHOD,
+	meth = aws_lws_wsi_client_stash_item(wsi, CIS_METHOD,
 					 _WSI_TOKEN_CLIENT_METHOD);
 
 	if (meth && (!strcmp(meth, "RAW")
@@ -57,14 +57,14 @@ lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 	if (wsi->a.vhost->http.http_proxy_port) {
 		const char *cpa;
 
-		cpa = lws_wsi_client_stash_item(wsi, CIS_ADDRESS,
+		cpa = aws_lws_wsi_client_stash_item(wsi, CIS_ADDRESS,
 						_WSI_TOKEN_CLIENT_PEER_ADDRESS);
 		if (!cpa)
 			goto failed;
 
-		lwsl_wsi_info(wsi, "going via proxy");
+		aws_lwsl_wsi_info(wsi, "going via proxy");
 
-		plen = lws_snprintf((char *)pt->serv_buf, 256,
+		plen = aws_lws_snprintf((char *)pt->serv_buf, 256,
 			"CONNECT %s:%u HTTP/1.1\x0d\x0a"
 			"Host: %s:%u\x0d\x0a"
 			"User-agent: lws\x0d\x0a", cpa, wsi->ocport,
@@ -72,15 +72,15 @@ lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 
 #if defined(LWS_WITH_HTTP_BASIC_AUTH)
 		if (wsi->a.vhost->proxy_basic_auth_token[0])
-			plen += lws_snprintf((char *)pt->serv_buf + plen, 256,
+			plen += aws_lws_snprintf((char *)pt->serv_buf + plen, 256,
 					"Proxy-authorization: basic %s\x0d\x0a",
 					wsi->a.vhost->proxy_basic_auth_token);
 #endif
 
-		plen += lws_snprintf((char *)pt->serv_buf + plen, 5,
+		plen += aws_lws_snprintf((char *)pt->serv_buf + plen, 5,
 					"\x0d\x0a");
 
-		/* lwsl_hexdump_notice(pt->serv_buf, plen); */
+		/* aws_lwsl_hexdump_notice(pt->serv_buf, plen); */
 
 		/*
 		 * OK from now on we talk via the proxy, so connect to that
@@ -89,7 +89,7 @@ lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 			wsi->stash->cis[CIS_ADDRESS] =
 				wsi->a.vhost->http.http_proxy_address;
 		else
-			if (lws_hdr_simple_create(wsi,
+			if (aws_lws_hdr_simple_create(wsi,
 					_WSI_TOKEN_CLIENT_PEER_ADDRESS,
 					wsi->a.vhost->http.http_proxy_address))
 			goto failed;
@@ -99,16 +99,16 @@ lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 			      (unsigned int)plen,
 			 MSG_NOSIGNAL);
 		if (n < 0) {
-			lwsl_wsi_debug(wsi, "ERROR writing to proxy socket");
+			aws_lwsl_wsi_debug(wsi, "ERROR writing to proxy socket");
 			cce = "proxy write failed";
 			goto failed;
 		}
 
-		lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_PROXY_RESPONSE,
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_PROXY_RESPONSE,
 				(int)wsi->a.context->timeout_secs);
 
 		wsi->conn_port = wsi->c_port;
-		lwsi_set_state(wsi, LRS_WAITING_PROXY_REPLY);
+		aws_lwsi_set_state(wsi, LRS_WAITING_PROXY_REPLY);
 
 		return wsi;
 	}
@@ -120,8 +120,8 @@ lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 		return NULL;
 
 #if defined(LWS_WITH_SOCKS5)
-	if (lwsi_state(wsi) != 	LRS_ESTABLISHED)
-		switch (lws_socks5c_greet(wsi, &cce)) {
+	if (aws_lwsi_state(wsi) != 	LRS_ESTABLISHED)
+		switch (aws_lws_socks5c_greet(wsi, &cce)) {
 		case -1:
 			goto failed;
 		case 1:
@@ -135,7 +135,7 @@ lws_client_connect_4_established(struct lws *wsi, struct lws *wsi_piggyback,
 send_hs:
 
 	if (wsi_piggyback &&
-	    !lws_dll2_is_detached(&wsi->dll2_cli_txn_queue)) {
+	    !aws_lws_dll2_is_detached(&wsi->dll2_cli_txn_queue)) {
 		/*
 		 * We are pipelining on an already-established connection...
 		 * we can skip tls establishment.
@@ -144,7 +144,7 @@ send_hs:
 		 * send their headers until we decide later.
 		 */
 
-		lwsi_set_state(wsi, LRS_H2_WAITING_TO_SEND_HEADERS);
+		aws_lwsi_set_state(wsi, LRS_H2_WAITING_TO_SEND_HEADERS);
 
 		/*
 		 * we can't send our headers directly, because they have to
@@ -156,15 +156,15 @@ send_hs:
 		 * connection has written his own headers, then it will just
 		 * wait in the queue until it's possible to send them.
 		 */
-		lws_callback_on_writable(wsi_piggyback);
+		aws_lws_callback_on_writable(wsi_piggyback);
 
-		lwsl_wsi_info(wsi, "waiting to send hdrs (par state 0x%x)",
-			      lwsi_state(wsi_piggyback));
+		aws_lwsl_wsi_info(wsi, "waiting to send hdrs (par state 0x%x)",
+			      aws_lwsi_state(wsi_piggyback));
 	} else {
-		lwsl_wsi_info(wsi, "%s %s client created own conn "
+		aws_lwsl_wsi_info(wsi, "%s %s client created own conn "
 			  "(raw %d) vh %s st 0x%x",
 			  wsi->role_ops->name, wsi->a.protocol->name, rawish,
-			  wsi->a.vhost->name, lwsi_state(wsi));
+			  wsi->a.vhost->name, aws_lwsi_state(wsi));
 
 		/* we are making our own connection */
 
@@ -174,8 +174,8 @@ send_hs:
 #endif
 		    ) {
 
-			if (lwsi_state(wsi) != LRS_H1C_ISSUE_HANDSHAKE2)
-				lwsi_set_state(wsi, LRS_H1C_ISSUE_HANDSHAKE);
+			if (aws_lwsi_state(wsi) != LRS_H1C_ISSUE_HANDSHAKE2)
+				aws_lwsi_set_state(wsi, LRS_H1C_ISSUE_HANDSHAKE);
 		} else {
 			/* for a method = "RAW" connection, this makes us
 			 * established */
@@ -184,26 +184,26 @@ send_hs:
 
 			/* we have connected if we got here */
 
-			if (lwsi_state(wsi) == LRS_WAITING_CONNECT &&
+			if (aws_lwsi_state(wsi) == LRS_WAITING_CONNECT &&
 			    (wsi->tls.use_ssl & LCCSCF_USE_SSL)) {
 				int result;
 
-				//lwsi_set_state(wsi, LRS_WAITING_SSL);
+				//aws_lwsi_set_state(wsi, LRS_WAITING_SSL);
 
 				/*
 				 * We can retry this... just cook the SSL BIO
 				 * the first time
 				 */
 
-				result = lws_client_create_tls(wsi, &cce, 1);
+				result = aws_lws_client_create_tls(wsi, &cce, 1);
 				switch (result) {
 				case CCTLS_RETURN_DONE:
 					break;
 				case CCTLS_RETURN_RETRY:
-					lwsl_wsi_debug(wsi, "create_tls RETRY");
+					aws_lwsl_wsi_debug(wsi, "create_tls RETRY");
 					return wsi;
 				default:
-					lwsl_wsi_debug(wsi, "create_tls FAIL");
+					aws_lwsl_wsi_debug(wsi, "create_tls FAIL");
 					goto failed;
 				}
 
@@ -214,21 +214,21 @@ send_hs:
 				 * LRS_H2_WAITING_TO_SEND_HEADERS already.
 				 */
 
-				lwsl_wsi_notice(wsi, "tls established st 0x%x, "
-					    "client_h2_alpn %d", lwsi_state(wsi),
+				aws_lwsl_wsi_notice(wsi, "tls established st 0x%x, "
+					    "client_h2_alpn %d", aws_lwsi_state(wsi),
 					    wsi->client_h2_alpn);
 
-				if (lwsi_state(wsi) !=
+				if (aws_lwsi_state(wsi) !=
 						LRS_H2_WAITING_TO_SEND_HEADERS)
-					lwsi_set_state(wsi,
+					aws_lwsi_set_state(wsi,
 						LRS_H1C_ISSUE_HANDSHAKE2);
-				lws_set_timeout(wsi,
+				aws_lws_set_timeout(wsi,
 					PENDING_TIMEOUT_AWAITING_CLIENT_HS_SEND,
 					(int)wsi->a.context->timeout_secs);
 #if 0
 				/* ensure pollin enabled */
-				if (lws_change_pollfd(wsi, 0, LWS_POLLIN))
-					lwsl_wsi_notice(wsi,
+				if (aws_lws_change_pollfd(wsi, 0, LWS_POLLIN))
+					aws_lwsl_wsi_notice(wsi,
 							"unable to set POLLIN");
 #endif
 
@@ -237,16 +237,16 @@ send_hs:
 #endif
 
 			/* clear his established timeout */
-			lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+			aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
 
 			m = wsi->role_ops->adoption_cb[0];
 			if (m) {
 				n = user_callback_handle_rxflow(
 						wsi->a.protocol->callback, wsi,
-						(enum lws_callback_reasons)m,
+						(enum aws_lws_callback_reasons)m,
 						wsi->user_space, NULL, 0);
 				if (n < 0) {
-					lwsl_wsi_info(wsi, "RAW_PROXY_CLI_ADOPT err");
+					aws_lwsl_wsi_info(wsi, "RAW_PROXY_CLI_ADOPT err");
 					goto failed;
 				}
 			}
@@ -257,29 +257,29 @@ send_hs:
 			if (meth && !strcmp(meth, "MQTT")) {
 #if defined(LWS_WITH_TLS)
 				if (wsi->tls.use_ssl & LCCSCF_USE_SSL) {
-					lwsi_set_state(wsi, LRS_WAITING_SSL);
+					aws_lwsi_set_state(wsi, LRS_WAITING_SSL);
 					return wsi;
 				}
 #endif
-				lwsl_wsi_info(wsi, "settings LRS_MQTTC_IDLE");
-				lwsi_set_state(wsi, LRS_MQTTC_IDLE);
+				aws_lwsl_wsi_info(wsi, "settings LRS_MQTTC_IDLE");
+				aws_lwsi_set_state(wsi, LRS_MQTTC_IDLE);
 
 				/*
 				 * provoke service to issue the CONNECT
 				 * directly.
 				 */
-				lws_set_timeout(wsi,
+				aws_lws_set_timeout(wsi,
 					PENDING_TIMEOUT_SENT_CLIENT_HANDSHAKE,
 						(int)wsi->a.context->timeout_secs);
 
-				assert(lws_socket_is_valid(wsi->desc.sockfd));
+				assert(aws_lws_socket_is_valid(wsi->desc.sockfd));
 
 				pfd.fd = wsi->desc.sockfd;
 				pfd.events = LWS_POLLIN;
 				pfd.revents = LWS_POLLOUT;
 
-				lwsl_wsi_info(wsi, "going to service fd");
-				n = lws_service_fd(wsi->a.context, &pfd);
+				aws_lwsl_wsi_info(wsi, "going to service fd");
+				n = aws_lws_service_fd(wsi->a.context, &pfd);
 				if (n < 0) {
 					cce = "first service failed";
 					goto failed;
@@ -290,8 +290,8 @@ send_hs:
 				return wsi;
 			}
 #endif
-			lwsl_wsi_info(wsi, "setting ESTABLISHED");
-			lwsi_set_state(wsi, LRS_ESTABLISHED);
+			aws_lwsl_wsi_info(wsi, "setting ESTABLISHED");
+			aws_lwsi_set_state(wsi, LRS_ESTABLISHED);
 
 			return wsi;
 		}
@@ -309,16 +309,16 @@ send_hs:
 #if defined(LWS_WITH_TLS) //&& !defined(LWS_WITH_MBEDTLS)
 provoke_service:
 #endif
-		lws_set_timeout(wsi, PENDING_TIMEOUT_SENT_CLIENT_HANDSHAKE,
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_SENT_CLIENT_HANDSHAKE,
 				(int)wsi->a.context->timeout_secs);
 
-		assert(lws_socket_is_valid(wsi->desc.sockfd));
+		assert(aws_lws_socket_is_valid(wsi->desc.sockfd));
 
 		pfd.fd = wsi->desc.sockfd;
 		pfd.events = LWS_POLLIN;
 		pfd.revents = LWS_POLLIN;
 
-		n = lws_service_fd(wsi->a.context, &pfd);
+		n = aws_lws_service_fd(wsi->a.context, &pfd);
 		if (n < 0) {
 			cce = "first service failed";
 			goto failed;
@@ -330,9 +330,9 @@ provoke_service:
 	return wsi;
 
 failed:
-	lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
+	aws_lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
 
-	lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "client_connect4");
+	aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "client_connect4");
 
 	return NULL;
 }

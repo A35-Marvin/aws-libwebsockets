@@ -32,7 +32,7 @@
 #include <math.h>
 #endif
 
-#define lwsl_lecp lwsl_debug
+#define aws_lwsl_lecp aws_lwsl_debug
 
 static const char * const parser_errs[] = {
 	"",
@@ -144,7 +144,7 @@ lecp_check_path_match(struct lecp_ctx *ctx)
 				continue;
 			}
 			ctx->wild[ctx->wildcount++] =
-				    (uint16_t)lws_ptr_diff_size_t(p, ctx->path);
+				    (uint16_t)aws_lws_ptr_diff_size_t(p, ctx->path);
 			q++;
 			/*
 			 * if * has something after it, match to .
@@ -180,7 +180,7 @@ lecp_push(struct lecp_ctx *ctx, char s_start, char s_end, char state)
 	if (s_start && ctx->pst[ctx->pst_sp].cb(ctx, s_start))
 		return LECP_REJECT_CALLBACK;
 
-	lwsl_lecp("%s: pushing from sp %d, parent "
+	aws_lwsl_lecp("%s: pushing from sp %d, parent "
 		  "(opc %d, indet %d, collect_rem %d)\n",
 		  __func__, ctx->sp, st->opcode >> 5, st->indet,
 		  (int)st->collect_rem);
@@ -221,7 +221,7 @@ lecp_pop(struct lecp_ctx *ctx)
 	ctx->path[st->p] = '\0';
 	lecp_check_path_match(ctx);
 
-	lwsl_lecp("%s: popping to sp %d, parent "
+	aws_lwsl_lecp("%s: popping to sp %d, parent "
 		  "(opc %d, indet %d, collect_rem %d)\n",
 		   __func__, ctx->sp, st->opcode >> 5, st->indet,
 		   (int)st->collect_rem);
@@ -250,7 +250,7 @@ lwcp_completed(struct lecp_ctx *ctx, char indet)
 	while (ctx->sp && !ctx->st[ctx->sp].barrier) {
 		struct _lecp_stack *parent = lwcp_st_parent(ctx);
 
-		lwsl_lecp("%s: sp %d, parent "
+		aws_lwsl_lecp("%s: sp %d, parent "
 			  "(opc %d, indet %d, collect_rem %d)\n",
 			  __func__, ctx->sp, parent->opcode >> 5, parent->indet,
 			  (int)parent->collect_rem);
@@ -269,13 +269,13 @@ lwcp_completed(struct lecp_ctx *ctx, char indet)
 		}
 
 		if (!indet && parent->indet) {
-			lwsl_lecp("%s: abandoning walk as parent needs indet\n", __func__);
+			aws_lwsl_lecp("%s: abandoning walk as parent needs indet\n", __func__);
 			break;
 		}
 
 		if (!parent->indet && parent->collect_rem) {
 			parent->collect_rem--;
-			lwsl_lecp("%s: sp %d, parent (opc %d, indet %d, collect_rem -> %d)\n",
+			aws_lwsl_lecp("%s: sp %d, parent (opc %d, indet %d, collect_rem -> %d)\n",
 					__func__, ctx->sp, parent->opcode >> 5, parent->indet, (int)parent->collect_rem);
 
 			if (parent->collect_rem) {
@@ -286,7 +286,7 @@ lwcp_completed(struct lecp_ctx *ctx, char indet)
 			}
 		}
 
-		lwsl_lecp("%s: parent (opc %d) collect_rem became zero\n", __func__, parent->opcode >> 5);
+		aws_lwsl_lecp("%s: parent (opc %d) collect_rem became zero\n", __func__, parent->opcode >> 5);
 
 		ctx->st[ctx->sp - 1].s = LECP_OPC;
 		r = lecp_pop(ctx);
@@ -403,7 +403,7 @@ lecp_parse(struct lecp_ctx *ctx, const uint8_t *cbor, size_t len)
 			sm = c & LWS_CBOR_SUBMASK;
 			to = 0;
 
-			lwsl_lecp("%s: %d: OPC %d|%d\n", __func__, ctx->sp,
+			aws_lwsl_lecp("%s: %d: OPC %d|%d\n", __func__, ctx->sp,
 					c >> 5, sm);
 
 			if (c != 0xff && ctx->sp &&
@@ -917,7 +917,7 @@ reject:
 
 
 void
-lws_lec_init(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len)
+aws_lws_lec_init(aws_lws_lec_pctx_t *ctx, uint8_t *buf, size_t len)
 {
 	memset(ctx, 0, sizeof(*ctx));
 	ctx->start = ctx->buf = buf;
@@ -926,7 +926,7 @@ lws_lec_init(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len)
 }
 
 void
-lws_lec_setbuf(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len)
+aws_lws_lec_setbuf(aws_lws_lec_pctx_t *ctx, uint8_t *buf, size_t len)
 {
 	ctx->start = ctx->buf = buf;
 	ctx->end = ctx->start + len;
@@ -934,14 +934,14 @@ lws_lec_setbuf(lws_lec_pctx_t *ctx, uint8_t *buf, size_t len)
 	ctx->vaa_pos = 0;
 }
 
-enum lws_lec_pctx_ret
-lws_lec_printf(lws_lec_pctx_t *ctx, const char *format, ...)
+enum aws_lws_lec_pctx_ret
+aws_lws_lec_printf(aws_lws_lec_pctx_t *ctx, const char *format, ...)
 {
-	enum lws_lec_pctx_ret r;
+	enum aws_lws_lec_pctx_ret r;
 	va_list ap;
 
 	va_start(ap, format);
-	r = lws_lec_vsprintf(ctx, format, ap);
+	r = aws_lws_lec_vsprintf(ctx, format, ap);
 	va_end(ap);
 
 	return r;
@@ -960,7 +960,7 @@ lws_lec_printf(lws_lec_pctx_t *ctx, const char *format, ...)
  */
 
 #define bump(_r) count[sp]++
-//; lwsl_notice("%s: count[%d] -> %d\n", _r, sp, count[sp])
+//; aws_lwsl_notice("%s: count[%d] -> %d\n", _r, sp, count[sp])
 
 static int
 format_scan(const char *fmt)
@@ -972,11 +972,11 @@ format_scan(const char *fmt)
 	stack[sp] = *fmt++;
 	count[sp] = 0;
 
-//	lwsl_notice("%s: start %s\n", __func__, fmt - 1);
+//	aws_lwsl_notice("%s: start %s\n", __func__, fmt - 1);
 
 	while (*fmt) {
 
-//		lwsl_notice("%s: %c %d %d\n", __func__, *fmt, sp, literal);
+//		aws_lwsl_notice("%s: %c %d %d\n", __func__, *fmt, sp, literal);
 
 		if (swallow) {
 			swallow--;
@@ -1106,16 +1106,16 @@ pop:
 			if (stack[0] == '{') {
 				/* args have to come in pairs */
 				if (count[0] & 1) {
-					lwsl_err("%s: odd map args %d %s\n",
+					aws_lwsl_err("%s: odd map args %d %s\n",
 							__func__, count[0], fmt);
 					return -2;
 				}
-				// lwsl_notice("%s: return %d pairs\n", __func__, count[0] >> 1);
+				// aws_lwsl_notice("%s: return %d pairs\n", __func__, count[0] >> 1);
 				/* report how many pairs */
 				return count[0] >> 1;
 			}
 
-			// lwsl_notice("%s: return %d items\n", __func__, count[0]);
+			// aws_lwsl_notice("%s: return %d items\n", __func__, count[0]);
 
 			return count[0];
 
@@ -1143,23 +1143,23 @@ pop:
 	return -1;
 
 mismatch:
-	lwsl_err("%s: format mismatch %c %c\n", __func__, stack[sp], *fmt);
+	aws_lwsl_err("%s: format mismatch %c %c\n", __func__, stack[sp], *fmt);
 
 	return -2;
 }
 
 void
-lws_lec_signed(lws_lec_pctx_t *ctx, int64_t num)
+aws_lws_lec_signed(aws_lws_lec_pctx_t *ctx, int64_t num)
 {
 	if (num < 0)
-		lws_lec_int(ctx, LWS_CBOR_MAJTYP_INT_NEG, 0,
+		aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_INT_NEG, 0,
 					(uint64_t)(-1ll - num));
 	else
-		lws_lec_int(ctx, LWS_CBOR_MAJTYP_UINT, 0, (uint64_t)num);
+		aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_UINT, 0, (uint64_t)num);
 }
 
 void
-lws_lec_int(lws_lec_pctx_t *ctx, uint8_t opcode, uint8_t indet, uint64_t num)
+aws_lws_lec_int(aws_lws_lec_pctx_t *ctx, uint8_t opcode, uint8_t indet, uint64_t num)
 {
 	uint8_t hint = 0;
 	unsigned int n;
@@ -1220,14 +1220,14 @@ enum {
 };
 
 int
-lws_lec_scratch(lws_lec_pctx_t *ctx)
+aws_lws_lec_scratch(aws_lws_lec_pctx_t *ctx)
 {
 	size_t s;
 
 	if (!ctx->scratch_len)
 		return 0;
 
-	s = lws_ptr_diff_size_t(ctx->end, ctx->buf);
+	s = aws_lws_ptr_diff_size_t(ctx->end, ctx->buf);
 	if (s > (size_t)ctx->scratch_len)
 		s = (size_t)ctx->scratch_len;
 
@@ -1238,8 +1238,8 @@ lws_lec_scratch(lws_lec_pctx_t *ctx)
 	return ctx->buf == ctx->end;
 }
 
-enum lws_lec_pctx_ret
-lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
+enum aws_lws_lec_pctx_ret
+aws_lws_lec_vsprintf(aws_lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 {
 	size_t fl = strlen(fmt);
 	uint64_t u64;
@@ -1301,7 +1301,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 		 * everything else.
 		 */
 
-		if (lws_lec_scratch(ctx))
+		if (aws_lws_lec_scratch(ctx))
 			break;
 
 		if (ctx->fmt_pos >= fl) {
@@ -1311,7 +1311,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 		} else
 			c = fmt[ctx->fmt_pos];
 
-		// lwsl_notice("%s: %d %d %c\n", __func__, ctx->state, ctx->sp, c);
+		// aws_lwsl_notice("%s: %d %d %c\n", __func__, ctx->state, ctx->sp, c);
 
 		switch (ctx->state) {
 		case CBPS_IDLE:
@@ -1321,14 +1321,14 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 				n = format_scan(&fmt[ctx->fmt_pos]);
 				if (n == -2)
 					return LWS_LECPCTX_RET_FAIL;
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_ARRAY, n == -1,
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_ARRAY, n == -1,
 							(uint64_t)n);
 				goto stack_push;
 			case '{':
 				n = format_scan(&fmt[ctx->fmt_pos]);
 				if (n == -2)
 					return LWS_LECPCTX_RET_FAIL;
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_MAP, n == -1,
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_MAP, n == -1,
 							(uint64_t)n);
 				goto stack_push;
 			case '(':
@@ -1351,7 +1351,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 				break;
 			case ')':
 				if (!ctx->sp || ctx->stack[ctx->sp - 1] != '(') {
-					lwsl_notice("bad tag end %d %c\n",
+					aws_lwsl_notice("bad tag end %d %c\n",
 						ctx->sp, ctx->stack[ctx->sp - 1]);
 					goto fail;
 				}
@@ -1367,16 +1367,16 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 				break;
 			case '\'':
 				n = format_scan(&fmt[ctx->fmt_pos]);
-				// lwsl_notice("%s: quote fs %d\n", __func__, n);
+				// aws_lwsl_notice("%s: quote fs %d\n", __func__, n);
 				if (n < 0)
 					return LWS_LECPCTX_RET_FAIL;
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_TSTR, 0,
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_TSTR, 0,
 								(uint64_t)n);
 				ctx->state = CBPS_STRING_LIT;
 				break;
 			case '%':
 				if (ctx->vaa_pos >= sizeof(ctx->vaa) - 1) {
-					lwsl_err("%s: too many %%\n", __func__);
+					aws_lwsl_err("%s: too many %%\n", __func__);
 					goto fail;
 				}
 				ctx->_long = 0;
@@ -1452,11 +1452,11 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 					break;
 				}
 				if (i64 < 0)
-					lws_lec_int(ctx,
+					aws_lws_lec_int(ctx,
 						    LWS_CBOR_MAJTYP_INT_NEG, 0,
 						    (uint64_t)(-1ll - i64));
 				else
-					lws_lec_int(ctx,
+					aws_lws_lec_int(ctx,
 						    LWS_CBOR_MAJTYP_UINT, 0,
 						    (uint64_t)i64);
 				break;
@@ -1475,7 +1475,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 					ctx->vaa[ctx->vaa_pos++] = NATTYPE_LONG_LONG;
 					break;
 				}
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_UINT, 0, u64);
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_UINT, 0, u64);
 				break;
 			case 's': /* text string */
 				ctx->ongoing_done = 0;
@@ -1488,7 +1488,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 				if (ctx->dotstar != 2)
 					ctx->ongoing_len = (uint64_t)strlen(
 						(const char *)ctx->ongoing_src);
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_TSTR, 0, ctx->ongoing_len);
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_TSTR, 0, ctx->ongoing_len);
 				ctx->state = CBPS_STRING_BODY;
 				ctx->fmt_pos++;
 				continue;
@@ -1500,7 +1500,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 				ctx->ongoing_len = (uint64_t)va_arg(args, int);
 				/* vaa for ptr done at end of body copy */
 				ctx->ongoing_src = va_arg(args, uint8_t *);
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_BSTR, 0, ctx->ongoing_len);
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_BSTR, 0, ctx->ongoing_len);
 				ctx->state = CBPS_STRING_BODY;
 				ctx->fmt_pos++;
 				continue;
@@ -1539,20 +1539,20 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 					} u1, u2;
 
 					u1.f = (float)dbl;
-					lws_singles2halfp(&hf, u1.ui);
-					lws_halfp2singles(&u2.ui, hf);
+					aws_lws_singles2halfp(&hf, u1.ui);
+					aws_lws_halfp2singles(&u2.ui, hf);
 
 					if ((isinf(u1.f) && isinf(u2.f)) ||
 					    (isnan(u1.f) && isnan(u2.f)) ||
 					    u1.f == u2.f) {
-						lws_lec_int(ctx,
+						aws_lws_lec_int(ctx,
 							    LWS_CBOR_MAJTYP_FLOAT |
 							    LWS_CBOR_M7_SUBTYP_FLOAT16,
 							    0, hf);
 						break;
 					}
 					/* do it as 32-bit float */
-					lws_lec_int(ctx,
+					aws_lws_lec_int(ctx,
 						    LWS_CBOR_MAJTYP_FLOAT |
 						    LWS_CBOR_M7_SUBTYP_FLOAT32,
 						    0, u1.ui);
@@ -1568,7 +1568,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 					} u3;
 
 					u3.f = dbl;
-					lws_lec_int(ctx,
+					aws_lws_lec_int(ctx,
 						    LWS_CBOR_MAJTYP_FLOAT |
 						    LWS_CBOR_M7_SUBTYP_FLOAT64,
 						    0, u3.ui);
@@ -1576,7 +1576,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 				break;
 #else
 			case 'f':
-				lwsl_err("%s: no FP support\n", __func__);
+				aws_lwsl_err("%s: no FP support\n", __func__);
 				goto fail;
 #endif
 			}
@@ -1584,7 +1584,7 @@ lws_lec_vsprintf(lws_lec_pctx_t *ctx, const char *fmt, va_list args)
 			break;
 
 		case CBPS_STRING_BODY:
-			s = lws_ptr_diff_size_t(ctx->end, ctx->buf);
+			s = aws_lws_ptr_diff_size_t(ctx->end, ctx->buf);
 			if (s > (size_t)(ctx->ongoing_len - ctx->ongoing_done))
 				s = (size_t)(ctx->ongoing_len - ctx->ongoing_done);
 			memcpy(ctx->buf, ctx->ongoing_src + ctx->ongoing_done, s);
@@ -1618,7 +1618,7 @@ tag_body:
 				 * later format string
 				 */
 
-				lws_lec_int(ctx, LWS_CBOR_MAJTYP_TAG, 0,
+				aws_lws_lec_int(ctx, LWS_CBOR_MAJTYP_TAG, 0,
 							ctx->item.u.u64);
 
 stack_push:
@@ -1626,12 +1626,12 @@ stack_push:
 					return LWS_LECPCTX_RET_FAIL;
 				ctx->stack[ctx->sp] = (uint8_t)c;
 				ctx->indet[ctx->sp++] = (uint8_t)(n == -1);
-				// lwsl_notice("%s: pushed %c\n", __func__, c);
+				// aws_lwsl_notice("%s: pushed %c\n", __func__, c);
 				ctx->state = CBPS_IDLE;
 				break;
 			}
 
-			lws_lec_int(ctx, ctx->item.opcode, 0, ctx->item.u.u64);
+			aws_lws_lec_int(ctx, ctx->item.opcode, 0, ctx->item.u.u64);
 
 			ctx->state = CBPS_IDLE;
 			/* deal with the terminating char fresh */
@@ -1656,7 +1656,7 @@ stack_push:
 			if (c != 't' && c != 'b')
 				return LWS_LECPCTX_RET_FAIL;
 
-			lws_lec_int(ctx, c == 't' ? LWS_CBOR_MAJTYP_TSTR :
+			aws_lws_lec_int(ctx, c == 't' ? LWS_CBOR_MAJTYP_TSTR :
 						    LWS_CBOR_MAJTYP_BSTR, 1, 0);
 			c = '<';
 			n = 0;
@@ -1666,8 +1666,8 @@ stack_push:
 		ctx->fmt_pos++;
 	}
 
-	ctx->used = lws_ptr_diff_size_t(ctx->buf, ctx->start);
-	// lwsl_notice("%s: ctx->used %d\n", __func__, (int)ctx->used);
+	ctx->used = aws_lws_ptr_diff_size_t(ctx->buf, ctx->start);
+	// aws_lwsl_notice("%s: ctx->used %d\n", __func__, (int)ctx->used);
 
 	if (ctx->buf == ctx->end || ctx->scratch_len)
 		return LWS_LECPCTX_RET_AGAIN;
@@ -1678,7 +1678,7 @@ stack_push:
 	return LWS_LECPCTX_RET_FINISHED;
 
 fail:
-	lwsl_notice("%s: failed\n", __func__);
+	aws_lwsl_notice("%s: failed\n", __func__);
 
 	ctx->fmt_pos = 0;
 

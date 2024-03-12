@@ -22,46 +22,46 @@
  * IN THE SOFTWARE.
  */
 
-typedef struct lws_pwm_map {
+typedef struct aws_lws_pwm_map {
 	_lws_plat_gpio_t		gpio;
 	uint8_t				index;
 	uint8_t				active_level;
-} lws_pwm_map_t;
+} aws_lws_pwm_map_t;
 
-typedef struct lws_pwm_ops {
-	int (*init)(const struct lws_pwm_ops *lo);
-	void (*intensity)(const struct lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
-			  lws_led_intensity_t inten);
-	const lws_pwm_map_t		*pwm_map;
+typedef struct aws_lws_pwm_ops {
+	int (*init)(const struct aws_lws_pwm_ops *lo);
+	void (*intensity)(const struct aws_lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
+			  aws_lws_led_intensity_t inten);
+	const aws_lws_pwm_map_t		*pwm_map;
 	uint8_t				count_pwm_map;
-} lws_pwm_ops_t;
+} aws_lws_pwm_ops_t;
 
 LWS_VISIBLE LWS_EXTERN int
-lws_pwm_plat_init(const struct lws_pwm_ops *lo);
+aws_lws_pwm_plat_init(const struct aws_lws_pwm_ops *lo);
 
 LWS_VISIBLE LWS_EXTERN void
-lws_pwm_plat_intensity(const struct lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
-		       lws_led_intensity_t inten);
+aws_lws_pwm_plat_intensity(const struct aws_lws_pwm_ops *lo, _lws_plat_gpio_t gpio,
+		       aws_lws_led_intensity_t inten);
 
-#define lws_pwm_plat_ops \
-		.init			= lws_pwm_plat_init, \
-		.intensity		= lws_pwm_plat_intensity
+#define aws_lws_pwm_plat_ops \
+		.init			= aws_lws_pwm_plat_init, \
+		.intensity		= aws_lws_pwm_plat_intensity
 
 /*
  * May be useful for making your own transitions or sequences
  */
 
-LWS_VISIBLE LWS_EXTERN lws_led_intensity_t
-lws_led_func_linear(lws_led_seq_phase_t n);
-LWS_VISIBLE LWS_EXTERN lws_led_intensity_t
-lws_led_func_sine(lws_led_seq_phase_t n);
+LWS_VISIBLE LWS_EXTERN aws_lws_led_intensity_t
+aws_lws_led_func_linear(aws_lws_led_seq_phase_t n);
+LWS_VISIBLE LWS_EXTERN aws_lws_led_intensity_t
+aws_lws_led_func_sine(aws_lws_led_seq_phase_t n);
 
 /* canned sequences that can work out of the box */
 
-extern const lws_led_sequence_def_t lws_pwmseq_sine_endless_slow,
-				    lws_pwmseq_sine_endless_fast,
-				    lws_pwmseq_linear_wipe,
-				    lws_pwmseq_sine_up, lws_pwmseq_sine_down,
-				    lws_pwmseq_static_on,
-				    lws_pwmseq_static_half,
-				    lws_pwmseq_static_off;
+extern const aws_lws_led_sequence_def_t aws_lws_pwmseq_sine_endless_slow,
+				    aws_lws_pwmseq_sine_endless_fast,
+				    aws_lws_pwmseq_linear_wipe,
+				    aws_lws_pwmseq_sine_up, aws_lws_pwmseq_sine_down,
+				    aws_lws_pwmseq_static_on,
+				    aws_lws_pwmseq_static_half,
+				    aws_lws_pwmseq_static_off;

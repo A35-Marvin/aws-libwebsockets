@@ -36,14 +36,14 @@
  *
  * 1) [Linux / RTOS] the natural, smallest interface is to call back to user
  *    code that only operates directly from the lws event loop thread context
- *    (direct callbacks from lws_ss_t)
+ *    (direct callbacks from aws_lws_ss_t)
  *
- *    lws_thread( [user code] ---- lws )
+ *    aws_lws_thread( [user code] ---- lws )
  *
  * 2) [Linux] where the user code is in a different process and communicates
  *    asynchronously via a proxy socket
  *
- *    user_process{ [user code] | shim | socket-}------ lws_process{ lws }
+ *    user_process{ [user code] | shim | socket-}------ aws_lws_process{ lws }
  *
  * In the second, IPC, case, all packets are prepended by one or more bytes
  * indicating the packet type and serializing any associated data, known as
@@ -165,7 +165,7 @@
  * -----
  *
  * Sinks are logical "servers", you can register as a sink for a particular
- * streamtype by using the lws_ss_create() api with ssi->register_sink set to 1.
+ * streamtype by using the aws_lws_ss_create() api with ssi->register_sink set to 1.
  *
  * For directly fulfilled Secure Streams, new streams of that streamtype bind
  * to the rx, tx and state handlers given when it was registered.
@@ -187,8 +187,8 @@
 
 #define LWS_SS_MTU 1540
 
-struct lws_ss_handle;
-typedef uint32_t lws_ss_tx_ordinal_t;
+struct aws_lws_ss_handle;
+typedef uint32_t aws_lws_ss_tx_ordinal_t;
 
 /*
  * connection state events
@@ -217,7 +217,7 @@ typedef enum {
 	LWSSSCS_SERVER_TXN,
 	LWSSSCS_SERVER_UPGRADE,		/* the server protocol upgraded */
 
-	LWSSSCS_EVENT_WAIT_CANCELLED, /* somebody called lws_cancel_service */
+	LWSSSCS_EVENT_WAIT_CANCELLED, /* somebody called aws_lws_cancel_service */
 
 	LWSSSCS_UPSTREAM_LINK_RETRY,	/* if we are being proxied over some
 					 * intermediate link, this transient
@@ -232,7 +232,7 @@ typedef enum {
 					 * stream leaves the sink */
 
 	LWSSSCS_USER_BASE = 1000
-} lws_ss_constate_t;
+} aws_lws_ss_constate_t;
 
 enum {
 	LWSSS_FLAG_SOM						= (1 << 0),
@@ -300,26 +300,26 @@ typedef enum {
 	LPCSCLI_ONWARD_CONNECT,	      /* request onward ss connection */
 	LPCSCLI_OPERATIONAL, /* ready for payloads */
 
-} lws_ss_conn_states_t;
+} aws_lws_ss_conn_states_t;
 
 /*
  * Returns from state() callback can tell the caller what the user code
  * wants to do
  */
 
-typedef enum lws_ss_state_return {
+typedef enum aws_lws_ss_state_return {
 	LWSSSSRET_TX_DONT_SEND		=  1, /* (*tx) only, or failure */
 
 	LWSSSSRET_OK			=  0, /* no error */
 	LWSSSSRET_DISCONNECT_ME		= -1, /* caller should disconnect us */
 	LWSSSSRET_DESTROY_ME		= -2, /* caller should destroy us */
-} lws_ss_state_return_t;
+} aws_lws_ss_state_return_t;
 
 /**
- * lws_ss_info_t: information about stream to be created
+ * aws_lws_ss_info_t: information about stream to be created
  *
  * Prepare this struct with information about what the stream type is and how
- * the stream should interface with your code, and pass it to lws_ss_create()
+ * the stream should interface with your code, and pass it to aws_lws_ss_create()
  * to create the requested stream.
  */
 
@@ -344,24 +344,24 @@ enum {
 	 * we are an accepted connection from a server's listening socket */
 };
 
-typedef lws_ss_state_return_t (*lws_sscb_rx)(void *userobj, const uint8_t *buf,
+typedef aws_lws_ss_state_return_t (*aws_lws_sscb_rx)(void *userobj, const uint8_t *buf,
 					     size_t len, int flags);
-typedef lws_ss_state_return_t (*lws_sscb_tx)(void *userobj,
-					     lws_ss_tx_ordinal_t ord,
+typedef aws_lws_ss_state_return_t (*aws_lws_sscb_tx)(void *userobj,
+					     aws_lws_ss_tx_ordinal_t ord,
 					     uint8_t *buf, size_t *len,
 					     int *flags);
-typedef lws_ss_state_return_t (*lws_sscb_state)(void *userobj, void *h_src,
-						lws_ss_constate_t state,
-						lws_ss_tx_ordinal_t ack);
+typedef aws_lws_ss_state_return_t (*aws_lws_sscb_state)(void *userobj, void *h_src,
+						aws_lws_ss_constate_t state,
+						aws_lws_ss_tx_ordinal_t ack);
 
 #if defined(LWS_WITH_SECURE_STREAMS_BUFFER_DUMP)
-typedef void (*lws_ss_buffer_dump_cb)(void *userobj, const uint8_t *buf,
+typedef void (*aws_lws_ss_buffer_dump_cb)(void *userobj, const uint8_t *buf,
 		size_t len, int done);
 #endif
 
-struct lws_ss_policy;
+struct aws_lws_ss_policy;
 
-typedef struct lws_ss_info {
+typedef struct aws_lws_ss_info {
 	const char *streamtype; /**< type of stream we want to create */
 	size_t	    user_alloc; /**< size of user allocation */
 	size_t	    handle_offset; /**< offset of handle stg in user_alloc type,
@@ -371,28 +371,28 @@ typedef struct lws_ss_info {
 	     offsetof(mytype, opaque_ud_member) */
 
 #if defined(LWS_WITH_SECURE_STREAMS_CPP)
-	const struct lws_ss_policy	*policy;
+	const struct aws_lws_ss_policy	*policy;
 	/**< Normally NULL, or a locally-generated policy to apply to this
 	 * connection instead of a named streamtype */
 #endif
 
 #if defined(LWS_WITH_SYS_FAULT_INJECTION)
-	lws_fi_ctx_t				fic;
+	aws_lws_fi_ctx_t				fic;
 	/**< Attach external Fault Injection context to the stream, hierarchy
 	 * is ss->context */
 #endif
 
-	lws_sscb_rx rx;
+	aws_lws_sscb_rx rx;
 	/**< callback with rx payload for this stream */
-	lws_sscb_tx tx;
+	aws_lws_sscb_tx tx;
 	/**< callback to send payload on this stream... 0 = send as set in
 	 * len and flags, 1 = do not send anything (ie, not even 0 len frame) */
-	lws_sscb_state state;
+	aws_lws_sscb_state state;
 	/**< advisory cb about state of stream and QoS status if applicable...
 	 * h_src is only used with sinks and LWSSSCS_SINK_JOIN/_PART events.
 	 * Return nonzero to indicate you want to destroy the stream. */
 #if defined(LWS_WITH_SECURE_STREAMS_BUFFER_DUMP)
-	lws_ss_buffer_dump_cb dump;
+	aws_lws_ss_buffer_dump_cb dump;
 	/**< cb to record needed protocol buffer data*/
 #endif
 	int	    manual_initial_tx_credit;
@@ -416,14 +416,14 @@ typedef struct lws_ss_info {
 	 * version in here
 	 */
 
-} lws_ss_info_t;
+} aws_lws_ss_info_t;
 
 /**
- * lws_ss_create() - Create secure stream
+ * aws_lws_ss_create() - Create secure stream
  *
  * \param context: the lws context to create this inside
  * \param tsi: service thread index to create on (normally 0)
- * \param ssi: pointer to lws_ss_info_t filled in with info about desired stream
+ * \param ssi: pointer to aws_lws_ss_info_t filled in with info about desired stream
  * \param opaque_user_data: opaque data to set in the stream's user object
  * \param ppss: pointer to secure stream handle pointer set on exit
  * \param ppayload_fmt: NULL or pointer to a string ptr to take payload format
@@ -455,24 +455,24 @@ typedef struct lws_ss_info {
  * format from the policy database if non-NULL.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_ss_create(struct lws_context *context, int tsi, const lws_ss_info_t *ssi,
-	      void *opaque_user_data, struct lws_ss_handle **ppss,
-	      struct lws_sequencer *seq_owner, const char **ppayload_fmt);
+aws_lws_ss_create(struct aws_lws_context *context, int tsi, const aws_lws_ss_info_t *ssi,
+	      void *opaque_user_data, struct aws_lws_ss_handle **ppss,
+	      struct aws_lws_sequencer *seq_owner, const char **ppayload_fmt);
 
 /**
- * lws_ss_destroy() - Destroy secure stream
+ * aws_lws_ss_destroy() - Destroy secure stream
  *
- * \param ppss: pointer to lws_ss_t pointer to be destroyed
+ * \param ppss: pointer to aws_lws_ss_t pointer to be destroyed
  *
- * Destroys the lws_ss_t pointed to by \p *ppss, and sets \p *ppss to NULL.
+ * Destroys the aws_lws_ss_t pointed to by \p *ppss, and sets \p *ppss to NULL.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_ss_destroy(struct lws_ss_handle **ppss);
+aws_lws_ss_destroy(struct aws_lws_ss_handle **ppss);
 
 /**
- * lws_ss_request_tx() - Schedule stream for tx
+ * aws_lws_ss_request_tx() - Schedule stream for tx
  *
- * \param pss: pointer to lws_ss_t representing stream that wants to transmit
+ * \param pss: pointer to aws_lws_ss_t representing stream that wants to transmit
  *
  * Schedules a write on the stream represented by \p pss.  When it's possible to
  * write on this stream, the \p *tx callback will occur with an empty buffer for
@@ -480,13 +480,13 @@ lws_ss_destroy(struct lws_ss_handle **ppss);
  *
  * Returns 0 or LWSSSSRET_DESTROY_ME
  */
-LWS_VISIBLE LWS_EXTERN lws_ss_state_return_t LWS_WARN_UNUSED_RESULT
-lws_ss_request_tx(struct lws_ss_handle *pss);
+LWS_VISIBLE LWS_EXTERN aws_lws_ss_state_return_t LWS_WARN_UNUSED_RESULT
+aws_lws_ss_request_tx(struct aws_lws_ss_handle *pss);
 
 /**
- * lws_ss_request_tx() - Schedule stream for tx
+ * aws_lws_ss_request_tx() - Schedule stream for tx
  *
- * \param pss: pointer to lws_ss_t representing stream that wants to transmit
+ * \param pss: pointer to aws_lws_ss_t representing stream that wants to transmit
  * \param len: the length of the write in bytes
  *
  * Schedules a write on the stream represented by \p pss.  When it's possible to
@@ -496,27 +496,27 @@ lws_ss_request_tx(struct lws_ss_handle *pss);
  * This api variant should be used when it's possible the payload will go out
  * over h1 with x-web-form-urlencoded or similar Content-Type.
  */
-LWS_VISIBLE LWS_EXTERN lws_ss_state_return_t LWS_WARN_UNUSED_RESULT
-lws_ss_request_tx_len(struct lws_ss_handle *pss, unsigned long len);
+LWS_VISIBLE LWS_EXTERN aws_lws_ss_state_return_t LWS_WARN_UNUSED_RESULT
+aws_lws_ss_request_tx_len(struct aws_lws_ss_handle *pss, unsigned long len);
 
 /**
- * lws_ss_client_connect() - Attempt the client connect
+ * aws_lws_ss_client_connect() - Attempt the client connect
  *
  * \param h: secure streams handle
  *
  * Starts the connection process for the secure stream.
  *
- * Can return any of the lws_ss_state_return_t values depending on user
+ * Can return any of the aws_lws_ss_state_return_t values depending on user
  * state callback returns.
  *
  * LWSSSSRET_OK means the connection is ongoing.
  *
  */
-LWS_VISIBLE LWS_EXTERN lws_ss_state_return_t LWS_WARN_UNUSED_RESULT
-lws_ss_client_connect(struct lws_ss_handle *h);
+LWS_VISIBLE LWS_EXTERN aws_lws_ss_state_return_t LWS_WARN_UNUSED_RESULT
+aws_lws_ss_client_connect(struct aws_lws_ss_handle *h);
 
 /**
- * lws_ss_get_sequencer() - Return parent sequencer pointer if any
+ * aws_lws_ss_get_sequencer() - Return parent sequencer pointer if any
  *
  * \param h: secure streams handle
  *
@@ -525,13 +525,13 @@ lws_ss_client_connect(struct lws_ss_handle *h);
  * identify which sequencer to direct messages to, from the secure stream
  * callback.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_sequencer *
-lws_ss_get_sequencer(struct lws_ss_handle *h);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_sequencer *
+aws_lws_ss_get_sequencer(struct aws_lws_ss_handle *h);
 
 /**
- * lws_ss_proxy_create() - Start a unix domain socket proxy for Secure Streams
+ * aws_lws_ss_proxy_create() - Start a unix domain socket proxy for Secure Streams
  *
- * \param context: lws_context
+ * \param context: aws_lws_context
  * \param bind: if port is 0, unix domain path with leading @ for abstract.
  *		if port nonzero, NULL, or network interface to bind listen to
  * \param port: tcp port to listen on
@@ -545,39 +545,39 @@ lws_ss_get_sequencer(struct lws_ss_handle *h);
  * proxy using serialized Secure Streams protocol.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_ss_proxy_create(struct lws_context *context, const char *bind, int port);
+aws_lws_ss_proxy_create(struct aws_lws_context *context, const char *bind, int port);
 
 /**
- * lws_ss_state_name() - convenience helper to get a printable conn state name
+ * aws_lws_ss_state_name() - convenience helper to get a printable conn state name
  *
  * \param state: the connection state index
  *
  * Returns a printable name for the connection state index passed in.
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_ss_state_name(int state);
+aws_lws_ss_state_name(int state);
 
 /**
- * lws_ss_get_context() - convenience helper to recover the lws context
+ * aws_lws_ss_get_context() - convenience helper to recover the lws context
  *
  * \param h: secure streams handle
  *
  * Returns the lws context.  Dispenses with the need to pass a copy of it into
  * your secure streams handler.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_context *
-lws_ss_get_context(struct lws_ss_handle *h);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_context *
+aws_lws_ss_get_context(struct aws_lws_ss_handle *h);
 
 #define LWSSS_TIMEOUT_FROM_POLICY				0
 
 /**
- * lws_ss_start_timeout() - start or restart the timeout on the stream
+ * aws_lws_ss_start_timeout() - start or restart the timeout on the stream
  *
  * \param h: secure streams handle
  * \param timeout_ms: LWSSS_TIMEOUT_FROM_POLICY for policy value, else use timeout_ms
  *
  * Starts or restarts the stream's own timeout timer.  If the specified time
- * passes without lws_ss_cancel_timeout() being called on the stream, then the
+ * passes without aws_lws_ss_cancel_timeout() being called on the stream, then the
  * stream state callback receives LWSSSCS_TIMEOUT
  *
  * The process being protected by the timeout is up to the user code, it may be
@@ -586,20 +586,20 @@ lws_ss_get_context(struct lws_ss_handle *h);
  * the stream timeout.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_ss_start_timeout(struct lws_ss_handle *h, unsigned int timeout_ms);
+aws_lws_ss_start_timeout(struct aws_lws_ss_handle *h, unsigned int timeout_ms);
 
 /**
- * lws_ss_cancel_timeout() - remove any timeout on the stream
+ * aws_lws_ss_cancel_timeout() - remove any timeout on the stream
  *
  * \param h: secure streams handle
  *
- * Disable any timeout that was applied to the stream by lws_ss_start_timeout().
+ * Disable any timeout that was applied to the stream by aws_lws_ss_start_timeout().
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_ss_cancel_timeout(struct lws_ss_handle *h);
+aws_lws_ss_cancel_timeout(struct aws_lws_ss_handle *h);
 
 /**
- * lws_ss_to_user_object() - convenience helper to get user object from handle
+ * aws_lws_ss_to_user_object() - convenience helper to get user object from handle
  *
  * \param h: secure streams handle
  *
@@ -608,10 +608,10 @@ lws_ss_cancel_timeout(struct lws_ss_handle *h);
  * already.
  */
 LWS_VISIBLE LWS_EXTERN void *
-lws_ss_to_user_object(struct lws_ss_handle *h);
+aws_lws_ss_to_user_object(struct aws_lws_ss_handle *h);
 
 /**
- * lws_ss_rideshare() - find the current streamtype when types rideshare
+ * aws_lws_ss_rideshare() - find the current streamtype when types rideshare
  *
  * \param h: the stream handle
  *
@@ -624,11 +624,11 @@ lws_ss_to_user_object(struct lws_ss_handle *h);
  * current payload chunk belongs to.
  */
 LWS_VISIBLE LWS_EXTERN const char *
-lws_ss_rideshare(struct lws_ss_handle *h);
+aws_lws_ss_rideshare(struct aws_lws_ss_handle *h);
 
 
 /**
- * lws_ss_set_metadata() - allow user to bind external data to defined ss metadata
+ * aws_lws_ss_set_metadata() - allow user to bind external data to defined ss metadata
  *
  * \param h: secure streams handle
  * \param name: metadata name from the policy
@@ -653,27 +653,27 @@ lws_ss_rideshare(struct lws_ss_handle *h);
  * these to fail and you should retry later.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_ss_set_metadata(struct lws_ss_handle *h, const char *name,
+aws_lws_ss_set_metadata(struct aws_lws_ss_handle *h, const char *name,
 		    const void *value, size_t len);
 
 /**
- * lws_ss_alloc_set_metadata() - copy data and bind to ss metadata
+ * aws_lws_ss_alloc_set_metadata() - copy data and bind to ss metadata
  *
  * \param h: secure streams handle
  * \param name: metadata name from the policy
  * \param value: pointer to user-managed data to bind to name
  * \param len: length of the user-managed data in value
  *
- * Same as lws_ss_set_metadata(), but allocates a heap buffer for the data
+ * Same as aws_lws_ss_set_metadata(), but allocates a heap buffer for the data
  * first and takes a copy of it, so the original can go out of scope
  * immediately after.
  */
 LWS_VISIBLE LWS_EXTERN int LWS_WARN_UNUSED_RESULT
-lws_ss_alloc_set_metadata(struct lws_ss_handle *h, const char *name,
+aws_lws_ss_alloc_set_metadata(struct aws_lws_ss_handle *h, const char *name,
 			  const void *value, size_t len);
 
 /**
- * lws_ss_get_metadata() - get current value of stream metadata item
+ * aws_lws_ss_get_metadata() - get current value of stream metadata item
  *
  * \param h: secure streams handle
  * \param name: metadata name from the policy
@@ -700,11 +700,11 @@ lws_ss_alloc_set_metadata(struct lws_ss_handle *h, const char *name,
  * loop.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_ss_get_metadata(struct lws_ss_handle *h, const char *name,
+aws_lws_ss_get_metadata(struct aws_lws_ss_handle *h, const char *name,
 		    const void **value, size_t *len);
 
 /**
- * lws_ss_server_ack() - indicate how we feel about what the server has sent
+ * aws_lws_ss_server_ack() - indicate how we feel about what the server has sent
  *
  * \param h: ss handle of accepted connection
  * \param nack: 0 means we are OK with it, else some problem
@@ -723,12 +723,12 @@ lws_ss_get_metadata(struct lws_ss_handle *h, const char *name,
  * has no effect either way.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_ss_server_ack(struct lws_ss_handle *h, int nack);
+aws_lws_ss_server_ack(struct aws_lws_ss_handle *h, int nack);
 
-typedef void (*lws_sssfec_cb)(struct lws_ss_handle *h, void *arg);
+typedef void (*aws_lws_sssfec_cb)(struct aws_lws_ss_handle *h, void *arg);
 
 /**
- * lws_ss_server_foreach_client() - callback for each live client connected to server
+ * aws_lws_ss_server_foreach_client() - callback for each live client connected to server
  *
  * \param h: server ss handle
  * \param cb: the callback
@@ -740,11 +740,11 @@ typedef void (*lws_sssfec_cb)(struct lws_ss_handle *h, void *arg);
  * passing \p arg as an additional callback argument each time.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_ss_server_foreach_client(struct lws_ss_handle *h, lws_sssfec_cb cb,
+aws_lws_ss_server_foreach_client(struct aws_lws_ss_handle *h, aws_lws_sssfec_cb cb,
 			     void *arg);
 
 /**
- * lws_ss_change_handlers() - helper for dynamically changing stream handlers
+ * aws_lws_ss_change_handlers() - helper for dynamically changing stream handlers
  *
  * \param h: ss handle
  * \param rx: the new RX handler
@@ -769,11 +769,11 @@ lws_ss_server_foreach_client(struct lws_ss_handle *h, lws_sssfec_cb cb,
  * to the default when the transaction wanting it is completed.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_ss_change_handlers(struct lws_ss_handle *h, lws_sscb_rx rx, lws_sscb_tx tx,
-		       lws_sscb_state state);
+aws_lws_ss_change_handlers(struct aws_lws_ss_handle *h, aws_lws_sscb_rx rx, aws_lws_sscb_tx tx,
+		       aws_lws_sscb_state state);
 
 /**
- * lws_ss_add_peer_tx_credit() - allow peer to transmit more to us
+ * aws_lws_ss_add_peer_tx_credit() - allow peer to transmit more to us
  *
  * \param h: secure streams handle
  * \param add: additional tx credit (signed)
@@ -782,10 +782,10 @@ lws_ss_change_handlers(struct lws_ss_handle *h, lws_sscb_rx rx, lws_sscb_tx tx,
  * sent to us.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_ss_add_peer_tx_credit(struct lws_ss_handle *h, int32_t add);
+aws_lws_ss_add_peer_tx_credit(struct aws_lws_ss_handle *h, int32_t add);
 
 /**
- * lws_ss_get_est_peer_tx_credit() - get our current estimate of peer's tx credit
+ * aws_lws_ss_get_est_peer_tx_credit() - get our current estimate of peer's tx credit
  *
  * \param h: secure streams handle
  *
@@ -795,17 +795,17 @@ lws_ss_add_peer_tx_credit(struct lws_ss_handle *h, int32_t add);
  * stuff to us that is in flight already.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_ss_get_est_peer_tx_credit(struct lws_ss_handle *h);
+aws_lws_ss_get_est_peer_tx_credit(struct aws_lws_ss_handle *h);
 
 LWS_VISIBLE LWS_EXTERN const char *
-lws_ss_tag(struct lws_ss_handle *h);
+aws_lws_ss_tag(struct aws_lws_ss_handle *h);
 
 
 #if defined(LWS_WITH_SECURE_STREAMS_AUTH_SIGV4)
 /**
- * lws_ss_sigv4_set_aws_key() - set aws credential into system blob
+ * aws_lws_ss_sigv4_set_aws_key() - set aws credential into system blob
  *
- * \param context: lws_context
+ * \param context: aws_lws_context
  * \param idx:     the system blob index specified in the policy, currently
  *                  up to 4 blobs.
  * \param keyid:   aws access keyid
@@ -816,11 +816,11 @@ lws_ss_tag(struct lws_ss_handle *h);
  */
 
 LWS_VISIBLE LWS_EXTERN int
-lws_ss_sigv4_set_aws_key(struct lws_context* context, uint8_t idx,
+aws_lws_ss_sigv4_set_aws_key(struct aws_lws_context* context, uint8_t idx,
 		                const char * keyid, const char * key);
 
 /**
- * lws_aws_filesystem_credentials_helper() - read aws credentials from file
+ * aws_lws_aws_filesystem_credentials_helper() - read aws credentials from file
  *
  * \param path: path to read, ~ at start is converted to $HOME contents if any
  * \param kid: eg, "aws_access_key_id"
@@ -836,7 +836,7 @@ lws_ss_sigv4_set_aws_key(struct lws_context* context, uint8_t idx,
  */
 
 LWS_VISIBLE LWS_EXTERN int
-lws_aws_filesystem_credentials_helper(const char *path, const char *kid,
+aws_lws_aws_filesystem_credentials_helper(const char *path, const char *kid,
 				      const char *ak, char **aws_keyid,
 				      char **aws_key);
 

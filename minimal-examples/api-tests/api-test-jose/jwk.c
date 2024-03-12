@@ -10,7 +10,7 @@
 #include <libwebsockets.h>
 
 static
-uint8_t *lws_jwe_ex_a1_jwk_json = (uint8_t *) /* EC + RSA public keys */
+uint8_t *aws_lws_jwe_ex_a1_jwk_json = (uint8_t *) /* EC + RSA public keys */
 	"{\"keys\":"
 	  "["
 	    "{\"kty\":\"EC\","
@@ -33,7 +33,7 @@ uint8_t *lws_jwe_ex_a1_jwk_json = (uint8_t *) /* EC + RSA public keys */
 	  "]"
 	"}",
 
-*lws_jwe_ex_a2_jwk_json = (uint8_t *) /* EC + RSA private keys */
+*aws_lws_jwe_ex_a2_jwk_json = (uint8_t *) /* EC + RSA private keys */
 	"{\"keys\":"
 	     "["
 		"{\"kty\":\"EC\","
@@ -77,7 +77,7 @@ uint8_t *lws_jwe_ex_a1_jwk_json = (uint8_t *) /* EC + RSA public keys */
 		"\"kid\":\"2011-04-29\"}"
 	   "]"
 	 "}",
-*lws_jwe_ex_a3_jwk_json = (uint8_t *) /* oct symmetric keys */
+*aws_lws_jwe_ex_a3_jwk_json = (uint8_t *) /* oct symmetric keys */
 	  "{\"keys\":"
 	    "["
 	      "{\"kty\":\"oct\","
@@ -91,7 +91,7 @@ uint8_t *lws_jwe_ex_a1_jwk_json = (uint8_t *) /* EC + RSA public keys */
 	       "]"
 	     "}",
 
-*lws_jwe_ex_b_jwk_json = (uint8_t *) /* x5c example (no parent JSON) */
+*aws_lws_jwe_ex_b_jwk_json = (uint8_t *) /* x5c example (no parent JSON) */
 	     "{\"kty\":\"RSA\","
 	      "\"use\":\"sig\","
 	      "\"kid\":\"1b94c\","
@@ -123,7 +123,7 @@ uint8_t *lws_jwe_ex_a1_jwk_json = (uint8_t *) /* EC + RSA public keys */
 	         "4tpzd5rFXhjRbg4zW9C+2qok+2+qDM1iJ684gPHMIY8aLWrdgQTxkumGmTq"
 	       "gawR+N5MDtdPTEQ0XfIBc2cJEUyMTY5MPvACWpkA6SdS4xSvdXK3IVfOWA==\"]"
 	     "}",
-*lws_jwe_ex_c1_jwk_json = (uint8_t *) /* RSA enc private key (no parent JSON) */
+*aws_lws_jwe_ex_c1_jwk_json = (uint8_t *) /* RSA enc private key (no parent JSON) */
 	 "{"
 	  "\"kty\":\"RSA\","
 	  "\"kid\":\"juliet@capulet.lit\","
@@ -157,7 +157,7 @@ uint8_t *lws_jwe_ex_a1_jwk_json = (uint8_t *) /* EC + RSA public keys */
 	          "abu9V0-Py4dQ57_bapoKRu1R90bvuFnU63SHWEFglZQvJDMeAvmj4sm-Fp0o"
 	          "Yu_neotgQ0hzbI5gry7ajdYy9-2lNx_76aBZoOUu9HCJ-UsfSOI8\""
 	 "}" /*,
-lws_jwe_ex_c1_plaintext[] = {
+aws_lws_jwe_ex_c1_plaintext[] = {
 	123, 34, 107, 116, 121, 34, 58, 34, 82, 83, 65, 34, 44, 34, 107,
 	105, 100, 34, 58, 34, 106, 117, 108, 105, 101, 116, 64, 99, 97, 112,
 	117, 108, 101, 116, 46, 108, 105, 116, 34, 44, 34, 117, 115, 101, 34,
@@ -267,83 +267,83 @@ lws_jwe_ex_c1_plaintext[] = {
 ;
 
 static int
-key_import_callback(struct lws_jwk *s, void *user)
+key_import_callback(struct aws_lws_jwk *s, void *user)
 {
-	lwsl_notice("%s: key type %d\n", __func__, s->kty);
+	aws_lwsl_notice("%s: key type %d\n", __func__, s->kty);
 
 	return 0;
 }
 
 
 int
-test_jwk(struct lws_context *context)
+test_jwk(struct aws_lws_context *context)
 {
-	struct lws_jwk jwk;
+	struct aws_lws_jwk jwk;
 
 	/* Test 1: A.1: Example public keys */
 
-	if (lws_jwk_import(&jwk, key_import_callback, NULL,
-			   (char *)lws_jwe_ex_a1_jwk_json,
-			   strlen((char *)lws_jwe_ex_a1_jwk_json)) < 0) {
-		lwsl_notice("Failed to decode JWK test key\n");
+	if (aws_lws_jwk_import(&jwk, key_import_callback, NULL,
+			   (char *)aws_lws_jwe_ex_a1_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_a1_jwk_json)) < 0) {
+		aws_lwsl_notice("Failed to decode JWK test key\n");
 		goto bail1;
 	}
 
-	lws_jwk_destroy(&jwk);
+	aws_lws_jwk_destroy(&jwk);
 
 	/* Test 1: A.2: Example private keys */
 
-	if (lws_jwk_import(&jwk, key_import_callback, NULL,
-			   (char *)lws_jwe_ex_a2_jwk_json,
-			   strlen((char *)lws_jwe_ex_a2_jwk_json)) < 0) {
-		lwsl_notice("Failed at A.2\n");
+	if (aws_lws_jwk_import(&jwk, key_import_callback, NULL,
+			   (char *)aws_lws_jwe_ex_a2_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_a2_jwk_json)) < 0) {
+		aws_lwsl_notice("Failed at A.2\n");
 		goto bail1;
 	}
 
-	lws_jwk_destroy(&jwk);
+	aws_lws_jwk_destroy(&jwk);
 
 	/* Test 1: A.3: Example symmetric keys */
 
-	if (lws_jwk_import(&jwk, key_import_callback, NULL,
-			   (char *)lws_jwe_ex_a3_jwk_json,
-			   strlen((char *)lws_jwe_ex_a3_jwk_json)) < 0) {
-		lwsl_notice("Failed at A.3\n");
+	if (aws_lws_jwk_import(&jwk, key_import_callback, NULL,
+			   (char *)aws_lws_jwe_ex_a3_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_a3_jwk_json)) < 0) {
+		aws_lwsl_notice("Failed at A.3\n");
 		goto bail1;
 	}
 
-	lws_jwk_destroy(&jwk);
+	aws_lws_jwk_destroy(&jwk);
 
 	/* Test 1: B: Example x509 cert chain (no parent JSON) */
 
-	if (lws_jwk_import(&jwk, NULL, NULL, (char *)lws_jwe_ex_b_jwk_json,
-			   strlen((char *)lws_jwe_ex_b_jwk_json)) < 0) {
-		lwsl_notice("Failed at B\n");
+	if (aws_lws_jwk_import(&jwk, NULL, NULL, (char *)aws_lws_jwe_ex_b_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_b_jwk_json)) < 0) {
+		aws_lwsl_notice("Failed at B\n");
 		goto bail1;
 	}
 
-	lws_jwk_destroy(&jwk);
+	aws_lws_jwk_destroy(&jwk);
 
 	/* Test 1: C.1: Example private key (no parent JSON) */
 
-	if (lws_jwk_import(&jwk, NULL, NULL,
-			   (char *)lws_jwe_ex_c1_jwk_json,
-			   strlen((char *)lws_jwe_ex_c1_jwk_json)) < 0) {
-		lwsl_notice("Failed at B\n");
+	if (aws_lws_jwk_import(&jwk, NULL, NULL,
+			   (char *)aws_lws_jwe_ex_c1_jwk_json,
+			   strlen((char *)aws_lws_jwe_ex_c1_jwk_json)) < 0) {
+		aws_lwsl_notice("Failed at B\n");
 		goto bail1;
 	}
 
-	lws_jwk_destroy(&jwk);
+	aws_lws_jwk_destroy(&jwk);
 
 	/* end */
 
-	lwsl_notice("%s: selftest OK\n", __func__);
+	aws_lwsl_notice("%s: selftest OK\n", __func__);
 
 	return 0;
 
 //bail:
-//	lws_jwk_destroy(&jwk);
+//	aws_lws_jwk_destroy(&jwk);
 bail1:
-	lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
+	aws_lwsl_err("%s: selftest failed ++++++++++++++++++++\n", __func__);
 
 	return 1;
 

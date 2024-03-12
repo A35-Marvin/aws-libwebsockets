@@ -1,6 +1,6 @@
-# lws api test lws_struct JSON
+# lws api test aws_lws_struct JSON
 
-Demonstrates how to use and performs selftests for lws_struct
+Demonstrates how to use and performs selftests for aws_lws_struct
 JSON serialization and deserialization
 
 ## build
@@ -16,8 +16,8 @@ Commandline option|Meaning
 -d <loglevel>|Debug verbosity in decimal, eg, -d15
 
 ```
- $ ./lws-api-test-lws_struct-json
-[2019/03/30 22:09:09:2529] USER: LWS API selftest: lws_struct JSON
+ $ ./lws-api-test-aws_lws_struct-json
+[2019/03/30 22:09:09:2529] USER: LWS API selftest: aws_lws_struct JSON
 [2019/03/30 22:09:09:2625] NOTICE: main: ++++++++++++++++ test 1
 [2019/03/30 22:09:09:2812] NOTICE: builder.hostname = 'learn', timeout = 1800, targets (2)
 [2019/03/30 22:09:09:2822] NOTICE:     target.name 'target1' (target 0x543a830)

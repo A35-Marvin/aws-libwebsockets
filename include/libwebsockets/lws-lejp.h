@@ -24,7 +24,7 @@
 
 /** \defgroup lejp JSON parser
  * ##JSON parsing related functions
- * \ingroup lwsapi
+ * \ingroup aws_lwsapi
  *
  * LEJP is an extremely lightweight JSON stream parser included in lws.
  */

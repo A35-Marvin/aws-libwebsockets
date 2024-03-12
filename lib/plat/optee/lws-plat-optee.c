@@ -59,7 +59,7 @@ char *strncpy(char *dest, const char *src, size_t limit)
 
 #endif
 
-int lws_plat_apply_FD_CLOEXEC(int n)
+int aws_lws_plat_apply_FD_CLOEXEC(int n)
 {
 	return 0;
 }
@@ -67,14 +67,14 @@ int lws_plat_apply_FD_CLOEXEC(int n)
 void TEE_GenerateRandom(void *randomBuffer, uint32_t randomBufferLen);
 #if defined(LWS_WITH_NETWORK)
 uint64_t
-lws_now_usecs(void)
+aws_lws_now_usecs(void)
 {
 	return ((unsigned long long)time(NULL)) * 1000000;
 }
 #endif
 
 size_t
-lws_get_random(struct lws_context *context, void *buf, size_t len)
+aws_lws_get_random(struct aws_lws_context *context, void *buf, size_t len)
 {
 #if defined(LWS_WITH_NETWORK)
 	TEE_GenerateRandom(buf, len);
@@ -100,12 +100,12 @@ static const char * const colours[] = {
         "[30;1m", /* LLL_USER */
 };
 
-void lwsl_emit_optee(int level, const char *line)
+void aws_lwsl_emit_optee(int level, const char *line)
 {
         char buf[50], linecp[512];
         int n, m = LWS_ARRAY_SIZE(colours) - 1;
 
-        lwsl_timestamp(level, buf, sizeof(buf));
+        aws_lwsl_timestamp(level, buf, sizeof(buf));
 
         n = 1 << (LWS_ARRAY_SIZE(colours) - 1);
         while (n) {
@@ -126,67 +126,67 @@ void lwsl_emit_optee(int level, const char *line)
 }
 
 int
-lws_plat_set_nonblocking(lws_sockfd_type fd)
+aws_lws_plat_set_nonblocking(aws_lws_sockfd_type fd)
 {
 	return 0;
 }
 
 int
-lws_plat_drop_app_privileges(struct lws_context *context, int actually_init)
+aws_lws_plat_drop_app_privileges(struct aws_lws_context *context, int actually_init)
 {
 	return 0;
 }
 
 int
-lws_plat_context_early_init(void)
+aws_lws_plat_context_early_init(void)
 {
 	return 0;
 }
 
 void
-lws_plat_context_early_destroy(struct lws_context *context)
+aws_lws_plat_context_early_destroy(struct aws_lws_context *context)
 {
 }
 
 void
-lws_plat_context_late_destroy(struct lws_context *context)
+aws_lws_plat_context_late_destroy(struct aws_lws_context *context)
 {
 #if defined(LWS_WITH_NETWORK)
-	if (context->lws_lookup)
-		lws_free(context->lws_lookup);
+	if (context->aws_lws_lookup)
+		aws_lws_free(context->aws_lws_lookup);
 #endif
 }
 
-lws_fop_fd_t
-_lws_plat_file_open(const struct lws_plat_file_ops *fops,
-		    const char *filename, const char *vpath, lws_fop_flags_t *flags)
+aws_lws_fop_fd_t
+_lws_plat_file_open(const struct aws_lws_plat_file_ops *fops,
+		    const char *filename, const char *vpath, aws_lws_fop_flags_t *flags)
 {
 	return NULL;
 }
 
 int
-_lws_plat_file_close(lws_fop_fd_t *fop_fd)
+_lws_plat_file_close(aws_lws_fop_fd_t *fop_fd)
 {
 	return 0;
 }
 
-lws_fileofs_t
-_lws_plat_file_seek_cur(lws_fop_fd_t fop_fd, lws_fileofs_t offset)
+aws_lws_fileofs_t
+_lws_plat_file_seek_cur(aws_lws_fop_fd_t fop_fd, aws_lws_fileofs_t offset)
 {
 	return 0;
 }
 
  int
-_lws_plat_file_read(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		    uint8_t *buf, lws_filepos_t len)
+_lws_plat_file_read(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		    uint8_t *buf, aws_lws_filepos_t len)
 {
 
 	return 0;
 }
 
  int
-_lws_plat_file_write(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
-		     uint8_t *buf, lws_filepos_t len)
+_lws_plat_file_write(aws_lws_fop_fd_t fop_fd, aws_lws_filepos_t *amount,
+		     uint8_t *buf, aws_lws_filepos_t len)
 {
 
 	return 0;
@@ -194,56 +194,56 @@ _lws_plat_file_write(lws_fop_fd_t fop_fd, lws_filepos_t *amount,
 
 
 int
-lws_plat_init(struct lws_context *context,
-	      const struct lws_context_creation_info *info)
+aws_lws_plat_init(struct aws_lws_context *context,
+	      const struct aws_lws_context_creation_info *info)
 {
 #if defined(LWS_WITH_NETWORK)
 	/* context has the global fd lookup array */
-	context->lws_lookup = lws_zalloc(sizeof(struct lws *) *
-					 context->max_fds, "lws_lookup");
-	if (context->lws_lookup == NULL) {
-		lwsl_err("OOM on lws_lookup array for %d connections\n",
+	context->aws_lws_lookup = aws_lws_zalloc(sizeof(struct lws *) *
+					 context->max_fds, "aws_lws_lookup");
+	if (context->aws_lws_lookup == NULL) {
+		aws_lwsl_err("OOM on aws_lws_lookup array for %d connections\n",
 			 context->max_fds);
 		return 1;
 	}
 
-	lwsl_notice(" mem: platform fd map: %5lu bytes\n",
+	aws_lwsl_notice(" mem: platform fd map: %5lu bytes\n",
 		    (long)sizeof(struct lws *) * context->max_fds);
 #endif
 #ifdef LWS_WITH_PLUGINS
 	if (info->plugin_dirs)
-		lws_plat_plugins_init(context, info->plugin_dirs);
+		aws_lws_plat_plugins_init(context, info->plugin_dirs);
 #endif
 
 	return 0;
 }
 
 int
-lws_plat_write_file(const char *filename, void *buf, size_t len)
+aws_lws_plat_write_file(const char *filename, void *buf, size_t len)
 {
 	return 1;
 }
 
 int
-lws_plat_read_file(const char *filename, void *buf, int len)
+aws_lws_plat_read_file(const char *filename, void *buf, int len)
 {
 	return -1;
 }
 
 int
-lws_plat_recommended_rsa_bits(void)
+aws_lws_plat_recommended_rsa_bits(void)
 {
 	return 4096;
 }
 
 int
-lws_plat_ntpclient_config(struct lws_context *context)
+aws_lws_plat_ntpclient_config(struct aws_lws_context *context)
 {
 #if 0
 	char *ntpsrv = getenv("LWS_NTP_SERVER");
 
 	if (ntpsrv && strlen(ntpsrv) < 64) {
-		lws_system_blob_heap_append(lws_system_get_blob(context,
+		aws_lws_system_blob_heap_append(aws_lws_system_get_blob(context,
 					    LWS_SYSBLOB_TYPE_NTP_SERVER, 0),
 					    (const uint8_t *)ntpsrv,
 					    strlen(ntpsrv));
@@ -254,7 +254,7 @@ lws_plat_ntpclient_config(struct lws_context *context)
 }
 
 void
-lws_msleep(unsigned int ms)
+aws_lws_msleep(unsigned int ms)
 {
 }
 

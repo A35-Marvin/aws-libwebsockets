@@ -28,10 +28,10 @@
 #define LWS_SMD_STREAMTYPENAME		"_lws_smd"
 #define LWS_SMD_SS_RX_HEADER_LEN	16
 
-typedef uint32_t lws_smd_class_t;
+typedef uint32_t aws_lws_smd_class_t;
 
-struct lws_smd_msg; /* opaque */
-struct lws_smd_peer; /* opaque */
+struct aws_lws_smd_msg; /* opaque */
+struct aws_lws_smd_peer; /* opaque */
 
 /*
  * Well-known device classes
@@ -45,7 +45,7 @@ enum {
 	 */
 	LWSSMDCL_SYSTEM_STATE					= (1 << 1),
 	/**<
-	 * The lws_system state changed, eg, to OPERATIONAL
+	 * The aws_lws_system state changed, eg, to OPERATIONAL
 	 */
 	LWSSMDCL_NETWORK					= (1 << 2),
 	/**<
@@ -62,16 +62,16 @@ enum {
 };
 
 /**
- * lws_smd_msg_alloc() - allocate a message of length len
+ * aws_lws_smd_msg_alloc() - allocate a message of length len
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param _class: the smd message class, recipients filter on this
  * \param len: the required payload length
  *
- * This helper returns an opaque lws_smd_msg pointer and sets *buf to a buffer
+ * This helper returns an opaque aws_lws_smd_msg pointer and sets *buf to a buffer
  * associated with it of length \p len.
  *
- * In this way the lws_msg_smd type remains completely opaque and the allocated
+ * In this way the aws_lws_msg_smd type remains completely opaque and the allocated
  * area can be prepared by the caller directly, without copying.
  *
  * On failure, it returns NULL... it may fail for OOM but it may also fail if
@@ -80,13 +80,13 @@ enum {
  * generation action at the caller should be bypassed without error then.
  *
  * This is useful if you have a message you know the length of.  For text-based
- * messages like JSON, lws_smd_msg_printf() is more convenient.
+ * messages like JSON, aws_lws_smd_msg_printf() is more convenient.
  */
 LWS_VISIBLE LWS_EXTERN void * /* payload */
-lws_smd_msg_alloc(struct lws_context *ctx, lws_smd_class_t _class, size_t len);
+aws_lws_smd_msg_alloc(struct aws_lws_context *ctx, aws_lws_smd_class_t _class, size_t len);
 
 /**
- * lws_smd_msg_free() - abandon a previously allocated message before sending
+ * aws_lws_smd_msg_free() - abandon a previously allocated message before sending
  *
  * \param payload: pointer the previously-allocated message payload
  *
@@ -97,12 +97,12 @@ lws_smd_msg_alloc(struct lws_context *ctx, lws_smd_class_t _class, size_t len);
  * message objects with this, lws will take care of it.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_smd_msg_free(void **payload);
+aws_lws_smd_msg_free(void **payload);
 
 /**
- * lws_smd_msg_send() - queue a previously allocated message
+ * aws_lws_smd_msg_send() - queue a previously allocated message
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param msg: the prepared message
  *
  * Queues an allocated, prepared message for delivery to smd clients
@@ -110,12 +110,12 @@ lws_smd_msg_free(void **payload);
  * This is threadsafe to call from a non-service thread.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_smd_msg_send(struct lws_context *ctx, void *payload);
+aws_lws_smd_msg_send(struct aws_lws_context *ctx, void *payload);
 
 /**
- * lws_smd_msg_printf() - queue a previously allocated message
+ * aws_lws_smd_msg_printf() - queue a previously allocated message
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param _class: the message class
  * \param format: the format string to prepare the payload with
  * \param ...: arguments for the format string, if any
@@ -123,10 +123,10 @@ lws_smd_msg_send(struct lws_context *ctx, void *payload);
  * For string-based messages, eg, JSON, allows formatted creating of the payload
  * size discovery, allocation and message send all in one step.
  *
- * Unlike lws_smd_msg_alloc() you do not need to know the length beforehand as
- * this computes it and calls lws_smd_msg_alloc() with the correct length.
+ * Unlike aws_lws_smd_msg_alloc() you do not need to know the length beforehand as
+ * this computes it and calls aws_lws_smd_msg_alloc() with the correct length.
  *
- * To be clear this also calls through to lws_smd_msg_send(), it really does
+ * To be clear this also calls through to aws_lws_smd_msg_send(), it really does
  * everything in one step.  If there are no registered participants that want
  * messages of \p _class, this function returns immediately without doing any
  * allocation or anything else.
@@ -134,11 +134,11 @@ lws_smd_msg_send(struct lws_context *ctx, void *payload);
  * This is threadsafe to call from a non-service thread.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_smd_msg_printf(struct lws_context *ctx, lws_smd_class_t _class,
+aws_lws_smd_msg_printf(struct aws_lws_context *ctx, aws_lws_smd_class_t _class,
 		   const char *format, ...) LWS_FORMAT(3);
 
 /**
- * lws_smd_ss_msg_printf() - helper to prepare smd ss message tx
+ * aws_lws_smd_ss_msg_printf() - helper to prepare smd ss message tx
  *
  * \param h: the ss handle
  * \param buf: the ss tx buffer
@@ -149,18 +149,18 @@ lws_smd_msg_printf(struct lws_context *ctx, lws_smd_class_t _class,
  *
  * This helper lets you produce SMD messages on an SS link of the builtin
  * streamtype LWS_SMD_STREAMTYPENAME, using the same api format as
- * lws_smd_msg_prinf(), but writing the message into the ss tx buffer from
+ * aws_lws_smd_msg_prinf(), but writing the message into the ss tx buffer from
  * its tx() callback.
  */
 
-struct lws_ss_handle;
+struct aws_lws_ss_handle;
 LWS_VISIBLE LWS_EXTERN int
-lws_smd_ss_msg_printf(const char *tag, uint8_t *buf, size_t *len,
-		      lws_smd_class_t _class, const char *format, ...)
+aws_lws_smd_ss_msg_printf(const char *tag, uint8_t *buf, size_t *len,
+		      aws_lws_smd_class_t _class, const char *format, ...)
 		      LWS_FORMAT(5);
 
 /**
- * lws_smd_ss_rx_forward() - helper to forward smd messages that came in by SS
+ * aws_lws_smd_ss_rx_forward() - helper to forward smd messages that came in by SS
  *
  * \param ss_user: ss user pointer, as delivered to rx callback
  * \param buf: the ss rx buffer
@@ -177,22 +177,22 @@ lws_smd_ss_msg_printf(const char *tag, uint8_t *buf, size_t *len,
  * Returns 0 if OK else nonzero if unable to queue the SMD message.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_smd_ss_rx_forward(void *ss_user, const uint8_t *buf, size_t len);
+aws_lws_smd_ss_rx_forward(void *ss_user, const uint8_t *buf, size_t len);
 
 LWS_VISIBLE LWS_EXTERN int
-lws_smd_sspc_rx_forward(void *ss_user, const uint8_t *buf, size_t len);
+aws_lws_smd_sspc_rx_forward(void *ss_user, const uint8_t *buf, size_t len);
 
-typedef int (*lws_smd_notification_cb_t)(void *opaque, lws_smd_class_t _class,
-					 lws_usec_t timestamp, void *buf,
+typedef int (*aws_lws_smd_notification_cb_t)(void *opaque, aws_lws_smd_class_t _class,
+					 aws_lws_usec_t timestamp, void *buf,
 					 size_t len);
 
 #define LWSSMDREG_FLAG_PROXIED_SS	(1 << 0)
 /**< It's actually a proxied SS connection registering, opaque is the ss h */
 
 /*
- * lws_smd_register() - register to receive smd messages
+ * aws_lws_smd_register() - register to receive smd messages
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param opaque: an opaque pointer handed to the callback
  * \param flags: typically 0
  * \param _class_filter: bitmap of message classes we care about
@@ -201,17 +201,17 @@ typedef int (*lws_smd_notification_cb_t)(void *opaque, lws_smd_class_t _class,
  * Queues an allocated, prepared message for delivery to smd clients.
  *
  * Returns NULL on failure, or an opaque handle which may be given to
- * lws_smd_unregister() to stop participating in the shared message queue.
+ * aws_lws_smd_unregister() to stop participating in the shared message queue.
  *
  * This is threadsafe to call from a non-service thread.
  */
 
-LWS_VISIBLE LWS_EXTERN struct lws_smd_peer *
-lws_smd_register(struct lws_context *ctx, void *opaque, int flags,
-		 lws_smd_class_t _class_filter, lws_smd_notification_cb_t cb);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_smd_peer *
+aws_lws_smd_register(struct aws_lws_context *ctx, void *opaque, int flags,
+		 aws_lws_smd_class_t _class_filter, aws_lws_smd_notification_cb_t cb);
 
 /*
- * lws_smd_unregister() - unregister receiving smd messages
+ * aws_lws_smd_unregister() - unregister receiving smd messages
  *
  * \param pr: the handle returned from the registration
  *
@@ -219,9 +219,9 @@ lws_smd_register(struct lws_context *ctx, void *opaque, int flags,
  * messages.
  *
  * It's not necessary to call this if the registration wants to survive for as
- * long as the lws_context... lws_context_destroy will also clean up any
+ * long as the aws_lws_context... aws_lws_context_destroy will also clean up any
  * registrations still active by then.
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_smd_unregister(struct lws_smd_peer *pr);
+aws_lws_smd_unregister(struct aws_lws_smd_peer *pr);

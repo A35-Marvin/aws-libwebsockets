@@ -25,12 +25,12 @@
 #include "private-lib-core.h"
 
 static int
-lcs_init_compression_deflate(lws_comp_ctx_t *ctx, int decomp)
+lcs_init_compression_deflate(aws_lws_comp_ctx_t *ctx, int decomp)
 {
 	int n;
 
 	ctx->is_decompression = !!decomp;
-	ctx->u.deflate = lws_malloc(sizeof(*ctx->u.deflate), __func__);
+	ctx->u.deflate = aws_lws_malloc(sizeof(*ctx->u.deflate), __func__);
 
 	if (!ctx->u.deflate)
 		return 2;
@@ -40,15 +40,15 @@ lcs_init_compression_deflate(lws_comp_ctx_t *ctx, int decomp)
 	if (!decomp &&
 	    (n = deflateInit2(ctx->u.deflate, 1, Z_DEFLATED, -15, 8,
 			 Z_DEFAULT_STRATEGY)) != Z_OK) {
-		lwsl_err("deflate init failed: %d\n", n);
-		lws_free_set_NULL(ctx->u.deflate);
+		aws_lwsl_err("deflate init failed: %d\n", n);
+		aws_lws_free_set_NULL(ctx->u.deflate);
 
 		return 1;
 	}
 
 	if (decomp &&
 	    inflateInit2(ctx->u.deflate, 16 + 15) != Z_OK) {
-		lws_free_set_NULL(ctx->u.deflate);
+		aws_lws_free_set_NULL(ctx->u.deflate);
 		return 1;
 	}
 
@@ -56,7 +56,7 @@ lcs_init_compression_deflate(lws_comp_ctx_t *ctx, int decomp)
 }
 
 static int
-lcs_process_deflate(lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
+lcs_process_deflate(aws_lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
 		    void *out, size_t *olen_oused)
 {
 	size_t olen_oused_in = *olen_oused;
@@ -78,7 +78,7 @@ lcs_process_deflate(lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
 	case Z_STREAM_ERROR:
 	case Z_DATA_ERROR:
 	case Z_MEM_ERROR:
-		lwsl_err("zlib error inflate %d\n", n);
+		aws_lwsl_err("zlib error inflate %d\n", n);
 		return -1;
 	}
 
@@ -92,7 +92,7 @@ lcs_process_deflate(lws_comp_ctx_t *ctx, const void *in, size_t *ilen_iused,
 }
 
 static void
-lcs_destroy_deflate(lws_comp_ctx_t *ctx)
+lcs_destroy_deflate(aws_lws_comp_ctx_t *ctx)
 {
 	if (!ctx)
 		return;
@@ -102,10 +102,10 @@ lcs_destroy_deflate(lws_comp_ctx_t *ctx)
 	else
 		inflateEnd((*ctx).u.deflate);
 
-	lws_free_set_NULL(ctx->u.deflate);
+	aws_lws_free_set_NULL(ctx->u.deflate);
 }
 
-struct lws_compression_support lcs_deflate = {
+struct aws_lws_compression_support lcs_deflate = {
 	/* .encoding_name */		"deflate",
 	/* .init_compression */		lcs_init_compression_deflate,
 	/* .process */			lcs_process_deflate,

@@ -32,7 +32,7 @@
 
 #if defined(LWS_WITH_SS_RIDESHARE)
 static int
-ss_http_multipart_parser(lws_ss_handle_t *h, void *in, size_t len)
+ss_http_multipart_parser(aws_lws_ss_handle_t *h, void *in, size_t len)
 {
 	uint8_t *q = (uint8_t *)in;
 	int pending_issue = 0, n = 0;
@@ -67,7 +67,7 @@ ss_http_multipart_parser(lws_ss_handle_t *h, void *in, size_t len)
 			/*
 			 * It's an EOM boundary: issue pending + multipart EOP
 			 */
-			lwsl_debug("%s: seen EOP, n %d pi %d\n",
+			aws_lwsl_debug("%s: seen EOP, n %d pi %d\n",
 				    __func__, n, pending_issue);
 			/*
 			 * It's possible we already started the decode before
@@ -112,13 +112,13 @@ ss_http_multipart_parser(lws_ss_handle_t *h, void *in, size_t len)
 		 * We have a starting "--boundaryCRLF" or intermediate
 		 * "CRLF--boundaryCRLF" boundary
 		 */
-		lwsl_debug("%s: b_post = 2 (pi %d)\n", __func__, pending_issue);
+		aws_lwsl_debug("%s: b_post = 2 (pi %d)\n", __func__, pending_issue);
 		h->u.http.boundary_seq = 0;
 		h->u.http.boundary_post = 0;
 
 		if (n >= pending_issue && (h->u.http.any || !h->u.http.som)) {
 			/* Intermediate... do the EOM */
-			lwsl_debug("%s: seen interm EOP n %d pi %d\n", __func__,
+			aws_lwsl_debug("%s: seen interm EOP n %d pi %d\n", __func__,
 				   n, pending_issue);
 			/*
 			 * It's possible we already started the decode before
@@ -192,9 +192,9 @@ around:
  */
 
 static int
-lws_ss_http_resp_to_state(lws_ss_handle_t *h, int resp)
+aws_lws_ss_http_resp_to_state(aws_lws_ss_handle_t *h, int resp)
 {
-	const lws_ss_http_respmap_t *r = h->policy->u.http.respmap;
+	const aws_lws_ss_http_respmap_t *r = h->policy->u.http.respmap;
 	int n = h->policy->u.http.count_respmap;
 
 	while (n--)
@@ -211,10 +211,10 @@ lws_ss_http_resp_to_state(lws_ss_handle_t *h, int resp)
  */
 
 static int
-lws_apply_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
+aws_lws_apply_metadata(aws_lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 		   uint8_t **pp, uint8_t *end)
 {
-	lws_ss_metadata_t *polmd = h->policy->metadata;
+	aws_lws_ss_metadata_t *polmd = h->policy->metadata;
 	int m = 0;
 
 	while (polmd) {
@@ -224,7 +224,7 @@ lws_apply_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 		if (polmd->value__may_own_heap &&
 		    ((uint8_t *)polmd->value__may_own_heap)[0] &&
 		    h->metadata[m].value__may_own_heap) {
-			if (lws_add_http_header_by_name(wsi,
+			if (aws_lws_add_http_header_by_name(wsi,
 					polmd->value__may_own_heap,
 					h->metadata[m].value__may_own_heap,
 					(int)h->metadata[m].length, pp, end))
@@ -240,7 +240,7 @@ lws_apply_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 			if (!strncmp(polmd->value__may_own_heap,
 				     "content-length", 14) &&
 			    atoi(h->metadata[m].value__may_own_heap))
-				lws_client_http_body_pending(wsi, 1);
+				aws_lws_client_http_body_pending(wsi, 1);
 		}
 
 		m++;
@@ -257,14 +257,14 @@ lws_apply_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 	    wsi->http.writeable_len) {
 		if (!(h->policy->flags &
 			LWSSSPOLF_HTTP_NO_CONTENT_LENGTH)) {
-			int n = lws_snprintf((char *)buf, 20, "%u",
+			int n = aws_lws_snprintf((char *)buf, 20, "%u",
 				(unsigned int)wsi->http.writeable_len);
-			if (lws_add_http_header_by_token(wsi,
+			if (aws_lws_add_http_header_by_token(wsi,
 					WSI_TOKEN_HTTP_CONTENT_LENGTH,
 					buf, n, pp, end))
 				return -1;
 		}
-		lws_client_http_body_pending(wsi, 1);
+		aws_lws_client_http_body_pending(wsi, 1);
 	}
 
 	return 0;
@@ -273,18 +273,18 @@ lws_apply_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
 static int
-lws_apply_instant_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
+aws_lws_apply_instant_metadata(aws_lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 		   uint8_t **pp, uint8_t *end)
 {
-	lws_ss_metadata_t *imd = h->instant_metadata;
+	aws_lws_ss_metadata_t *imd = h->instant_metadata;
 
 	while (imd) {
 		if (imd->name && imd->value__may_own_heap) {
-			lwsl_debug("%s add header %s %s %d\n", __func__,
+			aws_lwsl_debug("%s add header %s %s %d\n", __func__,
 					           imd->name,
 			                           (char *)imd->value__may_own_heap,
 						   imd->length);
-			if (lws_add_http_header_by_name(wsi,
+			if (aws_lws_add_http_header_by_name(wsi,
 					(const unsigned char *)imd->name,
 					(const unsigned char *)imd->value__may_own_heap,
 					(int)imd->length, pp, end))
@@ -294,7 +294,7 @@ lws_apply_instant_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
 			if (!strncmp(imd->name,
 				     "content-length", 14) &&
 			    atoi(imd->value__may_own_heap))
-				lws_client_http_body_pending(wsi, 1);
+				aws_lws_client_http_body_pending(wsi, 1);
 
 		}
 
@@ -310,9 +310,9 @@ lws_apply_instant_metadata(lws_ss_handle_t *h, struct lws *wsi, uint8_t *buf,
  */
 
 static int
-lws_extract_metadata(lws_ss_handle_t *h, struct lws *wsi)
+aws_lws_extract_metadata(aws_lws_ss_handle_t *h, struct lws *wsi)
 {
-	lws_ss_metadata_t *polmd = h->policy->metadata, *omd;
+	aws_lws_ss_metadata_t *polmd = h->policy->metadata, *omd;
 	int n, m = 0;
 
 	while (polmd) {
@@ -321,11 +321,11 @@ lws_extract_metadata(lws_ss_handle_t *h, struct lws *wsi)
 
 			/* it's a well-known header token */
 
-			n = lws_hdr_total_length(wsi, polmd->value_is_http_token);
+			n = aws_lws_hdr_total_length(wsi, polmd->value_is_http_token);
 			if (n) {
-				const char *cp = lws_hdr_simple_ptr(wsi,
+				const char *cp = aws_lws_hdr_simple_ptr(wsi,
 						polmd->value_is_http_token);
-				omd = lws_ss_get_handle_metadata(h, polmd->name);
+				omd = aws_lws_ss_get_handle_metadata(h, polmd->name);
 				if (!omd || !cp)
 					return 1;
 
@@ -363,19 +363,19 @@ lws_extract_metadata(lws_ss_handle_t *h, struct lws *wsi)
 				 * Can it be a custom header?
 				 */
 
-				n = lws_hdr_custom_length(wsi, (const char *)
+				n = aws_lws_hdr_custom_length(wsi, (const char *)
 						    polmd->value__may_own_heap,
 						    polmd->value_length);
 				if (n > 0) {
 
-					p = lws_malloc((unsigned int)n + 1, __func__);
+					p = aws_lws_malloc((unsigned int)n + 1, __func__);
 					if (!p)
 						return 1;
 
 					/* if needed, free any previous value */
 
 					if (polmd->value_on_lws_heap) {
-						lws_free(
+						aws_lws_free(
 						    polmd->value__may_own_heap);
 						polmd->value_on_lws_heap = 0;
 					}
@@ -385,16 +385,16 @@ lws_extract_metadata(lws_ss_handle_t *h, struct lws *wsi)
 					 * into the malloc'd buffer
 					 */
 
-					if (lws_hdr_custom_copy(wsi, p, n + 1,
+					if (aws_lws_hdr_custom_copy(wsi, p, n + 1,
 						     (const char *)
 						     polmd->value__may_own_heap,
 						     polmd->value_length) < 0) {
-						lws_free(p);
+						aws_lws_free(p);
 
 						return 1;
 					}
 
-					omd = lws_ss_get_handle_metadata(h,
+					omd = aws_lws_ss_get_handle_metadata(h,
 								   polmd->name);
 					if (omd) {
 
@@ -425,51 +425,51 @@ static const uint8_t blob_idx[] = {
 };
 
 int
-secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
+secstream_h1(struct lws *wsi, enum aws_lws_callback_reasons reason, void *user,
 	     void *in, size_t len)
 {
 #if defined(LWS_WITH_SERVER)
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 #endif
-	lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
+	aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
 	uint8_t buf[LWS_PRE + 1520], *p = &buf[LWS_PRE],
 #if defined(LWS_WITH_SERVER)
 			*start = p,
 #endif
 		*end = &buf[sizeof(buf) - 1];
-	lws_ss_state_return_t r;
+	aws_lws_ss_state_return_t r;
 	int f = 0, m, status;
 	char conceal_eom = 0;
-	lws_usec_t inter;
+	aws_lws_usec_t inter;
 	size_t buflen;
 
 	switch (reason) {
 
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		if (!h) {
-			lwsl_err("%s: CCE with no ss handle %s\n", __func__, lws_wsi_tag(wsi));
+			aws_lwsl_err("%s: CCE with no ss handle %s\n", __func__, aws_lws_wsi_tag(wsi));
 			break;
 		}
 
-		lws_ss_assert_extant(wsi->a.context, wsi->tsi, h);
+		aws_lws_ss_assert_extant(wsi->a.context, wsi->tsi, h);
 
 		assert(h->policy);
 
 #if defined(LWS_WITH_CONMON)
-		lws_conmon_ss_json(h);
+		aws_lws_conmon_ss_json(h);
 #endif
 
-		lws_metrics_caliper_report_hist(h->cal_txn, wsi);
-		lwsl_info("%s: %s CLIENT_CONNECTION_ERROR: %s\n", __func__,
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, wsi);
+		aws_lwsl_info("%s: %s CLIENT_CONNECTION_ERROR: %s\n", __func__,
 			  h->lc.gutag, in ? (const char *)in : "none");
 		if (h->ss_dangling_connected) {
 			/* already disconnected, no action for DISCONNECT_ME */
-			r = lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
+			r = aws_lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
 			if (r != LWSSSSRET_OK)
 				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
 		/* already disconnected, no action for DISCONNECT_ME */
-		r = lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_UNREACHABLE);
 		if (r) {
 			if (h->inside_connect) {
 				h->pending_ret = r;
@@ -480,7 +480,7 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		}
 
 		h->wsi = NULL;
-		r = lws_ss_backoff(h);
+		r = aws_lws_ss_backoff(h);
 		if (r != LWSSSSRET_OK) {
 			if (h->inside_connect) {
 				h->pending_ret = r;
@@ -496,7 +496,7 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			return -1;
 
 		if (h->policy->u.http.fail_redirect)
-			lws_system_cpd_set(lws_get_context(wsi),
+			aws_lws_system_cpd_set(aws_lws_get_context(wsi),
 					   LWS_CPD_CAPTIVE_PORTAL);
 		/* unless it's explicitly allowed, reject to follow it */
 		return !(h->policy->flags & LWSSSPOLF_ALLOW_REDIRECTS);
@@ -506,22 +506,22 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		if (!h)
 			break;
 
-		lws_sul_cancel(&h->sul_timeout);
+		aws_lws_sul_cancel(&h->sul_timeout);
 
-		lws_ss_assert_extant(wsi->a.context, wsi->tsi, h);
+		aws_lws_ss_assert_extant(wsi->a.context, wsi->tsi, h);
 
 #if defined(LWS_WITH_CONMON)
 		if (wsi->conmon.pcol == LWSCONMON_PCOL_NONE) {
 			wsi->conmon.pcol = LWSCONMON_PCOL_HTTP;
 			wsi->conmon.protocol_specific.http.response =
-					(int)lws_http_client_http_response(wsi);
+					(int)aws_lws_http_client_http_response(wsi);
 		}
 
-		lws_conmon_ss_json(h);
+		aws_lws_conmon_ss_json(h);
 #endif
 
-		lws_metrics_caliper_report_hist(h->cal_txn, wsi);
-		//lwsl_notice("%s: %s LWS_CALLBACK_CLOSED_CLIENT_HTTP\n",
+		aws_lws_metrics_caliper_report_hist(h->cal_txn, wsi);
+		//aws_lwsl_notice("%s: %s LWS_CALLBACK_CLOSED_CLIENT_HTTP\n",
 		//		__func__, wsi->lc.gutag);
 
 		h->wsi = NULL;
@@ -529,9 +529,9 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		h->subseq = 0;
 
 #if defined(LWS_WITH_SERVER)
-		lws_pt_lock(pt, __func__);
-		lws_dll2_remove(&h->cli_list);
-		lws_pt_unlock(pt);
+		aws_lws_pt_lock(pt, __func__);
+		aws_lws_dll2_remove(&h->cli_list);
+		aws_lws_pt_unlock(pt);
 #endif
 
 		if (h->policy && !(h->policy->flags & LWSSSPOLF_OPPORTUNISTIC) &&
@@ -539,7 +539,7 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		    !(h->info.flags & LWSSSINFLAGS_ACCEPTED) && /* not server */
 #endif
 		    !h->txn_ok && !wsi->a.context->being_destroyed) {
-			r = lws_ss_backoff(h);
+			r = aws_lws_ss_backoff(h);
 			if (r != LWSSSSRET_OK)
 				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			break;
@@ -548,7 +548,7 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 		if (h->ss_dangling_connected) {
 			/* already disconnected, no action for DISCONNECT_ME */
-			r = lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
+			r = aws_lws_ss_event_helper(h, LWSSSCS_DISCONNECTED);
 			if (r != LWSSSSRET_OK)
 				return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 		}
@@ -559,28 +559,28 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		if (!h)
 			return -1;
 
-		lws_ss_assert_extant(wsi->a.context, wsi->tsi, h);
+		aws_lws_ss_assert_extant(wsi->a.context, wsi->tsi, h);
 
 #if defined(LWS_WITH_CONMON)
 		if (wsi->conmon.pcol == LWSCONMON_PCOL_NONE) {
 			wsi->conmon.pcol = LWSCONMON_PCOL_HTTP;
 			wsi->conmon.protocol_specific.http.response =
-					(int)lws_http_client_http_response(wsi);
+					(int)aws_lws_http_client_http_response(wsi);
 		}
 
-		lws_conmon_ss_json(h);
+		aws_lws_conmon_ss_json(h);
 #endif
 
-		status = (int)lws_http_client_http_response(wsi);
-		lwsl_info("%s: LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: %d\n", __func__, status);
+		status = (int)aws_lws_http_client_http_response(wsi);
+		aws_lwsl_info("%s: LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: %d\n", __func__, status);
 	//	if (!status)
 			/* it's just telling use we connected / joined the nwsi */
 	//		break;
 
 #if defined(LWS_WITH_SYS_METRICS)
 		if (status) {
-			lws_snprintf((char *)buf, 10, "%d", status);
-			lws_metrics_tag_ss_add(h, "http_resp", (char *)buf);
+			aws_lws_snprintf((char *)buf, 10, "%d", status);
+			aws_lws_metrics_tag_ss_add(h, "http_resp", (char *)buf);
 		}
 #endif
 
@@ -594,7 +594,7 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			 */
 
 			inter = 0;
-			lws_http_check_retry_after(wsi, &inter);
+			aws_lws_http_check_retry_after(wsi, &inter);
 
 			r = _lws_ss_backoff(h, inter);
 			if (r != LWSSSSRET_OK)
@@ -608,10 +608,10 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 					status == h->policy->u.http.resp_expect;
 		else
 			h->u.http.good_respcode = (status >= 200 && status < 300);
-		// lwsl_err("%s: good resp %d %d\n", __func__, status, h->u.http.good_respcode);
+		// aws_lwsl_err("%s: good resp %d %d\n", __func__, status, h->u.http.good_respcode);
 
-		if (lws_extract_metadata(h, wsi)) {
-			lwsl_info("%s: rx metadata extract failed\n", __func__);
+		if (aws_lws_extract_metadata(h, wsi)) {
+			aws_lwsl_info("%s: rx metadata extract failed\n", __func__);
 
 			return -1;
 		}
@@ -624,9 +624,9 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 			 * over state updates on the serialization, so the
 			 * state callback will see the right metadata.
 			 */
-			int n = lws_ss_http_resp_to_state(h, status);
+			int n = aws_lws_ss_http_resp_to_state(h, status);
 			if (n) {
-				r = lws_ss_event_helper(h, (lws_ss_constate_t)n);
+				r = aws_lws_ss_event_helper(h, (aws_lws_ss_constate_t)n);
 				if (r != LWSSSSRET_OK)
 					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi,
 									&h);
@@ -634,11 +634,11 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		}
 
 		if (h->u.http.good_respcode)
-			lwsl_info("%s: Connected streamtype %s, %d\n", __func__,
+			aws_lwsl_info("%s: Connected streamtype %s, %d\n", __func__,
 				  h->policy->streamtype, status);
 		else
 			if (h->u.http.good_respcode)
-				lwsl_warn("%s: Connected streamtype %s, BAD %d\n",
+				aws_lwsl_warn("%s: Connected streamtype %s, BAD %d\n",
 					  __func__, h->policy->streamtype,
 					  status);
 
@@ -646,12 +646,12 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 		h->retry = 0;
 		h->seqstate = SSSEQ_CONNECTED;
-		lws_sul_cancel(&h->sul);
+		aws_lws_sul_cancel(&h->sul);
 
 		if (h->prev_ss_state != LWSSSCS_CONNECTED) {
 			wsi->client_suppress_CONNECTION_ERROR = 1;
 			if (h->prev_ss_state != LWSSSCS_CONNECTED) {
-				r = lws_ss_event_helper(h, LWSSSCS_CONNECTED);
+				r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 				if (r != LWSSSSRET_OK)
 					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			}
@@ -661,7 +661,7 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * Since it's an http transaction we initiated... this is
 		 * proof of connection validity
 		 */
-		lws_validity_confirmed(wsi);
+		aws_lws_validity_confirmed(wsi);
 
 #if defined(LWS_WITH_SS_RIDESHARE)
 
@@ -673,15 +673,15 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 		 * different parts.
 		 */
 
-		if (lws_hdr_copy(wsi, (char *)buf, sizeof(buf),
+		if (aws_lws_hdr_copy(wsi, (char *)buf, sizeof(buf),
 				 WSI_TOKEN_HTTP_CONTENT_TYPE) > 0 &&
 		/* multipart/form-data;
 		 * boundary=----WebKitFormBoundarycc7YgAPEIHvgE9Bf */
 
 		    (!strncmp((char *)buf, "multipart/form-data", 19) ||
 		     !strncmp((char *)buf, "multipart/related", 17))) {
-			struct lws_tokenize ts;
-			lws_tokenize_elem e;
+			struct aws_lws_tokenize ts;
+			aws_lws_tokenize_elem e;
 
 			// puts((const char *)buf);
 
@@ -694,18 +694,18 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 
 			h->u.http.boundary[0] = '\0';
 			do {
-				e = lws_tokenize(&ts);
+				e = aws_lws_tokenize(&ts);
 				if (e == LWS_TOKZE_TOKEN_NAME_EQUALS &&
 				    !strncmp(ts.token, "boundary", 8) &&
 				    ts.token_len == 8) {
-					e = lws_tokenize(&ts);
+					e = aws_lws_tokenize(&ts);
 					if (e != LWS_TOKZE_TOKEN)
 						goto malformed;
 					h->u.http.boundary[0] = '\x0d';
 					h->u.http.boundary[1] = '\x0a';
 					h->u.http.boundary[2] = '-';
 					h->u.http.boundary[3] = '-';
-					lws_strnncpy(h->u.http.boundary + 4,
+					aws_lws_strnncpy(h->u.http.boundary + 4,
 						     ts.token, ts.token_len,
 						     sizeof(h->u.http.boundary) - 4);
 					h->u.http.boundary_len =
@@ -714,7 +714,7 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 					h->u.http.boundary_dashes = 0;
 				}
 			} while (e > 0);
-			lwsl_info("%s: multipart boundary '%s' len %d\n", __func__,
+			aws_lwsl_info("%s: multipart boundary '%s' len %d\n", __func__,
 					h->u.http.boundary, h->u.http.boundary_len);
 
 			/* inform the ss that a related message group begins */
@@ -724,11 +724,11 @@ secstream_h1(struct lws *wsi, enum lws_callback_reasons reason, void *user,
 				h->info.rx(ss_to_userobj(h), NULL, 0,
 					   LWSSS_FLAG_RELATED_START);
 
-			// lws_header_table_detach(wsi, 0);
+			// aws_lws_header_table_detach(wsi, 0);
 		}
 		break;
 malformed:
-		lwsl_notice("%s: malformed multipart header\n", __func__);
+		aws_lwsl_notice("%s: malformed multipart header\n", __func__);
 		return -1;
 #else
 		break;
@@ -749,7 +749,7 @@ malformed:
 		 */
 
 		for (m = 0; m < _LWSSS_HBI_COUNT; m++) {
-			lws_system_blob_t *ab;
+			aws_lws_system_blob_t *ab;
 			int o = 0, n;
 
 			if (!h->policy->u.http.blob_header[m])
@@ -765,25 +765,25 @@ malformed:
 
 			if (m == LWSSS_HBI_AUTH &&
 			    h->policy->u.http.auth_preamble)
-				o = lws_snprintf((char *)buf, sizeof(buf), "%s",
+				o = aws_lws_snprintf((char *)buf, sizeof(buf), "%s",
 					h->policy->u.http.auth_preamble);
 
 			if (o > (int)sizeof(buf) - 2)
 				return -1;
 
-			ab = lws_system_get_blob(wsi->a.context, blob_idx[m], 0);
+			ab = aws_lws_system_get_blob(wsi->a.context, blob_idx[m], 0);
 			if (!ab)
 				return -1;
 
 			buflen = sizeof(buf) - (unsigned int)o - 2u;
-			n = lws_system_blob_get(ab, buf + o, &buflen, 0);
+			n = aws_lws_system_blob_get(ab, buf + o, &buflen, 0);
 			if (n < 0)
 				return -1;
 
 			buf[(unsigned int)o + buflen] = '\0';
-			lwsl_debug("%s: adding blob %d: %s\n", __func__, m, buf);
+			aws_lwsl_debug("%s: adding blob %d: %s\n", __func__, m, buf);
 
-			if (lws_add_http_header_by_name(wsi,
+			if (aws_lws_add_http_header_by_name(wsi,
 				 (uint8_t *)h->policy->u.http.blob_header[m],
 				 buf, (int)((int)buflen + o), p, end))
 				return -1;
@@ -793,12 +793,12 @@ malformed:
 		 * metadata-based headers
 		 */
 
-		if (lws_apply_metadata(h, wsi, buf, p, end))
+		if (aws_lws_apply_metadata(h, wsi, buf, p, end))
 			return -1;
 
 #if defined(LWS_WITH_SS_DIRECT_PROTOCOL_STR)
 		if (h->policy->flags & LWSSSPOLF_DIRECT_PROTO_STR) {
-			if (lws_apply_instant_metadata(h, wsi, buf, p, end))
+			if (aws_lws_apply_instant_metadata(h, wsi, buf, p, end))
 				return -1;
 		}
 #endif
@@ -807,7 +807,7 @@ malformed:
 		if (h->policy->auth && h->policy->auth->type &&
 				!strcmp(h->policy->auth->type, "sigv4")) {
 
-			if (lws_ss_apply_sigv4(wsi, h, p, end))
+			if (aws_lws_ss_apply_sigv4(wsi, h, p, end))
 				return -1;
 		}
 #endif
@@ -815,7 +815,7 @@ malformed:
 
 		(void)oin;
 		//if (*p != oin)
-		//	lwsl_hexdump_notice(oin, lws_ptr_diff_size_t(*p, oin));
+		//	aws_lwsl_hexdump_notice(oin, aws_lws_ptr_diff_size_t(*p, oin));
 
 		}
 
@@ -832,7 +832,7 @@ malformed:
 
 			wsi->client_suppress_CONNECTION_ERROR = 1;
 			if (h->prev_ss_state != LWSSSCS_CONNECTED) {
-				r = lws_ss_event_helper(h, LWSSSCS_CONNECTED);
+				r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 				if (r)
 					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			}
@@ -843,7 +843,7 @@ malformed:
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_HTTP_BODY:
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_debug("%s: RECEIVE_CLIENT_HTTP_READ: read %d\n",
+		aws_lwsl_debug("%s: RECEIVE_CLIENT_HTTP_READ: read %d\n",
 				__func__, (int)len);
 		if (!h || !h->info.rx)
 			return 0;
@@ -860,7 +860,7 @@ malformed:
 			h->subseq = 1;
 		}
 
-	//	lwsl_notice("%s: HTTP_READ: client side sent len %d fl 0x%x\n",
+	//	aws_lwsl_notice("%s: HTTP_READ: client side sent len %d fl 0x%x\n",
 	//		    __func__, (int)len, (int)f);
 
 		r = h->info.rx(ss_to_userobj(h), (const uint8_t *)in, len, f);
@@ -875,16 +875,16 @@ malformed:
 			char *px = (char *)buf + LWS_PRE; /* guarantees LWS_PRE */
 			int lenx = sizeof(buf) - LWS_PRE;
 
-			m = lws_http_client_read(wsi, &px, &lenx);
+			m = aws_lws_http_client_read(wsi, &px, &lenx);
 			if (m < 0)
 				return m;
 		}
-		lws_set_timeout(wsi, 99, 30);
+		aws_lws_set_timeout(wsi, 99, 30);
 
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		// lwsl_debug("%s: LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n", __func__);
+		// aws_lwsl_debug("%s: LWS_CALLBACK_COMPLETED_CLIENT_HTTP\n", __func__);
 
 		if (!h)
 			return -1;
@@ -896,30 +896,30 @@ malformed:
 		}
 
 		wsi->http.writeable_len = h->writeable_len = 0;
-		lws_sul_cancel(&h->sul_timeout);
+		aws_lws_sul_cancel(&h->sul_timeout);
 
 		h->txn_ok = 1;
 
 #if defined(LWS_WITH_SYS_METRICS)
-		lws_metrics_tag_ss_add(h, "result",
+		aws_lws_metrics_tag_ss_add(h, "result",
 				       h->u.http.good_respcode ?
 				       "SS_ACK_REMOTE" : "SS_NACK_REMOTE");
 #endif
 
-		r = lws_ss_event_helper(h, h->u.http.good_respcode ?
+		r = aws_lws_ss_event_helper(h, h->u.http.good_respcode ?
 						LWSSSCS_QOS_ACK_REMOTE :
 						LWSSSCS_QOS_NACK_REMOTE);
 		if (r != LWSSSSRET_OK)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
-		lws_cancel_service(lws_get_context(wsi)); /* abort poll wait */
+		aws_lws_cancel_service(aws_lws_get_context(wsi)); /* abort poll wait */
 		break;
 
 	case LWS_CALLBACK_HTTP_WRITEABLE:
 	case LWS_CALLBACK_CLIENT_HTTP_WRITEABLE:
 
 		if (!h || !h->info.tx) {
-			lwsl_notice("%s: no handle / tx\n", __func__);
+			aws_lwsl_notice("%s: no handle / tx\n", __func__);
 			return 0;
 		}
 
@@ -931,7 +931,7 @@ malformed:
 			 */
 			h->txn_resp_pending = 0;
 
-			if (lws_add_http_common_headers(wsi,
+			if (aws_lws_add_http_common_headers(wsi,
 					(unsigned int)(h->txn_resp_set ?
 						(h->txn_resp ? h->txn_resp : 200) :
 						HTTP_STATUS_NOT_FOUND),
@@ -943,14 +943,14 @@ malformed:
 			 * metadata-based headers
 			 */
 
-			if (lws_apply_metadata(h, wsi, buf, &p, end))
+			if (aws_lws_apply_metadata(h, wsi, buf, &p, end))
 				return -1;
 
-			if (lws_finalize_write_http_header(wsi, start, &p, end))
+			if (aws_lws_finalize_write_http_header(wsi, start, &p, end))
 				return 1;
 
 			/* write the body separately */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 
 			return 0;
 		}
@@ -970,17 +970,17 @@ malformed:
 		    !(h->info.flags & LWSSSINFLAGS_ACCEPTED) && /* not accepted */
 #endif
 		    !h->inside_msg && h->rideshare->u.http.multipart_name)
-			lws_client_http_multipart(wsi,
+			aws_lws_client_http_multipart(wsi,
 				h->rideshare->u.http.multipart_name,
 				h->rideshare->u.http.multipart_filename,
 				h->rideshare->u.http.multipart_content_type,
 				(char **)&p, (char *)end);
 
-		buflen = lws_ptr_diff_size_t(end, p);
+		buflen = aws_lws_ptr_diff_size_t(end, p);
 		if (h->policy->u.http.multipart_name)
 			buflen -= 24; /* allow space for end of multipart */
 #else
-		buflen = lws_ptr_diff_size_t(end, p);
+		buflen = aws_lws_ptr_diff_size_t(end, p);
 #endif
 		r = h->info.tx(ss_to_userobj(h), h->txord++, p, &buflen, &f);
 		if (r == LWSSSSRET_TX_DONT_SEND)
@@ -988,7 +988,7 @@ malformed:
 		if (r < 0)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 
-		// lwsl_notice("%s: WRITEABLE: user tx says len %d fl 0x%x\n",
+		// aws_lwsl_notice("%s: WRITEABLE: user tx says len %d fl 0x%x\n",
 		//	    __func__, (int)buflen, (int)f);
 
 		p += buflen;
@@ -1000,17 +1000,17 @@ malformed:
 			conceal_eom = 1;
 			/* end of rideshares */
 			if (!h->rideshare->rideshare_streamtype) {
-				lws_client_http_body_pending(wsi, 0);
+				aws_lws_client_http_body_pending(wsi, 0);
 #if defined(LWS_WITH_SS_RIDESHARE)
 				if (h->rideshare->u.http.multipart_name)
-					lws_client_http_multipart(wsi, NULL, NULL, NULL,
+					aws_lws_client_http_multipart(wsi, NULL, NULL, NULL,
 						(char **)&p, (char *)end);
 				conceal_eom = 0;
 #endif
 			} else {
-				h->rideshare = lws_ss_policy_lookup(wsi->a.context,
+				h->rideshare = aws_lws_ss_policy_lookup(wsi->a.context,
 						h->rideshare->rideshare_streamtype);
-				lws_callback_on_writable(wsi);
+				aws_lws_callback_on_writable(wsi);
 			}
 #if defined(LWS_WITH_SERVER)
 		    }
@@ -1019,30 +1019,30 @@ malformed:
 			h->inside_msg = 0;
 		} else {
 			/* otherwise we can spin with zero length writes */
-			if (!f && !lws_ptr_diff(p, buf + LWS_PRE))
+			if (!f && !aws_lws_ptr_diff(p, buf + LWS_PRE))
 				break;
 			h->inside_msg = 1;
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		}
 
-		lwsl_info("%s: lws_write %d %d\n", __func__,
-			  lws_ptr_diff(p, buf + LWS_PRE), f);
+		aws_lwsl_info("%s: aws_lws_write %d %d\n", __func__,
+			  aws_lws_ptr_diff(p, buf + LWS_PRE), f);
 
-		if (lws_write(wsi, buf + LWS_PRE, lws_ptr_diff_size_t(p, buf + LWS_PRE),
+		if (aws_lws_write(wsi, buf + LWS_PRE, aws_lws_ptr_diff_size_t(p, buf + LWS_PRE),
 			 (!conceal_eom && (f & LWSSS_FLAG_EOM)) ?
 				    LWS_WRITE_HTTP_FINAL : LWS_WRITE_HTTP) !=
-				(int)lws_ptr_diff(p, buf + LWS_PRE)) {
-			lwsl_err("%s: write failed\n", __func__);
+				(int)aws_lws_ptr_diff(p, buf + LWS_PRE)) {
+			aws_lwsl_err("%s: write failed\n", __func__);
 			return -1;
 		}
 
 #if defined(LWS_WITH_SERVER)
 		if ((h->info.flags & LWSSSINFLAGS_ACCEPTED) /* server */ &&
 		    (f & LWSSS_FLAG_EOM) &&
-		     lws_http_transaction_completed(wsi))
+		     aws_lws_http_transaction_completed(wsi))
 			return -1;
 #else
-		lws_set_timeout(wsi, 0, 0);
+		aws_lws_set_timeout(wsi, 0, 0);
 #endif
 		break;
 
@@ -1052,7 +1052,7 @@ malformed:
 		if (!h)
 			return -1;
 
-		lwsl_info("%s: LWS_CALLBACK_HTTP\n", __func__);
+		aws_lwsl_info("%s: LWS_CALLBACK_HTTP\n", __func__);
 		{
 
 			h->txn_resp_set = 0;
@@ -1060,36 +1060,36 @@ malformed:
 			h->writeable_len = 0;
 
 #if defined(LWS_ROLE_H2)
-			m = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COLON_METHOD);
+			m = aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COLON_METHOD);
 			if (m) {
-				if (lws_ss_alloc_set_metadata(h, "method",
-						    lws_hdr_simple_ptr(wsi,
+				if (aws_lws_ss_alloc_set_metadata(h, "method",
+						    aws_lws_hdr_simple_ptr(wsi,
 						     WSI_TOKEN_HTTP_COLON_METHOD), (unsigned int)m))
 					return -1;
-				m = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COLON_PATH);
-				if (m && lws_ss_alloc_set_metadata(h, "path",
-						    lws_hdr_simple_ptr(wsi,
+				m = aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_COLON_PATH);
+				if (m && aws_lws_ss_alloc_set_metadata(h, "path",
+						    aws_lws_hdr_simple_ptr(wsi,
 						     WSI_TOKEN_HTTP_COLON_PATH), (unsigned int)m))
 					return -1;
 			} else
 #endif
 			{
-				m = lws_hdr_total_length(wsi, WSI_TOKEN_GET_URI);
+				m = aws_lws_hdr_total_length(wsi, WSI_TOKEN_GET_URI);
 				if (m) {
-					if (lws_ss_alloc_set_metadata(h, "path",
-							lws_hdr_simple_ptr(wsi,
+					if (aws_lws_ss_alloc_set_metadata(h, "path",
+							aws_lws_hdr_simple_ptr(wsi,
 								WSI_TOKEN_GET_URI), (unsigned int)m))
 						return -1;
-					if (lws_ss_alloc_set_metadata(h, "method", "GET", 3))
+					if (aws_lws_ss_alloc_set_metadata(h, "method", "GET", 3))
 						return -1;
 				} else {
-					m = lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI);
+					m = aws_lws_hdr_total_length(wsi, WSI_TOKEN_POST_URI);
 					if (m) {
-						if (lws_ss_alloc_set_metadata(h, "path",
-								lws_hdr_simple_ptr(wsi,
+						if (aws_lws_ss_alloc_set_metadata(h, "path",
+								aws_lws_hdr_simple_ptr(wsi,
 									WSI_TOKEN_POST_URI), (unsigned int)m))
 							return -1;
-						if (lws_ss_alloc_set_metadata(h, "method", "POST", 4))
+						if (aws_lws_ss_alloc_set_metadata(h, "method", "POST", 4))
 							return -1;
 					}
 				}
@@ -1101,17 +1101,17 @@ malformed:
 			/*
 			 * If any hanging caliper measurement, dump it, and free any tags
 			 */
-			lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
+			aws_lws_metrics_caliper_report_hist(h->cal_txn, (struct lws *)NULL);
 #endif
 			wsi->client_suppress_CONNECTION_ERROR = 1;
 			if (h->prev_ss_state != LWSSSCS_CONNECTED) {
-				r = lws_ss_event_helper(h, LWSSSCS_CONNECTED);
+				r = aws_lws_ss_event_helper(h, LWSSSCS_CONNECTED);
 				if (r)
 					return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r, wsi, &h);
 			}
 		}
 
-		r = lws_ss_event_helper(h, LWSSSCS_SERVER_TXN);
+		r = aws_lws_ss_event_helper(h, LWSSSCS_SERVER_TXN);
 		if (r)
 			return _lws_ss_handle_state_ret_CAN_DESTROY_HANDLE(r,
 								wsi, &h);
@@ -1123,10 +1123,10 @@ malformed:
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 }
 
-const struct lws_protocols protocol_secstream_h1 = {
+const struct aws_lws_protocols protocol_secstream_h1 = {
 	"lws-secstream-h1",
 	secstream_h1,
 	0, 0, 0, NULL, 0
@@ -1142,13 +1142,13 @@ const struct lws_protocols protocol_secstream_h1 = {
  */
 
 static int
-secstream_connect_munge_h1(lws_ss_handle_t *h, char *buf, size_t len,
-			   struct lws_client_connect_info *i,
-			   union lws_ss_contemp *ct)
+secstream_connect_munge_h1(aws_lws_ss_handle_t *h, char *buf, size_t len,
+			   struct aws_lws_client_connect_info *i,
+			   union aws_lws_ss_contemp *ct)
 {
 	const char *pbasis = h->policy->u.http.url;
 	size_t used_in, used_out;
-	lws_strexp_t exp;
+	aws_lws_strexp_t exp;
 
 	/* i.path on entry is used to override the policy urlpath if not "" */
 
@@ -1182,9 +1182,9 @@ secstream_connect_munge_h1(lws_ss_handle_t *h, char *buf, size_t len,
 
 	buf[0] = '/';
 
-	lws_strexp_init(&exp, (void *)h, lws_ss_exp_cb_metadata, buf + 1, len - 1);
+	aws_lws_strexp_init(&exp, (void *)h, aws_lws_ss_exp_cb_metadata, buf + 1, len - 1);
 
-	if (lws_strexp_expand(&exp, pbasis, strlen(pbasis),
+	if (aws_lws_strexp_expand(&exp, pbasis, strlen(pbasis),
 			      &used_in, &used_out) != LSTRX_DONE)
 		return 1;
 

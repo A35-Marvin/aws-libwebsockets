@@ -27,12 +27,12 @@
 #if !defined(__LWS_BUTTON_H__)
 #define __LWS_BUTTON_H__
 
-typedef uint16_t lws_button_idx_t;
+typedef uint16_t aws_lws_button_idx_t;
 
 /* actual minimum may be 1 x RTOS tick depending on platform */
 #define LWS_BUTTON_MON_TIMER_MS 5
 
-typedef void (*lws_button_cb_t)(void *opaque, lws_button_idx_t idx, int state);
+typedef void (*aws_lws_button_cb_t)(void *opaque, aws_lws_button_idx_t idx, int state);
 
 /* These are specified in ms but the granularity is LWS_BUTTON_MON_TIMER_MS,
  * which may have been rounded up to an RTOS tick depending on platform */
@@ -41,7 +41,7 @@ enum {
 	LWSBTNRGMFLAG_CLASSIFY_DOUBLECLICK = (1 << 0)
 };
 
-typedef struct lws_button_regime {
+typedef struct aws_lws_button_regime {
 	uint16_t			ms_min_down;
 	uint16_t			ms_min_down_longpress;
 	uint16_t			ms_up_settle;
@@ -54,46 +54,46 @@ typedef struct lws_button_regime {
 	 * enable it or leave that bit at 0 to get faster single-click
 	 * classification.
 	 */
-} lws_button_regime_t;
+} aws_lws_button_regime_t;
 
 /*
  * This is the const part of the button controller, describing the static
- * bindings to gpio, and lws_smd event name information
+ * bindings to gpio, and aws_lws_smd event name information
  */
 
-typedef struct lws_button_map {
+typedef struct aws_lws_button_map {
 	_lws_plat_gpio_t		gpio;
 	const char			*smd_interaction_name;
-	const lws_button_regime_t	*regime;
+	const aws_lws_button_regime_t	*regime;
 	/**< a default regime is applied if this is left NULL */
-} lws_button_map_t;
+} aws_lws_button_map_t;
 
-typedef struct lws_button_controller {
+typedef struct aws_lws_button_controller {
 	const char			*smd_bc_name;
-	const lws_gpio_ops_t		*gpio_ops;
-	const lws_button_map_t		*button_map;
-	lws_button_idx_t		active_state_bitmap;
+	const aws_lws_gpio_ops_t		*gpio_ops;
+	const aws_lws_button_map_t		*button_map;
+	aws_lws_button_idx_t		active_state_bitmap;
 	uint8_t				count_buttons;
-} lws_button_controller_t;
+} aws_lws_button_controller_t;
 
-struct lws_button_state; /* opaque */
+struct aws_lws_button_state; /* opaque */
 
 /**
- * lws_button_controller_create() - instantiate a button controller
+ * aws_lws_button_controller_create() - instantiate a button controller
  *
- * \param ctx: the lws_context
+ * \param ctx: the aws_lws_context
  * \param controller: the static controller definition
  *
  * Instantiates a button controller from a static definition of the buttons
  * and their smd names, and active levels, and binds it to a gpio implementation
  */
 
-LWS_VISIBLE LWS_EXTERN struct lws_button_state *
-lws_button_controller_create(struct lws_context *ctx,
-			     const lws_button_controller_t *controller);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_button_state *
+aws_lws_button_controller_create(struct aws_lws_context *ctx,
+			     const aws_lws_button_controller_t *controller);
 
 /**
- * lws_button_controller_destroy() - destroys a button controller
+ * aws_lws_button_controller_destroy() - destroys a button controller
  *
  * \param bcs: button controller state previously created
  *
@@ -102,19 +102,19 @@ lws_button_controller_create(struct lws_context *ctx,
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_button_controller_destroy(struct lws_button_state *bcs);
+aws_lws_button_controller_destroy(struct aws_lws_button_state *bcs);
 
 
-LWS_VISIBLE LWS_EXTERN lws_button_idx_t
-lws_button_get_bit(struct lws_button_state *bcs, const char *name);
+LWS_VISIBLE LWS_EXTERN aws_lws_button_idx_t
+aws_lws_button_get_bit(struct aws_lws_button_state *bcs, const char *name);
 
 /*
- * lws_button_enable() - enable and disable buttons
+ * aws_lws_button_enable() - enable and disable buttons
  */
 
 LWS_VISIBLE LWS_EXTERN void
-lws_button_enable(struct lws_button_state *bcs,
-		  lws_button_idx_t _reset, lws_button_idx_t _set);
+aws_lws_button_enable(struct aws_lws_button_state *bcs,
+		  aws_lws_button_idx_t _reset, aws_lws_button_idx_t _set);
 
 #endif
 

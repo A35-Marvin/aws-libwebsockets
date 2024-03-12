@@ -33,7 +33,7 @@
 ///@{
 
 /**
- * lws_adopt_socket() - adopt foreign socket as if listen socket accepted it
+ * aws_lws_adopt_socket() - adopt foreign socket as if listen socket accepted it
  * for the default vhost of context.
  *
  * \param context: lws context
@@ -46,9 +46,9 @@
  * to ws or just serve http.
  */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_adopt_socket(struct lws_context *context, lws_sockfd_type accept_fd);
+aws_lws_adopt_socket(struct aws_lws_context *context, aws_lws_sockfd_type accept_fd);
 /**
- * lws_adopt_socket_vhost() - adopt foreign socket as if listen socket accepted
+ * aws_lws_adopt_socket_vhost() - adopt foreign socket as if listen socket accepted
  * it for vhost
  *
  * \param vh: lws vhost
@@ -61,7 +61,7 @@ lws_adopt_socket(struct lws_context *context, lws_sockfd_type accept_fd);
  * to ws or just serve http.
  */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_adopt_socket_vhost(struct lws_vhost *vh, lws_sockfd_type accept_fd);
+aws_lws_adopt_socket_vhost(struct aws_lws_vhost *vh, aws_lws_sockfd_type accept_fd);
 
 typedef enum {
 	LWS_ADOPT_RAW_FILE_DESC		=  0,	/* convenience constant */
@@ -72,12 +72,12 @@ typedef enum {
 	LWS_ADOPT_FLAG_RAW_PROXY	= 32,	/* flag: raw proxy */
 
 	LWS_ADOPT_RAW_SOCKET_UDP = LWS_ADOPT_SOCKET | LWS_ADOPT_FLAG_UDP,
-} lws_adoption_type;
+} aws_lws_adoption_type;
 
 typedef union {
-	lws_sockfd_type sockfd;
-	lws_filefd_type filefd;
-} lws_sock_file_fd_type;
+	aws_lws_sockfd_type sockfd;
+	aws_lws_filefd_type filefd;
+} aws_lws_sock_file_fd_type;
 
 #if defined(LWS_ESP_PLATFORM)
 #include <lwip/sockets.h>
@@ -92,7 +92,7 @@ typedef union {
 #endif
 #endif
 	struct sockaddr_in sa4;
-} lws_sockaddr46;
+} aws_lws_sockaddr46;
 
 #define sa46_sockaddr(_sa46) ((struct sockaddr *)(_sa46))
 
@@ -114,19 +114,19 @@ typedef union {
 #define sa46_address_len(_sa46) ((_sa46)->sa4.sin_family == AF_INET ? 4 : 16)
 
 #if defined(LWS_WITH_UDP)
-struct lws_udp {
-	lws_sockaddr46		sa46;
-	lws_sockaddr46		sa46_pending;
+struct aws_lws_udp {
+	aws_lws_sockaddr46		sa46;
+	aws_lws_sockaddr46		sa46_pending;
 	uint8_t			connected:1;
 };
 #endif
 
 /**
-* lws_adopt_descriptor_vhost() - adopt foreign socket or file descriptor
+* aws_lws_adopt_descriptor_vhost() - adopt foreign socket or file descriptor
 * if socket descriptor, should already have been accepted from listen socket
 *
 * \param vh: lws vhost
-* \param type: OR-ed combinations of lws_adoption_type flags
+* \param type: OR-ed combinations of aws_lws_adoption_type flags
 * \param fd: union with either .sockfd or .filefd set
 * \param vh_prot_name: NULL or vh protocol name to bind raw connection to
 * \param parent: NULL or struct lws to attach new_wsi to as a child
@@ -141,28 +141,28 @@ struct lws_udp {
 * parent of the new wsi created by this call.
 */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_adopt_descriptor_vhost(struct lws_vhost *vh, lws_adoption_type type,
-			   lws_sock_file_fd_type fd, const char *vh_prot_name,
+aws_lws_adopt_descriptor_vhost(struct aws_lws_vhost *vh, aws_lws_adoption_type type,
+			   aws_lws_sock_file_fd_type fd, const char *vh_prot_name,
 			   struct lws *parent);
 
-typedef struct lws_adopt_desc {
-	struct lws_vhost *vh;		/**< vhost the wsi should belong to */
-	lws_adoption_type type;		/**< OR-ed combinations of lws_adoption_type flags */
-	lws_sock_file_fd_type fd;	/**< union with either .sockfd or .filefd set */
+typedef struct aws_lws_adopt_desc {
+	struct aws_lws_vhost *vh;		/**< vhost the wsi should belong to */
+	aws_lws_adoption_type type;		/**< OR-ed combinations of aws_lws_adoption_type flags */
+	aws_lws_sock_file_fd_type fd;	/**< union with either .sockfd or .filefd set */
 	const char *vh_prot_name;	/**< NULL or vh protocol name to bind raw connection to */
 	struct lws *parent;		/**< NULL or struct lws to attach new_wsi to as a child */
 	void *opaque;			/**< opaque pointer to set on created wsi */
 	const char *fi_wsi_name;	/**< NULL, or Fault Injection inheritence filter for wsi=string/ context faults */
-} lws_adopt_desc_t;
+} aws_lws_adopt_desc_t;
 
 /**
-* lws_adopt_descriptor_vhost_via_info() - adopt foreign socket or file descriptor
+* aws_lws_adopt_descriptor_vhost_via_info() - adopt foreign socket or file descriptor
 * if socket descriptor, should already have been accepted from listen socket
 *
 * \param info: the struct containing the parameters
 *
 *  - vh: lws vhost
-*  - type: OR-ed combinations of lws_adoption_type flags
+*  - type: OR-ed combinations of aws_lws_adoption_type flags
 *  - fd: union with either .sockfd or .filefd set
 *  - vh_prot_name: NULL or vh protocol name to bind raw connection to
 *  - parent: NULL or struct lws to attach new_wsi to as a child
@@ -178,10 +178,10 @@ typedef struct lws_adopt_desc {
 * parent of the new wsi created by this call.
 */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_adopt_descriptor_vhost_via_info(const lws_adopt_desc_t *info);
+aws_lws_adopt_descriptor_vhost_via_info(const aws_lws_adopt_desc_t *info);
 
 /**
- * lws_adopt_socket_readbuf() - adopt foreign socket and first rx as if listen socket accepted it
+ * aws_lws_adopt_socket_readbuf() - adopt foreign socket and first rx as if listen socket accepted it
  * for the default vhost of context.
  * \param context:	lws context
  * \param accept_fd:	fd of already-accepted socket to adopt
@@ -196,7 +196,7 @@ lws_adopt_descriptor_vhost_via_info(const lws_adopt_desc_t *info);
  * to ws or just serve http.
  *
  * If your external code did not already read from the socket, you can use
- * lws_adopt_socket() instead.
+ * aws_lws_adopt_socket() instead.
  *
  * This api is guaranteed to use the data at \p readbuf first, before reading from
  * the socket.
@@ -204,10 +204,10 @@ lws_adopt_descriptor_vhost_via_info(const lws_adopt_desc_t *info);
  * \p readbuf is limited to the size of the ah rx buf, currently 2048 bytes.
  */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_adopt_socket_readbuf(struct lws_context *context, lws_sockfd_type accept_fd,
+aws_lws_adopt_socket_readbuf(struct aws_lws_context *context, aws_lws_sockfd_type accept_fd,
                          const char *readbuf, size_t len);
 /**
- * lws_adopt_socket_vhost_readbuf() - adopt foreign socket and first rx as if listen socket
+ * aws_lws_adopt_socket_vhost_readbuf() - adopt foreign socket and first rx as if listen socket
  * accepted it for vhost.
  * \param vhost:	lws vhost
  * \param accept_fd:	fd of already-accepted socket to adopt
@@ -221,7 +221,7 @@ lws_adopt_socket_readbuf(struct lws_context *context, lws_sockfd_type accept_fd,
  * to ws or just serve http.
  *
  * If your external code did not already read from the socket, you can use
- * lws_adopt_socket() instead.
+ * aws_lws_adopt_socket() instead.
  *
  * This api is guaranteed to use the data at \p readbuf first, before reading from
  * the socket.
@@ -229,8 +229,8 @@ lws_adopt_socket_readbuf(struct lws_context *context, lws_sockfd_type accept_fd,
  * \p readbuf is limited to the size of the ah rx buf, currently 2048 bytes.
  */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_adopt_socket_vhost_readbuf(struct lws_vhost *vhost,
-			       lws_sockfd_type accept_fd, const char *readbuf,
+aws_lws_adopt_socket_vhost_readbuf(struct aws_lws_vhost *vhost,
+			       aws_lws_sockfd_type accept_fd, const char *readbuf,
 			       size_t len);
 
 #define LWS_CAUDP_BIND (1 << 0)
@@ -239,7 +239,7 @@ lws_adopt_socket_vhost_readbuf(struct lws_vhost *vhost,
 
 #if defined(LWS_WITH_UDP)
 /**
- * lws_create_adopt_udp() - create, bind and adopt a UDP socket
+ * aws_lws_create_adopt_udp() - create, bind and adopt a UDP socket
  *
  * \param vhost:	 lws vhost
  * \param ads:		 NULL or address to do dns lookup on
@@ -260,10 +260,10 @@ lws_adopt_socket_vhost_readbuf(struct lws_vhost *vhost,
  * returns NULL, having cleaned up any new wsi pieces.
  * */
 LWS_VISIBLE LWS_EXTERN struct lws *
-lws_create_adopt_udp(struct lws_vhost *vhost, const char *ads, int port,
+aws_lws_create_adopt_udp(struct aws_lws_vhost *vhost, const char *ads, int port,
 		     int flags, const char *protocol_name, const char *ifname,
 		     struct lws *parent_wsi, void *opaque,
-		     const lws_retry_bo_t *retry_policy, const char *fi_wsi_name);
+		     const aws_lws_retry_bo_t *retry_policy, const char *fi_wsi_name);
 #endif
 
 

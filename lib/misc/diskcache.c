@@ -52,17 +52,17 @@
 #endif
 
 struct file_entry {
-	lws_list_ptr sorted;
-	lws_list_ptr prev;
+	aws_lws_list_ptr sorted;
+	aws_lws_list_ptr prev;
 	char name[64];
 	time_t modified;
 	size_t size;
 };
 
-struct lws_diskcache_scan {
+struct aws_lws_diskcache_scan {
 	struct file_entry *batch;
 	const char *cache_dir_base;
-	lws_list_ptr head;
+	aws_lws_list_ptr head;
 	time_t last_scan_completed;
 	uint64_t agg_size;
 	uint64_t cache_size_limit;
@@ -78,24 +78,24 @@ struct lws_diskcache_scan {
 #define KIB (1024)
 #define MIB (KIB * KIB)
 
-#define lp_to_fe(p, _n) lws_list_ptr_container(p, struct file_entry, _n)
+#define lp_to_fe(p, _n) aws_lws_list_ptr_container(p, struct file_entry, _n)
 
 static const char *hex = "0123456789abcdef";
 
 #define BATCH_COUNT 128
 
 static int
-fe_modified_sort(lws_list_ptr a, lws_list_ptr b)
+fe_modified_sort(aws_lws_list_ptr a, aws_lws_list_ptr b)
 {
 	struct file_entry *p1 = lp_to_fe(a, sorted), *p2 = lp_to_fe(b, sorted);
 
 	return (int)((long)p2->modified - (long)p1->modified);
 }
 
-struct lws_diskcache_scan *
-lws_diskcache_create(const char *cache_dir_base, uint64_t cache_size_limit)
+struct aws_lws_diskcache_scan *
+aws_lws_diskcache_create(const char *cache_dir_base, uint64_t cache_size_limit)
 {
-	struct lws_diskcache_scan *lds = lws_malloc(sizeof(*lds), "cachescan");
+	struct aws_lws_diskcache_scan *lds = aws_lws_malloc(sizeof(*lds), "cachescan");
 
 	if (!lds)
 		return NULL;
@@ -109,37 +109,37 @@ lws_diskcache_create(const char *cache_dir_base, uint64_t cache_size_limit)
 }
 
 void
-lws_diskcache_destroy(struct lws_diskcache_scan **lds)
+aws_lws_diskcache_destroy(struct aws_lws_diskcache_scan **lds)
 {
 	if ((*lds)->batch)
-		lws_free((*lds)->batch);
-	lws_free(*lds);
+		aws_lws_free((*lds)->batch);
+	aws_lws_free(*lds);
 	*lds = NULL;
 }
 
 int
-lws_diskcache_prepare(const char *cache_base_dir, int mode, uid_t uid)
+aws_lws_diskcache_prepare(const char *cache_base_dir, int mode, uid_t uid)
 {
 	char dir[256];
 	int n, m;
 
 	(void)mkdir(cache_base_dir, (unsigned short)mode);
 	if (chown(cache_base_dir, uid, (gid_t)-1))
-		lwsl_err("%s: %s: unable to chown %d\n", __func__,
+		aws_lwsl_err("%s: %s: unable to chown %d\n", __func__,
 			 cache_base_dir, uid);
 
 	for (n = 0; n < 16; n++) {
-		lws_snprintf(dir, sizeof(dir), "%s/%c", cache_base_dir, hex[n]);
+		aws_lws_snprintf(dir, sizeof(dir), "%s/%c", cache_base_dir, hex[n]);
 		(void)mkdir(dir, (mode_t)mode);
 		if (chown(dir, uid, (uid_t)-1))
-			lwsl_err("%s: %s: unable to chown %d\n", __func__,
+			aws_lwsl_err("%s: %s: unable to chown %d\n", __func__,
 						 dir, uid);
 		for (m = 0; m < 16; m++) {
-			lws_snprintf(dir, sizeof(dir), "%s/%c/%c",
+			aws_lws_snprintf(dir, sizeof(dir), "%s/%c/%c",
 				     cache_base_dir, hex[n], hex[m]);
 			(void)mkdir(dir, (mode_t)mode);
 			if (chown(dir, uid, (uid_t)-1))
-				lwsl_err("%s: %s: unable to chown %d\n",
+				aws_lwsl_err("%s: %s: unable to chown %d\n",
 					 __func__, dir, uid);
 		}
 	}
@@ -151,7 +151,7 @@ lws_diskcache_prepare(const char *cache_base_dir, int mode, uid_t uid)
  * untruncated path to have the new truncated name */
 
 int
-lws_diskcache_finalize_name(char *cache)
+aws_lws_diskcache_finalize_name(char *cache)
 {
 	char ren[256], *p;
 
@@ -161,7 +161,7 @@ lws_diskcache_finalize_name(char *cache)
 	if (p) {
 		*p = '\0';
 		if (rename(ren, cache)) {
-			lwsl_err("%s: problem renaming %s to %s\n", __func__,
+			aws_lwsl_err("%s: problem renaming %s to %s\n", __func__,
 				 ren, cache);
 			return 1;
 		}
@@ -173,7 +173,7 @@ lws_diskcache_finalize_name(char *cache)
 }
 
 int
-lws_diskcache_query(struct lws_diskcache_scan *lds, int is_bot,
+aws_lws_diskcache_query(struct aws_lws_diskcache_scan *lds, int is_bot,
 		    const char *hash_hex, int *_fd, char *cache, int cache_len,
 		    size_t *extant_cache_len)
 {
@@ -187,10 +187,10 @@ lws_diskcache_query(struct lws_diskcache_scan *lds, int is_bot,
 	if (!is_bot)
 		lds->cache_tries++;
 
-	n = lws_snprintf(cache, (size_t)cache_len, "%s/%c/%c/%s", lds->cache_dir_base,
+	n = aws_lws_snprintf(cache, (size_t)cache_len, "%s/%c/%c/%s", lds->cache_dir_base,
 			 hash_hex[0], hash_hex[1], hash_hex);
 
-	lwsl_info("%s: job cache %s\n", __func__, cache);
+	aws_lwsl_info("%s: job cache %s\n", __func__, cache);
 
 	*_fd = open(cache, O_RDONLY);
 	if (*_fd >= 0) {
@@ -221,13 +221,13 @@ lws_diskcache_query(struct lws_diskcache_scan *lds, int is_bot,
 
 	/* let's create it first with a unique temp name */
 
-	lws_snprintf(cache + n, (size_t)cache_len - (unsigned int)n, "~%d-%p", (int)getpid(),
+	aws_lws_snprintf(cache + n, (size_t)cache_len - (unsigned int)n, "~%d-%p", (int)getpid(),
 		     extant_cache_len);
 
 	*_fd = open(cache, O_RDWR | O_CREAT | O_TRUNC, 0600);
 	if (*_fd < 0) {
 		/* well... ok... we will proceed without cache then... */
-		lwsl_notice("%s: Problem creating cache %s: errno %d\n",
+		aws_lwsl_notice("%s: Problem creating cache %s: errno %d\n",
 			    __func__, cache, errno);
 		return LWS_DISKCACHE_QUERY_NO_CACHE;
 	}
@@ -236,7 +236,7 @@ lws_diskcache_query(struct lws_diskcache_scan *lds, int is_bot,
 }
 
 int
-lws_diskcache_secs_to_idle(struct lws_diskcache_scan *lds)
+aws_lws_diskcache_secs_to_idle(struct aws_lws_diskcache_scan *lds)
 {
 	return lds->secs_waiting;
 }
@@ -269,11 +269,11 @@ lws_diskcache_secs_to_idle(struct lws_diskcache_scan *lds)
  */
 
 int
-lws_diskcache_trim(struct lws_diskcache_scan *lds)
+aws_lws_diskcache_trim(struct aws_lws_diskcache_scan *lds)
 {
 	size_t cache_size_limit = (size_t)lds->cache_size_limit;
 	char dirpath[132], filepath[132 + 32];
-	lws_list_ptr lp, op = NULL;
+	aws_lws_list_ptr lp, op = NULL;
 	int files_trimmed = 0;
 	struct file_entry *p;
 	int fd, n, ret = -1;
@@ -287,10 +287,10 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 		if (lds->last_scan_completed + lds->secs_waiting > time(NULL))
 			return 0;
 
-		lds->batch = lws_malloc(sizeof(struct file_entry) *
+		lds->batch = aws_lws_malloc(sizeof(struct file_entry) *
 				BATCH_COUNT, "cache_trim");
 		if (!lds->batch) {
-			lwsl_err("%s: OOM\n", __func__);
+			aws_lwsl_err("%s: OOM\n", __func__);
 
 			return 1;
 		}
@@ -300,13 +300,13 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 		lds->agg_file_count = 0;
 	}
 
-	lws_snprintf(dirpath, sizeof(dirpath), "%s/%c/%c",
+	aws_lws_snprintf(dirpath, sizeof(dirpath), "%s/%c/%c",
 		     lds->cache_dir_base, hex[(lds->cache_subdir >> 4) & 15],
 		     hex[lds->cache_subdir & 15]);
 
 	dir = opendir(dirpath);
 	if (!dir) {
-		lwsl_err("Unable to walk repo dir '%s'\n",
+		aws_lwsl_err("Unable to walk repo dir '%s'\n",
 			 lds->cache_dir_base);
 		return -1;
 	}
@@ -321,12 +321,12 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 
 		lds->agg_file_count++;
 
-		lws_snprintf(filepath, sizeof(filepath), "%s/%s", dirpath,
+		aws_lws_snprintf(filepath, sizeof(filepath), "%s/%s", dirpath,
 			     de->d_name);
 
 		fd = open(filepath, O_RDONLY);
 		if (fd < 0) {
-			lwsl_err("%s: cannot open %s\n", __func__, filepath);
+			aws_lwsl_err("%s: cannot open %s\n", __func__, filepath);
 
 			continue;
 		}
@@ -334,7 +334,7 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 		n = fstat(fd, &s);
 		close(fd);
 		if (n) {
-			lwsl_notice("%s: cannot stat %s\n", __func__, filepath);
+			aws_lwsl_notice("%s: cannot stat %s\n", __func__, filepath);
 			continue;
 		}
 
@@ -367,7 +367,7 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 		p->modified = s.st_mtime;
 		p->size = (size_t)s.st_size;
 
-		lws_list_ptr_insert(&lds->head, &p->sorted, fe_modified_sort);
+		aws_lws_list_ptr_insert(&lds->head, &p->sorted, fe_modified_sort);
 	} while (de);
 
 	ret = 0;
@@ -405,7 +405,7 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 		while (lp && lds->agg_size > cache_size_limit) {
 			p = lp_to_fe(lp, prev);
 
-			lws_snprintf(filepath, sizeof(filepath), "%s/%c/%c/%s",
+			aws_lws_snprintf(filepath, sizeof(filepath), "%s/%c/%c/%s",
 				     lds->cache_dir_base, p->name[0],
 				     p->name[1], p->name);
 
@@ -414,14 +414,14 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 				trimmed += p->size;
 				files_trimmed++;
 			} else
-				lwsl_notice("%s: Failed to unlink %s\n",
+				aws_lwsl_notice("%s: Failed to unlink %s\n",
 					    __func__, filepath);
 
 			lp = p->prev;
 		}
 
 		if (files_trimmed)
-			lwsl_notice("%s: %s: trimmed %d files totalling "
+			aws_lwsl_notice("%s: %s: trimmed %d files totalling "
 				    "%lldKib, leaving %lldMiB\n", __func__,
 				    lds->cache_dir_base, files_trimmed,
 				    ((unsigned long long)trimmed) / KIB,
@@ -472,13 +472,13 @@ lws_diskcache_trim(struct lws_diskcache_scan *lds)
 	} else
 		lds->secs_waiting = 0;
 
-	lwsl_info("%s: cache %s: %lldKiB / %lldKiB, next scan %ds\n", __func__,
+	aws_lwsl_info("%s: cache %s: %lldKiB / %lldKiB, next scan %ds\n", __func__,
 		  lds->cache_dir_base,
 		  (unsigned long long)lds->agg_size / KIB,
 		  (unsigned long long)cache_size_limit / KIB,
 		  lds->secs_waiting);
 
-	lws_free(lds->batch);
+	aws_lws_free(lds->batch);
 	lds->batch = NULL;
 
 	lds->cache_subdir = 0;

@@ -1,6 +1,6 @@
-# lws minimal http server form POST lwsac
+# lws minimal http server form POST aws_lwsac
 
-Shows how to parse the form using an lwsac to hold the form data
+Shows how to parse the form using an aws_lwsac to hold the form data
 
 ## build
 
@@ -11,7 +11,7 @@ Shows how to parse the form using an lwsac to hold the form data
 ## usage
 
 ```
- $ ./lws-minimal-http-server-form-post-lwsac
+ $ ./lws-minimal-http-server-form-post-aws_lwsac
 [2018/03/29 08:29:41:7044] USER: LWS minimal http server form POST | visit http://localhost:7681
 [2018/03/29 08:29:41:7044] NOTICE: Creating Vhost 'default' port 7681, 1 protocols, IPv6 off
 [2018/03/29 08:29:49:8601] USER: text1: (len 4) 'xxxx'

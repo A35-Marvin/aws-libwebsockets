@@ -25,33 +25,33 @@
 #include "private-lib-core.h"
 
 void
-lws_state_reg_notifier(lws_state_manager_t *mgr,
-		       lws_state_notify_link_t *notify_link)
+aws_lws_state_reg_notifier(aws_lws_state_manager_t *mgr,
+		       aws_lws_state_notify_link_t *notify_link)
 {
-	lws_dll2_add_head(&notify_link->list, &mgr->notify_list);
+	aws_lws_dll2_add_head(&notify_link->list, &mgr->notify_list);
 }
 
 void
-lws_state_reg_deregister(lws_state_notify_link_t *nl)
+aws_lws_state_reg_deregister(aws_lws_state_notify_link_t *nl)
 {
-	lws_dll2_remove(&nl->list);
+	aws_lws_dll2_remove(&nl->list);
 }
 
 void
-lws_state_reg_notifier_list(lws_state_manager_t *mgr,
-			    lws_state_notify_link_t * const *notify_link_array)
+aws_lws_state_reg_notifier_list(aws_lws_state_manager_t *mgr,
+			    aws_lws_state_notify_link_t * const *notify_link_array)
 {
 	if (notify_link_array)
 		while (*notify_link_array)
-			lws_state_reg_notifier(mgr, *notify_link_array++);
+			aws_lws_state_reg_notifier(mgr, *notify_link_array++);
 }
 
 #if (_LWS_ENABLED_LOGS & (LLL_INFO | LLL_DEBUG))
 static const char *
-_systnm(lws_state_manager_t *mgr, int state, char *temp8)
+_systnm(aws_lws_state_manager_t *mgr, int state, char *temp8)
 {
 	if (!mgr->state_names) {
-		lws_snprintf(temp8, 8, "%d", state);
+		aws_lws_snprintf(temp8, 8, "%d", state);
 		return temp8;
 	}
 
@@ -60,21 +60,21 @@ _systnm(lws_state_manager_t *mgr, int state, char *temp8)
 #endif
 
 static int
-_report(lws_state_manager_t *mgr, int a, int b)
+_report(aws_lws_state_manager_t *mgr, int a, int b)
 {
 #if (_LWS_ENABLED_LOGS & LLL_INFO)
 	char temp8[8];
 #endif
 
-	lws_start_foreach_dll(struct lws_dll2 *, d, mgr->notify_list.head) {
-		lws_state_notify_link_t *l =
-			lws_container_of(d, lws_state_notify_link_t, list);
+	aws_lws_start_foreach_dll(struct aws_lws_dll2 *, d, mgr->notify_list.head) {
+		aws_lws_state_notify_link_t *l =
+			aws_lws_container_of(d, aws_lws_state_notify_link_t, list);
 
 		if (l->notify_cb(mgr, l, a, b)) {
 			/* a dependency took responsibility for retry */
 
 #if (_LWS_ENABLED_LOGS & LLL_INFO)
-			lwsl_cx_info(mgr->context, "%s: %s: rejected '%s' -> '%s'",
+			aws_lwsl_cx_info(mgr->context, "%s: %s: rejected '%s' -> '%s'",
 				     mgr->name, l->name,
 				     _systnm(mgr, a, temp8),
 				     _systnm(mgr, b, temp8));
@@ -83,13 +83,13 @@ _report(lws_state_manager_t *mgr, int a, int b)
 			return 1;
 		}
 
-	} lws_end_foreach_dll(d);
+	} aws_lws_end_foreach_dll(d);
 
 	return 0;
 }
 
 static int
-_lws_state_transition(lws_state_manager_t *mgr, int target)
+_lws_state_transition(aws_lws_state_manager_t *mgr, int target)
 {
 #if (_LWS_ENABLED_LOGS & LLL_DEBUG)
 	char temp8[8];
@@ -100,7 +100,7 @@ _lws_state_transition(lws_state_manager_t *mgr, int target)
 
 #if (_LWS_ENABLED_LOGS & LLL_DEBUG)
 	if (mgr->context)
-	lwsl_cx_debug(mgr->context, "%s: changed %d '%s' -> %d '%s'", mgr->name,
+	aws_lwsl_cx_debug(mgr->context, "%s: changed %d '%s' -> %d '%s'", mgr->name,
 		   mgr->state, _systnm(mgr, mgr->state, temp8), target,
 		   _systnm(mgr, target, temp8));
 #endif
@@ -112,7 +112,7 @@ _lws_state_transition(lws_state_manager_t *mgr, int target)
 
 #if defined(LWS_WITH_SYS_SMD)
 	if (mgr->smd_class && mgr->context)
-		(void)lws_smd_msg_printf(mgr->context,
+		(void)aws_lws_smd_msg_printf(mgr->context,
 				   mgr->smd_class, "{\"state\":\"%s\"}",
 				   mgr->state_names[target]);
 #endif
@@ -121,7 +121,7 @@ _lws_state_transition(lws_state_manager_t *mgr, int target)
 }
 
 int
-lws_state_transition_steps(lws_state_manager_t *mgr, int target)
+aws_lws_state_transition_steps(aws_lws_state_manager_t *mgr, int target)
 {
 	int n = 0;
 #if (_LWS_ENABLED_LOGS & LLL_INFO)
@@ -136,7 +136,7 @@ lws_state_transition_steps(lws_state_manager_t *mgr, int target)
 		n = _lws_state_transition(mgr, mgr->state + 1);
 
 #if (_LWS_ENABLED_LOGS & LLL_INFO)
-	lwsl_cx_info(mgr->context, "%s -> %s", _systnm(mgr, i, temp8),
+	aws_lwsl_cx_info(mgr->context, "%s -> %s", _systnm(mgr, i, temp8),
 			_systnm(mgr, mgr->state, temp8));
 #endif
 
@@ -144,7 +144,7 @@ lws_state_transition_steps(lws_state_manager_t *mgr, int target)
 }
 
 int
-lws_state_transition(lws_state_manager_t *mgr, int target)
+aws_lws_state_transition(aws_lws_state_manager_t *mgr, int target)
 {
 	if (mgr->state != target)
 		_lws_state_transition(mgr, target);

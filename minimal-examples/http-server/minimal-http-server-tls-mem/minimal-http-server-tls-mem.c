@@ -22,7 +22,7 @@
 
 static int interrupted;
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin", /* serve from dir */
@@ -391,8 +391,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -402,11 +402,11 @@ int main(int argc, const char **argv)
 			/* | LLL_EXT */ /* | LLL_CLIENT */ /* | LLL_LATENCY */
 			/* | LLL_DEBUG */, ret = 1;
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal http server TLS | visit https://localhost:7681\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal http server TLS | visit https://localhost:7681\n");
 
 	signal(SIGINT, sigint_handler);
 
@@ -416,12 +416,12 @@ int main(int argc, const char **argv)
 		       LWS_SERVER_OPTION_EXPLICIT_VHOSTS |
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
-	if (lws_cmdline_option(argc, argv, "-h"))
+	if (aws_lws_cmdline_option(argc, argv, "-h"))
 		info.options |= LWS_SERVER_OPTION_VHOST_UPG_STRICT_HOST_CHECK;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -434,8 +434,8 @@ int main(int argc, const char **argv)
 	info.server_ssl_private_key_mem_len	= (unsigned int)strlen(key_pem);
 	info.vhost_name = "first";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create first vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create first vhost\n");
 		goto bail;
 	}
 
@@ -448,18 +448,18 @@ int main(int argc, const char **argv)
 	info.server_ssl_private_key_mem_len	= (unsigned int)sizeof(key_der);
 	info.vhost_name = "second";
 
-	if (!lws_create_vhost(context, &info)) {
-		lwsl_err("Failed to create second vhost\n");
+	if (!aws_lws_create_vhost(context, &info)) {
+		aws_lwsl_err("Failed to create second vhost\n");
 		goto bail;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
 	ret = 0;
 
 bail:
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return ret;
 }

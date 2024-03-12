@@ -56,11 +56,11 @@ static int completed, failed, numbered, stagger_idx, posting, count = COUNT,
 	   reuse,
 #endif
 	   staggered;
-static lws_sorted_usec_list_t sul_stagger;
-static struct lws_client_connect_info i;
+static aws_lws_sorted_usec_list_t sul_stagger;
+static struct aws_lws_client_connect_info i;
 static struct lws *client_wsi[COUNT];
 static char urlpath[64], intr;
-static struct lws_context *context;
+static struct aws_lws_context *context;
 
 /* we only need this for tracking POST emit state */
 
@@ -73,16 +73,16 @@ struct pss {
 /* this should work OK on win32, but not adapted for non-posix file apis */
 
 static int
-sess_save_cb(struct lws_context *cx, struct lws_tls_session_dump *info)
+sess_save_cb(struct aws_lws_context *cx, struct aws_lws_tls_session_dump *info)
 {
 	char path[128];
 	int fd, n;
 
-	lws_snprintf(path, sizeof(path), "%s/lws_tls_sess_%s", (const char *)info->opaque,
+	aws_lws_snprintf(path, sizeof(path), "%s/aws_lws_tls_sess_%s", (const char *)info->opaque,
 			info->tag);
 	fd = open(path, LWS_O_WRONLY | O_CREAT | O_TRUNC, 0600);
 	if (fd < 0) {
-		lwsl_warn("%s: cannot open %s\n", __func__, path);
+		aws_lwsl_warn("%s: cannot open %s\n", __func__, path);
 		return 1;
 	}
 
@@ -94,13 +94,13 @@ sess_save_cb(struct lws_context *cx, struct lws_tls_session_dump *info)
 }
 
 static int
-sess_load_cb(struct lws_context *cx, struct lws_tls_session_dump *info)
+sess_load_cb(struct aws_lws_context *cx, struct aws_lws_tls_session_dump *info)
 {
 	struct stat sta;
 	char path[128];
 	int fd, n;
 
-	lws_snprintf(path, sizeof(path), "%s/lws_tls_sess_%s", (const char *)info->opaque,
+	aws_lws_snprintf(path, sizeof(path), "%s/aws_lws_tls_sess_%s", (const char *)info->opaque,
 			info->tag);
 	fd = open(path, LWS_O_RDONLY);
 	if (fd < 0)
@@ -133,13 +133,13 @@ void
 dump_conmon_data(struct lws *wsi)
 {
 	const struct addrinfo *ai;
-	struct lws_conmon cm;
+	struct aws_lws_conmon cm;
 	char ads[48];
 
-	lws_conmon_wsi_take(wsi, &cm);
+	aws_lws_conmon_wsi_take(wsi, &cm);
 
-	lws_sa46_write_numeric_address(&cm.peer46, ads, sizeof(ads));
-	lwsl_notice("%s: peer %s, dns: %uus, sockconn: %uus, tls: %uus, txn_resp: %uus\n",
+	aws_lws_sa46_write_numeric_address(&cm.peer46, ads, sizeof(ads));
+	aws_lwsl_notice("%s: peer %s, dns: %uus, sockconn: %uus, tls: %uus, txn_resp: %uus\n",
 		    __func__, ads,
 		    (unsigned int)cm.ciu_dns,
 		    (unsigned int)cm.ciu_sockconn,
@@ -148,53 +148,53 @@ dump_conmon_data(struct lws *wsi)
 
 	ai = cm.dns_results_copy;
 	while (ai) {
-		lws_sa46_write_numeric_address((lws_sockaddr46 *)ai->ai_addr, ads, sizeof(ads));
-		lwsl_notice("%s: DNS %s\n", __func__, ads);
+		aws_lws_sa46_write_numeric_address((aws_lws_sockaddr46 *)ai->ai_addr, ads, sizeof(ads));
+		aws_lwsl_notice("%s: DNS %s\n", __func__, ads);
 		ai = ai->ai_next;
 	}
 
 	/*
-	 * This destroys the DNS list in the lws_conmon that we took
-	 * responsibility for when we used lws_conmon_wsi_take()
+	 * This destroys the DNS list in the aws_lws_conmon that we took
+	 * responsibility for when we used aws_lws_conmon_wsi_take()
 	 */
 
-	lws_conmon_release(&cm);
+	aws_lws_conmon_release(&cm);
 }
 #endif
 
 static int
-callback_http(struct lws *wsi, enum lws_callback_reasons reason,
+callback_http(struct lws *wsi, enum aws_lws_callback_reasons reason,
 	      void *user, void *in, size_t len)
 {
 	char buf[LWS_PRE + 1024], *start = &buf[LWS_PRE], *p = start,
 	     *end = &buf[sizeof(buf) - LWS_PRE - 1];
-	int n, idx = (int)(intptr_t)lws_get_opaque_user_data(wsi);
+	int n, idx = (int)(intptr_t)aws_lws_get_opaque_user_data(wsi);
 	struct pss *pss = (struct pss *)user;
 
 	switch (reason) {
 
 	case LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: idx: %d, resp %u\n",
-				idx, lws_http_client_http_response(wsi));
+		aws_lwsl_user("LWS_CALLBACK_ESTABLISHED_CLIENT_HTTP: idx: %d, resp %u\n",
+				idx, aws_lws_http_client_http_response(wsi));
 
 #if defined(LWS_WITH_TLS_SESSIONS) && !defined(LWS_WITH_MBEDTLS) && !defined(WIN32)
-		if (lws_tls_session_is_reused(wsi))
+		if (aws_lws_tls_session_is_reused(wsi))
 			reuse++;
 		else
 			/*
 			 * Attempt to store any new session into
 			 * external storage
 			 */
-			if (lws_tls_session_dump_save(lws_get_vhost_by_name(context, "default"),
+			if (aws_lws_tls_session_dump_save(aws_lws_get_vhost_by_name(context, "default"),
 					i.host, (uint16_t)i.port,
 					sess_save_cb, "/tmp"))
-		lwsl_warn("%s: session save failed\n", __func__);
+		aws_lwsl_warn("%s: session save failed\n", __func__);
 #endif
 		break;
 
 	/* because we are protocols[0] ... */
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
+		aws_lwsl_err("CLIENT_CONNECTION_ERROR: %s\n",
 			 in ? (char *)in : "(null)");
 		client_wsi[idx] = NULL;
 		failed++;
@@ -207,8 +207,8 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 	/* chunks of chunked content, with header removed */
 	case LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ:
-		lwsl_user("RECEIVE_CLIENT_HTTP_READ: conn %d: read %d\n", idx, (int)len);
-		lwsl_hexdump_info(in, len);
+		aws_lwsl_user("RECEIVE_CLIENT_HTTP_READ: conn %d: read %d\n", idx, (int)len);
+		aws_lwsl_hexdump_info(in, len);
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_CLIENT_APPEND_HANDSHAKE_HEADER:
@@ -216,12 +216,12 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		/*
 		 * Tell lws we are going to send the body next...
 		 */
-		if (posting && !lws_http_is_redirected_to_get(wsi)) {
-			lwsl_user("%s: conn %d, doing POST flow\n", __func__, idx);
-			lws_client_http_body_pending(wsi, 1);
-			lws_callback_on_writable(wsi);
+		if (posting && !aws_lws_http_is_redirected_to_get(wsi)) {
+			aws_lwsl_user("%s: conn %d, doing POST flow\n", __func__, idx);
+			aws_lws_client_http_body_pending(wsi, 1);
+			aws_lws_callback_on_writable(wsi);
 		} else
-			lwsl_user("%s: conn %d, doing GET flow\n", __func__, idx);
+			aws_lwsl_user("%s: conn %d, doing GET flow\n", __func__, idx);
 		break;
 
 	/* uninterpreted http content */
@@ -231,19 +231,19 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			char *px = buffer + LWS_PRE;
 			int lenx = sizeof(buffer) - LWS_PRE;
 
-			if (lws_http_client_read(wsi, &px, &lenx) < 0)
+			if (aws_lws_http_client_read(wsi, &px, &lenx) < 0)
 				return -1;
 		}
 		return 0; /* don't passthru */
 
 	case LWS_CALLBACK_COMPLETED_CLIENT_HTTP:
-		lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP %s: idx %d\n",
-			  lws_wsi_tag(wsi), idx);
+		aws_lwsl_user("LWS_CALLBACK_COMPLETED_CLIENT_HTTP %s: idx %d\n",
+			  aws_lws_wsi_tag(wsi), idx);
 		client_wsi[idx] = NULL;
 		goto finished;
 
 	case LWS_CALLBACK_CLOSED_CLIENT_HTTP:
-		lwsl_info("%s: closed: %s\n", __func__, lws_wsi_tag(client_wsi[idx]));
+		aws_lwsl_info("%s: closed: %s\n", __func__, aws_lws_wsi_tag(client_wsi[idx]));
 
 #if defined(LWS_WITH_CONMON)
 		dump_conmon_data(wsi);
@@ -264,10 +264,10 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 	case LWS_CALLBACK_CLIENT_HTTP_WRITEABLE:
 		if (!posting)
 			break;
-		if (lws_http_is_redirected_to_get(wsi))
+		if (aws_lws_http_is_redirected_to_get(wsi))
 			break;
-		lwsl_info("LWS_CALLBACK_CLIENT_HTTP_WRITEABLE: %s, idx %d,"
-				" part %d\n", lws_wsi_tag(wsi), idx, pss->body_part);
+		aws_lwsl_info("LWS_CALLBACK_CLIENT_HTTP_WRITEABLE: %s, idx %d,"
+				" part %d\n", aws_lws_wsi_tag(wsi), idx, pss->body_part);
 
 		n = LWS_WRITE_HTTP;
 
@@ -280,26 +280,26 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 
 		switch (pss->body_part++) {
 		case 0:
-			if (lws_client_http_multipart(wsi, "text", NULL, NULL,
+			if (aws_lws_client_http_multipart(wsi, "text", NULL, NULL,
 						      &p, end))
 				return -1;
 			/* notice every usage of the boundary starts with -- */
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "my text field\xd\xa");
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "my text field\xd\xa");
 			break;
 		case 1:
-			if (lws_client_http_multipart(wsi, "file", "myfile.txt",
+			if (aws_lws_client_http_multipart(wsi, "file", "myfile.txt",
 						      "text/plain", &p, end))
 				return -1;
-			p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 					"This is the contents of the "
 					"uploaded file.\xd\xa"
 					"\xd\xa");
 			break;
 		case 2:
-			if (lws_client_http_multipart(wsi, NULL, NULL, NULL,
+			if (aws_lws_client_http_multipart(wsi, NULL, NULL, NULL,
 						      &p, end))
 				return -1;
-			lws_client_http_body_pending(wsi, 0);
+			aws_lws_client_http_body_pending(wsi, 0);
 			 /* necessary to support H2, it means we will write no
 			  * more on this stream */
 			n = LWS_WRITE_HTTP_FINAL;
@@ -313,12 +313,12 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 			return 0;
 		}
 
-		if (lws_write(wsi, (uint8_t *)start, lws_ptr_diff_size_t(p, start), (enum lws_write_protocol)n)
-				!= lws_ptr_diff(p, start))
+		if (aws_lws_write(wsi, (uint8_t *)start, aws_lws_ptr_diff_size_t(p, start), (enum aws_lws_write_protocol)n)
+				!= aws_lws_ptr_diff(p, start))
 			return 1;
 
 		if (n != LWS_WRITE_HTTP_FINAL)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 
 		break;
 
@@ -326,27 +326,27 @@ callback_http(struct lws *wsi, enum lws_callback_reasons reason,
 		break;
 	}
 
-	return lws_callback_http_dummy(wsi, reason, user, in, len);
+	return aws_lws_callback_http_dummy(wsi, reason, user, in, len);
 
 finished:
 	if (++completed == count) {
 		if (!failed)
-			lwsl_user("Done: all OK\n");
+			aws_lwsl_user("Done: all OK\n");
 		else
-			lwsl_err("Done: failed: %d\n", failed);
+			aws_lwsl_err("Done: failed: %d\n", failed);
 		intr = 1;
 		/*
 		 * This is how we can exit the event loop even when it's an
 		 * event library backing it... it will start and stage the
 		 * destroy to happen after we exited this service for each pt
 		 */
-		lws_context_destroy(lws_get_context(wsi));
+		aws_lws_context_destroy(aws_lws_get_context(wsi));
 	}
 
 	return 0;
 }
 
-static const struct lws_protocols protocols[] = {
+static const struct aws_lws_protocols protocols[] = {
 	{ "http", callback_http, sizeof(struct pss), 0, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
@@ -354,14 +354,14 @@ static const struct lws_protocols protocols[] = {
 #if defined(LWS_WITH_SYS_METRICS)
 
 static int
-my_metric_report(lws_metric_pub_t *mp)
+my_metric_report(aws_lws_metric_pub_t *mp)
 {
-	lws_metric_bucket_t *sub = mp->u.hist.head;
+	aws_lws_metric_bucket_t *sub = mp->u.hist.head;
 	char buf[192];
 
 	do {
-		if (lws_metrics_format(mp, &sub, buf, sizeof(buf)))
-			lwsl_user("%s: %s\n", __func__, buf);
+		if (aws_lws_metrics_format(mp, &sub, buf, sizeof(buf)))
+			aws_lwsl_user("%s: %s\n", __func__, buf);
 	} while ((mp->flags & LWSMTFL_REPORT_HIST) && sub);
 
 	/* 0 = leave metric to accumulate, 1 = reset the metric */
@@ -369,22 +369,22 @@ my_metric_report(lws_metric_pub_t *mp)
 	return 1;
 }
 
-static const lws_system_ops_t system_ops = {
+static const aws_lws_system_ops_t system_ops = {
 	.metric_report = my_metric_report,
 };
 
 #endif
 
 static void
-stagger_cb(lws_sorted_usec_list_t *sul);
+stagger_cb(aws_lws_sorted_usec_list_t *sul);
 
 static void
-lws_try_client_connection(struct lws_client_connect_info *i, int m)
+aws_lws_try_client_connection(struct aws_lws_client_connect_info *i, int m)
 {
 	char path[128];
 
 	if (numbered) {
-		lws_snprintf(path, sizeof(path), "/%d.png", m + 1);
+		aws_lws_snprintf(path, sizeof(path), "/%d.png", m + 1);
 		i->path = path;
 	} else
 		i->path = urlpath;
@@ -392,24 +392,24 @@ lws_try_client_connection(struct lws_client_connect_info *i, int m)
 	i->pwsi = &client_wsi[m];
 	i->opaque_user_data = (void *)(intptr_t)m;
 
-	if (!lws_client_connect_via_info(i)) {
+	if (!aws_lws_client_connect_via_info(i)) {
 		failed++;
-		lwsl_user("%s: failed: conn idx %d\n", __func__, m);
+		aws_lwsl_user("%s: failed: conn idx %d\n", __func__, m);
 		if (++completed == count) {
-			lwsl_user("Done: failed: %d\n", failed);
-			lws_context_destroy(context);
+			aws_lwsl_user("Done: failed: %d\n", failed);
+			aws_lws_context_destroy(context);
 		}
 	} else
-		lwsl_user("started connection %s: idx %d (%s)\n",
-			  lws_wsi_tag(client_wsi[m]), m, i->path);
+		aws_lwsl_user("started connection %s: idx %d (%s)\n",
+			  aws_lws_wsi_tag(client_wsi[m]), m, i->path);
 }
 
 
 static int
-system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
+system_notify_cb(aws_lws_state_manager_t *mgr, aws_lws_state_notify_link_t *link,
 		   int current, int target)
 {
-	struct lws_context *context = mgr->parent;
+	struct aws_lws_context *context = mgr->parent;
 	int m;
 
 	if (current != LWS_SYSTATE_OPERATIONAL || target != LWS_SYSTATE_OPERATIONAL)
@@ -423,12 +423,12 @@ system_notify_cb(lws_state_manager_t *mgr, lws_state_notify_link_t *link,
 		 * pipeline queuing before the first is connected
 		 */
 		for (m = 0; m < count; m++)
-			lws_try_client_connection(&i, m);
+			aws_lws_try_client_connection(&i, m);
 	else
 		/*
 		 * delay the connections slightly
 		 */
-		lws_sul_schedule(context, 0, &sul_stagger, stagger_cb,
+		aws_lws_sul_schedule(context, 0, &sul_stagger, stagger_cb,
 				 50 * LWS_US_PER_MS);
 
 	return 0;
@@ -442,10 +442,10 @@ signal_cb(void *handle, int signum)
 	case SIGINT:
 		break;
 	default:
-		lwsl_err("%s: signal %d\n", __func__, signum);
+		aws_lwsl_err("%s: signal %d\n", __func__, signum);
 		break;
 	}
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 }
 
 static void
@@ -487,16 +487,16 @@ unsigned long long us(void)
 }
 
 static void
-stagger_cb(lws_sorted_usec_list_t *sul)
+stagger_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	lws_usec_t next;
+	aws_lws_usec_t next;
 
 	/*
 	 * open the connections at 100ms intervals, with the
 	 * last one being after 1s, testing both queuing, and
 	 * direct H2 stream addition stability
 	 */
-	lws_try_client_connection(&i, stagger_idx++);
+	aws_lws_try_client_connection(&i, stagger_idx++);
 
 	if (stagger_idx == count)
 		return;
@@ -510,15 +510,15 @@ stagger_cb(lws_sorted_usec_list_t *sul)
 		next += 600 * LWS_US_PER_MS;
 #endif
 
-	lws_sul_schedule(context, 0, &sul_stagger, stagger_cb, next);
+	aws_lws_sul_schedule(context, 0, &sul_stagger, stagger_cb, next);
 }
 
 int main(int argc, const char **argv)
 {
-	lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
+	aws_lws_state_notify_link_t notifier = { { NULL, NULL, NULL },
 						system_notify_cb, "app" };
-	lws_state_notify_link_t *na[] = { &notifier, NULL };
-	struct lws_context_creation_info info;
+	aws_lws_state_notify_link_t *na[] = { &notifier, NULL };
+	struct aws_lws_context_creation_info info;
 	unsigned long long start;
 	const char *p;
 #if defined(LWS_WITH_TLS_SESSIONS)
@@ -528,30 +528,30 @@ int main(int argc, const char **argv)
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	memset(&i, 0, sizeof i); /* otherwise uninitialized garbage */
 
-	lws_cmdline_option_handle_builtin(argc, argv, &info);
+	aws_lws_cmdline_option_handle_builtin(argc, argv, &info);
 
 	info.signal_cb = signal_cb;
 	info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 
-	if (lws_cmdline_option(argc, argv, "--uv"))
+	if (aws_lws_cmdline_option(argc, argv, "--uv"))
 		info.options |= LWS_SERVER_OPTION_LIBUV;
 	else
-		if (lws_cmdline_option(argc, argv, "--event"))
+		if (aws_lws_cmdline_option(argc, argv, "--event"))
 			info.options |= LWS_SERVER_OPTION_LIBEVENT;
 		else
-			if (lws_cmdline_option(argc, argv, "--ev"))
+			if (aws_lws_cmdline_option(argc, argv, "--ev"))
 				info.options |= LWS_SERVER_OPTION_LIBEV;
 			else
-				if (lws_cmdline_option(argc, argv, "--glib"))
+				if (aws_lws_cmdline_option(argc, argv, "--glib"))
 					info.options |= LWS_SERVER_OPTION_GLIB;
 				else
 					signal(SIGINT, sigint_handler);
 
-	staggered = !!lws_cmdline_option(argc, argv, "-s");
+	staggered = !!aws_lws_cmdline_option(argc, argv, "-s");
 
-	lwsl_user("LWS minimal http client [-s (staggered)] [-p (pipeline)]\n");
-	lwsl_user("   [--h1 (http/1 only)] [-l (localhost)] [-d <logs>]\n");
-	lwsl_user("   [-n (numbered)] [--post]\n");
+	aws_lwsl_user("LWS minimal http client [-s (staggered)] [-p (pipeline)]\n");
+	aws_lwsl_user("   [--h1 (http/1 only)] [-l (localhost)] [-d <logs>]\n");
+	aws_lwsl_user("   [-n (numbered)] [--post]\n");
 
 	info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
 	info.protocols = protocols;
@@ -580,21 +580,21 @@ int main(int argc, const char **argv)
 
 	/* vhost option allowing tls session reuse, requires
 	 * LWS_WITH_TLS_SESSIONS build option */
-	if (lws_cmdline_option(argc, argv, "--no-tls-session-reuse"))
+	if (aws_lws_cmdline_option(argc, argv, "--no-tls-session-reuse"))
 		info.options |= LWS_SERVER_OPTION_DISABLE_TLS_SESSION_CACHE;
 
-	if ((p = lws_cmdline_option(argc, argv, "--limit")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--limit")))
 		info.simultaneous_ssl_restriction = atoi(p);
 
-	if ((p = lws_cmdline_option(argc, argv, "--ssl-handshake-serialize")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--ssl-handshake-serialize")))
 		/* We only consider simultaneous_ssl_restriction > 1 use cases.
 		 * If ssl isn't limited or only 1 is allowed, we don't care.
 		 */
 		info.simultaneous_ssl_handshake_restriction = atoi(p);
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
@@ -611,7 +611,7 @@ int main(int argc, const char **argv)
 			   LCCSCF_H2_QUIRK_OVERFLOWS_TXCR |
 			   LCCSCF_H2_QUIRK_NGHTTP2_END_STREAM;
 
-	if (lws_cmdline_option(argc, argv, "--post")) {
+	if (aws_lws_cmdline_option(argc, argv, "--post")) {
 		posting = 1;
 		i.method = "POST";
 		i.ssl_connection |= LCCSCF_HTTP_MULTIPART_MIME;
@@ -619,7 +619,7 @@ int main(int argc, const char **argv)
 		i.method = "GET";
 
 	/* enables h1 or h2 connection sharing */
-	if (lws_cmdline_option(argc, argv, "-p")) {
+	if (aws_lws_cmdline_option(argc, argv, "-p")) {
 		i.ssl_connection |= LCCSCF_PIPELINE;
 #if defined(LWS_WITH_TLS_SESSIONS)
 		pl = 1;
@@ -627,17 +627,17 @@ int main(int argc, const char **argv)
 	}
 
 #if defined(LWS_WITH_CONMON)
-	if (lws_cmdline_option(argc, argv, "--conmon"))
+	if (aws_lws_cmdline_option(argc, argv, "--conmon"))
 		i.ssl_connection |= LCCSCF_CONMON;
 #endif
 
 	/* force h1 even if h2 available */
-	if (lws_cmdline_option(argc, argv, "--h1"))
+	if (aws_lws_cmdline_option(argc, argv, "--h1"))
 		i.alpn = "http/1.1";
 
 	strcpy(urlpath, "/");
 
-	if (lws_cmdline_option(argc, argv, "-l")) {
+	if (aws_lws_cmdline_option(argc, argv, "-l")) {
 		i.port = 7681;
 		i.address = "localhost";
 		i.ssl_connection |= LCCSCF_ALLOW_SELFSIGNED;
@@ -650,22 +650,22 @@ int main(int argc, const char **argv)
 			strcpy(urlpath, "/testserver/formtest");
 	}
 
-	if (lws_cmdline_option(argc, argv, "--no-tls"))
+	if (aws_lws_cmdline_option(argc, argv, "--no-tls"))
 		i.ssl_connection &= ~(LCCSCF_USE_SSL);
 
-	if (lws_cmdline_option(argc, argv, "-n"))
+	if (aws_lws_cmdline_option(argc, argv, "-n"))
 		numbered = 1;
 
-	if ((p = lws_cmdline_option(argc, argv, "--server")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--server")))
 		i.address = p;
 
-	if ((p = lws_cmdline_option(argc, argv, "--port")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "--port")))
 		i.port = atoi(p);
 
-	if ((p = lws_cmdline_option(argc, argv, "--path")))
-		lws_strncpy(urlpath, p, sizeof(urlpath));
+	if ((p = aws_lws_cmdline_option(argc, argv, "--path")))
+		aws_lws_strncpy(urlpath, p, sizeof(urlpath));
 
-	if ((p = lws_cmdline_option(argc, argv, "-c")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-c")))
 		if (atoi(p) <= COUNT && atoi(p))
 			count = atoi(p);
 
@@ -677,29 +677,29 @@ int main(int argc, const char **argv)
 	/*
 	 * Attempt to preload a session from external storage
 	 */
-	if (lws_tls_session_dump_load(lws_get_vhost_by_name(context, "default"),
+	if (aws_lws_tls_session_dump_load(aws_lws_get_vhost_by_name(context, "default"),
 				  i.host, (uint16_t)i.port, sess_load_cb, "/tmp"))
-		lwsl_warn("%s: session load failed\n", __func__);
+		aws_lwsl_warn("%s: session load failed\n", __func__);
 #endif
 
 	start = us();
-	while (!intr && !lws_service(context, 0))
+	while (!intr && !aws_lws_service(context, 0))
 		;
 
 #if defined(LWS_WITH_TLS_SESSIONS)
-	lwsl_user("%s: session reuse count %d\n", __func__, reuse);
+	aws_lwsl_user("%s: session reuse count %d\n", __func__, reuse);
 
 	if (staggered && !pl && !reuse) {
-		lwsl_err("%s: failing, expected 1 .. %d reused\n", __func__, count - 1);
+		aws_lwsl_err("%s: failing, expected 1 .. %d reused\n", __func__, count - 1);
 		// too difficult to reproduce in CI
 		// failed = 1;
 	}
 #endif
 
-	lwsl_user("Duration: %lldms\n", (us() - start) / 1000);
-	lws_context_destroy(context);
+	aws_lwsl_user("Duration: %lldms\n", (us() - start) / 1000);
+	aws_lws_context_destroy(context);
 
-	lwsl_user("Exiting with %d\n", failed || completed != count);
+	aws_lwsl_user("Exiting with %d\n", failed || completed != count);
 
 	return failed || completed != count;
 }

@@ -22,7 +22,7 @@
  * IN THE SOFTWARE.
  */
 
-enum lws_jws_jose_hdr_indexes {
+enum aws_lws_jws_jose_hdr_indexes {
 	LJJHI_ALG,	/* REQUIRED */
 	LJJHI_JKU,	/* Optional: string */
 	LJJHI_JWK,	/* Optional: jwk JSON object: public key: */
@@ -55,7 +55,7 @@ enum lws_jws_jose_hdr_indexes {
 	LWS_COUNT_JOSE_HDR_ELEMENTS
 };
 
-enum lws_jose_algtype {
+enum aws_lws_jose_algtype {
 	LWS_JOSE_ENCTYPE_NONE,
 
 	LWS_JOSE_ENCTYPE_RSASSA_PKCS1_1_5,
@@ -77,11 +77,11 @@ enum lws_jose_algtype {
 
 /* there's a table of these defined in lws-gencrypto-common.c */
 
-struct lws_jose_jwe_alg {
-	enum lws_genhash_types hash_type;
-	enum lws_genhmac_types hmac_type;
-	enum lws_jose_algtype algtype_signing; /* the signing cipher */
-	enum lws_jose_algtype algtype_crypto; /* the encryption cipher */
+struct aws_lws_jose_jwe_alg {
+	enum aws_lws_genhash_types hash_type;
+	enum aws_lws_genhmac_types hmac_type;
+	enum aws_lws_jose_algtype algtype_signing; /* the signing cipher */
+	enum aws_lws_jose_algtype algtype_crypto; /* the encryption cipher */
 	const char *alg; /* the JWA enc alg name, eg "ES512" */
 	const char *curve_name; /* NULL, or, eg, "P-256" */
 	unsigned short keybits_min, keybits_fixed;
@@ -103,49 +103,49 @@ struct lws_jose_jwe_alg {
 
 #define LWS_JWS_MAX_RECIPIENTS 3
 
-struct lws_jws_recpient {
+struct aws_lws_jws_recpient {
 	/*
 	 * JOSE per-recipient unprotected header... for JWS this contains
 	 * protected / header / signature
 	 */
-	struct lws_gencrypto_keyelem unprot[LWS_COUNT_JOSE_HDR_ELEMENTS];
-	struct lws_jwk jwk_ephemeral;	/* recipient ephemeral key if any */
-	struct lws_jwk jwk;		/* recipient "jwk" key if any */
+	struct aws_lws_gencrypto_keyelem unprot[LWS_COUNT_JOSE_HDR_ELEMENTS];
+	struct aws_lws_jwk jwk_ephemeral;	/* recipient ephemeral key if any */
+	struct aws_lws_jwk jwk;		/* recipient "jwk" key if any */
 };
 
-struct lws_jose {
+struct aws_lws_jose {
 	/* JOSE protected and unprotected header elements */
-	struct lws_gencrypto_keyelem e[LWS_COUNT_JOSE_HDR_ELEMENTS];
+	struct aws_lws_gencrypto_keyelem e[LWS_COUNT_JOSE_HDR_ELEMENTS];
 
-	struct lws_jws_recpient recipient[LWS_JWS_MAX_RECIPIENTS];
+	struct aws_lws_jws_recpient recipient[LWS_JWS_MAX_RECIPIENTS];
 
 	char typ[32];
 
 	/* information from the protected header part */
-	const struct lws_jose_jwe_alg *alg;
-	const struct lws_jose_jwe_alg *enc_alg;
+	const struct aws_lws_jose_jwe_alg *alg;
+	const struct aws_lws_jose_jwe_alg *enc_alg;
 
 	int recipients; /* count of used recipient[] entries */
 };
 
 /**
- * lws_jose_init() - prepare a struct lws_jose for use
+ * aws_lws_jose_init() - prepare a struct aws_lws_jose for use
  *
  * \param jose: the jose header struct to prepare
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_jose_init(struct lws_jose *jose);
+aws_lws_jose_init(struct aws_lws_jose *jose);
 
 /**
- * lws_jose_destroy() - retire a struct lws_jose from use
+ * aws_lws_jose_destroy() - retire a struct aws_lws_jose from use
  *
  * \param jose: the jose header struct to destroy
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_jose_destroy(struct lws_jose *jose);
+aws_lws_jose_destroy(struct aws_lws_jose *jose);
 
 /**
- * lws_gencrypto_jws_alg_to_definition() - look up a jws alg name
+ * aws_lws_gencrypto_jws_alg_to_definition() - look up a jws alg name
  *
  * \param alg: the jws alg name
  * \param jose: pointer to the pointer to the info struct to set on success
@@ -153,11 +153,11 @@ lws_jose_destroy(struct lws_jose *jose);
  * Returns 0 if *jose set, else nonzero for failure
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_gencrypto_jws_alg_to_definition(const char *alg,
-				    const struct lws_jose_jwe_alg **jose);
+aws_lws_gencrypto_jws_alg_to_definition(const char *alg,
+				    const struct aws_lws_jose_jwe_alg **jose);
 
 /**
- * lws_gencrypto_jwe_alg_to_definition() - look up a jwe alg name
+ * aws_lws_gencrypto_jwe_alg_to_definition() - look up a jwe alg name
  *
  * \param alg: the jwe alg name
  * \param jose: pointer to the pointer to the info struct to set on success
@@ -165,11 +165,11 @@ lws_gencrypto_jws_alg_to_definition(const char *alg,
  * Returns 0 if *jose set, else nonzero for failure
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_gencrypto_jwe_alg_to_definition(const char *alg,
-				    const struct lws_jose_jwe_alg **jose);
+aws_lws_gencrypto_jwe_alg_to_definition(const char *alg,
+				    const struct aws_lws_jose_jwe_alg **jose);
 
 /**
- * lws_gencrypto_jwe_enc_to_definition() - look up a jwe enc name
+ * aws_lws_gencrypto_jwe_enc_to_definition() - look up a jwe enc name
  *
  * \param alg: the jwe enc name
  * \param jose: pointer to the pointer to the info struct to set on success
@@ -177,11 +177,11 @@ lws_gencrypto_jwe_alg_to_definition(const char *alg,
  * Returns 0 if *jose set, else nonzero for failure
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_gencrypto_jwe_enc_to_definition(const char *enc,
-				    const struct lws_jose_jwe_alg **jose);
+aws_lws_gencrypto_jwe_enc_to_definition(const char *enc,
+				    const struct aws_lws_jose_jwe_alg **jose);
 
 /**
- * lws_jws_parse_jose() - parse a JWS JOSE header
+ * aws_lws_jws_parse_jose() - parse a JWS JOSE header
  *
  * \param jose: the jose struct to set to parsing results
  * \param buf: the raw JOSE header
@@ -193,11 +193,11 @@ lws_gencrypto_jwe_enc_to_definition(const char *enc,
  * *\p temp_len is updated to reflect the amount of \p temp used if successful.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jws_parse_jose(struct lws_jose *jose,
+aws_lws_jws_parse_jose(struct aws_lws_jose *jose,
 		   const char *buf, int len, char *temp, int *temp_len);
 
 /**
- * lws_jwe_parse_jose() - parse a JWE JOSE header
+ * aws_lws_jwe_parse_jose() - parse a JWE JOSE header
  *
  * \param jose: the jose struct to set to parsing results
  * \param buf: the raw JOSE header
@@ -209,6 +209,6 @@ lws_jws_parse_jose(struct lws_jose *jose,
  * *\p temp_len is updated to reflect the amount of \p temp used if successful.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_jwe_parse_jose(struct lws_jose *jose,
+aws_lws_jwe_parse_jose(struct aws_lws_jose *jose,
 		   const char *buf, int len, char *temp, int *temp_len);
 

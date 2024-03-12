@@ -28,7 +28,7 @@
 /* one of these created for each pending message that is to be forwarded */
 
 typedef struct proxy_msg {
-	lws_dll2_t		list;
+	aws_lws_dll2_t		list;
 	size_t			len;
 	/*
 	 * the packet content is overallocated here, if p is a pointer to
@@ -49,17 +49,17 @@ typedef struct proxy_conn {
 	struct lws		*wsi_ws; /* wsi for the inbound ws conn */
 	struct lws		*wsi_raw; /* wsi for the outbound raw conn */
 
-	lws_dll2_owner_t	pending_msg_to_ws;
-	lws_dll2_owner_t	pending_msg_to_raw;
+	aws_lws_dll2_owner_t	pending_msg_to_ws;
+	aws_lws_dll2_owner_t	pending_msg_to_raw;
 } proxy_conn_t;
 
 
 static int
-proxy_ws_raw_msg_destroy(struct lws_dll2 *d, void *user)
+proxy_ws_raw_msg_destroy(struct aws_lws_dll2 *d, void *user)
 {
-	proxy_msg_t *msg = lws_container_of(d, proxy_msg_t, list);
+	proxy_msg_t *msg = aws_lws_container_of(d, proxy_msg_t, list);
 
-	lws_dll2_remove(d);
+	aws_lws_dll2_remove(d);
 	free(msg);
 
 	return 0;
@@ -70,11 +70,11 @@ proxy_ws_raw_msg_destroy(struct lws_dll2 *d, void *user)
  */
 
 static int
-callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
+callback_proxy_ws_server(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			 void *user, void *in, size_t len)
 {
-	proxy_conn_t *pc = (proxy_conn_t *)lws_get_opaque_user_data(wsi);
-	struct lws_client_connect_info i;
+	proxy_conn_t *pc = (proxy_conn_t *)aws_lws_get_opaque_user_data(wsi);
+	struct aws_lws_client_connect_info i;
 	proxy_msg_t *msg;
 	uint8_t *data;
 	int m, a;
@@ -86,7 +86,7 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		memset(pc, 0, sizeof(*pc));
 
 		/* mark this accepted ws connection with the proxy conn obj */
-		lws_set_opaque_user_data(wsi, pc);
+		aws_lws_set_opaque_user_data(wsi, pc);
 		/* tell the proxy conn object that we are the ws side of it */
 		pc->wsi_ws = wsi;
 
@@ -98,7 +98,7 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		memset(&i, 0, sizeof(i));
 
 		i.method = "RAW";
-		i.context = lws_get_context(wsi);
+		i.context = aws_lws_get_context(wsi);
 		i.port = 1234;
 		i.address = "127.0.0.1";
 		i.ssl_connection = 0;
@@ -109,8 +109,8 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		/* if it succeeds, set the wsi into the proxy_conn */
 		i.pwsi = &pc->wsi_raw;
 
-		if (!lws_client_connect_via_info(&i)) {
-			lwsl_warn("%s: onward connection failed\n", __func__);
+		if (!aws_lws_client_connect_via_info(&i)) {
+			aws_lwsl_warn("%s: onward connection failed\n", __func__);
 			return -1; /* hang up on the ws client, triggering
 				    * _CLOSE flow */
 		}
@@ -122,7 +122,7 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		 * Clean up any pending messages to us that are never going
 		 * to get delivered now, we are in the middle of closing
 		 */
-		lws_dll2_foreach_safe(&pc->pending_msg_to_ws, NULL,
+		aws_lws_dll2_foreach_safe(&pc->pending_msg_to_ws, NULL,
 				      proxy_ws_raw_msg_destroy);
 
 		/*
@@ -130,7 +130,7 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		 * be destroyed.
 		 */
 		pc->wsi_ws = NULL;
-		lws_set_opaque_user_data(wsi, NULL);
+		aws_lws_set_opaque_user_data(wsi, NULL);
 
 		if (!pc->wsi_raw) {
 			/*
@@ -155,7 +155,7 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 			 * on how hard he will try now the ws part is
 			 * disappearing... give him 3s
 			 */
-			lws_set_timeout(pc->wsi_raw,
+			aws_lws_set_timeout(pc->wsi_raw,
 				PENDING_TIMEOUT_KILLED_BY_PROXY_CLIENT_CLOSE, 3);
 			break;
 		}
@@ -166,25 +166,25 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		 * have already been closed
 		 */
 
-		lws_wsi_close(pc->wsi_raw, LWS_TO_KILL_ASYNC);
+		aws_lws_wsi_close(pc->wsi_raw, LWS_TO_KILL_ASYNC);
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
 		if (!pc || !pc->pending_msg_to_ws.count)
 			break;
 
-		msg = lws_container_of(pc->pending_msg_to_ws.head,
+		msg = aws_lws_container_of(pc->pending_msg_to_ws.head,
 				       proxy_msg_t, list);
 		data = (uint8_t *)&msg[1] + LWS_PRE;
 
 		/* notice we allowed for LWS_PRE in the payload already */
-		m = lws_write(wsi, data, msg->len, LWS_WRITE_TEXT);
+		m = aws_lws_write(wsi, data, msg->len, LWS_WRITE_TEXT);
 		a = (int)msg->len;
-		lws_dll2_remove(&msg->list);
+		aws_lws_dll2_remove(&msg->list);
 		free(msg);
 
 		if (m < a) {
-			lwsl_err("ERROR %d writing to ws\n", m);
+			aws_lwsl_err("ERROR %d writing to ws\n", m);
 			return -1;
 		}
 
@@ -192,7 +192,7 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		 * If more to do...
 		 */
 		if (pc->pending_msg_to_ws.count)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_RECEIVE:
@@ -204,7 +204,7 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		data = (uint8_t *)&msg[1] + LWS_PRE;
 
 		if (!msg) {
-			lwsl_user("OOM: dropping\n");
+			aws_lwsl_user("OOM: dropping\n");
 			break;
 		}
 
@@ -213,10 +213,10 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
 		memcpy(data, in, len);
 
 		/* add us on to the list of packets to send to the onward conn */
-		lws_dll2_add_tail(&msg->list, &pc->pending_msg_to_raw);
+		aws_lws_dll2_add_tail(&msg->list, &pc->pending_msg_to_raw);
 
 		/* ask to send on the onward proxy client conn */
-		lws_callback_on_writable(pc->wsi_raw);
+		aws_lws_callback_on_writable(pc->wsi_raw);
 		break;
 
 	default:
@@ -231,33 +231,33 @@ callback_proxy_ws_server(struct lws *wsi, enum lws_callback_reasons reason,
  */
 
 static int
-callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
+callback_proxy_raw_client(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
-	proxy_conn_t *pc = (proxy_conn_t *)lws_get_opaque_user_data(wsi);
+	proxy_conn_t *pc = (proxy_conn_t *)aws_lws_get_opaque_user_data(wsi);
 	proxy_msg_t *msg;
 	uint8_t *data;
 	int m, a;
 
 	switch (reason) {
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		lwsl_warn("%s: onward raw connection failed\n", __func__);
+		aws_lwsl_warn("%s: onward raw connection failed\n", __func__);
 		pc->wsi_raw = NULL;
 		break;
 
 	case LWS_CALLBACK_RAW_ADOPT:
-		lwsl_user("LWS_CALLBACK_RAW_ADOPT\n");
+		aws_lwsl_user("LWS_CALLBACK_RAW_ADOPT\n");
 		pc->wsi_raw = wsi;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_RAW_CLOSE:
-		lwsl_user("LWS_CALLBACK_RAW_CLOSE\n");
+		aws_lwsl_user("LWS_CALLBACK_RAW_CLOSE\n");
 		/*
 		 * Clean up any pending messages to us that are never going
 		 * to get delivered now, we are in the middle of closing
 		 */
-		lws_dll2_foreach_safe(&pc->pending_msg_to_raw, NULL,
+		aws_lws_dll2_foreach_safe(&pc->pending_msg_to_raw, NULL,
 				      proxy_ws_raw_msg_destroy);
 
 		/*
@@ -265,7 +265,7 @@ callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
 		 * be destroyed.
 		 */
 		pc->wsi_raw = NULL;
-		lws_set_opaque_user_data(wsi, NULL);
+		aws_lws_set_opaque_user_data(wsi, NULL);
 
 		if (!pc->wsi_ws) {
 			/*
@@ -289,7 +289,7 @@ callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
 			 * on how hard he will try now the raw part is
 			 * disappearing... give him 3s
 			 */
-			lws_set_timeout(pc->wsi_ws,
+			aws_lws_set_timeout(pc->wsi_ws,
 				PENDING_TIMEOUT_KILLED_BY_PROXY_CLIENT_CLOSE, 3);
 			break;
 		}
@@ -300,11 +300,11 @@ callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
 		 * have already been closed
 		 */
 
-		lws_wsi_close(pc->wsi_ws, LWS_TO_KILL_ASYNC);
+		aws_lws_wsi_close(pc->wsi_ws, LWS_TO_KILL_ASYNC);
 		break;
 
 	case LWS_CALLBACK_RAW_RX:
-		lwsl_user("LWS_CALLBACK_RAW_RX (%d)\n", (int)len);
+		aws_lwsl_user("LWS_CALLBACK_RAW_RX (%d)\n", (int)len);
 		if (!pc || !pc->wsi_ws)
 			break;
 
@@ -313,7 +313,7 @@ callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
 		data = (uint8_t *)&msg[1] + LWS_PRE;
 
 		if (!msg) {
-			lwsl_user("OOM: dropping\n");
+			aws_lwsl_user("OOM: dropping\n");
 			break;
 		}
 
@@ -322,29 +322,29 @@ callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
 		memcpy(data, in, len);
 
 		/* add us on to the list of packets to send to the onward conn */
-		lws_dll2_add_tail(&msg->list, &pc->pending_msg_to_ws);
+		aws_lws_dll2_add_tail(&msg->list, &pc->pending_msg_to_ws);
 
 		/* ask to send on the onward proxy client conn */
-		lws_callback_on_writable(pc->wsi_ws);
+		aws_lws_callback_on_writable(pc->wsi_ws);
 		break;
 
 	case LWS_CALLBACK_RAW_WRITEABLE:
-		lwsl_user("LWS_CALLBACK_RAW_WRITEABLE\n");
+		aws_lwsl_user("LWS_CALLBACK_RAW_WRITEABLE\n");
 		if (!pc || !pc->pending_msg_to_raw.count)
 			break;
 
-		msg = lws_container_of(pc->pending_msg_to_raw.head,
+		msg = aws_lws_container_of(pc->pending_msg_to_raw.head,
 				       proxy_msg_t, list);
 		data = (uint8_t *)&msg[1] + LWS_PRE;
 
 		/* notice we allowed for LWS_PRE in the payload already */
-		m = lws_write(wsi, data, msg->len, LWS_WRITE_TEXT);
+		m = aws_lws_write(wsi, data, msg->len, LWS_WRITE_TEXT);
 		a = (int)msg->len;
-		lws_dll2_remove(&msg->list);
+		aws_lws_dll2_remove(&msg->list);
 		free(msg);
 
 		if (m < a) {
-			lwsl_err("ERROR %d writing to raw\n", m);
+			aws_lwsl_err("ERROR %d writing to raw\n", m);
 			return -1;
 		}
 
@@ -352,7 +352,7 @@ callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
 		 * If more to do...
 		 */
 		if (pc->pending_msg_to_raw.count)
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		break;
 	default:
 		break;
@@ -361,21 +361,21 @@ callback_proxy_raw_client(struct lws *wsi, enum lws_callback_reasons reason,
 	return 0;
 }
 
-static struct lws_protocols protocols[] = {
-	{ "http", lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
+static struct aws_lws_protocols protocols[] = {
+	{ "http", aws_lws_callback_http_dummy, 0, 0, 0, NULL, 0 },
 	{ "lws-ws-raw-ws", callback_proxy_ws_server, 0, 1024, 0, NULL, 0 },
 	{ "lws-ws-raw-raw", callback_proxy_raw_client, 0, 1024, 0, NULL, 0 },
 	LWS_PROTOCOL_LIST_TERM
 };
 
-static const lws_retry_bo_t retry = {
+static const aws_lws_retry_bo_t retry = {
 	.secs_since_valid_ping = 3,
 	.secs_since_valid_hangup = 10,
 };
 
 static int interrupted;
 
-static const struct lws_http_mount mount = {
+static const struct aws_lws_http_mount mount = {
 	/* .mount_next */		NULL,		/* linked-list "next" */
 	/* .mountpoint */		"/",		/* mountpoint URL */
 	/* .origin */			"./mount-origin",  /* serve from dir */
@@ -402,8 +402,8 @@ void sigint_handler(int sig)
 
 int main(int argc, const char **argv)
 {
-	struct lws_context_creation_info info;
-	struct lws_context *context;
+	struct aws_lws_context_creation_info info;
+	struct aws_lws_context *context;
 	const char *p;
 	int n = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE
 			/* for LLL_ verbosity above NOTICE to be built into lws,
@@ -415,11 +415,11 @@ int main(int argc, const char **argv)
 
 	signal(SIGINT, sigint_handler);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS minimal ws-raw proxy | visit http://localhost:7681 (-s = use TLS / https)\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS minimal ws-raw proxy | visit http://localhost:7681 (-s = use TLS / https)\n");
 
 	memset(&info, 0, sizeof info); /* otherwise uninitialized garbage */
 	info.port = 7681;
@@ -430,30 +430,30 @@ int main(int argc, const char **argv)
 		LWS_SERVER_OPTION_HTTP_HEADERS_SECURITY_BEST_PRACTICES_ENFORCE;
 
 #if defined(LWS_WITH_TLS)
-	if (lws_cmdline_option(argc, argv, "-s")) {
-		lwsl_user("Server using TLS\n");
+	if (aws_lws_cmdline_option(argc, argv, "-s")) {
+		aws_lwsl_user("Server using TLS\n");
 		info.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
 		info.ssl_cert_filepath = "localhost-100y.cert";
 		info.ssl_private_key_filepath = "localhost-100y.key";
 	}
 #endif
 
-	if (lws_cmdline_option(argc, argv, "-h"))
+	if (aws_lws_cmdline_option(argc, argv, "-h"))
 		info.options |= LWS_SERVER_OPTION_VHOST_UPG_STRICT_HOST_CHECK;
 
-	if (lws_cmdline_option(argc, argv, "-v"))
+	if (aws_lws_cmdline_option(argc, argv, "-v"))
 		info.retry_and_idle_policy = &retry;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
 	while (n >= 0 && !interrupted)
-		n = lws_service(context, 0);
+		n = aws_lws_service(context, 0);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return 0;
 }

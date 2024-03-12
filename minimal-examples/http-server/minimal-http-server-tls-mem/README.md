@@ -18,12 +18,12 @@ port 7682 (initialized with DER in-memory certs).
  $ ./lws-minimal-http-server-tls-mem
 [2019/02/14 14:46:40:9783] USER: LWS minimal http server TLS | visit https://localhost:7681
 [2019/02/14 14:46:40:9784] NOTICE:  Using SSL mode
-[2019/02/14 14:46:40:9784] NOTICE: lws_tls_server_vhost_backend_init: vh first: mem CA OK
+[2019/02/14 14:46:40:9784] NOTICE: aws_lws_tls_server_vhost_backend_init: vh first: mem CA OK
 parsing as der
 [2019/02/14 14:46:40:9849] NOTICE: no client cert required
 [2019/02/14 14:46:40:9849] NOTICE: created client ssl context for first
 [2019/02/14 14:46:40:9849] NOTICE:  Using SSL mode
-[2019/02/14 14:46:40:9850] NOTICE: lws_tls_server_vhost_backend_init: vh second: mem CA OK
+[2019/02/14 14:46:40:9850] NOTICE: aws_lws_tls_server_vhost_backend_init: vh second: mem CA OK
 parsing as der
 [2019/02/14 14:46:40:9894] NOTICE: no client cert required
 [2019/02/14 14:46:40:9894] NOTICE: created client ssl context for second

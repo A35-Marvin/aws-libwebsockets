@@ -1,11 +1,11 @@
-project(lws-minimal-http-server-form-post-lwsac C)
+project(lws-minimal-http-server-form-post-aws_lwsac C)
 cmake_minimum_required(VERSION 2.8.12)
 find_package(libwebsockets CONFIG REQUIRED)
 list(APPEND CMAKE_MODULE_PATH ${LWS_CMAKE_DIR})
 include(CheckCSourceCompiles)
 include(LwsCheckRequirements)
 
-set(SAMP lws-minimal-http-server-form-post-lwsac)
+set(SAMP lws-minimal-http-server-form-post-aws_lwsac)
 set(SRCS minimal-http-server-form-post.c)
 
 set(requirements 1)

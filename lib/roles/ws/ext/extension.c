@@ -27,13 +27,13 @@
 #include "extension-permessage-deflate.h"
 
 void
-lws_context_init_extensions(const struct lws_context_creation_info *info,
-			    struct lws_context *context)
+aws_lws_context_init_extensions(const struct aws_lws_context_creation_info *info,
+			    struct aws_lws_context *context)
 {
-	lwsl_cx_info(context, " LWS_MAX_EXTENSIONS_ACTIVE: %u", LWS_MAX_EXTENSIONS_ACTIVE);
+	aws_lwsl_cx_info(context, " LWS_MAX_EXTENSIONS_ACTIVE: %u", LWS_MAX_EXTENSIONS_ACTIVE);
 }
 
-enum lws_ext_option_parser_states {
+enum aws_lws_ext_option_parser_states {
 	LEAPS_SEEK_NAME,
 	LEAPS_EAT_NAME,
 	LEAPS_SEEK_VAL,
@@ -42,21 +42,21 @@ enum lws_ext_option_parser_states {
 };
 
 int
-lws_ext_parse_options(const struct lws_extension *ext, struct lws *wsi,
-		      void *ext_user, const struct lws_ext_options *opts,
+aws_lws_ext_parse_options(const struct aws_lws_extension *ext, struct lws *wsi,
+		      void *ext_user, const struct aws_lws_ext_options *opts,
 		      const char *in, int len)
 {
-	enum lws_ext_option_parser_states leap = LEAPS_SEEK_NAME;
+	enum aws_lws_ext_option_parser_states leap = LEAPS_SEEK_NAME;
 	unsigned int match_map = 0, n, m, w = 0, count_options = 0,
 		     pending_close_quote = 0;
-	struct lws_ext_option_arg oa;
+	struct aws_lws_ext_option_arg oa;
 
 	oa.option_name = NULL;
 
 	while (opts[count_options].name)
 		count_options++;
 	while (len) {
-		lwsl_wsi_ext(wsi, "'%c' %d", *in, leap);
+		aws_lwsl_wsi_ext(wsi, "'%c' %d", *in, leap);
 		switch (leap) {
 		case LEAPS_SEEK_NAME:
 			if (*in == ' ')
@@ -83,12 +83,12 @@ lws_ext_parse_options(const struct lws_extension *ext, struct lws *wsi,
 					n++;
 					continue;
 				}
-				lwsl_wsi_ext(wsi, "    m=%d, n=%d, w=%d", m, n, w);
+				aws_lwsl_wsi_ext(wsi, "    m=%d, n=%d, w=%d", m, n, w);
 
 				if (*in == opts[n].name[w]) {
 					if (!opts[n].name[w + 1]) {
 						oa.option_index = (int)n;
-						lwsl_wsi_ext(wsi, "hit %d",
+						aws_lwsl_wsi_ext(wsi, "hit %d",
 							 oa.option_index);
 						leap = LEAPS_SEEK_VAL;
 						if (len == 1)
@@ -98,7 +98,7 @@ lws_ext_parse_options(const struct lws_extension *ext, struct lws *wsi,
 				} else {
 					match_map &= (unsigned int)~(1 << n);
 					if (!match_map) {
-						lwsl_wsi_ext(wsi, "empty match map");
+						aws_lwsl_wsi_ext(wsi, "empty match map");
 						return -1;
 					}
 				}
@@ -150,12 +150,12 @@ lws_ext_parse_options(const struct lws_extension *ext, struct lws *wsi,
 				return -1;
 			leap = LEAPS_SEEK_ARG_TERM;
 			if (oa.start)
-				oa.len = lws_ptr_diff(in, oa.start);
+				oa.len = aws_lws_ptr_diff(in, oa.start);
 			if (len == 1)
 				oa.len++;
 
 set_arg:
-			ext->callback(lws_get_context(wsi),
+			ext->callback(aws_lws_get_context(wsi),
 				ext, wsi, LWS_EXT_CB_OPTION_SET,
 				ext_user, (char *)&oa, 0);
 			if (len == 1)
@@ -188,7 +188,7 @@ set_arg:
 
 /* 0 = nobody had nonzero return, 1 = somebody had positive return, -1 = fail */
 
-int lws_ext_cb_active(struct lws *wsi, int reason, void *arg, int len)
+int aws_lws_ext_cb_active(struct lws *wsi, int reason, void *arg, int len)
 {
 	int n, m, handled = 0;
 
@@ -197,10 +197,10 @@ int lws_ext_cb_active(struct lws *wsi, int reason, void *arg, int len)
 
 	for (n = 0; n < wsi->ws->count_act_ext; n++) {
 		m = wsi->ws->active_extensions[n]->callback(
-			lws_get_context(wsi), wsi->ws->active_extensions[n],
-			wsi, (enum lws_extension_callback_reasons)reason, wsi->ws->act_ext_user[n], arg, (size_t)len);
+			aws_lws_get_context(wsi), wsi->ws->active_extensions[n],
+			wsi, (enum aws_lws_extension_callback_reasons)reason, wsi->ws->act_ext_user[n], arg, (size_t)len);
 		if (m < 0) {
-			lwsl_wsi_ext(wsi, "Ext '%s' failed to handle callback %d!",
+			aws_lwsl_wsi_ext(wsi, "Ext '%s' failed to handle callback %d!",
 				 wsi->ws->active_extensions[n]->name, reason);
 			return -1;
 		}
@@ -214,11 +214,11 @@ int lws_ext_cb_active(struct lws *wsi, int reason, void *arg, int len)
 	return handled;
 }
 
-int lws_ext_cb_all_exts(struct lws_context *context, struct lws *wsi,
+int aws_lws_ext_cb_all_exts(struct aws_lws_context *context, struct lws *wsi,
 			int reason, void *arg, int len)
 {
 	int n = 0, m, handled = 0;
-	const struct lws_extension *ext;
+	const struct aws_lws_extension *ext;
 
 	if (!wsi || !wsi->a.vhost || !wsi->ws)
 		return 0;
@@ -226,10 +226,10 @@ int lws_ext_cb_all_exts(struct lws_context *context, struct lws *wsi,
 	ext = wsi->a.vhost->ws.extensions;
 
 	while (ext && ext->callback && !handled) {
-		m = ext->callback(context, ext, wsi, (enum lws_extension_callback_reasons)reason,
-				  (void *)(lws_intptr_t)n, arg, (size_t)len);
+		m = ext->callback(context, ext, wsi, (enum aws_lws_extension_callback_reasons)reason,
+				  (void *)(aws_lws_intptr_t)n, arg, (size_t)len);
 		if (m < 0) {
-			lwsl_wsi_ext(wsi, "Ext '%s' failed to handle callback %d!",
+			aws_lwsl_wsi_ext(wsi, "Ext '%s' failed to handle callback %d!",
 				 wsi->ws->active_extensions[n]->name, reason);
 			return -1;
 		}
@@ -244,9 +244,9 @@ int lws_ext_cb_all_exts(struct lws_context *context, struct lws *wsi,
 }
 
 int
-lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
+aws_lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
 {
-	struct lws_tokens ebuf;
+	struct aws_lws_tokens ebuf;
 	int ret, m, n = 0;
 
 	ebuf.token = buf;
@@ -265,7 +265,7 @@ lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
 		ret = 0;
 
 		/* show every extension the new incoming data */
-		m = lws_ext_cb_active(wsi, LWS_EXT_CB_PACKET_TX_PRESEND,
+		m = aws_lws_ext_cb_active(wsi, LWS_EXT_CB_PACKET_TX_PRESEND,
 				      &ebuf, 0);
 		if (m < 0)
 			return -1;
@@ -282,9 +282,9 @@ lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
 		/* assuming they left us something to send, send it */
 
 		if (ebuf.len) {
-			n = lws_issue_raw(wsi, ebuf.token, (size_t)ebuf.len);
+			n = aws_lws_issue_raw(wsi, ebuf.token, (size_t)ebuf.len);
 			if (n < 0) {
-				lwsl_wsi_info(wsi, "closing from ext access");
+				aws_lwsl_wsi_info(wsi, "closing from ext access");
 				return -1;
 			}
 
@@ -292,7 +292,7 @@ lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
 			if (wsi->ws->clean_buffer)
 				len = (size_t)n;
 
-			lwsl_wsi_ext(wsi, "written %d bytes to client", n);
+			aws_lwsl_wsi_ext(wsi, "written %d bytes to client", n);
 		}
 
 		/* no extension has more to spill?  Then we can go */
@@ -310,17 +310,17 @@ lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
 		 * Or we had to hold on to some of it?
 		 */
 
-		if (!lws_send_pipe_choked(wsi) && !lws_has_buffered_out(wsi))
+		if (!aws_lws_send_pipe_choked(wsi) && !aws_lws_has_buffered_out(wsi))
 			/* no we could add more, lets's do that */
 			continue;
 
-		lwsl_wsi_debug(wsi, "choked");
+		aws_lwsl_wsi_debug(wsi, "choked");
 
 		/*
 		 * Yes, he's choked.  Don't spill the rest now get a callback
 		 * when he is ready to send and take care of it there
 		 */
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		wsi->ws->extension_data_pending = 1;
 		ret = 0;
 	}
@@ -329,10 +329,10 @@ lws_issue_raw_ext_access(struct lws *wsi, unsigned char *buf, size_t len)
 }
 
 int
-lws_any_extension_handled(struct lws *wsi, enum lws_extension_callback_reasons r,
+aws_lws_any_extension_handled(struct lws *wsi, enum aws_lws_extension_callback_reasons r,
 			  void *v, size_t len)
 {
-	struct lws_context *context = wsi->a.context;
+	struct aws_lws_context *context = wsi->a.context;
 	int n, handled = 0;
 
 	if (!wsi->ws)
@@ -353,10 +353,10 @@ lws_any_extension_handled(struct lws *wsi, enum lws_extension_callback_reasons r
 }
 
 int
-lws_set_extension_option(struct lws *wsi, const char *ext_name,
+aws_lws_set_extension_option(struct lws *wsi, const char *ext_name,
 			 const char *opt_name, const char *opt_val)
 {
-	struct lws_ext_option_arg oa;
+	struct aws_lws_ext_option_arg oa;
 	int idx = 0;
 
 	if (!wsi->ws)

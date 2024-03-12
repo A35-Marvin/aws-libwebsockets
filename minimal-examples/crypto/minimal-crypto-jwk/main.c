@@ -68,25 +68,25 @@ format_c(int fd, const char *key)
 int main(int argc, const char **argv)
 {
 	int result = 0, logs = LLL_USER | LLL_ERR | LLL_WARN | LLL_NOTICE;
-	enum lws_gencrypto_kty kty = LWS_GENCRYPTO_KTY_RSA;
-	struct lws_context_creation_info info;
+	enum aws_lws_gencrypto_kty kty = LWS_GENCRYPTO_KTY_RSA;
+	struct aws_lws_context_creation_info info;
 	const char *curve = "P-256", *p;
-	struct lws_context *context;
-	struct lws_jwk jwk;
+	struct aws_lws_context *context;
+	struct aws_lws_jwk jwk;
 	int bits = 4096;
 	char key[32768];
 	int vl = sizeof(key);
 
-	if ((p = lws_cmdline_option(argc, argv, "-d")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-d")))
 		logs = atoi(p);
 
-	lws_set_log_level(logs, NULL);
-	lwsl_user("LWS JWK example\n");
+	aws_lws_set_log_level(logs, NULL);
+	aws_lwsl_user("LWS JWK example\n");
 
-	if ((p = lws_cmdline_option(argc, argv, "-b")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-b")))
 		bits = atoi(p);
 
-	if ((p = lws_cmdline_option(argc, argv, "-t"))) {
+	if ((p = aws_lws_cmdline_option(argc, argv, "-t"))) {
 		if (!strcmp(p, "RSA"))
 			kty = LWS_GENCRYPTO_KTY_RSA;
 		else
@@ -96,7 +96,7 @@ int main(int argc, const char **argv)
 				if (!strcmp(p, "EC"))
 					kty = LWS_GENCRYPTO_KTY_EC;
 				else {
-					lwsl_err("Unknown key type (must be "
+					aws_lwsl_err("Unknown key type (must be "
 						 "OCT, RSA or EC)\n");
 
 					return 1;
@@ -109,53 +109,53 @@ int main(int argc, const char **argv)
 #endif
 	info.options = 0;
 
-	context = lws_create_context(&info);
+	context = aws_lws_create_context(&info);
 	if (!context) {
-		lwsl_err("lws init failed\n");
+		aws_lwsl_err("lws init failed\n");
 		return 1;
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "-v")))
+	if ((p = aws_lws_cmdline_option(argc, argv, "-v")))
 		curve = p;
 
-	if (lws_jwk_generate(context, &jwk, kty, bits, curve)) {
-		lwsl_err("lws_jwk_generate failed\n");
+	if (aws_lws_jwk_generate(context, &jwk, kty, bits, curve)) {
+		aws_lwsl_err("aws_lws_jwk_generate failed\n");
 
 		return 1;
 	}
 
-	if ((p = lws_cmdline_option(argc, argv, "--kid")))
-		lws_jwk_strdup_meta(&jwk, JWK_META_KID, p, (int)strlen(p));
+	if ((p = aws_lws_cmdline_option(argc, argv, "--kid")))
+		aws_lws_jwk_strdup_meta(&jwk, JWK_META_KID, p, (int)strlen(p));
 
-	if ((p = lws_cmdline_option(argc, argv, "--use")))
-		lws_jwk_strdup_meta(&jwk, JWK_META_USE, p, (int)strlen(p));
+	if ((p = aws_lws_cmdline_option(argc, argv, "--use")))
+		aws_lws_jwk_strdup_meta(&jwk, JWK_META_USE, p, (int)strlen(p));
 
-	if ((p = lws_cmdline_option(argc, argv, "--alg")))
-		lws_jwk_strdup_meta(&jwk, JWK_META_ALG, p, (int)strlen(p));
+	if ((p = aws_lws_cmdline_option(argc, argv, "--alg")))
+		aws_lws_jwk_strdup_meta(&jwk, JWK_META_ALG, p, (int)strlen(p));
 
-	if ((p = lws_cmdline_option(argc, argv, "--key-ops")))
-		lws_jwk_strdup_meta(&jwk, JWK_META_KEY_OPS, p, (int)strlen(p));
+	if ((p = aws_lws_cmdline_option(argc, argv, "--key-ops")))
+		aws_lws_jwk_strdup_meta(&jwk, JWK_META_KEY_OPS, p, (int)strlen(p));
 
-	if ((p = lws_cmdline_option(argc, argv, "--public")) &&
+	if ((p = aws_lws_cmdline_option(argc, argv, "--public")) &&
 	    kty != LWS_GENCRYPTO_KTY_OCT) {
 
 		int fd;
 
 		/* public version */
 
-		if (lws_jwk_export(&jwk, 0, key, &vl) < 0) {
-			lwsl_err("lws_jwk_export failed\n");
+		if (aws_lws_jwk_export(&jwk, 0, key, &vl) < 0) {
+			aws_lwsl_err("aws_lws_jwk_export failed\n");
 
 			return 1;
 		}
 
 		fd = open(p, LWS_O_CREAT | LWS_O_TRUNC | LWS_O_WRONLY, 0600);
 		if (fd < 0) {
-			lwsl_err("Can't open public key file %s\n", p);
+			aws_lwsl_err("Can't open public key file %s\n", p);
 			return 1;
 		}
 
-		if (lws_cmdline_option(argc, argv, "-c"))
+		if (aws_lws_cmdline_option(argc, argv, "-c"))
 			format_c(fd, key);
 		else {
 			if (write(fd, key,
@@ -163,7 +163,7 @@ int main(int argc, const char **argv)
 					(unsigned int)
 #endif
 					strlen(key)) < 0) {
-				lwsl_err("Write public failed\n");
+				aws_lwsl_err("Write public failed\n");
 				return 1;
 			}
 		}
@@ -173,13 +173,13 @@ int main(int argc, const char **argv)
 
 	/* private version */
 
-	if (lws_jwk_export(&jwk, LWSJWKF_EXPORT_PRIVATE, key, &vl) < 0) {
-		lwsl_err("lws_jwk_export failed\n");
+	if (aws_lws_jwk_export(&jwk, LWSJWKF_EXPORT_PRIVATE, key, &vl) < 0) {
+		aws_lwsl_err("aws_lws_jwk_export failed\n");
 
 		return 1;
 	}
 
-	if (lws_cmdline_option(argc, argv, "-c")) {
+	if (aws_lws_cmdline_option(argc, argv, "-c")) {
 		if (format_c(1, key) < 0)
 			return 1;
 	} else
@@ -188,13 +188,13 @@ int main(int argc, const char **argv)
 				(unsigned int)
 #endif
 				strlen(key)) < 0) {
-			lwsl_err("Write stdout failed\n");
+			aws_lwsl_err("Write stdout failed\n");
 			return 1;
 		}
 
-	lws_jwk_destroy(&jwk);
+	aws_lws_jwk_destroy(&jwk);
 
-	lws_context_destroy(context);
+	aws_lws_context_destroy(context);
 
 	return result;
 }

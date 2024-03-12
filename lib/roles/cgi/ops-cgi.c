@@ -25,10 +25,10 @@
 #include <private-lib-core.h>
 
 static int
-rops_handle_POLLIN_cgi(struct lws_context_per_thread *pt, struct lws *wsi,
-		       struct lws_pollfd *pollfd)
+rops_handle_POLLIN_cgi(struct aws_lws_context_per_thread *pt, struct lws *wsi,
+		       struct aws_lws_pollfd *pollfd)
 {
-	struct lws_cgi_args args;
+	struct aws_lws_cgi_args args;
 
 	assert(wsi->role_ops == &role_ops_cgi);
 
@@ -41,34 +41,34 @@ rops_handle_POLLIN_cgi(struct lws_context_per_thread *pt, struct lws *wsi,
 		return LWS_HPI_RET_HANDLED;
 
 	if (wsi->lsp_channel == LWS_STDIN &&
-	    lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
-		lwsl_wsi_info(wsi, "failed at set pollfd");
+	    aws_lws_change_pollfd(wsi, LWS_POLLOUT, 0)) {
+		aws_lwsl_wsi_info(wsi, "failed at set pollfd");
 		return LWS_HPI_RET_WSI_ALREADY_DIED;
 	}
 
 	if (!wsi->parent) {
-		lwsl_wsi_debug(wsi, "stdwsi content with parent");
+		aws_lwsl_wsi_debug(wsi, "stdwsi content with parent");
 
 		return LWS_HPI_RET_HANDLED;
 	}
 
 	if (!wsi->parent->http.cgi) {
-		lwsl_wsi_notice(wsi, "stdwsi content with deleted cgi object");
+		aws_lwsl_wsi_notice(wsi, "stdwsi content with deleted cgi object");
 
 		return LWS_HPI_RET_HANDLED;
 	}
 
 	if (!wsi->parent->http.cgi->lsp) {
-		lwsl_wsi_notice(wsi, "stdwsi content with reaped lsp");
+		aws_lwsl_wsi_notice(wsi, "stdwsi content with reaped lsp");
 
 		return LWS_HPI_RET_HANDLED;
 	}
 
 	args.ch = wsi->lsp_channel;
 	args.stdwsi = &wsi->parent->http.cgi->lsp->stdwsi[0];
-	args.hdr_state = (enum lws_cgi_hdr_state)wsi->hdr_state;
+	args.hdr_state = (enum aws_lws_cgi_hdr_state)wsi->hdr_state;
 
-	lwsl_wsi_debug(wsi, "CGI LWS_STDOUT %p wsistate 0x%x",
+	aws_lwsl_wsi_debug(wsi, "CGI LWS_STDOUT %p wsistate 0x%x",
 			    wsi->parent, wsi->wsistate);
 
 	if (user_callback_handle_rxflow(wsi->parent->a.protocol->callback,
@@ -103,39 +103,39 @@ rops_destroy_role_cgi(struct lws *wsi)
 }
 
 void
-lws_cgi_sul_cb(lws_sorted_usec_list_t *sul)
+aws_lws_cgi_sul_cb(aws_lws_sorted_usec_list_t *sul)
 {
-	struct lws_context_per_thread *pt = lws_container_of(sul,
-			struct lws_context_per_thread, sul_cgi);
+	struct aws_lws_context_per_thread *pt = aws_lws_container_of(sul,
+			struct aws_lws_context_per_thread, sul_cgi);
 
-	lws_cgi_kill_terminated(pt);
+	aws_lws_cgi_kill_terminated(pt);
 
 	if (pt->http.cgi_list)
-		lws_sul_schedule(pt->context, (int)(pt - pt->context->pt),
-				 &pt->sul_cgi, lws_cgi_sul_cb, 3 * LWS_US_PER_SEC);
+		aws_lws_sul_schedule(pt->context, (int)(pt - pt->context->pt),
+				 &pt->sul_cgi, aws_lws_cgi_sul_cb, 3 * LWS_US_PER_SEC);
 }
 
 static int
-rops_pt_init_destroy_cgi(struct lws_context *context,
-		    const struct lws_context_creation_info *info,
-		    struct lws_context_per_thread *pt, int destroy)
+rops_pt_init_destroy_cgi(struct aws_lws_context *context,
+		    const struct aws_lws_context_creation_info *info,
+		    struct aws_lws_context_per_thread *pt, int destroy)
 {
 
-	lws_sul_cancel(&pt->sul_cgi);
+	aws_lws_sul_cancel(&pt->sul_cgi);
 
 	return 0;
 }
 
 static int
-rops_close_role_cgi(struct lws_context_per_thread *pt, struct lws *wsi)
+rops_close_role_cgi(struct aws_lws_context_per_thread *pt, struct lws *wsi)
 {
 	if (wsi->parent && wsi->parent->http.cgi && wsi->parent->http.cgi->lsp)
-		lws_spawn_stdwsi_closed(wsi->parent->http.cgi->lsp, wsi);
+		aws_lws_spawn_stdwsi_closed(wsi->parent->http.cgi->lsp, wsi);
 
 	return 0;
 }
 
-static const lws_rops_t rops_table_cgi[] = {
+static const aws_lws_rops_t rops_table_cgi[] = {
 	/*  1 */ { .pt_init_destroy	= rops_pt_init_destroy_cgi },
 	/*  2 */ { .handle_POLLIN	= rops_handle_POLLIN_cgi },
 	/*  3 */ { .handle_POLLOUT	= rops_handle_POLLOUT_cgi },
@@ -143,7 +143,7 @@ static const lws_rops_t rops_table_cgi[] = {
 	/*  5 */ { .destroy_role	= rops_destroy_role_cgi },
 };
 
-const struct lws_role_ops role_ops_cgi = {
+const struct aws_lws_role_ops role_ops_cgi = {
 	/* role name */			"cgi",
 	/* alpn id */			NULL,
 

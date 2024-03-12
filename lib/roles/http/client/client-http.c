@@ -25,16 +25,16 @@
 #include "private-lib-core.h"
 
 void
-lws_client_http_body_pending(struct lws *wsi, int something_left_to_send)
+aws_lws_client_http_body_pending(struct lws *wsi, int something_left_to_send)
 {
 	wsi->client_http_body_pending = !!something_left_to_send;
 }
 
 int
-lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
+aws_lws_http_client_socket_service(struct lws *wsi, struct aws_lws_pollfd *pollfd)
 {
-	struct lws_context *context = wsi->a.context;
-	struct lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
+	struct aws_lws_context *context = wsi->a.context;
+	struct aws_lws_context_per_thread *pt = &context->pt[(int)wsi->tsi];
 	char *p = (char *)&pt->serv_buf[0];
 #if defined(LWS_WITH_TLS)
 	char ebuf[128];
@@ -43,17 +43,17 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
 	char *sb = p;
 	int n = 0;
 
-	switch (lwsi_state(wsi)) {
+	switch (aws_lwsi_state(wsi)) {
 
 	case LRS_WAITING_DNS:
 		/*
 		 * we are under PENDING_TIMEOUT_SENT_CLIENT_HANDSHAKE
 		 * timeout protection set in client-handshake.c
 		 */
-		lwsl_err("%s: %s: WAITING_DNS\n", __func__, lws_wsi_tag(wsi));
-		if (!lws_client_connect_2_dnsreq(wsi)) {
+		aws_lwsl_err("%s: %s: WAITING_DNS\n", __func__, aws_lws_wsi_tag(wsi));
+		if (!aws_lws_client_connect_2_dnsreq(wsi)) {
 			/* closed */
-			lwsl_client("closed\n");
+			aws_lwsl_client("closed\n");
 			return -1;
 		}
 
@@ -67,8 +67,8 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
 		 * timeout protection set in client-handshake.c
 		 */
 		if (pollfd->revents & LWS_POLLOUT)
-			if (lws_client_connect_3_connect(wsi, NULL, NULL, 0, NULL) == NULL) {
-				lwsl_client("closed\n");
+			if (aws_lws_client_connect_3_connect(wsi, NULL, NULL, 0, NULL) == NULL) {
+				aws_lwsl_client("closed\n");
 				return -1;
 			}
 		break;
@@ -79,7 +79,7 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
 	case LRS_WAITING_SOCKS_AUTH_REPLY:
 	case LRS_WAITING_SOCKS_CONNECT_REPLY:
 
-		switch (lws_socks5c_handle_state(wsi, pollfd, &cce)) {
+		switch (aws_lws_socks5c_handle_state(wsi, pollfd, &cce)) {
 		case LW5CHS_RET_RET0:
 			return 0;
 		case LW5CHS_RET_BAIL3:
@@ -100,8 +100,8 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
 
 		if (pollfd->revents & LWS_POLLHUP) {
 
-			lwsl_warn("Proxy conn %s (fd=%d) dead\n",
-				  lws_wsi_tag(wsi), pollfd->fd);
+			aws_lwsl_warn("Proxy conn %s (fd=%d) dead\n",
+				  aws_lws_wsi_tag(wsi), pollfd->fd);
 
 			cce = "proxy conn dead";
 			goto bail3;
@@ -110,10 +110,10 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
 		n = (int)recv(wsi->desc.sockfd, sb, context->pt_serv_buf_size, 0);
 		if (n < 0) {
 			if (LWS_ERRNO == LWS_EAGAIN) {
-				lwsl_debug("Proxy read EAGAIN... retrying\n");
+				aws_lwsl_debug("Proxy read EAGAIN... retrying\n");
 				return 0;
 			}
-			lwsl_err("ERROR reading from proxy socket\n");
+			aws_lwsl_err("ERROR reading from proxy socket\n");
 			cce = "proxy read err";
 			goto bail3;
 		}
@@ -123,7 +123,7 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
 		pt->serv_buf[13] = '\0';
 		if (n < 13 || strncmp(sb, "HTTP/1.", 7) ||
 			      (sb[7] != '0' && sb[7] != '1') || sb[8] != ' ') {
-			/* lwsl_hexdump_notice(sb, n); */
+			/* aws_lwsl_hexdump_notice(sb, n); */
 			cce = "http_proxy fail";
 			goto bail3;
 		}
@@ -131,17 +131,17 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
 		/* it's h1 alright... what's his logical response code? */
 		n = atoi(&sb[9]);
 		if (n != 200) {
-			lws_snprintf(sb, 20, "http_proxy -> %u",
+			aws_lws_snprintf(sb, 20, "http_proxy -> %u",
 				     (unsigned int)n);
 			cce = sb;
 			goto bail3;
 		}
 
-		lwsl_info("%s: proxy connection extablished\n", __func__);
+		aws_lwsl_info("%s: proxy connection extablished\n", __func__);
 
 		/* clear his proxy connection timeout */
 
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+		aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
 
                /* fallthru */
 
@@ -151,19 +151,19 @@ lws_http_client_socket_service(struct lws *wsi, struct lws_pollfd *pollfd)
                /* fallthru */
 	case LRS_H1C_ISSUE_HANDSHAKE:
 
-		lwsl_debug("%s: LRS_H1C_ISSUE_HANDSHAKE\n", __func__);
+		aws_lwsl_debug("%s: LRS_H1C_ISSUE_HANDSHAKE\n", __func__);
 
 		/*
 		 * we are under PENDING_TIMEOUT_SENT_CLIENT_HANDSHAKE
 		 * timeout protection set in client-handshake.c
 		 *
-		 * take care of our lws_callback_on_writable
+		 * take care of our aws_lws_callback_on_writable
 		 * happening at a time when there's no real connection yet
 		 */
 #if defined(LWS_WITH_SOCKS5)
 start_ws_handshake:
 #endif
-		if (lws_change_pollfd(wsi, LWS_POLLOUT, 0))
+		if (aws_lws_change_pollfd(wsi, LWS_POLLOUT, 0))
 			return -1;
 
 #if defined(LWS_ROLE_H2) || defined(LWS_WITH_TLS)
@@ -182,27 +182,27 @@ start_ws_handshake:
 #endif
 
 #if defined(LWS_WITH_TLS)
-		n = lws_client_create_tls(wsi, &cce, 1);
+		n = aws_lws_client_create_tls(wsi, &cce, 1);
 		if (n == CCTLS_RETURN_ERROR)
 			goto bail3;
 		if (n == CCTLS_RETURN_RETRY)
 			return 0;
 
 		/*
-		 * lws_client_create_tls() can already have done the
+		 * aws_lws_client_create_tls() can already have done the
 		 * whole tls setup and preface send... if so he set our state
 		 * to LRS_H1C_ISSUE_HANDSHAKE2... let's proceed but be prepared
 		 * to notice our state and not resend the preface...
 		 */
 
-		lwsl_debug("%s: LRS_H1C_ISSUE_HANDSHAKE fallthru\n", __func__);
+		aws_lwsl_debug("%s: LRS_H1C_ISSUE_HANDSHAKE fallthru\n", __func__);
 
 		/* fallthru */
 
 	case LRS_WAITING_SSL:
 
 		if (wsi->tls.use_ssl & LCCSCF_USE_SSL) {
-			n = lws_ssl_client_connect2(wsi, ebuf, sizeof(ebuf));
+			n = aws_lws_ssl_client_connect2(wsi, ebuf, sizeof(ebuf));
 			if (!n)
 				return 0;
 			if (n < 0) {
@@ -212,15 +212,15 @@ start_ws_handshake:
 		} else {
 			wsi->tls.ssl = NULL;
 			if (wsi->flags & LCCSCF_H2_PRIOR_KNOWLEDGE) {
-				lwsl_info("h2 prior knowledge\n");
-				lws_role_call_alpn_negotiated(wsi, "h2");
+				aws_lwsl_info("h2 prior knowledge\n");
+				aws_lws_role_call_alpn_negotiated(wsi, "h2");
 			}
 		}
 #endif
 
 #if defined (LWS_WITH_HTTP2)
 		if (wsi->client_h2_alpn //&&
-		    //lwsi_state(wsi) != LRS_H1C_ISSUE_HANDSHAKE2
+		    //aws_lwsi_state(wsi) != LRS_H1C_ISSUE_HANDSHAKE2
 		    ) {
 			/*
 			 * We connected to the server and set up tls and
@@ -231,7 +231,7 @@ start_ws_handshake:
 			 * now, not an h1 client connection.
 			 */
 
-			lwsl_info("%s: doing h2 hello path\n", __func__);
+			aws_lwsl_info("%s: doing h2 hello path\n", __func__);
 
 			/*
 			 * send the H2 preface to legitimize the connection
@@ -239,13 +239,13 @@ start_ws_handshake:
 			 * transitions us to LRS_H2_WAITING_TO_SEND_HEADERS
 			 */
 			if (wsi->client_h2_alpn)
-				if (lws_h2_issue_preface(wsi)) {
+				if (aws_lws_h2_issue_preface(wsi)) {
 					cce = "error sending h2 preface";
 					goto bail3;
 				}
 
-		//	lwsi_set_state(wsi, LRS_H1C_ISSUE_HANDSHAKE2);
-			lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_CLIENT_HS_SEND,
+		//	aws_lwsi_set_state(wsi, LRS_H1C_ISSUE_HANDSHAKE2);
+			aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_CLIENT_HS_SEND,
 					(int)context->timeout_secs);
 
 			break;
@@ -258,7 +258,7 @@ start_ws_handshake:
 
 hs2:
 
-		p = lws_generate_client_handshake(wsi, p);
+		p = aws_lws_generate_client_handshake(wsi, p);
 		if (p == NULL) {
 			if (wsi->role_ops == &role_ops_raw_skt
 #if defined(LWS_ROLE_RAW_FILE)
@@ -267,54 +267,54 @@ hs2:
 			    )
 				return 0;
 
-			lwsl_err("Failed to generate handshake for client\n");
-			lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
+			aws_lwsl_err("Failed to generate handshake for client\n");
+			aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
 					   "chs");
 			return 0;
 		}
 
 		/* send our request to the server */
 
-		lwsl_info("%s: HANDSHAKE2: %s: sending headers "
+		aws_lwsl_info("%s: HANDSHAKE2: %s: sending headers "
 			  "(wsistate 0x%lx), w sock %d\n",
-			  __func__, lws_wsi_tag(wsi),
+			  __func__, aws_lws_wsi_tag(wsi),
 			  (unsigned long)wsi->wsistate, wsi->desc.sockfd);
 
-		n = lws_ssl_capable_write(wsi, (unsigned char *)sb, lws_ptr_diff_size_t(p, sb));
+		n = aws_lws_ssl_capable_write(wsi, (unsigned char *)sb, aws_lws_ptr_diff_size_t(p, sb));
 		switch (n) {
 		case LWS_SSL_CAPABLE_ERROR:
-			lwsl_debug("ERROR writing to client socket\n");
-			lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
+			aws_lwsl_debug("ERROR writing to client socket\n");
+			aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS,
 					   "cws");
 			return 0;
 		case LWS_SSL_CAPABLE_MORE_SERVICE:
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 			break;
 		}
 
-		if (wsi->client_http_body_pending || lws_has_buffered_out(wsi)) {
-			lwsl_debug("body pending\n");
-			lwsi_set_state(wsi, LRS_ISSUE_HTTP_BODY);
-			lws_set_timeout(wsi,
+		if (wsi->client_http_body_pending || aws_lws_has_buffered_out(wsi)) {
+			aws_lwsl_debug("body pending\n");
+			aws_lwsi_set_state(wsi, LRS_ISSUE_HTTP_BODY);
+			aws_lws_set_timeout(wsi,
 					PENDING_TIMEOUT_CLIENT_ISSUE_PAYLOAD,
 					(int)context->timeout_secs);
 
 			if (wsi->flags & LCCSCF_HTTP_X_WWW_FORM_URLENCODED)
-				lws_callback_on_writable(wsi);
+				aws_lws_callback_on_writable(wsi);
 #if defined(LWS_WITH_HTTP_PROXY)
 			if (wsi->http.proxy_clientside && wsi->parent &&
 			    wsi->parent->http.buflist_post_body)
-				lws_callback_on_writable(wsi);
+				aws_lws_callback_on_writable(wsi);
 #endif
 			/* user code must ask for writable callback */
 			break;
 		}
 
-		lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
+		aws_lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
 		wsi->hdr_parsing_completed = 0;
 
-		if (lwsi_state(wsi) == LRS_IDLING) {
-			lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
+		if (aws_lwsi_state(wsi) == LRS_IDLING) {
+			aws_lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
 			wsi->hdr_parsing_completed = 0;
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 			wsi->http.ah->parser_state = WSI_TOKEN_NAME_PART;
@@ -325,10 +325,10 @@ hs2:
 #endif
 		}
 
-		lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SERVER_RESPONSE,
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SERVER_RESPONSE,
 				(int)wsi->a.context->timeout_secs);
 
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 
 		goto client_http_body_sent;
 
@@ -336,10 +336,10 @@ hs2:
 #if defined(LWS_WITH_HTTP_PROXY)
 			if (wsi->http.proxy_clientside && wsi->parent &&
 			    wsi->parent->http.buflist_post_body)
-				lws_callback_on_writable(wsi);
+				aws_lws_callback_on_writable(wsi);
 #endif
-		if (wsi->client_http_body_pending || lws_has_buffered_out(wsi)) {
-			//lws_set_timeout(wsi,
+		if (wsi->client_http_body_pending || aws_lws_has_buffered_out(wsi)) {
+			//aws_lws_set_timeout(wsi,
 			//		PENDING_TIMEOUT_CLIENT_ISSUE_PAYLOAD,
 			//		context->timeout_secs);
 			/* user code must ask for writable callback */
@@ -352,8 +352,8 @@ client_http_body_sent:
 		wsi->http.ah->lextable_pos = 0;
 		wsi->http.ah->unk_pos = 0;
 #endif
-		lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
-		lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SERVER_RESPONSE,
+		aws_lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
+		aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SERVER_RESPONSE,
 				(int)context->timeout_secs);
 		break;
 
@@ -365,18 +365,18 @@ client_http_body_sent:
 		if ((pollfd->revents & (LWS_POLLIN | LWS_POLLHUP)) ==
 								LWS_POLLHUP) {
 
-			if (lws_buflist_total_len(&wsi->buflist))
-				lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_ACK, 3);
+			if (aws_lws_buflist_total_len(&wsi->buflist))
+				aws_lws_set_timeout(wsi, PENDING_TIMEOUT_CLOSE_ACK, 3);
 			else {
-				lwsl_debug("Server conn %s (fd=%d) dead\n",
-						lws_wsi_tag(wsi), pollfd->fd);
+				aws_lwsl_debug("Server conn %s (fd=%d) dead\n",
+						aws_lws_wsi_tag(wsi), pollfd->fd);
 				cce = "Peer hung up";
 				goto bail3;
 			}
 		}
 
 		if (pollfd->revents & LWS_POLLOUT)
-			if (lws_change_pollfd(wsi, LWS_POLLOUT, 0))
+			if (aws_lws_change_pollfd(wsi, LWS_POLLOUT, 0))
 				return -1;
 
 		if (!(pollfd->revents & LWS_POLLIN))
@@ -400,13 +400,13 @@ client_http_body_sent:
 		 * definitively ready from browser pov.
 		 */
 		while (wsi->http.ah->parser_state != WSI_PARSING_COMPLETE) {
-			struct lws_tokens eb;
+			struct aws_lws_tokens eb;
 			int n, m, buffered;
 
 			eb.token = NULL;
 			eb.len = 0;
-			buffered = lws_buflist_aware_read(pt, wsi, &eb, 0, __func__);
-			lwsl_debug("%s: buflist-aware-read %d %d\n", __func__,
+			buffered = aws_lws_buflist_aware_read(pt, wsi, &eb, 0, __func__);
+			aws_lwsl_debug("%s: buflist-aware-read %d %d\n", __func__,
 					buffered, eb.len);
 			if (eb.len == LWS_SSL_CAPABLE_MORE_SERVICE)
 				return 0;
@@ -418,8 +418,8 @@ client_http_body_sent:
 				return 0;
 
 			n = eb.len;
-			if (lws_parse(wsi, eb.token, &n)) {
-				lwsl_warn("problems parsing header\n");
+			if (aws_lws_parse(wsi, eb.token, &n)) {
+				aws_lwsl_warn("problems parsing header\n");
 				cce = "problems parsing header";
 				goto bail3;
 			}
@@ -427,7 +427,7 @@ client_http_body_sent:
 			m = eb.len - n;
 #if defined(LWS_WITH_SECURE_STREAMS_BUFFER_DUMP)
 			do {
-				lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
+				aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
 				if (!h)
 					break;
 
@@ -440,7 +440,7 @@ client_http_body_sent:
 				}
 			} while (0);
 #endif
-			if (lws_buflist_aware_finished_consuming(wsi, &eb, m,
+			if (aws_lws_buflist_aware_finished_consuming(wsi, &eb, m,
 								 buffered,
 								 __func__))
 			        return -1;
@@ -474,18 +474,18 @@ client_http_body_sent:
 		 * packet traffic already arrived we'll trigger poll() again
 		 * right away and deal with it that way
 		 */
-		return lws_client_interpret_server_handshake(wsi);
+		return aws_lws_client_interpret_server_handshake(wsi);
 
 bail3:
-		lwsl_info("%s: closing conn at LWS_CONNMODE...SERVER_REPLY, %s, state 0x%x\n",
-				__func__, lws_wsi_tag(wsi), lwsi_state(wsi));
+		aws_lwsl_info("%s: closing conn at LWS_CONNMODE...SERVER_REPLY, %s, state 0x%x\n",
+				__func__, aws_lws_wsi_tag(wsi), aws_lwsi_state(wsi));
 		if (cce)
-			lwsl_info("reason: %s\n", cce);
+			aws_lwsl_info("reason: %s\n", cce);
 		else
 			cce = "unknown";
-		lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
+		aws_lws_inform_client_conn_fail(wsi, (void *)cce, strlen(cce));
 
-		lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "cbail3");
+		aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "cbail3");
 		return -1;
 
 	default:
@@ -498,23 +498,23 @@ bail3:
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 
 int LWS_WARN_UNUSED_RESULT
-lws_http_transaction_completed_client(struct lws *wsi)
+aws_lws_http_transaction_completed_client(struct lws *wsi)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
 	int n;
 
-	lwsl_info("%s: %s (%s)\n", __func__, lws_wsi_tag(wsi),
+	aws_lwsl_info("%s: %s (%s)\n", __func__, aws_lws_wsi_tag(wsi),
 			wsi->a.protocol->name);
 
 	// if (wsi->http.ah && wsi->http.ah->http_response)
 	/* we're only judging if any (200, or 500 etc) http txn completed */
-	lws_metrics_caliper_report(wsi->cal_conn, METRES_GO);
+	aws_lws_metrics_caliper_report(wsi->cal_conn, METRES_GO);
 
 	if (user_callback_handle_rxflow(wsi->a.protocol->callback, wsi,
 					LWS_CALLBACK_COMPLETED_CLIENT_HTTP,
 					wsi->user_space, NULL, 0)) {
-		lwsl_debug("%s: Completed call returned nonzero (role 0x%lx)\n",
-			   __func__, (unsigned long)lwsi_role(wsi));
+		aws_lwsl_debug("%s: Completed call returned nonzero (role 0x%lx)\n",
+			   __func__, (unsigned long)aws_lwsi_role(wsi));
 		return -1;
 	}
 
@@ -524,9 +524,9 @@ lws_http_transaction_completed_client(struct lws *wsi)
 	 * For h1, wsi may pass some assets on to a queued child and be
 	 * destroyed during this.
 	 */
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 	n = _lws_generic_transaction_completed_active_conn(&wsi, 1);
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
 	if (wsi->http.ah) {
 		if (wsi->client_mux_substream)
@@ -550,27 +550,27 @@ lws_http_transaction_completed_client(struct lws *wsi)
 	 */
 
 	/* otherwise set ourselves up ready to go again */
-	lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
+	aws_lwsi_set_state(wsi, LRS_WAITING_SERVER_REPLY);
 
 	wsi->http.ah->parser_state = WSI_TOKEN_NAME_PART;
 	wsi->http.ah->lextable_pos = 0;
 	wsi->http.ah->unk_pos = 0;
 
-	lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SERVER_RESPONSE,
+	aws_lws_set_timeout(wsi, PENDING_TIMEOUT_AWAITING_SERVER_RESPONSE,
 			(int)wsi->a.context->timeout_secs);
 
 	/* If we're (re)starting on headers, need other implied init */
 	wsi->http.ah->ues = URIES_IDLE;
-	lwsi_set_state(wsi, LRS_H1C_ISSUE_HANDSHAKE2);
+	aws_lwsi_set_state(wsi, LRS_H1C_ISSUE_HANDSHAKE2);
 
-	lwsl_info("%s: %s: new queued transaction\n", __func__, lws_wsi_tag(wsi));
-	lws_callback_on_writable(wsi);
+	aws_lwsl_info("%s: %s: new queued transaction\n", __func__, aws_lws_wsi_tag(wsi));
+	aws_lws_callback_on_writable(wsi);
 
 	return 0;
 }
 
 unsigned int
-lws_http_client_http_response(struct lws *wsi)
+aws_lws_http_client_http_response(struct lws *wsi)
 {
 	if (wsi->http.ah && wsi->http.ah->http_response)
 		return wsi->http.ah->http_response;
@@ -582,28 +582,28 @@ lws_http_client_http_response(struct lws *wsi)
 #if defined(LWS_ROLE_H1) || defined(LWS_ROLE_H2)
 
 int
-lws_http_is_redirected_to_get(struct lws *wsi)
+aws_lws_http_is_redirected_to_get(struct lws *wsi)
 {
 	return wsi->redirected_to_get;
 }
 
 int
-lws_client_interpret_server_handshake(struct lws *wsi)
+aws_lws_client_interpret_server_handshake(struct lws *wsi)
 {
 	int n, port = 0, ssl = 0;
 	int close_reason = LWS_CLOSE_STATUS_PROTOCOL_ERR;
 	const char *prot, *ads = NULL, *path, *cce = NULL;
 	struct allocated_headers *ah, *ah1;
-	struct lws *nwsi = lws_get_network_wsi(wsi);
+	struct lws *nwsi = aws_lws_get_network_wsi(wsi);
 	char *p = NULL, *q, *simp;
 	char new_path[300];
 	void *opaque;
 
-	// lws_free_set_NULL(wsi->stash);
+	// aws_lws_free_set_NULL(wsi->stash);
 
 #if defined(LWS_WITH_CONMON)
-	wsi->conmon.ciu_txn_resp = (lws_conmon_interval_us_t)
-					(lws_now_usecs() - wsi->conmon_datum);
+	wsi->conmon.ciu_txn_resp = (aws_lws_conmon_interval_us_t)
+					(aws_lws_now_usecs() - wsi->conmon_datum);
 #endif
 
 	ah = wsi->http.ah;
@@ -612,18 +612,18 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		 */
 #if defined(LWS_ROLE_H2)
 		if (wsi->client_h2_alpn || wsi->client_mux_substream) {
-			lwsl_debug("%s: %s: transitioning to h2 client\n",
-				   __func__, lws_wsi_tag(wsi));
-			lws_role_transition(wsi, LWSIFR_CLIENT,
+			aws_lwsl_debug("%s: %s: transitioning to h2 client\n",
+				   __func__, aws_lws_wsi_tag(wsi));
+			aws_lws_role_transition(wsi, LWSIFR_CLIENT,
 					    LRS_ESTABLISHED, &role_ops_h2);
 		} else
 #endif
 		{
 #if defined(LWS_ROLE_H1)
 			{
-			lwsl_debug("%s: %s: transitioning to h1 client\n",
-				   __func__, lws_wsi_tag(wsi));
-			lws_role_transition(wsi, LWSIFR_CLIENT,
+			aws_lwsl_debug("%s: %s: transitioning to h1 client\n",
+				   __func__, aws_lws_wsi_tag(wsi));
+			aws_lws_role_transition(wsi, LWSIFR_CLIENT,
 					    LRS_ESTABLISHED, &role_ops_h1);
 			}
 #else
@@ -638,8 +638,8 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 #if defined(LWS_WITH_CACHE_NSCOOKIEJAR) && defined(LWS_WITH_CLIENT)
 
 	if ((wsi->flags & LCCSCF_CACHE_COOKIES) &&
-	    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_SET_COOKIE))
-		lws_parse_set_cookie(wsi);
+	    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_SET_COOKIE))
+		aws_lws_parse_set_cookie(wsi);
 
 #endif
 	/*
@@ -657,29 +657,29 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 
 	wsi->http.conn_type = HTTP_CONNECTION_KEEP_ALIVE;
 	if (!wsi->client_mux_substream) {
-		p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP);
+		p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP);
 		/*
 		if (wsi->do_ws && !p) {
-			lwsl_info("no URI\n");
+			aws_lwsl_info("no URI\n");
 			cce = "HS: URI missing";
 			goto bail3;
 		}
 		*/
 		if (!p) {
-			p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP1_0);
+			p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP1_0);
 			wsi->http.conn_type = HTTP_CONNECTION_CLOSE;
 		}
 		if (!p) {
 			cce = "HS: URI missing";
-			lwsl_info("no URI\n");
+			aws_lwsl_info("no URI\n");
 			goto bail3;
 		}
 #if defined(LWS_ROLE_H2)
 	} else {
-		p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COLON_STATUS);
+		p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_COLON_STATUS);
 		if (!p) {
 			cce = "HS: :status missing";
-			lwsl_info("no status\n");
+			aws_lwsl_info("no status\n");
 			goto bail3;
 		}
 #endif
@@ -687,7 +687,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 #if !defined(LWS_ROLE_H2)
 	if (!p) {
 		cce = "HS: :status missing";
-		lwsl_info("no status\n");
+		aws_lwsl_info("no status\n");
 		goto bail3;
 	}
 #endif
@@ -700,7 +700,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 	    !wsi->http.proxy_clientside &&
 #endif
 	    (n == 301 || n == 302 || n == 303 || n == 307 || n == 308)) {
-		p = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_LOCATION);
+		p = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_LOCATION);
 		if (!p) {
 			cce = "HS: Redirect code but no Location";
 			goto bail3;
@@ -719,10 +719,10 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 #endif
 		   ) {
 	
-			lws_ss_handle_t *h = (lws_ss_handle_t *)lws_get_opaque_user_data(wsi);
+			aws_lws_ss_handle_t *h = (aws_lws_ss_handle_t *)aws_lws_get_opaque_user_data(wsi);
 
 			if (h)
-				lws_conmon_ss_json(h);
+				aws_lws_conmon_ss_json(h);
 		}
 #endif
 #endif
@@ -743,11 +743,11 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		 */
 
 		if (n == 303) {
-			char *mp = lws_hdr_simple_ptr(wsi,_WSI_TOKEN_CLIENT_METHOD);
-			int ml = lws_hdr_total_length(wsi, _WSI_TOKEN_CLIENT_METHOD);
+			char *mp = aws_lws_hdr_simple_ptr(wsi,_WSI_TOKEN_CLIENT_METHOD);
+			int ml = aws_lws_hdr_total_length(wsi, _WSI_TOKEN_CLIENT_METHOD);
 
 			if (ml >= 3 && mp) {
-				lwsl_info("%s: 303 switching to GET\n", __func__);
+				aws_lwsl_info("%s: 303 switching to GET\n", __func__);
 				memcpy(mp, "GET", 4);
 				wsi->redirected_to_get = 1;
 				wsi->http.ah->frags[wsi->http.ah->frag_index[
@@ -760,17 +760,17 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 #if defined(LWS_WITH_TLS)
 			ssl = nwsi->tls.use_ssl & LCCSCF_USE_SSL;
 #endif
-			ads = lws_hdr_simple_ptr(wsi,
+			ads = aws_lws_hdr_simple_ptr(wsi,
 						 _WSI_TOKEN_CLIENT_PEER_ADDRESS);
 			port = nwsi->c_port;
 			path = p;
-			/* lws_client_reset expects leading / omitted */
+			/* aws_lws_client_reset expects leading / omitted */
 			if (*path == '/')
 				path++;
 		}
 		/* Absolute (Full) URI */
 		else if (strchr(p, ':')) {
-			if (lws_parse_uri(p, &prot, &ads, &port, &path)) {
+			if (aws_lws_parse_uri(p, &prot, &ads, &port, &path)) {
 				cce = "HS: URI did not parse";
 				goto bail3;
 			}
@@ -785,13 +785,13 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 #if defined(LWS_WITH_TLS)
 			ssl = nwsi->tls.use_ssl & LCCSCF_USE_SSL;
 #endif
-			ads = lws_hdr_simple_ptr(wsi,
+			ads = aws_lws_hdr_simple_ptr(wsi,
 						 _WSI_TOKEN_CLIENT_PEER_ADDRESS);
 			port = wsi->c_port;
-			/* +1 as lws_client_reset expects leading / omitted */
+			/* +1 as aws_lws_client_reset expects leading / omitted */
 			path = new_path + 1;
-			if (lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_URI))
-				lws_strncpy(new_path, lws_hdr_simple_ptr(wsi,
+			if (aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_URI))
+				aws_lws_strncpy(new_path, aws_lws_hdr_simple_ptr(wsi,
 				   _WSI_TOKEN_CLIENT_URI), sizeof(new_path));
 			else {
 				new_path[0] = '/';
@@ -799,7 +799,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 			}
 			q = strrchr(new_path, '/');
 			if (q)
-				lws_strncpy(q + 1, p, sizeof(new_path) -
+				aws_lws_strncpy(q + 1, p, sizeof(new_path) -
 							(unsigned int)(q - new_path) - 1);
 			else
 				path = p;
@@ -818,8 +818,8 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 			goto bail3;
 		}
 
-		if (!lws_client_reset(&wsi, ssl, ads, port, path, ads, 1)) {
-			lwsl_err("Redirect failed\n");
+		if (!aws_lws_client_reset(&wsi, ssl, ads, port, path, ads, 1)) {
+			aws_lwsl_err("Redirect failed\n");
 			cce = "HS: Redirect failed";
 			goto bail3;
 		}
@@ -833,7 +833,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		 */
 
 		opaque = wsi->a.opaque_user_data;
-		lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "redir");
+		aws_lws_close_free_wsi(wsi, LWS_CLOSE_STATUS_NOSTATUS, "redir");
 		wsi->a.opaque_user_data = opaque;
 
 		return -1;
@@ -862,21 +862,21 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 			 */
 			wsi->keepalive_rejected = 1;
 
-			lws_vhost_lock(wsi->a.vhost);
-			lws_start_foreach_dll_safe(struct lws_dll2 *,
+			aws_lws_vhost_lock(wsi->a.vhost);
+			aws_lws_start_foreach_dll_safe(struct aws_lws_dll2 *,
 						   d, d1,
 			  wsi->dll2_cli_txn_queue_owner.head) {
-				struct lws *ww = lws_container_of(d,
+				struct lws *ww = aws_lws_container_of(d,
 					struct lws,
 					dll2_cli_txn_queue);
 
 				/* remove him from our queue */
-				lws_dll2_remove(&ww->dll2_cli_txn_queue);
+				aws_lws_dll2_remove(&ww->dll2_cli_txn_queue);
 				/* give up on pipelining */
 				ww->client_pipeline = 0;
 
 				/* go back to "trying to connect" state */
-				lws_role_transition(ww, LWSIFR_CLIENT,
+				aws_lws_role_transition(ww, LWSIFR_CLIENT,
 						    LRS_UNCONNECTED,
 #if defined(LWS_ROLE_H1)
 						    &role_ops_h1);
@@ -888,15 +888,15 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 #endif
 #endif
 				ww->user_space = NULL;
-			} lws_end_foreach_dll_safe(d, d1);
-			lws_vhost_unlock(wsi->a.vhost);
+			} aws_lws_end_foreach_dll_safe(d, d1);
+			aws_lws_vhost_unlock(wsi->a.vhost);
 		}
 	}
 
 #ifdef LWS_WITH_HTTP_PROXY
 	wsi->http.perform_rewrite = 0;
-	if (lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE)) {
-		if (!strncmp(lws_hdr_simple_ptr(wsi,
+	if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE)) {
+		if (!strncmp(aws_lws_hdr_simple_ptr(wsi,
 					WSI_TOKEN_HTTP_CONTENT_TYPE),
 					"text/html", 9))
 			wsi->http.perform_rewrite = 0;
@@ -906,8 +906,8 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 	/* he may choose to send us stuff in chunked transfer-coding */
 	wsi->chunked = 0;
 	wsi->chunk_remaining = 0; /* ie, next thing is chunk size */
-	if (lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_TRANSFER_ENCODING)) {
-		simp = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_TRANSFER_ENCODING);
+	if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_TRANSFER_ENCODING)) {
+		simp = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_TRANSFER_ENCODING);
 
 		/* cannot be NULL, since it has nonzero length... coverity */
 		if (!simp)
@@ -918,15 +918,15 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 	}
 
 	wsi->http.content_length_given = 0;
-	if (lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
-		simp = lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH);
+	if (aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
+		simp = aws_lws_hdr_simple_ptr(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH);
 
 		/* cannot be NULL, since it has nonzero length... coverity */
 		if (!simp)
 			goto bail2;
 
-		wsi->http.rx_content_length = (lws_filepos_t)atoll(simp);
-		lwsl_info("%s: incoming content length %llu\n",
+		wsi->http.rx_content_length = (aws_lws_filepos_t)atoll(simp);
+		aws_lwsl_info("%s: incoming content length %llu\n",
 			    __func__, (unsigned long long)
 				    wsi->http.rx_content_length);
 		wsi->http.rx_content_remain =
@@ -935,7 +935,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 	} else { /* can't do 1.1 without a content length or chunked */
 		if (!wsi->chunked)
 			wsi->http.conn_type = HTTP_CONNECTION_CLOSE;
-		lwsl_debug("%s: no content length\n", __func__);
+		aws_lwsl_debug("%s: no content length\n", __func__);
 	}
 
 	if (wsi->do_ws) {
@@ -953,8 +953,8 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		}
 	} else {
 		/* allocate the per-connection user memory (if any) */
-		if (lws_ensure_user_space(wsi)) {
-			lwsl_err("Problem allocating wsi user mem\n");
+		if (aws_lws_ensure_user_space(wsi)) {
+			aws_lwsl_err("Problem allocating wsi user mem\n");
 			cce = "HS: OOM";
 			goto bail2;
 		}
@@ -975,7 +975,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		}
 
 		/* clear his proxy connection timeout */
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+		aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
 
 		wsi->rxflow_change_to = LWS_RXFLOW_ALLOW;
 
@@ -990,7 +990,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 
 		wsi->http.ah = ah1;
 
-		lwsl_info("%s: %s: client conn up\n", __func__, lws_wsi_tag(wsi));
+		aws_lwsl_info("%s: %s: client conn up\n", __func__, aws_lws_wsi_tag(wsi));
 
 		/*
 		 * Did we get a response from the server with an explicit
@@ -999,9 +999,9 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		 * completed at the end of the header processing...
 		 */
 		if (!wsi->mux_substream && !wsi->client_mux_substream &&
-		    lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH) &&
+		    aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH) &&
 		    !wsi->http.rx_content_length)
-		        return !!lws_http_transaction_completed_client(wsi);
+		        return !!aws_lws_http_transaction_completed_client(wsi);
 
 		/*
 		 * We can also get a case where it's http/1 and there's no
@@ -1014,7 +1014,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 		 * no post-header in-band way to signal the end of the
 		 * transaction except hangup.
 		 *
-		 * lws_http_transaction_completed_client() is the right guy to
+		 * aws_lws_http_transaction_completed_client() is the right guy to
 		 * issue it when we see the peer has hung up on us.
 		 */
 
@@ -1022,7 +1022,7 @@ lws_client_interpret_server_handshake(struct lws *wsi)
 	}
 
 #if defined(LWS_ROLE_WS)
-	switch (lws_client_ws_upgrade(wsi, &cce)) {
+	switch (aws_lws_client_ws_upgrade(wsi, &cce)) {
 	case 2:
 		goto bail2;
 	case 3:
@@ -1041,15 +1041,15 @@ bail2:
 		if (cce)
 			n = (int)strlen(cce);
 
-		lws_inform_client_conn_fail(wsi, (void *)cce, (unsigned int)n);
+		aws_lws_inform_client_conn_fail(wsi, (void *)cce, (unsigned int)n);
 	}
 
-	lwsl_info("closing connection (prot %s) "
+	aws_lwsl_info("closing connection (prot %s) "
 		  "due to bail2 connection error: %s\n", wsi->a.protocol ?
 				  wsi->a.protocol->name : "unknown", cce);
 
 	/* closing will free up his parsing allocations */
-	lws_close_free_wsi(wsi, (enum lws_close_status)close_reason, "c hs interp");
+	aws_lws_close_free_wsi(wsi, (enum aws_lws_close_status)close_reason, "c hs interp");
 
 	return 1;
 }
@@ -1060,34 +1060,34 @@ bail2:
  */
 
 uint8_t *
-lws_http_multipart_headers(struct lws *wsi, uint8_t *p)
+aws_lws_http_multipart_headers(struct lws *wsi, uint8_t *p)
 {
 	char buf[10], arg[48];
 	int n;
 
-	if (lws_get_random(wsi->a.context, (uint8_t *)buf, sizeof(buf)) !=
+	if (aws_lws_get_random(wsi->a.context, (uint8_t *)buf, sizeof(buf)) !=
 			sizeof(buf))
 		return NULL;
 
-	lws_b64_encode_string(buf, sizeof(buf),
+	aws_lws_b64_encode_string(buf, sizeof(buf),
 			       wsi->http.multipart_boundary,
 			       sizeof(wsi->http.multipart_boundary));
 
-	n = lws_snprintf(arg, sizeof(arg), "multipart/form-data; boundary=\"%s\"",
+	n = aws_lws_snprintf(arg, sizeof(arg), "multipart/form-data; boundary=\"%s\"",
 			 wsi->http.multipart_boundary);
 
-	if (lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE,
+	if (aws_lws_add_http_header_by_token(wsi, WSI_TOKEN_HTTP_CONTENT_TYPE,
 					 (uint8_t *)arg, n, &p, p + 100))
 		return NULL;
 
 	wsi->http.multipart = wsi->http.multipart_issue_boundary = 1;
-	lws_client_http_body_pending(wsi, 1);
+	aws_lws_client_http_body_pending(wsi, 1);
 
 	return p;
 }
 
 int
-lws_client_http_multipart(struct lws *wsi, const char *name,
+aws_lws_client_http_multipart(struct lws *wsi, const char *name,
 			  const char *filename, const char *content_type,
 			  char **p, char *end)
 {
@@ -1098,7 +1098,7 @@ lws_client_http_multipart(struct lws *wsi, const char *name,
 	assert(wsi->http.multipart);
 
 	if (!name) {
-		*p += lws_snprintf((char *)(*p), lws_ptr_diff_size_t(end, *p),
+		*p += aws_lws_snprintf((char *)(*p), aws_lws_ptr_diff_size_t(end, *p),
 					"\xd\xa--%s--\xd\xa",
 					wsi->http.multipart_boundary);
 
@@ -1106,34 +1106,34 @@ lws_client_http_multipart(struct lws *wsi, const char *name,
 	}
 
 	if (wsi->client_subsequent_mime_part)
-		*p += lws_snprintf((char *)(*p), lws_ptr_diff_size_t(end, *p), "\xd\xa");
+		*p += aws_lws_snprintf((char *)(*p), aws_lws_ptr_diff_size_t(end, *p), "\xd\xa");
 	wsi->client_subsequent_mime_part = 1;
 
-	*p += lws_snprintf((char *)(*p), lws_ptr_diff_size_t(end, *p), "--%s\xd\xa"
+	*p += aws_lws_snprintf((char *)(*p), aws_lws_ptr_diff_size_t(end, *p), "--%s\xd\xa"
 				    "Content-Disposition: form-data; "
 				      "name=\"%s\"",
 				      wsi->http.multipart_boundary, name);
 	if (filename)
-		*p += lws_snprintf((char *)(*p), lws_ptr_diff_size_t(end, *p),
+		*p += aws_lws_snprintf((char *)(*p), aws_lws_ptr_diff_size_t(end, *p),
 				   "; filename=\"%s\"", filename);
 
 	if (content_type)
-		*p += lws_snprintf((char *)(*p), lws_ptr_diff_size_t(end, *p), "\xd\xa"
+		*p += aws_lws_snprintf((char *)(*p), aws_lws_ptr_diff_size_t(end, *p), "\xd\xa"
 				"Content-Type: %s", content_type);
 
-	*p += lws_snprintf((char *)(*p), lws_ptr_diff_size_t(end, *p), "\xd\xa\xd\xa");
+	*p += aws_lws_snprintf((char *)(*p), aws_lws_ptr_diff_size_t(end, *p), "\xd\xa\xd\xa");
 
 	return *p == end;
 }
 
 char *
-lws_generate_client_handshake(struct lws *wsi, char *pkt)
+aws_lws_generate_client_handshake(struct lws *wsi, char *pkt)
 {
-	const char *meth, *pp = lws_hdr_simple_ptr(wsi,
+	const char *meth, *pp = aws_lws_hdr_simple_ptr(wsi,
 				_WSI_TOKEN_CLIENT_SENT_PROTOCOLS), *path;
 	char *p = pkt, *p1, *end = p + wsi->a.context->pt_serv_buf_size;
 
-	meth = lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_METHOD);
+	meth = aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_METHOD);
 	if (!meth) {
 		meth = "GET";
 		wsi->do_ws = 1;
@@ -1142,30 +1142,30 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 	}
 
 	if (!strcmp(meth, "RAW")) {
-		lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
-		lwsl_notice("client transition to raw\n");
+		aws_lws_set_timeout(wsi, NO_PENDING_TIMEOUT, 0);
+		aws_lwsl_notice("client transition to raw\n");
 
 		if (pp) {
-			const struct lws_protocols *pr;
+			const struct aws_lws_protocols *pr;
 
-			pr = lws_vhost_name_to_protocol(wsi->a.vhost, pp);
+			pr = aws_lws_vhost_name_to_protocol(wsi->a.vhost, pp);
 
 			if (!pr) {
-				lwsl_err("protocol %s not enabled on vhost\n",
+				aws_lwsl_err("protocol %s not enabled on vhost\n",
 					 pp);
 				return NULL;
 			}
 
-			lws_bind_protocol(wsi, pr, __func__);
+			aws_lws_bind_protocol(wsi, pr, __func__);
 		}
 
 		if ((wsi->a.protocol->callback)(wsi, LWS_CALLBACK_RAW_ADOPT,
 					      wsi->user_space, NULL, 0))
 			return NULL;
 
-		lws_role_transition(wsi, LWSIFR_CLIENT, LRS_ESTABLISHED,
+		aws_lws_role_transition(wsi, LWSIFR_CLIENT, LRS_ESTABLISHED,
 				    &role_ops_raw_skt);
-		lws_header_table_detach(wsi, 1);
+		aws_lws_header_table_detach(wsi, 1);
 
 		return NULL;
 	}
@@ -1183,7 +1183,7 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 	 * Sec-WebSocket-Version: 4
 	 */
 
-	path = lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_URI);
+	path = aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_URI);
 	if (!path) {
 		if (wsi->stash && wsi->stash->cis[CIS_PATH] &&
 			wsi->stash->cis[CIS_PATH][0])
@@ -1192,35 +1192,35 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 			path = "/";
 	}
 
-	p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+	p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 			  "%s %s HTTP/1.1\x0d\x0a", meth, path);
 
-	p += lws_snprintf(p,  lws_ptr_diff_size_t(end, p),
+	p += aws_lws_snprintf(p,  aws_lws_ptr_diff_size_t(end, p),
 			  "Pragma: no-cache\x0d\x0a"
 			  "Cache-Control: no-cache\x0d\x0a");
 
-	p += lws_snprintf(p,  lws_ptr_diff_size_t(end, p),
+	p += aws_lws_snprintf(p,  aws_lws_ptr_diff_size_t(end, p),
 			  "Host: %s\x0d\x0a",
-			  lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_HOST));
+			  aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_HOST));
 
-	if (lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN)) {
-		if (lws_check_opt(wsi->a.context->options,
+	if (aws_lws_hdr_simple_ptr(wsi, _WSI_TOKEN_CLIENT_ORIGIN)) {
+		if (aws_lws_check_opt(wsi->a.context->options,
 				  LWS_SERVER_OPTION_JUST_USE_RAW_ORIGIN))
-			p += lws_snprintf(p,  lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p,  aws_lws_ptr_diff_size_t(end, p),
 					  "Origin: %s\x0d\x0a",
-					  lws_hdr_simple_ptr(wsi,
+					  aws_lws_hdr_simple_ptr(wsi,
 						     _WSI_TOKEN_CLIENT_ORIGIN));
 		else
-			p += lws_snprintf(p,  lws_ptr_diff_size_t(end, p),
+			p += aws_lws_snprintf(p,  aws_lws_ptr_diff_size_t(end, p),
 					  "Origin: %s://%s\x0d\x0a",
 					  wsi->flags & LCCSCF_USE_SSL ?
 							 "https" : "http",
-					  lws_hdr_simple_ptr(wsi,
+					  aws_lws_hdr_simple_ptr(wsi,
 						     _WSI_TOKEN_CLIENT_ORIGIN));
 	}
 
 	if (wsi->flags & LCCSCF_HTTP_MULTIPART_MIME) {
-		p1 = (char *)lws_http_multipart_headers(wsi, (uint8_t *)p);
+		p1 = (char *)aws_lws_http_multipart_headers(wsi, (uint8_t *)p);
 		if (!p1)
 			return NULL;
 		p = p1;
@@ -1228,24 +1228,24 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 
 #if defined(LWS_WITH_HTTP_PROXY)
 	if (wsi->parent &&
-	    lws_hdr_total_length(wsi->parent, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+	    aws_lws_hdr_total_length(wsi->parent, WSI_TOKEN_HTTP_CONTENT_LENGTH)) {
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 				  "Content-Length: %s\x0d\x0a",
-			lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_CONTENT_LENGTH));
-		if (atoi(lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_CONTENT_LENGTH)))
+			aws_lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_CONTENT_LENGTH));
+		if (atoi(aws_lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_CONTENT_LENGTH)))
 			wsi->client_http_body_pending = 1;
 	}
 	if (wsi->parent &&
-	    lws_hdr_total_length(wsi->parent, WSI_TOKEN_HTTP_AUTHORIZATION)) {
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+	    aws_lws_hdr_total_length(wsi->parent, WSI_TOKEN_HTTP_AUTHORIZATION)) {
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 				  "Authorization: %s\x0d\x0a",
-			lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_AUTHORIZATION));
+			aws_lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_AUTHORIZATION));
 	}
 	if (wsi->parent &&
-	    lws_hdr_total_length(wsi->parent, WSI_TOKEN_HTTP_CONTENT_TYPE)) {
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p),
+	    aws_lws_hdr_total_length(wsi->parent, WSI_TOKEN_HTTP_CONTENT_TYPE)) {
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p),
 				  "Content-Type: %s\x0d\x0a",
-			lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_CONTENT_TYPE));
+			aws_lws_hdr_simple_ptr(wsi->parent, WSI_TOKEN_HTTP_CONTENT_TYPE));
 	}
 #endif
 
@@ -1254,19 +1254,19 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 		const char *conn1 = "";
 	//	if (!wsi->client_pipeline)
 	//		conn1 = "close, ";
-		p = lws_generate_client_ws_handshake(wsi, p, conn1);
+		p = aws_lws_generate_client_ws_handshake(wsi, p, conn1);
 	} else
 #endif
 	{
 		if (!wsi->client_pipeline)
-			p += lws_snprintf(p, 64, "connection: close\x0d\x0a");
+			p += aws_lws_snprintf(p, 64, "connection: close\x0d\x0a");
 	}
 
 	/* give userland a chance to append, eg, cookies */
 
 #if defined(LWS_WITH_CACHE_NSCOOKIEJAR) && defined(LWS_WITH_CLIENT)
 	if (wsi->flags & LCCSCF_CACHE_COOKIES)
-		lws_cookie_send_cookies(wsi, &p, end);
+		aws_lws_cookie_send_cookies(wsi, &p, end);
 #endif
 
 	if (wsi->a.protocol->callback(wsi,
@@ -1276,19 +1276,19 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 		return NULL;
 
 	if (wsi->flags & LCCSCF_HTTP_X_WWW_FORM_URLENCODED) {
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "Content-Type: application/x-www-form-urlencoded\x0d\x0a");
-		p += lws_snprintf(p,  lws_ptr_diff_size_t(end, p), "Content-Length: %lu\x0d\x0a", wsi->http.writeable_len);
-		lws_client_http_body_pending(wsi, 1);
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "Content-Type: application/x-www-form-urlencoded\x0d\x0a");
+		p += aws_lws_snprintf(p,  aws_lws_ptr_diff_size_t(end, p), "Content-Length: %lu\x0d\x0a", wsi->http.writeable_len);
+		aws_lws_client_http_body_pending(wsi, 1);
 	}
 
-	p += lws_snprintf(p,  lws_ptr_diff_size_t(end, p), "\x0d\x0a");
+	p += aws_lws_snprintf(p,  aws_lws_ptr_diff_size_t(end, p), "\x0d\x0a");
 
-	if (wsi->client_http_body_pending || lws_has_buffered_out(wsi))
-		lws_callback_on_writable(wsi);
+	if (wsi->client_http_body_pending || aws_lws_has_buffered_out(wsi))
+		aws_lws_callback_on_writable(wsi);
 
-	lws_metrics_caliper_bind(wsi->cal_conn, wsi->a.context->mt_http_txn);
+	aws_lws_metrics_caliper_bind(wsi->cal_conn, wsi->a.context->mt_http_txn);
 #if defined(LWS_WITH_CONMON)
-	wsi->conmon_datum = lws_now_usecs();
+	wsi->conmon_datum = aws_lws_now_usecs();
 #endif
 
 	// puts(pkt);
@@ -1300,7 +1300,7 @@ lws_generate_client_handshake(struct lws *wsi, char *pkt)
 #if defined(LWS_WITH_HTTP_BASIC_AUTH)
 
 int
-lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t len)
+aws_lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t len)
 {
 	size_t n = strlen(user), m = strlen(pw);
 	char b[128];
@@ -1310,11 +1310,11 @@ lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t len)
 
 	memcpy(buf, "Basic ", 6);
 
-	n = (unsigned int)lws_snprintf(b, sizeof(b), "%s:%s", user, pw);
+	n = (unsigned int)aws_lws_snprintf(b, sizeof(b), "%s:%s", user, pw);
 	if (n >= sizeof(b) - 2)
 		return 2;
 
-	lws_b64_encode_string(b, (int)n, buf + 6, (int)len - 6);
+	aws_lws_b64_encode_string(b, (int)n, buf + 6, (int)len - 6);
 	buf[len - 1] = '\0';
 
 	return 0;
@@ -1323,10 +1323,10 @@ lws_http_basic_auth_gen(const char *user, const char *pw, char *buf, size_t len)
 #endif
 
 int
-lws_http_client_read(struct lws *wsi, char **buf, int *len)
+aws_lws_http_client_read(struct lws *wsi, char **buf, int *len)
 {
-	struct lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
-	struct lws_tokens eb;
+	struct aws_lws_context_per_thread *pt = &wsi->a.context->pt[(int)wsi->tsi];
+	struct aws_lws_tokens eb;
 	int buffered, n, consumed = 0;
 
 	/*
@@ -1340,35 +1340,35 @@ lws_http_client_read(struct lws *wsi, char **buf, int *len)
 	eb.token = (unsigned char *)*buf;
 	eb.len = *len;
 
-	buffered = lws_buflist_aware_read(pt, wsi, &eb, 0, __func__);
+	buffered = aws_lws_buflist_aware_read(pt, wsi, &eb, 0, __func__);
 	*buf = (char *)eb.token; /* may be pointing to buflist or pt_serv_buf */
 	*len = 0;
 
 	/*
 	 * we're taking on responsibility for handling used / unused eb
-	 * when we leave, via lws_buflist_aware_finished_consuming()
+	 * when we leave, via aws_lws_buflist_aware_finished_consuming()
 	 */
 
-//	lwsl_notice("%s: eb.len %d ENTRY chunk remaining %d\n", __func__, eb.len,
+//	aws_lwsl_notice("%s: eb.len %d ENTRY chunk remaining %d\n", __func__, eb.len,
 //			wsi->chunk_remaining);
 
 	/* allow the source to signal he has data again next time */
-	if (lws_change_pollfd(wsi, 0, LWS_POLLIN))
+	if (aws_lws_change_pollfd(wsi, 0, LWS_POLLIN))
 		return -1;
 
 	if (buffered < 0) {
-		lwsl_debug("%s: SSL capable error\n", __func__);
+		aws_lwsl_debug("%s: SSL capable error\n", __func__);
 
 		if (wsi->http.ah &&
 		    wsi->http.ah->parser_state == WSI_PARSING_COMPLETE &&
-		    !lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH))
+		    !aws_lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_CONTENT_LENGTH))
 			/*
 			 * We had the headers from this stream, but as there
 			 * was no content-length: we had to wait until the
 			 * stream ended to inform the user code the transaction
 			 * has completed to the best of our knowledge
 			 */
-			if (lws_http_transaction_completed_client(wsi))
+			if (aws_lws_http_transaction_completed_client(wsi))
 				/*
 				 * We're going to close anyway, but that api has
 				 * warn_unused_result
@@ -1389,7 +1389,7 @@ lws_http_client_read(struct lws *wsi, char **buf, int *len)
 	 * so http client must deal with it
 	 */
 spin_chunks:
-	//lwsl_notice("%s: len %d SPIN chunk remaining %d\n", __func__, *len,
+	//aws_lwsl_notice("%s: len %d SPIN chunk remaining %d\n", __func__, *len,
 	//		wsi->chunk_remaining);
 	while (wsi->chunked && (wsi->chunk_parser != ELCP_CONTENT) && *len) {
 		switch (wsi->chunk_parser) {
@@ -1400,7 +1400,7 @@ spin_chunks:
 			}
 			n = char_to_hex((*buf)[0]);
 			if (n < 0) {
-				lwsl_err("%s: chunking failure A\n", __func__);
+				aws_lwsl_err("%s: chunking failure A\n", __func__);
 				return -1;
 			}
 			wsi->chunk_remaining <<= 4;
@@ -1408,12 +1408,12 @@ spin_chunks:
 			break;
 		case ELCP_CR:
 			if ((*buf)[0] != '\x0a') {
-				lwsl_err("%s: chunking failure B\n", __func__);
+				aws_lwsl_err("%s: chunking failure B\n", __func__);
 				return -1;
 			}
 			if (wsi->chunk_remaining) {
 				wsi->chunk_parser = ELCP_CONTENT;
-				//lwsl_notice("starting chunk size %d (block rem %d)\n",
+				//aws_lwsl_notice("starting chunk size %d (block rem %d)\n",
 				//		wsi->chunk_remaining, *len);
 				break;
 			}
@@ -1426,8 +1426,8 @@ spin_chunks:
 
 		case ELCP_POST_CR:
 			if ((*buf)[0] != '\x0d') {
-				lwsl_err("%s: chunking failure C\n", __func__);
-				lwsl_hexdump_err(*buf, (unsigned int)*len);
+				aws_lwsl_err("%s: chunking failure C\n", __func__);
+				aws_lwsl_hexdump_err(*buf, (unsigned int)*len);
 
 				return -1;
 			}
@@ -1437,7 +1437,7 @@ spin_chunks:
 
 		case ELCP_POST_LF:
 			if ((*buf)[0] != '\x0a') {
-				lwsl_err("%s: chunking failure D\n", __func__);
+				aws_lwsl_err("%s: chunking failure D\n", __func__);
 
 				return -1;
 			}
@@ -1448,8 +1448,8 @@ spin_chunks:
 
 		case ELCP_TRAILER_CR:
 			if ((*buf)[0] != '\x0d') {
-				lwsl_err("%s: chunking failure F\n", __func__);
-				lwsl_hexdump_err(*buf, (unsigned int)*len);
+				aws_lwsl_err("%s: chunking failure F\n", __func__);
+				aws_lwsl_hexdump_err(*buf, (unsigned int)*len);
 
 				return -1;
 			}
@@ -1459,8 +1459,8 @@ spin_chunks:
 
 		case ELCP_TRAILER_LF:
 			if ((*buf)[0] != '\x0a') {
-				lwsl_err("%s: chunking failure F\n", __func__);
-				lwsl_hexdump_err(*buf, (unsigned int)*len);
+				aws_lwsl_err("%s: chunking failure F\n", __func__);
+				aws_lwsl_hexdump_err(*buf, (unsigned int)*len);
 
 				return -1;
 			}
@@ -1469,7 +1469,7 @@ spin_chunks:
 			(*len)--;
 			consumed++;
 
-			lwsl_info("final chunk\n");
+			aws_lwsl_info("final chunk\n");
 			goto completed;
 		}
 		(*buf)++;
@@ -1493,7 +1493,7 @@ spin_chunks:
 #if defined(LWS_WITH_HTTP_PROXY) && defined(LWS_WITH_HUBBUB)
 	/* hubbub */
 	if (wsi->http.perform_rewrite)
-		lws_rewrite_parse(wsi->http.rw, (unsigned char *)*buf, n);
+		aws_lws_rewrite_parse(wsi->http.rw, (unsigned char *)*buf, n);
 	else
 #endif
 	{
@@ -1511,13 +1511,13 @@ spin_chunks:
 				wsi, LWS_CALLBACK_RECEIVE_CLIENT_HTTP_READ,
 				wsi->user_space, *buf, (unsigned int)n);
 			if (q) {
-				lwsl_info("%s: RECEIVE_CLIENT_HTTP_READ returned %d\n",
+				aws_lwsl_info("%s: RECEIVE_CLIENT_HTTP_READ returned %d\n",
 						__func__, q);
 
 				return q;
 			}
 		} else
-			lwsl_notice("%s: swallowed read (%d)\n", __func__, n);
+			aws_lwsl_notice("%s: swallowed read (%d)\n", __func__, n);
 	}
 
 	(*buf) += n;
@@ -1525,7 +1525,7 @@ spin_chunks:
 	if (wsi->chunked && wsi->chunk_remaining)
 		wsi->chunk_remaining -= n;
 
-	//lwsl_notice("chunk_remaining <- %d, block remaining %d\n",
+	//aws_lwsl_notice("chunk_remaining <- %d, block remaining %d\n",
 	//		wsi->chunk_remaining, *len);
 
 	consumed += n;
@@ -1545,7 +1545,7 @@ spin_chunks:
 	if (wsi->http.rx_content_length > 0)
 		wsi->http.rx_content_remain -= (unsigned int)n;
 
-	// lwsl_notice("rx_content_remain %lld, rx_content_length %lld, giv %d\n",
+	// aws_lwsl_notice("rx_content_remain %lld, rx_content_length %lld, giv %d\n",
 	//	    wsi->http.rx_content_remain, wsi->http.rx_content_length,
 	//	    wsi->http.content_length_given);
 
@@ -1554,14 +1554,14 @@ spin_chunks:
 
 completed:
 
-	if (lws_http_transaction_completed_client(wsi)) {
-		lwsl_info("%s: transaction completed says -1\n", __func__);
+	if (aws_lws_http_transaction_completed_client(wsi)) {
+		aws_lwsl_info("%s: transaction completed says -1\n", __func__);
 		return -1;
 	}
 
 account_and_ret:
-//	lwsl_warn("%s: on way out, consuming %d / %d\n", __func__, consumed, eb.len);
-	if (lws_buflist_aware_finished_consuming(wsi, &eb, consumed, buffered,
+//	aws_lwsl_warn("%s: on way out, consuming %d / %d\n", __func__, consumed, eb.len);
+	if (aws_lws_buflist_aware_finished_consuming(wsi, &eb, consumed, buffered,
 							__func__))
 		return -1;
 
@@ -1578,7 +1578,7 @@ static uint8_t hnames2[] = {
 };
 
 /**
- * lws_client_reset() - retarget a connected wsi to start over with a new
+ * aws_lws_client_reset() - retarget a connected wsi to start over with a new
  * 			connection (ie, redirect)
  *			this only works if still in HTTP, ie, not upgraded yet
  * wsi:		connection to reset
@@ -1588,10 +1588,10 @@ static uint8_t hnames2[] = {
  * host:	host header to send to the new server
  */
 struct lws *
-lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
+aws_lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 		 const char *path, const char *host, char weak)
 {
-	struct lws_context_per_thread *pt;
+	struct aws_lws_context_per_thread *pt;
 #if defined(LWS_ROLE_WS)
 	struct _lws_websocket_related *ws;
 #endif
@@ -1606,11 +1606,11 @@ lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 	wsi = *pwsi;
 	pt = &wsi->a.context->pt[(int)wsi->tsi];
 
-	lwsl_debug("%s: %s: redir %d: %s\n", __func__, lws_wsi_tag(wsi),
+	aws_lwsl_debug("%s: %s: redir %d: %s\n", __func__, aws_lws_wsi_tag(wsi),
 			wsi->redirects, address);
 
 	if (wsi->redirects == 4) {
-		lwsl_err("%s: Too many redirects\n", __func__);
+		aws_lwsl_err("%s: Too many redirects\n", __func__);
 		return NULL;
 	}
 	wsi->redirects++;
@@ -1629,17 +1629,17 @@ lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 	cisin[CIS_HOST]		= host;
 
 	for (n = 0; n < (int)LWS_ARRAY_SIZE(hnames2); n++)
-		cisin[n + 3] = lws_hdr_simple_ptr(wsi, hnames2[n]);
+		cisin[n + 3] = aws_lws_hdr_simple_ptr(wsi, hnames2[n]);
 
 #if defined(LWS_WITH_TLS)
 	cisin[CIS_ALPN]		= wsi->alpn;
 #endif
 
-	if (lws_client_stash_create(wsi, cisin))
+	if (aws_lws_client_stash_create(wsi, cisin))
 		return NULL;
 
 	if (!port) {
-		lwsl_info("%s: forcing port 443\n", __func__);
+		aws_lwsl_info("%s: forcing port 443\n", __func__);
 
 		port = 443;
 		ssl = 1;
@@ -1657,12 +1657,12 @@ lws_client_reset(struct lws **pwsi, int ssl, const char *address, int port,
 		cisin[CIS_ALPN] = "http/1.1";
 #endif
 
-	lwsl_notice("%s: REDIRECT %s:%d, path='%s', ssl = %d, alpn='%s'\n",
+	aws_lwsl_notice("%s: REDIRECT %s:%d, path='%s', ssl = %d, alpn='%s'\n",
 		    __func__, address, port, path, ssl, cisin[CIS_ALPN]);
 
-	lws_pt_lock(pt, __func__);
+	aws_lws_pt_lock(pt, __func__);
 	__remove_wsi_socket_from_fds(wsi);
-	lws_pt_unlock(pt);
+	aws_lws_pt_unlock(pt);
 
 #if defined(LWS_ROLE_WS)
 	if (weak) {

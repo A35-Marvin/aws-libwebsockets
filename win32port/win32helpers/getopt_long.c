@@ -38,7 +38,7 @@
 #include <string.h>
 #include "getopt.h"
 
-#define lws_ptr_diff(head, tail) \
+#define aws_lws_ptr_diff(head, tail) \
 			((int)((char *)(head) - (char *)(tail)))
 
 extern int	  opterr;	/* if error message should be printed */
@@ -186,7 +186,7 @@ getopt_long(nargc, nargv, options, long_options, index)
 			return(-1);
 		}
 		if ((has_equal = strchr(current_argv, '=')) != NULL) {
-			current_argv_len = lws_ptr_diff(has_equal, current_argv);
+			current_argv_len = aws_lws_ptr_diff(has_equal, current_argv);
 			has_equal++;
 		} else
 			current_argv_len = (int)strlen(current_argv);

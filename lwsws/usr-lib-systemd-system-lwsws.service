@@ -3,9 +3,9 @@ Description=Libwebsockets Web Server
 After=syslog.target
 
 [Service]
-ExecStart=/usr/local/bin/lwsws
+ExecStart=/usr/local/bin/aws_lwsws
 ExecReload=/usr/bin/kill -HUP $MAINPID
-ExecStop=/usr/bin/killall lwsws
+ExecStop=/usr/bin/killall aws_lwsws
 
 [Install]
 WantedBy=multi-user.target

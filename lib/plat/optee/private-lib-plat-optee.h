@@ -37,14 +37,14 @@
  #define LWS_EWOULDBLOCK EWOULDBLOCK
  #define LWS_EADDRINUSE EADDRINUSE
 
- #define lws_set_blocking_send(wsi)
+ #define aws_lws_set_blocking_send(wsi)
 
 #define compatible_close(x) close(x)
-#define lws_plat_socket_offset() (0)
-#define wsi_from_fd(A,B)  A->lws_lookup[B - lws_plat_socket_offset()]
-#define insert_wsi(A,B)   assert(A->lws_lookup[B->desc.sockfd - \
-				  lws_plat_socket_offset()] == 0); \
-				 A->lws_lookup[B->desc.sockfd - \
-				  lws_plat_socket_offset()] = B
-#define delete_from_fd(A,B) A->lws_lookup[B - lws_plat_socket_offset()] = 0
+#define aws_lws_plat_socket_offset() (0)
+#define wsi_from_fd(A,B)  A->aws_lws_lookup[B - aws_lws_plat_socket_offset()]
+#define insert_wsi(A,B)   assert(A->aws_lws_lookup[B->desc.sockfd - \
+				  aws_lws_plat_socket_offset()] == 0); \
+				 A->aws_lws_lookup[B->desc.sockfd - \
+				  aws_lws_plat_socket_offset()] = B
+#define delete_from_fd(A,B) A->aws_lws_lookup[B - aws_lws_plat_socket_offset()] = 0
 

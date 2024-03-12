@@ -46,9 +46,9 @@ static uint8_t ssd1306_128x64_init[] = {
 };
 
 int
-lws_display_ssd1306_i2c_init(const struct lws_display *disp)
+aws_lws_display_ssd1306_i2c_init(const struct aws_lws_display *disp)
 {
-	const lws_display_ssd1306_t *si = (const lws_display_ssd1306_t *)disp;
+	const aws_lws_display_ssd1306_t *si = (const aws_lws_display_ssd1306_t *)disp;
 
 	si->i2c->init(si->i2c);
 
@@ -56,15 +56,15 @@ lws_display_ssd1306_i2c_init(const struct lws_display *disp)
 		si->gpio->mode(si->reset_gpio, LWSGGPIO_FL_WRITE |
 					       LWSGGPIO_FL_PULLUP);
 		si->gpio->set(si->reset_gpio, 0);
-		lws_msleep(1);
+		aws_lws_msleep(1);
 		si->gpio->set(si->reset_gpio, 1);
-		lws_msleep(1);
+		aws_lws_msleep(1);
 	}
 
-	if (lws_i2c_command_list(si->i2c, si->i2c7_address,
+	if (aws_lws_i2c_command_list(si->i2c, si->i2c7_address,
 				 ssd1306_128x64_init,
 				 LWS_ARRAY_SIZE(ssd1306_128x64_init))) {
-		lwsl_err("%s: fail\n", __func__);
+		aws_lwsl_err("%s: fail\n", __func__);
 		return 1;
 	}
 
@@ -72,24 +72,24 @@ lws_display_ssd1306_i2c_init(const struct lws_display *disp)
 }
 
 int
-lws_display_ssd1306_i2c_contrast(const struct lws_display *disp, uint8_t b)
+aws_lws_display_ssd1306_i2c_contrast(const struct aws_lws_display *disp, uint8_t b)
 {
-	const lws_display_ssd1306_t *si = (const lws_display_ssd1306_t *)disp;
+	const aws_lws_display_ssd1306_t *si = (const aws_lws_display_ssd1306_t *)disp;
 	uint8_t ba[2];
 
 	ba[0] = SSD1306_SETCONTRAST;
 	ba[1] = b;
 
-	return lws_i2c_command_list(si->i2c, si->i2c7_address,
+	return aws_lws_i2c_command_list(si->i2c, si->i2c7_address,
 				    ba, LWS_ARRAY_SIZE(ba));
 }
 
 int
-lws_display_ssd1306_i2c_blit(const struct lws_display *disp, const uint8_t *src,
-			     lws_display_scalar x, lws_display_scalar y,
-			     lws_display_scalar w, lws_display_scalar h)
+aws_lws_display_ssd1306_i2c_blit(const struct aws_lws_display *disp, const uint8_t *src,
+			     aws_lws_display_scalar x, aws_lws_display_scalar y,
+			     aws_lws_display_scalar w, aws_lws_display_scalar h)
 {
-	const lws_display_ssd1306_t *si = (const lws_display_ssd1306_t *)disp;
+	const aws_lws_display_ssd1306_t *si = (const aws_lws_display_ssd1306_t *)disp;
 	uint8_t ba[6];
 	int n, m;
 
@@ -108,21 +108,21 @@ lws_display_ssd1306_i2c_blit(const struct lws_display *disp, const uint8_t *src,
 	ba[4] = y / 8;
 	ba[5] = ba[4] + (h / 8) - 1;
 
-	if (lws_i2c_command_list(si->i2c, si->i2c7_address,
+	if (aws_lws_i2c_command_list(si->i2c, si->i2c7_address,
 				 ba, LWS_ARRAY_SIZE(ba))) {
-		lwsl_err("%s: fail\n", __func__);
+		aws_lwsl_err("%s: fail\n", __func__);
 		return 1;
 	}
 
         for (n = 0; n < (w * h) / 8;) {
-                lws_bb_i2c_start(si->i2c);
-                lws_bb_i2c_write(si->i2c, si->i2c7_address << 1);
-                lws_bb_i2c_write(si->i2c, SSD1306_SETSTARTLINE | y);
+                aws_lws_bb_i2c_start(si->i2c);
+                aws_lws_bb_i2c_write(si->i2c, si->i2c7_address << 1);
+                aws_lws_bb_i2c_write(si->i2c, SSD1306_SETSTARTLINE | y);
 
                 for (m = 0; m < w; m++)
-                        lws_bb_i2c_write(si->i2c, src[n++]);
+                        aws_lws_bb_i2c_write(si->i2c, src[n++]);
 
-                lws_bb_i2c_stop(si->i2c);
+                aws_lws_bb_i2c_stop(si->i2c);
                 y += 8;
         }
 
@@ -130,13 +130,13 @@ lws_display_ssd1306_i2c_blit(const struct lws_display *disp, const uint8_t *src,
 }
 
 int
-lws_display_ssd1306_i2c_power(const struct lws_display *disp, int state)
+aws_lws_display_ssd1306_i2c_power(const struct aws_lws_display *disp, int state)
 {
-	const lws_display_ssd1306_t *si = (const lws_display_ssd1306_t *)disp;
+	const aws_lws_display_ssd1306_t *si = (const aws_lws_display_ssd1306_t *)disp;
 
 	if (!state)
-		return lws_i2c_command(si->i2c, si->i2c7_address,
+		return aws_lws_i2c_command(si->i2c, si->i2c7_address,
 				       SSD1306_DISPLAYOFF | !!state);
 
-	return lws_display_ssd1306_i2c_init(disp);
+	return aws_lws_display_ssd1306_i2c_init(disp);
 }

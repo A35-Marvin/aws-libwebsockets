@@ -6854,42 +6854,42 @@
 
 /*
 #if !defined(LWS_HTTP_HEADERS_ALL) && !defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) && !defined(LWS_ROLE_WS) && !defined(LWS_ROLE_H2)
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x03,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 #endif
 #if !defined(LWS_HTTP_HEADERS_ALL) &&  defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) && !defined(LWS_ROLE_WS) && !defined(LWS_ROLE_H2)
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x07,0x00,0x00,0x00,0x00,0x00,0x00,0x0e,0x04,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 #endif
 #if !defined(LWS_HTTP_HEADERS_ALL) && !defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) &&  defined(LWS_ROLE_WS) && !defined(LWS_ROLE_H2)
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x03,0x00,0x00,0x00,0x00,0x00,0x00,0x04,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 #endif
 #if !defined(LWS_HTTP_HEADERS_ALL) &&  defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) &&  defined(LWS_ROLE_WS) && !defined(LWS_ROLE_H2)
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x07,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x38,0x10,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 #endif
 #if !defined(LWS_HTTP_HEADERS_ALL) && !defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) && !defined(LWS_ROLE_WS) &&  defined(LWS_ROLE_H2)
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x03,0x00,0x80,0x0f,0x00,0x00,0x00,0x00,0x12,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 #endif
 #if !defined(LWS_HTTP_HEADERS_ALL) &&  defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) && !defined(LWS_ROLE_WS) &&  defined(LWS_ROLE_H2)
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x07,0x00,0x00,0x3e,0x00,0x00,0x00,0x80,0x03,0x09,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 #endif
 #if !defined(LWS_HTTP_HEADERS_ALL) && !defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) &&  defined(LWS_ROLE_WS) &&  defined(LWS_ROLE_H2)
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x03,0x00,0x00,0x00,0x3e,0x00,0x00,0x00,0x00,0x48,0x00,0x00,0x00,0x00,0x00,0x00,
 };
 #endif
 #if defined(LWS_HTTP_HEADERS_ALL) || ( defined(LWS_WITH_HTTP_UNCOMMON_HEADERS) &&  defined(LWS_ROLE_WS) &&  defined(LWS_ROLE_H2))
-static uint8_t lws_header_implies_psuedoheader_map[] = {
+static uint8_t aws_lws_header_implies_psuedoheader_map[] = {
 	0x07,0x00,0x00,0x00,0xf8,0x00,0x00,0x00,0x00,0x0e,0x24,0x00,0x00,0x00,0x00,0x00,
 };
 #endif

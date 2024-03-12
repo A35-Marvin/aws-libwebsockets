@@ -79,38 +79,38 @@ static uint64_t rng(uint64_t *r)
 }
 
 static int
-callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
+callback_minimal_pmd_bulk(struct lws *wsi, enum aws_lws_callback_reasons reason,
 			  void *user, void *in, size_t len)
 {
 	struct per_session_data__minimal_pmd_bulk *pss =
 			(struct per_session_data__minimal_pmd_bulk *)user;
         struct vhd_minimal_pmd_bulk *vhd = (struct vhd_minimal_pmd_bulk *)
-                        lws_protocol_vh_priv_get(lws_get_vhost(wsi),
-                                lws_get_protocol(wsi));
+                        aws_lws_protocol_vh_priv_get(aws_lws_get_vhost(wsi),
+                                aws_lws_get_protocol(wsi));
 	uint8_t buf[LWS_PRE + MESSAGE_SIZE], *start = &buf[LWS_PRE], *p;
 	int n, m, flags, olen, amount;
 
 	switch (reason) {
         case LWS_CALLBACK_PROTOCOL_INIT:
-                vhd = lws_protocol_vh_priv_zalloc(lws_get_vhost(wsi),
-                                lws_get_protocol(wsi),
+                vhd = aws_lws_protocol_vh_priv_zalloc(aws_lws_get_vhost(wsi),
+                                aws_lws_get_protocol(wsi),
                                 sizeof(struct vhd_minimal_pmd_bulk));
                 if (!vhd)
                         return -1;
 
                 /* get the pointer to "interrupted" we were passed in pvo */
-                vhd->interrupted = (int *)lws_pvo_search(
-                        (const struct lws_protocol_vhost_options *)in,
+                vhd->interrupted = (int *)aws_lws_pvo_search(
+                        (const struct aws_lws_protocol_vhost_options *)in,
                         "interrupted")->value;
-                vhd->options = (int *)lws_pvo_search(
-                        (const struct lws_protocol_vhost_options *)in,
+                vhd->options = (int *)aws_lws_pvo_search(
+                        (const struct aws_lws_protocol_vhost_options *)in,
                         "options")->value;
                 break;
 
 	case LWS_CALLBACK_ESTABLISHED:
 		pss->rng_tx = 4;
 		pss->rng_rx = 4;
-		lws_callback_on_writable(wsi);
+		aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_SERVER_WRITEABLE:
@@ -120,7 +120,7 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 		amount = MESSAGE_CHUNK_SIZE;
 		if ((*vhd->options) & 2) {
 			amount = MESSAGE_SIZE;
-			lwsl_user("(writing as one blob of %d)\n", amount);
+			aws_lwsl_user("(writing as one blob of %d)\n", amount);
 		}
 
 		/* fill up one chunk's worth of message content */
@@ -130,7 +130,7 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 		if (n > MESSAGE_SIZE - pss->position_tx)
 			n = MESSAGE_SIZE - pss->position_tx;
 
-		flags = lws_write_ws_flags(LWS_WRITE_BINARY, !pss->position_tx,
+		flags = aws_lws_write_ws_flags(LWS_WRITE_BINARY, !pss->position_tx,
 					   pss->position_tx + n == MESSAGE_SIZE);
 
 		/*
@@ -157,21 +157,21 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 				*p++ = (uint8_t)rng(&pss->rng_tx);
 		}
 
-		n = lws_ptr_diff(p, start);
-		m = lws_write(wsi, start, (unsigned int)n, (enum lws_write_protocol)flags);
-		lwsl_user("LWS_CALLBACK_SERVER_WRITEABLE: wrote %d\n", n);
+		n = aws_lws_ptr_diff(p, start);
+		m = aws_lws_write(wsi, start, (unsigned int)n, (enum aws_lws_write_protocol)flags);
+		aws_lwsl_user("LWS_CALLBACK_SERVER_WRITEABLE: wrote %d\n", n);
 		if (m < n) {
-			lwsl_err("ERROR %d / %d writing ws\n", m, n);
+			aws_lwsl_err("ERROR %d / %d writing ws\n", m, n);
 			return -1;
 		}
 		if (pss->position_tx != MESSAGE_SIZE) /* if more to do... */
-			lws_callback_on_writable(wsi);
+			aws_lws_callback_on_writable(wsi);
 		break;
 
 	case LWS_CALLBACK_RECEIVE:
-		lwsl_user("LWS_CALLBACK_RECEIVE: %4d (pss->pos=%d, rpp %5d, last %d)\n",
-				(int)len, (int)pss->position_rx, (int)lws_remaining_packet_payload(wsi),
-				lws_is_final_fragment(wsi));
+		aws_lwsl_user("LWS_CALLBACK_RECEIVE: %4d (pss->pos=%d, rpp %5d, last %d)\n",
+				(int)len, (int)pss->position_rx, (int)aws_lws_remaining_packet_payload(wsi),
+				aws_lws_is_final_fragment(wsi));
 		olen = (int)len;
 
 		if (*vhd->options & 1) {
@@ -182,7 +182,7 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 				if (s > len)
 					s = len;
 				if (memcmp(in, &redundant_string[m], s)) {
-					lwsl_user("echo'd data doesn't match\n");
+					aws_lwsl_user("echo'd data doesn't match\n");
 					return -1;
 				}
 				pss->position_rx += (int)s;
@@ -194,10 +194,10 @@ callback_minimal_pmd_bulk(struct lws *wsi, enum lws_callback_reasons reason,
 			pss->position_rx += (int)len;
 			while (len--) {
 				if (*p++ != (uint8_t)rng(&pss->rng_rx)) {
-					lwsl_user("echo'd data doesn't match: 0x%02X 0x%02X (%d)\n",
+					aws_lwsl_user("echo'd data doesn't match: 0x%02X 0x%02X (%d)\n",
 						*(p - 1), (int)(0x40 + (pss->rng_rx & 0x3f)),
 						(int)((pss->position_rx - olen) + olen - (int)len));
-					lwsl_hexdump_notice(in, (unsigned int)olen);
+					aws_lwsl_hexdump_notice(in, (unsigned int)olen);
 					return -1;
 				}
 			}

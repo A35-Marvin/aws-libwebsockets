@@ -31,19 +31,19 @@
  */
 ///@{
 
-struct lws_fts;
-struct lws_fts_file;
+struct aws_lws_fts;
+struct aws_lws_fts_file;
 
 /*
- * Queries produce their results in an lwsac, using these public API types.
- * The first thing in the lwsac is always a struct lws_fts_result (see below)
+ * Queries produce their results in an aws_lwsac, using these public API types.
+ * The first thing in the aws_lwsac is always a struct aws_lws_fts_result (see below)
  * containing heads for linked-lists of the other result types.
  */
 
 /* one filepath's results */
 
-struct lws_fts_result_filepath {
-	struct lws_fts_result_filepath *next;
+struct aws_lws_fts_result_filepath {
+	struct aws_lws_fts_result_filepath *next;
 	int matches;	/* logical number of matches */
 	int matches_length;	/* bytes in length table (may be zero) */
 	int lines_in_file;
@@ -55,8 +55,8 @@ struct lws_fts_result_filepath {
 
 /* autocomplete result */
 
-struct lws_fts_result_autocomplete {
-	struct lws_fts_result_autocomplete *next;
+struct aws_lws_fts_result_autocomplete {
+	struct aws_lws_fts_result_autocomplete *next;
 	int instances;
 	int agg_instances;
 	int ac_length;
@@ -67,13 +67,13 @@ struct lws_fts_result_autocomplete {
 };
 
 /*
- * The results lwsac always starts with this.  If no results and / or no
+ * The results aws_lwsac always starts with this.  If no results and / or no
  * autocomplete the members may be NULL.  This implies the symbol nor any
  * suffix on it exists in the trie file.
  */
-struct lws_fts_result {
-	struct lws_fts_result_filepath *filepath_head;
-	struct lws_fts_result_autocomplete *autocomplete_head;
+struct aws_lws_fts_result {
+	struct aws_lws_fts_result_filepath *filepath_head;
+	struct aws_lws_fts_result_autocomplete *autocomplete_head;
 	int duration_ms;
 	int effective_flags; /* the search flags that were used */
 };
@@ -83,17 +83,17 @@ struct lws_fts_result {
  */
 
 /**
- * lws_fts_create() - Create a new index file
+ * aws_lws_fts_create() - Create a new index file
  *
  * \param fd: The fd opened for write
  *
- * Inits a new index file, returning a struct lws_fts to represent it
+ * Inits a new index file, returning a struct aws_lws_fts to represent it
  */
-LWS_VISIBLE LWS_EXTERN struct lws_fts *
-lws_fts_create(int fd);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_fts *
+aws_lws_fts_create(int fd);
 
 /**
- * lws_fts_destroy() - Finalize a new index file / destroy the trie lwsac
+ * aws_lws_fts_destroy() - Finalize a new index file / destroy the trie aws_lwsac
  *
  * \param trie: The previously opened index being finalized
  *
@@ -101,10 +101,10 @@ lws_fts_create(int fd);
  * *trie is set to NULL afterwards.
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_fts_destroy(struct lws_fts **trie);
+aws_lws_fts_destroy(struct aws_lws_fts **trie);
 
 /**
- * lws_fts_file_index() - Create a new entry in the trie file for an input path
+ * aws_lws_fts_file_index() - Create a new entry in the trie file for an input path
  *
  * \param t: The previously opened index being written
  * \param filepath: The filepath (which may be virtual) associated with this file
@@ -114,11 +114,11 @@ lws_fts_destroy(struct lws_fts **trie);
  * Returns an ordinal that represents this new filepath in the index file.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_fts_file_index(struct lws_fts *t, const char *filepath, int filepath_len,
+aws_lws_fts_file_index(struct aws_lws_fts *t, const char *filepath, int filepath_len,
 		   int priority);
 
 /**
- * lws_fts_fill() - Process all or a bufferload of input file
+ * aws_lws_fts_fill() - Process all or a bufferload of input file
  *
  * \param t: The previously opened index being written
  * \param file_index: The ordinal representing this input filepath
@@ -128,11 +128,11 @@ lws_fts_file_index(struct lws_fts *t, const char *filepath, int filepath_len,
  * Indexes a buffer of data from the input file.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_fts_fill(struct lws_fts *t, uint32_t file_index, const char *buf,
+aws_lws_fts_fill(struct aws_lws_fts *t, uint32_t file_index, const char *buf,
 	     size_t len);
 
 /**
- * lws_fts_serialize() - Store the in-memory trie into the index file
+ * aws_lws_fts_serialize() - Store the in-memory trie into the index file
  *
  * \param t: The previously opened index being written
  *
@@ -141,35 +141,35 @@ lws_fts_fill(struct lws_fts *t, uint32_t file_index, const char *buf,
  * write the trie data into the index file.
  */
 LWS_VISIBLE LWS_EXTERN int
-lws_fts_serialize(struct lws_fts *t);
+aws_lws_fts_serialize(struct aws_lws_fts *t);
 
 /*
  * index search functions
  */
 
 /**
- * lws_fts_open() - Open an existing index file to search it
+ * aws_lws_fts_open() - Open an existing index file to search it
  *
  * \param filepath: The filepath to the index file to open
  *
- * Opening the index file returns an opaque struct lws_fts_file * that is
+ * Opening the index file returns an opaque struct aws_lws_fts_file * that is
  * used to perform other operations on it, or NULL if it can't be opened.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_fts_file *
-lws_fts_open(const char *filepath);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_fts_file *
+aws_lws_fts_open(const char *filepath);
 
 #define LWSFTS_F_QUERY_AUTOCOMPLETE	(1 << 0)
 #define LWSFTS_F_QUERY_FILES		(1 << 1)
 #define LWSFTS_F_QUERY_FILE_LINES	(1 << 2)
 #define LWSFTS_F_QUERY_QUOTE_LINE	(1 << 3)
 
-struct lws_fts_search_params {
+struct aws_lws_fts_search_params {
 	/* the actual search term */
 	const char *needle;
 	 /* if non-NULL, FILE results for this filepath only */
 	const char *only_filepath;
-	/* will be set to the results lwsac */
-	struct lwsac *results_head;
+	/* will be set to the results aws_lwsac */
+	struct aws_lwsac *results_head;
 	/* combination of LWSFTS_F_QUERY_* flags */
 	int flags;
 	/* maximum number of autocomplete suggestions to return */
@@ -181,35 +181,35 @@ struct lws_fts_search_params {
 };
 
 /**
- * lws_fts_search() - Perform a search operation on an index
+ * aws_lws_fts_search() - Perform a search operation on an index
  *
- * \param jtf: The index file struct returned by lws_fts_open
- * \param ftsp: The struct lws_fts_search_params filled in by the caller
+ * \param jtf: The index file struct returned by aws_lws_fts_open
+ * \param ftsp: The struct aws_lws_fts_search_params filled in by the caller
  *
  * The caller should memset the ftsp struct to 0 to ensure members that may be
  * introduced in later versions contain known values, then set the related
  * members to describe the kind of search action required.
  *
- * ftsp->results_head is the results lwsac, or NULL.  It should be freed with
- * lwsac_free() when the results are finished with.
+ * ftsp->results_head is the results aws_lwsac, or NULL.  It should be freed with
+ * aws_lwsac_free() when the results are finished with.
  *
- * Returns a pointer into the results lwsac that is a struct lws_fts_result
+ * Returns a pointer into the results aws_lwsac that is a struct aws_lws_fts_result
  * containing the head pointers into linked-lists of results for autocomplete
  * and filepath data, along with some sundry information.  This does not need
- * to be freed since freeing the lwsac will also remove this and everything it
+ * to be freed since freeing the aws_lwsac will also remove this and everything it
  * points to.
  */
-LWS_VISIBLE LWS_EXTERN struct lws_fts_result *
-lws_fts_search(struct lws_fts_file *jtf, struct lws_fts_search_params *ftsp);
+LWS_VISIBLE LWS_EXTERN struct aws_lws_fts_result *
+aws_lws_fts_search(struct aws_lws_fts_file *jtf, struct aws_lws_fts_search_params *ftsp);
 
 /**
- * lws_fts_close() - Close a previously-opened index file
+ * aws_lws_fts_close() - Close a previously-opened index file
  *
  * \param jtf: The pointer returned from the open
  *
  * Closes the file handle on the index and frees any allocations
  */
 LWS_VISIBLE LWS_EXTERN void
-lws_fts_close(struct lws_fts_file *jtf);
+aws_lws_fts_close(struct aws_lws_fts_file *jtf);
 
 ///@}

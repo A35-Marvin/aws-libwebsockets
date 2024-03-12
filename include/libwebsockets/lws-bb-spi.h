@@ -36,11 +36,11 @@
 
 #define LWS_SPI_BB_MAX_CH		4
 
-typedef struct lws_bb_spi {
-	lws_spi_ops_t		bb_ops; /* init to lws_bb_spi_ops */
+typedef struct aws_lws_bb_spi {
+	aws_lws_spi_ops_t		bb_ops; /* init to aws_lws_bb_spi_ops */
 
 	/* implementation-specific members */
-	const lws_gpio_ops_t	*gpio;
+	const aws_lws_gpio_ops_t	*gpio;
 
 	_lws_plat_gpio_t	clk;
 	_lws_plat_gpio_t	ncs[LWS_SPI_BB_MAX_CH];
@@ -49,14 +49,14 @@ typedef struct lws_bb_spi {
 	_lws_plat_gpio_t	miso;
 
 	uint8_t			flags;
-} lws_bb_spi_t;
+} aws_lws_bb_spi_t;
 
-#define lws_bb_spi_ops \
-		.init		= lws_bb_spi_init, \
-		.queue		= lws_bb_spi_queue
-
-int
-lws_bb_spi_init(const lws_spi_ops_t *octx);
+#define aws_lws_bb_spi_ops \
+		.init		= aws_lws_bb_spi_init, \
+		.queue		= aws_lws_bb_spi_queue
 
 int
-lws_bb_spi_queue(const lws_spi_ops_t *octx, const lws_spi_desc_t *desc);
+aws_lws_bb_spi_init(const aws_lws_spi_ops_t *octx);
+
+int
+aws_lws_bb_spi_queue(const aws_lws_spi_ops_t *octx, const aws_lws_spi_desc_t *desc);

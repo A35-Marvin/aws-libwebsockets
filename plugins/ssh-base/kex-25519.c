@@ -33,9 +33,9 @@
  */
 
 static void
-lws_sized_blob(uint8_t **p, void *blob, uint32_t len)
+aws_lws_sized_blob(uint8_t **p, void *blob, uint32_t len)
 {
-	lws_p32((*p), len);
+	aws_lws_p32((*p), len);
 	*p += 4;
 	memcpy(*p, blob, len);
 	*p += len;
@@ -52,7 +52,7 @@ static const char key_leadin[] = "openssh-key-v1\x00\x00\x00\x00\x04none"
 		  key_trail[] =  "\x00\x00\x00\x0cself-gen@cbl\x01";
 
 static size_t
-lws_gen_server_key_ed25519(struct lws_context *context, uint8_t *buf256,
+aws_lws_gen_server_key_ed25519(struct aws_lws_context *context, uint8_t *buf256,
 			   size_t max_len)
 {
 	uint8_t *p = buf256 + sizeof(key_leadin) - 1;
@@ -73,13 +73,13 @@ lws_gen_server_key_ed25519(struct lws_context *context, uint8_t *buf256,
 	memcpy(p, key_trail, sizeof(key_trail) - 1);
 	p += sizeof(key_trail) - 1;
 
-	lwsl_notice("%s: Generated key len %ld\n", __func__, (long)(p - buf256));
+	aws_lwsl_notice("%s: Generated key len %ld\n", __func__, (long)(p - buf256));
 
 	return (size_t)(p - buf256);
 }
 
 static int
-lws_mpint_rfc4251(uint8_t *dest, const uint8_t *src, int bytes, int uns)
+aws_lws_mpint_rfc4251(uint8_t *dest, const uint8_t *src, int bytes, int uns)
 {
 	uint8_t *odest = dest;
 
@@ -113,7 +113,7 @@ lws_mpint_rfc4251(uint8_t *dest, const uint8_t *src, int bytes, int uns)
 	while (bytes--)
 		*dest++ = *src++;
 
-	return lws_ptr_diff(dest, odest);
+	return aws_lws_ptr_diff(dest, odest);
 }
 
 int
@@ -131,62 +131,62 @@ ed25519_key_parse(uint8_t *p, size_t len, char *type, size_t type_len,
 
 	p += 15;
 
-	l = lws_g32(&p); /* ciphername */
+	l = aws_lws_g32(&p); /* ciphername */
 	if (l != 4 || memcmp(p, "none", 4))
 		return 3;
 	p += l;
 
-	l = lws_g32(&p); /* kdfname */
+	l = aws_lws_g32(&p); /* kdfname */
 	if (l != 4 || memcmp(p, "none", 4))
 		return 4;
 	p += l;
 
-	l = lws_g32(&p); /* kdfoptions */
+	l = aws_lws_g32(&p); /* kdfoptions */
 	if (l)
 		return 5;
 
-	l = lws_g32(&p); /* number of keys */
+	l = aws_lws_g32(&p); /* number of keys */
 	if (l != 1)
 		return 6;
 
-	publ = lws_g32(&p); /* length of pubkey block */
+	publ = aws_lws_g32(&p); /* length of pubkey block */
 	if ((size_t)((uint32_t)(p - op) + publ) >= len)
 		return 7;
 
-	l = lws_g32(&p); /* key type length */
+	l = aws_lws_g32(&p); /* key type length */
 	if (l > 31)
 		return 8;
 	m = l;
 	if (m >= type_len)
 		m = (uint32_t)type_len -1 ;
-	lws_strncpy(type, (const char *)p, m + 1);
+	aws_lws_strncpy(type, (const char *)p, m + 1);
 
 	p += l;
-	l = lws_g32(&p); /* pub key length */
+	l = aws_lws_g32(&p); /* pub key length */
 	if (l != 32)
 		return 10;
 
 	p += l;
 
-	publ = lws_g32(&p); /* length of private key block */
+	publ = aws_lws_g32(&p); /* length of private key block */
 	if ((size_t)((uint32_t)(p - op) + publ) != len)
 		return 11;
 
-	l = lws_g32(&p); /* checkint 1 */
-	if (lws_g32(&p) != l) /* must match checkint 2 */
+	l = aws_lws_g32(&p); /* checkint 1 */
+	if (aws_lws_g32(&p) != l) /* must match checkint 2 */
 		return 12;
 
-	l = lws_g32(&p); /* key type length */
+	l = aws_lws_g32(&p); /* key type length */
 
 	p += l;
-	l = lws_g32(&p); /* public key part length */
+	l = aws_lws_g32(&p); /* public key part length */
 	if (l != LWS_SIZE_EC25519_PUBKEY)
 		return 15;
 
 	if (pub)
 		memcpy(pub, p, LWS_SIZE_EC25519_PUBKEY);
 	p += l;
-	l = lws_g32(&p); /* private key part length */
+	l = aws_lws_g32(&p); /* private key part length */
 	if (l != LWS_SIZE_EC25519_PRIKEY)
 		return 16;
 
@@ -197,15 +197,15 @@ ed25519_key_parse(uint8_t *p, size_t len, char *type, size_t type_len,
 }
 
 static int
-_genhash_update_len(struct lws_genhash_ctx *ctx, const void *input, size_t ilen)
+_genhash_update_len(struct aws_lws_genhash_ctx *ctx, const void *input, size_t ilen)
 {
 	uint32_t be;
 
-	lws_p32((uint8_t *)&be, (uint32_t)ilen);
+	aws_lws_p32((uint8_t *)&be, (uint32_t)ilen);
 
-	if (lws_genhash_update(ctx, (uint8_t *)&be, 4))
+	if (aws_lws_genhash_update(ctx, (uint8_t *)&be, 4))
 		return 1;
-	if (lws_genhash_update(ctx, input, ilen))
+	if (aws_lws_genhash_update(ctx, input, ilen))
 		return 1;
 
 	return 0;
@@ -216,7 +216,7 @@ kex_ecdh_dv(uint8_t *dest, int dest_len, const uint8_t *kbi, int kbi_len,
 	    const uint8_t *H, char c, const uint8_t *session_id)
 {
 	uint8_t pool[LWS_SIZE_SHA256];
-	struct lws_genhash_ctx ctx;
+	struct aws_lws_genhash_ctx ctx;
 	int n = 0, m;
 
 	/*
@@ -240,25 +240,25 @@ kex_ecdh_dv(uint8_t *dest, int dest_len, const uint8_t *kbi, int kbi_len,
 
 	while (n < dest_len) {
 
-		if (lws_genhash_init(&ctx, LWS_GENHASH_TYPE_SHA256))
+		if (aws_lws_genhash_init(&ctx, LWS_GENHASH_TYPE_SHA256))
 			return 1;
 
-		if (lws_genhash_update(&ctx, kbi, (unsigned int)kbi_len))
+		if (aws_lws_genhash_update(&ctx, kbi, (unsigned int)kbi_len))
 			goto hash_failed;
-		if (lws_genhash_update(&ctx, H, LWS_SIZE_SHA256))
+		if (aws_lws_genhash_update(&ctx, H, LWS_SIZE_SHA256))
 			goto hash_failed;
 
 		if (!n) {
-			if (lws_genhash_update(&ctx, (void *)&c, 1))
+			if (aws_lws_genhash_update(&ctx, (void *)&c, 1))
 				goto hash_failed;
-			if (lws_genhash_update(&ctx, session_id,
+			if (aws_lws_genhash_update(&ctx, session_id,
 					      LWS_SIZE_EC25519))
 				goto hash_failed;
 		} else
-			if (lws_genhash_update(&ctx, pool, LWS_SIZE_EC25519))
+			if (aws_lws_genhash_update(&ctx, pool, LWS_SIZE_EC25519))
 				goto hash_failed;
 
-		lws_genhash_destroy(&ctx, pool);
+		aws_lws_genhash_destroy(&ctx, pool);
 
 		m = LWS_SIZE_EC25519;
 		if (m > (dest_len - n))
@@ -272,7 +272,7 @@ kex_ecdh_dv(uint8_t *dest, int dest_len, const uint8_t *kbi, int kbi_len,
 	return 0;
 
 hash_failed:
-	lws_genhash_destroy(&ctx, NULL);
+	aws_lws_genhash_destroy(&ctx, NULL);
 
 	return 1;
 }
@@ -291,9 +291,9 @@ get_gen_server_key_25519(struct per_session_data__sshd *pss, uint8_t *b,
 		return mylen;
 
 	/* create one then */
-	lwsl_notice("Generating server hostkey\n");
-	s = lws_gen_server_key_ed25519(pss->vhd->context, b, len);
-	lwsl_notice("  gen key len %ld\n", (long)s);
+	aws_lwsl_notice("Generating server hostkey\n");
+	s = aws_lws_gen_server_key_ed25519(pss->vhd->context, b, len);
+	aws_lwsl_notice("  gen key len %ld\n", (long)s);
 	if (!s)
 		return 0;
 	/* set the key */
@@ -309,8 +309,8 @@ int
 kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 {
 	uint8_t pri_key[64], temp[64], payload_sig[64 + 32], a, *lp, kbi[64];
-	struct lws_kex *kex = pss->kex;
-	struct lws_genhash_ctx ctx;
+	struct aws_lws_kex *kex = pss->kex;
+	struct aws_lws_genhash_ctx ctx;
         unsigned long long smlen;
 	uint8_t *p = reply + 5;
 	uint32_t be, kbi_len;
@@ -320,7 +320,7 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 
 	r = (int)get_gen_server_key_25519(pss, servkey, (int)sizeof(servkey));
 	if (!r) {
-		lwsl_err("%s: Failed to get or gen server key\n", __func__);
+		aws_lwsl_err("%s: Failed to get or gen server key\n", __func__);
 
 		return 1;
 	}
@@ -328,13 +328,13 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 	r = ed25519_key_parse(servkey, (unsigned int)r, keyt, sizeof(keyt),
 			      pss->K_S /* public key */, pri_key);
 	if (r) {
-		lwsl_notice("%s: server key parse failed: %d\n", __func__, r);
+		aws_lwsl_notice("%s: server key parse failed: %d\n", __func__, r);
 
 		return 1;
 	}
 	keyt[32] = '\0';
 
-	lwsl_info("Server key type: %s\n", keyt);
+	aws_lwsl_info("Server key type: %s\n", keyt);
 
 	/*
 	 * 1) Generate ephemeral key pair [ eph_pri_key | kex->Q_S ]
@@ -349,7 +349,7 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 	 *     mysecret[31] &= 127;
 	 *     mysecret[31] |= 64;
 	 */
-	lws_get_random(pss->vhd->context, kex->eph_pri_key, LWS_SIZE_EC25519);
+	aws_lws_get_random(pss->vhd->context, kex->eph_pri_key, LWS_SIZE_EC25519);
 	kex->eph_pri_key[0] &= 248;
 	kex->eph_pri_key[31] &= 127;
 	kex->eph_pri_key[31] |= 64;
@@ -369,7 +369,7 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 	for (r = 0; r < (int)sizeof(kex->Q_S); r++)
 		a |= kex->Q_S[r];
 	if (!a) {
-		lwsl_notice("all zero pubkey\n");
+		aws_lwsl_notice("all zero pubkey\n");
 		return SSH_DISCONNECT_KEY_EXCHANGE_FAILED;
 	}
 
@@ -387,7 +387,7 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 	 * integer k.  This conversion follows the network byte order. This
 	 * step differs from RFC5656.
 	 */
-	kbi_len = (uint32_t)lws_mpint_rfc4251(kbi, pss->K, LWS_SIZE_EC25519, 1);
+	kbi_len = (uint32_t)aws_lws_mpint_rfc4251(kbi, pss->K, LWS_SIZE_EC25519, 1);
 
 	/*
 	 * The exchange hash H is computed as the hash of the concatenation of
@@ -408,8 +408,8 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 	 * definition...
 	 */
 
-	if (lws_genhash_init(&ctx, LWS_GENHASH_TYPE_SHA256)) {
-		lwsl_notice("genhash init failed\n");
+	if (aws_lws_genhash_init(&ctx, LWS_GENHASH_TYPE_SHA256)) {
+		aws_lwsl_notice("genhash init failed\n");
 		return 1;
 	}
 
@@ -429,8 +429,8 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 	 * name length: name
 	 * key length: key
 	 * ---> */
-	lws_p32((uint8_t *)&be, (uint32_t)(8 + (int)strlen(keyt) + LWS_SIZE_EC25519));
-	if (lws_genhash_update(&ctx, (void *)&be, 4))
+	aws_lws_p32((uint8_t *)&be, (uint32_t)(8 + (int)strlen(keyt) + LWS_SIZE_EC25519));
+	if (aws_lws_genhash_update(&ctx, (void *)&be, 4))
 		goto hash_probs;
 
 	if (_genhash_update_len(&ctx, keyt, strlen(keyt)))
@@ -444,10 +444,10 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 	if (_genhash_update_len(&ctx, kex->Q_S, LWS_SIZE_EC25519))
 		goto hash_probs;
 
-	if (lws_genhash_update(&ctx, kbi, kbi_len))
+	if (aws_lws_genhash_update(&ctx, kbi, kbi_len))
 		goto hash_probs;
 
-	if (lws_genhash_destroy(&ctx, temp))
+	if (aws_lws_genhash_destroy(&ctx, temp))
 		goto hash_probs;
 
 	/*
@@ -463,7 +463,7 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
         l = LWS_SIZE_EC25519;
         n = crypto_sign_ed25519_open(temp, &l, payload_sig, smlen, pss->K_S);
 
-        lwsl_notice("own sig sanity check says %d\n", n);
+        aws_lwsl_notice("own sig sanity check says %d\n", n);
 #endif
 
 	/* sig [64] and payload [32] concatenated in payload_sig
@@ -484,26 +484,26 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 
 	lp = p;
 	p +=4;
-	lws_sized_blob(&p, keyt, (uint32_t)strlen(keyt));
-	lws_sized_blob(&p, pss->K_S, LWS_SIZE_EC25519);
-	lws_p32(lp, (uint32_t)(lws_ptr_diff(p, lp) - 4));
+	aws_lws_sized_blob(&p, keyt, (uint32_t)strlen(keyt));
+	aws_lws_sized_blob(&p, pss->K_S, LWS_SIZE_EC25519);
+	aws_lws_p32(lp, (uint32_t)(aws_lws_ptr_diff(p, lp) - 4));
 
 	/* Q_S (exchange value sent by the server) */
 	
-	lws_sized_blob(&p, kex->Q_S, LWS_SIZE_EC25519);
+	aws_lws_sized_blob(&p, kex->Q_S, LWS_SIZE_EC25519);
 
 	/* signature of H */
 
 	lp = p;
 	p +=4;
-	lws_sized_blob(&p, keyt, (uint32_t)strlen(keyt));
-	lws_sized_blob(&p, payload_sig, 64);
-	lws_p32(lp, (uint32_t)(lws_ptr_diff(p, lp) - 4));
+	aws_lws_sized_blob(&p, keyt, (uint32_t)strlen(keyt));
+	aws_lws_sized_blob(&p, payload_sig, 64);
+	aws_lws_p32(lp, (uint32_t)(aws_lws_ptr_diff(p, lp) - 4));
 
 	/* end of message */
 
-	lws_pad_set_length(pss, reply, &p, &pss->active_keys_stc);
-	*plen = (uint32_t)lws_ptr_diff(p, reply);
+	aws_lws_pad_set_length(pss, reply, &p, &pss->active_keys_stc);
+	*plen = (uint32_t)aws_lws_ptr_diff(p, reply);
 
 	if (!pss->active_keys_stc.valid)
 		memcpy(pss->session_id, temp, LWS_SIZE_EC25519);
@@ -540,12 +540,12 @@ kex_ecdh(struct per_session_data__sshd *pss, uint8_t *reply, uint32_t *plen)
 			    pss->session_id);
 	}
 
-	lws_explicit_bzero(temp, sizeof(temp));
+	aws_lws_explicit_bzero(temp, sizeof(temp));
 
 	return 0;
 
 hash_probs:
-	lws_genhash_destroy(&ctx, NULL);
+	aws_lws_genhash_destroy(&ctx, NULL);
 
 	return 1;
 }

@@ -100,7 +100,7 @@ static void ssl_platform_debug(void *ctx, int level,
 
 #if defined(LWS_HAVE_mbedtls_ssl_set_verify)
 static int
-lws_mbedtls_f_vrfy(void *opaque, mbedtls_x509_crt *x509, int state, uint32_t *pflags)
+aws_lws_mbedtls_f_vrfy(void *opaque, mbedtls_x509_crt *x509, int state, uint32_t *pflags)
 {
 	struct ssl_pm *ssl_pm = (struct ssl_pm *)opaque;
 
@@ -150,12 +150,12 @@ int ssl_pm_new(SSL *ssl)
     mbedtls_ssl_init(&ssl_pm->ssl);
 
 #if defined(LWS_HAVE_mbedtls_ssl_set_verify)
-    mbedtls_ssl_set_verify(&ssl_pm->ssl, lws_mbedtls_f_vrfy, ssl_pm);
+    mbedtls_ssl_set_verify(&ssl_pm->ssl, aws_lws_mbedtls_f_vrfy, ssl_pm);
 #endif
 
     ret = mbedtls_ctr_drbg_seed(&ssl_pm->ctr_drbg, mbedtls_entropy_func, &ssl_pm->entropy, pers, pers_len);
     if (ret) {
-        lwsl_notice("%s: mbedtls_ctr_drbg_seed() return -0x%x", __func__, -ret);
+        aws_lwsl_notice("%s: mbedtls_ctr_drbg_seed() return -0x%x", __func__, -ret);
         //goto mbedtls_err1;
     }
 
@@ -166,7 +166,7 @@ int ssl_pm_new(SSL *ssl)
     }
     ret = mbedtls_ssl_config_defaults(&ssl_pm->conf, endpoint, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
     if (ret) {
-	    lwsl_err("%s: mbedtls_ssl_config_defaults() return -0x%x", __func__, -ret);
+	    aws_lwsl_err("%s: mbedtls_ssl_config_defaults() return -0x%x", __func__, -ret);
         SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_config_defaults() return -0x%x", -ret);
         goto mbedtls_err2;
     }
@@ -197,15 +197,15 @@ int ssl_pm_new(SSL *ssl)
 
     ret = mbedtls_ssl_setup(&ssl_pm->ssl, &ssl_pm->conf);
     if (ret) {
-	    lwsl_err("%s: mbedtls_ssl_setup() return -0x%x", __func__, -ret);
+	    aws_lwsl_err("%s: mbedtls_ssl_setup() return -0x%x", __func__, -ret);
 
         SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_setup() return -0x%x", -ret);
         goto mbedtls_err2;
     }
 
     mbedtls_ssl_set_bio(&ssl_pm->ssl, &ssl_pm->fd,
-		        lws_plat_mbedtls_net_send,
-			lws_plat_mbedtls_net_recv, NULL);
+		        aws_lws_plat_mbedtls_net_send,
+			aws_lws_plat_mbedtls_net_recv, NULL);
 
     ssl->ssl_pm = ssl_pm;
 
@@ -290,7 +290,7 @@ static int mbedtls_handshake( mbedtls_ssl_context *ssl )
     while (ssl->MBEDTLS_PRIVATE(state) != MBEDTLS_SSL_HANDSHAKE_OVER) {
         ret = mbedtls_ssl_handshake_step(ssl);
 
-        lwsl_info("%s: ssl ret -%x state %d\n", __func__, -ret, ssl->MBEDTLS_PRIVATE(state));
+        aws_lwsl_info("%s: ssl ret -%x state %d\n", __func__, -ret, ssl->MBEDTLS_PRIVATE(state));
 
         if (ret != 0)
             break;
@@ -349,13 +349,13 @@ int ssl_pm_handshake(SSL *ssl)
     }
 
     if (errno == 11) {
-	    lwsl_info("%s: ambiguous EAGAIN taken as WANT_READ\n", __func__);
+	    aws_lwsl_info("%s: ambiguous EAGAIN taken as WANT_READ\n", __func__);
 	    ssl->err = ret == MBEDTLS_ERR_SSL_WANT_READ;
 
 	    return 0;
     }
 
-    lwsl_info("%s: mbedtls_ssl_handshake() returned -0x%x\n", __func__, -ret);
+    aws_lwsl_info("%s: mbedtls_ssl_handshake() returned -0x%x\n", __func__, -ret);
 
     /* it's had it */
 
@@ -421,7 +421,7 @@ int ssl_pm_read(SSL *ssl, void *buffer, int len)
 
     ret = mbedtls_ssl_read(&ssl_pm->ssl, buffer, (size_t)len);
     if (ret < 0) {
-	 //   lwsl_notice("%s: mbedtls_ssl_read says -0x%x\n", __func__, -ret);
+	 //   aws_lwsl_notice("%s: mbedtls_ssl_read says -0x%x\n", __func__, -ret);
         SSL_DEBUG(SSL_PLATFORM_ERROR_LEVEL, "mbedtls_ssl_read() return -0x%x", -ret);
         if (ret == MBEDTLS_ERR_NET_CONN_RESET ||
 #if defined(MBEDTLS_VERSION_NUMBER) && MBEDTLS_VERSION_NUMBER >= 0x03000000

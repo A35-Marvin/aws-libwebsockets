@@ -28,7 +28,7 @@ Commandline option|Meaning
 [2021/02/19 11:25:20:3647] N:  ++ [1100944|vh|1|default] (2)
 [2021/02/19 11:25:20:8590] N:  ++ [1100944|SSPcli|0|spam] (1)
 [2021/02/19 11:25:20:8810] N:  ++ [1100944|wsiSSPcli|0|RAW/raw-skt/+@proxy.ss.lws/([1100944|SSPcli|0|spam])] (1)
-[2021/02/19 11:25:20:9103] N: lws_sspc_sul_retry_cb: [1100944|wsiSSPcli|0|RAW/raw-skt/+@proxy.ss.lws/([1100944|SSPcli|0|spam|default])]
+[2021/02/19 11:25:20:9103] N: aws_lws_sspc_sul_retry_cb: [1100944|wsiSSPcli|0|RAW/raw-skt/+@proxy.ss.lws/([1100944|SSPcli|0|spam|default])]
 [2021/02/19 11:25:20:9795] U: myss_state: LWSSSCS_CREATING, ord 0x0
 [2021/02/19 11:25:20:9869] U: myss_state: LWSSSCS_CONNECTING, ord 0x0
 [2021/02/19 11:25:21:0791] U: myss_state: LWSSSCS_CONNECTED, ord 0x0

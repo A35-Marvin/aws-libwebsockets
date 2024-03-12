@@ -29,14 +29,14 @@
 #endif
 
 #if defined(LWS_PLAT_OPTEE)
-void lwsl_emit_optee(int level, const char *line);
+void aws_lwsl_emit_optee(int level, const char *line);
 #endif
 
-lws_log_cx_t log_cx = {
+aws_lws_log_cx_t log_cx = {
 #if !defined(LWS_PLAT_OPTEE)
-	.u.emit				= lwsl_emit_stderr,
+	.u.emit				= aws_lwsl_emit_stderr,
 #else
-	.u.emit				= lwsl_emit_optee,
+	.u.emit				= aws_lwsl_emit_optee,
 #endif
 	.lll_flags			= LLL_ERR | LLL_WARN | LLL_NOTICE,
 };
@@ -50,8 +50,8 @@ static const char * log_level_names ="EWNIDPHXCLUT??";
  */
 
 void
-__lws_lc_tag(struct lws_context *context, lws_lifecycle_group_t *grp,
-	     lws_lifecycle_t *lc, const char *format, ...)
+__lws_lc_tag(struct aws_lws_context *context, aws_lws_lifecycle_group_t *grp,
+	     aws_lws_lifecycle_t *lc, const char *format, ...)
 {
 	va_list ap;
 	int n = 1;
@@ -71,7 +71,7 @@ __lws_lc_tag(struct lws_context *context, lws_lifecycle_group_t *grp,
 		k = strlen(cp);
 
 		/* compute the remaining gutag unused */
-		ll = sizeof(lc->gutag) - lws_ptr_diff_size_t(cp, lc->gutag) - k - 1;
+		ll = sizeof(lc->gutag) - aws_lws_ptr_diff_size_t(cp, lc->gutag) - k - 1;
 		if (ll > sizeof(rend) - 1)
 			ll = sizeof(rend) - 1;
 		va_start(ap, format);
@@ -97,10 +97,10 @@ __lws_lc_tag(struct lws_context *context, lws_lifecycle_group_t *grp,
 	lc->gutag[0] = '[';
 
 #if defined(LWS_WITH_SECURE_STREAMS_PROXY_API) /* ie, will have getpid if set */
-	n += lws_snprintf(&lc->gutag[n], sizeof(lc->gutag) -
+	n += aws_lws_snprintf(&lc->gutag[n], sizeof(lc->gutag) -
 					 (unsigned int)n - 1u, "%u|", getpid());
 #endif
-	n += lws_snprintf(&lc->gutag[n], sizeof(lc->gutag) -
+	n += aws_lws_snprintf(&lc->gutag[n], sizeof(lc->gutag) -
 					 (unsigned int)n - 1u, "%s|%lx|",
 					 grp->tag_prefix,
 					 (unsigned long)grp->ordinal++);
@@ -118,13 +118,13 @@ __lws_lc_tag(struct lws_context *context, lws_lifecycle_group_t *grp,
 		lc->gutag[sizeof(lc->gutag) - 1] = '\0';
 	}
 
-	lc->us_creation = (uint64_t)lws_now_usecs();
-	lws_dll2_add_tail(&lc->list, &grp->owner);
+	lc->us_creation = (uint64_t)aws_lws_now_usecs();
+	aws_lws_dll2_add_tail(&lc->list, &grp->owner);
 
-	lwsl_refcount_cx(lc->log_cx, 1);
+	aws_lwsl_refcount_cx(lc->log_cx, 1);
 
 #if defined(LWS_LOG_TAG_LIFECYCLE)
-	lwsl_cx_notice(context, " ++ %s (%d)", lc->gutag, (int)grp->owner.count);
+	aws_lwsl_cx_notice(context, " ++ %s (%d)", lc->gutag, (int)grp->owner.count);
 #endif
 }
 
@@ -139,14 +139,14 @@ __lws_lc_tag(struct lws_context *context, lws_lifecycle_group_t *grp,
  */
 
 void
-__lws_lc_tag_append(lws_lifecycle_t *lc, const char *app)
+__lws_lc_tag_append(aws_lws_lifecycle_t *lc, const char *app)
 {
 	int n = (int)strlen(lc->gutag);
 
 	if (n && lc->gutag[n - 1] == ']')
 		n--;
 
-	n += lws_snprintf(&lc->gutag[n], sizeof(lc->gutag) - 2u -
+	n += aws_lws_snprintf(&lc->gutag[n], sizeof(lc->gutag) - 2u -
 					 (unsigned int)n, "|%s]", app);
 
 	if ((unsigned int)n >= sizeof(lc->gutag) - 2u) {
@@ -160,48 +160,48 @@ __lws_lc_tag_append(lws_lifecycle_t *lc, const char *app)
  */
 
 void
-__lws_lc_untag(struct lws_context *context, lws_lifecycle_t *lc)
+__lws_lc_untag(struct aws_lws_context *context, aws_lws_lifecycle_t *lc)
 {
-	//lws_lifecycle_group_t *grp;
+	//aws_lws_lifecycle_group_t *grp;
 	char buf[24];
 
 	if (!lc->gutag[0]) { /* we never tagged this object... */
-		lwsl_cx_err(context, "%s never tagged", lc->gutag);
+		aws_lwsl_cx_err(context, "%s never tagged", lc->gutag);
 		assert(0);
 		return;
 	}
 
 	if (!lc->list.owner) { /* we already untagged this object... */
-		lwsl_cx_err(context, "%s untagged twice", lc->gutag);
+		aws_lwsl_cx_err(context, "%s untagged twice", lc->gutag);
 		assert(0);
 		return;
 	}
 
-	//grp = lws_container_of(lc->list.owner, lws_lifecycle_group_t, owner);
+	//grp = aws_lws_container_of(lc->list.owner, aws_lws_lifecycle_group_t, owner);
 
-	lws_humanize(buf, sizeof(buf),
-		     (uint64_t)lws_now_usecs() - lc->us_creation,
+	aws_lws_humanize(buf, sizeof(buf),
+		     (uint64_t)aws_lws_now_usecs() - lc->us_creation,
 		     humanize_schema_us);
 
 #if defined(LWS_LOG_TAG_LIFECYCLE)
-	lwsl_cx_notice(context, " -- %s (%d) %s", lc->gutag,
+	aws_lwsl_cx_notice(context, " -- %s (%d) %s", lc->gutag,
 		    (int)lc->list.owner->count - 1, buf);
 #endif
 
-	lws_dll2_remove(&lc->list);
+	aws_lws_dll2_remove(&lc->list);
 
-	lwsl_refcount_cx(lc->log_cx, -1);
+	aws_lwsl_refcount_cx(lc->log_cx, -1);
 }
 
 const char *
-lws_lc_tag(lws_lifecycle_t *lc)
+aws_lws_lc_tag(aws_lws_lifecycle_t *lc)
 {
 	return lc->gutag;
 }
 
 
 int
-lwsl_timestamp(int level, char *p, size_t len)
+aws_lwsl_timestamp(int level, char *p, size_t len)
 {
 #if !defined(LWS_PLAT_OPTEE) && !defined(LWS_WITH_NO_LOGS)
 	time_t o_now;
@@ -229,7 +229,7 @@ lwsl_timestamp(int level, char *p, size_t len)
 			continue;
 
 		if (ptm)
-			n = lws_snprintf(p, len,
+			n = aws_lws_snprintf(p, len,
 				"[%04d/%02d/%02d %02d:%02d:%02d:%04d] %c: ",
 				ptm->tm_year + 1900,
 				ptm->tm_mon + 1,
@@ -239,7 +239,7 @@ lwsl_timestamp(int level, char *p, size_t len)
 				ptm->tm_sec,
 				(int)(now % 10000), log_level_names[n]);
 		else
-			n = lws_snprintf(p, len, "[%llu:%04d] %c: ",
+			n = aws_lws_snprintf(p, len, "[%llu:%04d] %c: ",
 					(unsigned long long) now / 10000,
 					(int)(now % 10000), log_level_names[n]);
 		return n;
@@ -291,13 +291,13 @@ _lwsl_emit_stderr(int level, const char *line)
 }
 
 void
-lwsl_emit_stderr(int level, const char *line)
+aws_lwsl_emit_stderr(int level, const char *line)
 {
 	_lwsl_emit_stderr(level, line);
 }
 
 void
-lwsl_emit_stderr_notimestamp(int level, const char *line)
+aws_lwsl_emit_stderr_notimestamp(int level, const char *line)
 {
 	_lwsl_emit_stderr(level, line);
 }
@@ -309,7 +309,7 @@ lwsl_emit_stderr_notimestamp(int level, const char *line)
  */
 
 void
-lws_log_emit_cx_file(struct lws_log_cx *cx, int level, const char *line,
+aws_lws_log_emit_cx_file(struct aws_lws_log_cx *cx, int level, const char *line,
 			size_t len)
 {
 	int fd = (int)(intptr_t)cx->stg;
@@ -324,7 +324,7 @@ lws_log_emit_cx_file(struct lws_log_cx *cx, int level, const char *line,
  */
 
 void
-lws_log_use_cx_file(struct lws_log_cx *cx, int _new)
+aws_lws_log_use_cx_file(struct aws_lws_log_cx *cx, int _new)
 {
 	int fd;
 
@@ -353,7 +353,7 @@ lws_log_use_cx_file(struct lws_log_cx *cx, int _new)
 
 #if !(defined(LWS_PLAT_OPTEE) && !defined(LWS_WITH_NETWORK))
 void
-__lws_logv(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
+__lws_logv(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 	   int filter, const char *_fun, const char *format, va_list vl)
 {
 #if LWS_MAX_SMP == 1 && !defined(LWS_WITH_THREADPOOL)
@@ -363,7 +363,7 @@ __lws_logv(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 	char buf[1024];
 #endif
 	char *p = buf, *end = p + sizeof(buf) - 1;
-	lws_log_cx_t *cxp;
+	aws_lws_log_cx_t *cxp;
 	int n, back = 0;
 
 	/*
@@ -372,7 +372,7 @@ __lws_logv(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 	 */
 
 	if (!cx) {
-		lws_strncpy(p, "NULL log cx: ", sizeof(buf) - 1);
+		aws_lws_strncpy(p, "NULL log cx: ", sizeof(buf) - 1);
 		p += 13;
 		/* use the processwide one for lack of anything better */
 		cx = &log_cx;
@@ -392,7 +392,7 @@ __lws_logv(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 #endif
 	{
 		buf[0] = '\0';
-		lwsl_timestamp(filter, buf, sizeof(buf));
+		aws_lwsl_timestamp(filter, buf, sizeof(buf));
 		p += strlen(buf);
 	}
 
@@ -422,13 +422,13 @@ __lws_logv(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 		prep(cxp, obj, &p, end);
 
 	if (_fun)
-		p += lws_snprintf(p, lws_ptr_diff_size_t(end, p), "%s: ", _fun);
+		p += aws_lws_snprintf(p, aws_lws_ptr_diff_size_t(end, p), "%s: ", _fun);
 
 	/*
 	 * The actual log content
 	 */
 
-	n = vsnprintf(p, lws_ptr_diff_size_t(end, p), format, vl);
+	n = vsnprintf(p, aws_lws_ptr_diff_size_t(end, p), format, vl);
 
 	/* vnsprintf returns what it would have written, even if truncated */
 	if (p + n > end - 2) {
@@ -451,7 +451,7 @@ __lws_logv(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 	 */
 
 	if (cx->lll_flags & LLLF_LOG_CONTEXT_AWARE)
-		cx->u.emit_cx(cx, filter, buf, lws_ptr_diff_size_t(p, buf));
+		cx->u.emit_cx(cx, filter, buf, aws_lws_ptr_diff_size_t(p, buf));
 	else
 		cx->u.emit(filter, buf);
 }
@@ -470,7 +470,7 @@ void _lws_log(int filter, const char *format, ...)
 	va_end(ap);
 }
 
-void _lws_log_cx(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
+void _lws_log_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 		 int filter, const char *_fun, const char *format, ...)
 {
 	va_list ap;
@@ -485,7 +485,7 @@ void _lws_log_cx(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 #endif
 
 void
-lws_set_log_level(int flags, lws_log_emit_t func)
+aws_lws_set_log_level(int flags, aws_lws_log_emit_t func)
 {
 	log_cx.lll_flags = (uint32_t)(flags & (~LLLF_LOG_CONTEXT_AWARE));
 
@@ -493,18 +493,18 @@ lws_set_log_level(int flags, lws_log_emit_t func)
 		log_cx.u.emit = func;
 }
 
-int lwsl_visible(int level)
+int aws_lwsl_visible(int level)
 {
 	return !!(log_cx.lll_flags & (uint32_t)level);
 }
 
-int lwsl_visible_cx(lws_log_cx_t *cx, int level)
+int aws_lwsl_visible_cx(aws_lws_log_cx_t *cx, int level)
 {
 	return !!(cx->lll_flags & (uint32_t)level);
 }
 
 void
-lwsl_refcount_cx(lws_log_cx_t *cx, int _new)
+aws_lwsl_refcount_cx(aws_lws_log_cx_t *cx, int _new)
 {
 	if (!cx)
 		return;
@@ -521,13 +521,13 @@ lwsl_refcount_cx(lws_log_cx_t *cx, int _new)
 }
 
 void
-lwsl_hexdump_level_cx(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
+aws_lwsl_hexdump_level_cx(aws_lws_log_cx_t *cx, aws_lws_log_prepend_cx_t prep, void *obj,
 		      int hexdump_level, const void *vbuf, size_t len)
 {
 	unsigned char *buf = (unsigned char *)vbuf;
 	unsigned int n;
 
-	if (!lwsl_visible_cx(cx, hexdump_level))
+	if (!aws_lwsl_visible_cx(cx, hexdump_level))
 		return;
 
 	if (!len) {
@@ -548,14 +548,14 @@ lwsl_hexdump_level_cx(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 		unsigned int start = n, m;
 		char line[80], *p = line;
 
-		p += lws_snprintf(p, 10, "%04X: ", start);
+		p += aws_lws_snprintf(p, 10, "%04X: ", start);
 
 		for (m = 0; m < 16 && n < len; m++)
-			p += lws_snprintf(p, 5, "%02X ", buf[n++]);
+			p += aws_lws_snprintf(p, 5, "%02X ", buf[n++]);
 		while (m++ < 16)
-			p += lws_snprintf(p, 5, "   ");
+			p += aws_lws_snprintf(p, 5, "   ");
 
-		p += lws_snprintf(p, 6, "   ");
+		p += aws_lws_snprintf(p, 6, "   ");
 
 		for (m = 0; m < 16 && (start + m) < len; m++) {
 			if (buf[start + m] >= ' ' && buf[start + m] < 127)
@@ -576,15 +576,15 @@ lwsl_hexdump_level_cx(lws_log_cx_t *cx, lws_log_prepend_cx_t prep, void *obj,
 }
 
 void
-lwsl_hexdump_level(int hexdump_level, const void *vbuf, size_t len)
+aws_lwsl_hexdump_level(int hexdump_level, const void *vbuf, size_t len)
 {
-	lwsl_hexdump_level_cx(&log_cx, NULL, NULL, hexdump_level, vbuf, len);
+	aws_lwsl_hexdump_level_cx(&log_cx, NULL, NULL, hexdump_level, vbuf, len);
 }
 
 void
-lwsl_hexdump(const void *vbuf, size_t len)
+aws_lwsl_hexdump(const void *vbuf, size_t len)
 {
 #if defined(_DEBUG)
-	lwsl_hexdump_level(LLL_DEBUG, vbuf, len);
+	aws_lwsl_hexdump_level(LLL_DEBUG, vbuf, len);
 #endif
 }
